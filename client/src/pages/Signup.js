@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
+import '../styles/auth.css';
 
 function Signup() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [userType, setUserType] = useState('');
   const [formData, setFormData] = useState({
@@ -77,16 +80,23 @@ function Signup() {
       setIsLoading(true);
       
       try {
-        console.log('Signup attempt:', { ...formData, userType });
+        const response = await authService.signup({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          userType: userType
+        });
         
-        setTimeout(() => {
-          setIsLoading(false);
-          alert('Account created successfully! Please check your email for verification.');
-        }, 1000);
-        
+        if (response.token) {
+          navigate('/dashboard');
+        } else {
+          setErrors({ general: response.message || 'Signup failed' });
+        }
       } catch (error) {
-        setIsLoading(false);
         setErrors({ general: 'Signup failed. Please try again.' });
+      } finally {
+        setIsLoading(false);
       }
     }
   };

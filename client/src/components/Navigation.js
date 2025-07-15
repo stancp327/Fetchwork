@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Navigation.css';
 
 function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userType, setUserType] = useState('client');
+  const navigate = useNavigate();
+  const { user, logout, isAuthenticated } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   const isActive = (path) => {
@@ -44,16 +50,14 @@ function Navigation() {
 
           {isAuthenticated && (
             <>
-              {userType === 'client' && (
-                <Link 
-                  to="/post-job" 
-                  className={`nav-link ${isActive('/post-job') ? 'nav-link-active' : ''}`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="nav-icon">📝</span>
-                  <span className="nav-text">Post Job</span>
-                </Link>
-              )}
+              <Link 
+                to="/post-job" 
+                className={`nav-link ${isActive('/post-job') ? 'nav-link-active' : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <span className="nav-icon">📝</span>
+                <span className="nav-text">Post Job</span>
+              </Link>
 
               <Link 
                 to="/dashboard" 
@@ -82,7 +86,7 @@ function Navigation() {
                 <span className="nav-text">Profile</span>
               </Link>
 
-              {userType === 'admin' && (
+              {user?.userType === 'admin' && (
                 <Link 
                   to="/admin" 
                   className={`nav-link ${isActive('/admin') ? 'nav-link-active' : ''}`}
@@ -104,10 +108,10 @@ function Navigation() {
             </>
           ) : (
             <div className="nav-user-menu">
-              <span className="nav-user-name">Welcome, User!</span>
+              <span className="nav-user-name">Welcome, {user?.firstName}!</span>
               <button 
                 className="nav-logout-btn"
-                onClick={() => setIsAuthenticated(false)}
+                onClick={handleLogout}
               >
                 Logout
               </button>

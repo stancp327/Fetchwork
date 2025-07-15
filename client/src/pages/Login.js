@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
+import '../styles/auth.css';
 
 function Login() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -51,16 +54,20 @@ function Login() {
       setIsLoading(true);
       
       try {
-        console.log('Login attempt:', formData);
+        const response = await authService.login({
+          email: formData.email,
+          password: formData.password
+        });
         
-        setTimeout(() => {
-          setIsLoading(false);
-          alert('Login successful! Redirecting to dashboard...');
-        }, 1000);
-        
+        if (response.token) {
+          navigate('/dashboard');
+        } else {
+          setErrors({ general: response.message || 'Login failed' });
+        }
       } catch (error) {
-        setIsLoading(false);
         setErrors({ general: 'Login failed. Please try again.' });
+      } finally {
+        setIsLoading(false);
       }
     }
   };

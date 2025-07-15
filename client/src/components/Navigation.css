@@ -76,6 +76,34 @@
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 5px;
+
+.nav-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-user-name {
+  color: #61dafb;
+  font-weight: bold;
+}
+
+.nav-logout-btn {
+  background: none;
+  border: 1px solid #61dafb;
+  color: #61dafb;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.nav-logout-btn:hover {
+  background-color: #61dafb;
+  color: #282c34;
+}
+
   transition: background-color 0.3s;
 }
 
