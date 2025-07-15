@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import jobService from '../services/jobService';
 
 function PostJob() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -13,6 +18,7 @@ function PostJob() {
   });
 
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const categories = [
     'Design & Creative',
@@ -75,12 +81,34 @@ function PostJob() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      console.log('Job posted:', formData);
-      alert('Job posted successfully! You will be redirected to your dashboard.');
+      setIsLoading(true);
+      
+      try {
+        const response = await jobService.createJob({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          budget: formData.budget,
+          budgetType: formData.budgetType,
+          deadline: formData.deadline,
+          skills: formData.skills
+        });
+        
+        if (response.job) {
+          navigate('/dashboard');
+          alert('Job posted successfully!');
+        } else {
+          setErrors({ general: response.message || 'Failed to post job' });
+        }
+      } catch (error) {
+        setErrors({ general: 'Failed to post job. Please try again.' });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -89,6 +117,12 @@ function PostJob() {
       <div className="page-container">
         <h1>Post a New Job</h1>
         <p>Tell us about your project and find the perfect freelancer for the job.</p>
+        
+        {errors.general && (
+          <div className="error-banner">
+            {errors.general}
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="job-form">
           <div className="form-section">
@@ -229,8 +263,10 @@ function PostJob() {
           </div>
           
           <div className="form-actions">
-            <button type="button" className="btn btn-secondary">Save as Draft</button>
-            <button type="submit" className="btn">Post Job</button>
+            <button type="button" className="btn btn-secondary" disabled={isLoading}>Save as Draft</button>
+            <button type="submit" className="btn" disabled={isLoading}>
+              {isLoading ? 'Posting Job...' : 'Post Job'}
+            </button>
           </div>
         </form>
       </div>

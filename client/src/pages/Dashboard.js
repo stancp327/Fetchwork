@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import jobService from '../services/jobService';
 
 function Dashboard() {
-  const [userType, setUserType] = useState('client');
+  const { user } = useAuth();
+  const [userType, setUserType] = useState(user?.userType || 'client');
   const [activeTab, setActiveTab] = useState('overview');
+  const [userJobs, setUserJobs] = useState([]);
 
   const mockClientData = {
     activeJobs: 3,

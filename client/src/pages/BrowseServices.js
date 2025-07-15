@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import jobService from '../services/jobService';
 
 function BrowseServices() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const mockServices = [
     {
@@ -76,24 +80,44 @@ function BrowseServices() {
 
   const categories = [
     { value: 'all', label: 'All Categories' },
-    { value: 'design', label: 'Design & Creative' },
-    { value: 'development', label: 'Development & IT' },
-    { value: 'writing', label: 'Writing & Translation' },
-    { value: 'marketing', label: 'Digital Marketing' },
-    { value: 'video', label: 'Video & Animation' }
+    { value: 'Design & Creative', label: 'Design & Creative' },
+    { value: 'Development & IT', label: 'Development & IT' },
+    { value: 'Writing & Translation', label: 'Writing & Translation' },
+    { value: 'Digital Marketing', label: 'Digital Marketing' },
+    { value: 'Video & Animation', label: 'Video & Animation' },
+    { value: 'Music & Audio', label: 'Music & Audio' },
+    { value: 'Business', label: 'Business' },
+    { value: 'Data', label: 'Data' },
+    { value: 'Photography', label: 'Photography' }
   ];
 
-  const filteredServices = mockServices.filter(service => {
-    const matchesSearch = service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.freelancer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
-    const matchesPrice = priceRange === 'all' || 
-                        (priceRange === 'low' && service.price < 75) ||
-                        (priceRange === 'medium' && service.price >= 75 && service.price <= 150) ||
-                        (priceRange === 'high' && service.price > 150);
-    
-    return matchesSearch && matchesCategory && matchesPrice;
-  });
+  useEffect(() => {
+    fetchJobs();
+  }, [searchTerm, selectedCategory, priceRange]);
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      const filters = {};
+      
+      if (searchTerm) filters.search = searchTerm;
+      if (selectedCategory !== 'all') filters.category = selectedCategory;
+      if (priceRange !== 'all') {
+        if (priceRange === 'low') filters.maxBudget = 75;
+        else if (priceRange === 'medium') {
+          filters.minBudget = 75;
+          filters.maxBudget = 150;
+        } else if (priceRange === 'high') filters.minBudget = 150;
+      }
+
+      const response = await jobService.getJobs(filters);
+      setJobs(response.jobs || []);
+    } catch (error) {
+      setError('Failed to load jobs');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="browse-services-page">
@@ -140,23 +164,28 @@ function BrowseServices() {
         </div>
 
         <div className="services-grid grid grid-3">
-          {filteredServices.map(service => (
-            <div key={service.id} className="service-card card">
+          {loading ? (
+            <div className="loading">Loading jobs...</div>
+          ) : error ? (
+            <div className="error">{error}</div>
+          ) : jobs.map(job => (
+            <div key={job._id} className="service-card card">
               <div className="service-image">
-                <span className="service-icon">{service.image}</span>
+                <span className="service-icon">💼</span>
               </div>
               <div className="service-content">
-                <h3>{service.title}</h3>
-                <p className="service-description">{service.description}</p>
+                <h3>{job.title}</h3>
+                <p className="service-description">{job.description}</p>
                 <div className="service-freelancer">
-                  <span>by {service.freelancer}</span>
+                  <span>by {job.client?.firstName} {job.client?.lastName}</span>
                 </div>
-                <div className="service-rating">
-                  <span className="rating">⭐ {service.rating}</span>
-                  <span className="reviews">({service.reviews} reviews)</span>
+                <div className="service-category">
+                  <span className="category">{job.category}</span>
                 </div>
                 <div className="service-footer">
-                  <span className="service-price">Starting at ${service.price}</span>
+                  <span className="service-price">
+                    {job.budgetType === 'fixed' ? `$${job.budget}` : `$${job.budget}/hr`}
+                  </span>
                   <button className="btn">View Details</button>
                 </div>
               </div>
@@ -164,9 +193,9 @@ function BrowseServices() {
           ))}
         </div>
 
-        {filteredServices.length === 0 && (
+        {!loading && jobs.length === 0 && (
           <div className="no-results">
-            <h3>No services found</h3>
+            <h3>No jobs found</h3>
             <p>Try adjusting your search criteria or browse all categories.</p>
           </div>
         )}
