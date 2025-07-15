@@ -1,121 +1,119 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import messageService from '../services/messageService';
 
 function Messages() {
-  const [selectedConversation, setSelectedConversation] = useState(1);
+  const { user } = useAuth();
+  const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const mockConversations = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      lastMessage: 'I\'ve completed the logo design. Please review.',
-      timestamp: '2 hours ago',
-      unread: 2,
-      avatar: '👩‍💼',
-      project: 'Logo Design Project'
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      lastMessage: 'When can we schedule the project kickoff?',
-      timestamp: '1 day ago',
-      unread: 0,
-      avatar: '👨‍💻',
-      project: 'Website Development'
-    },
-    {
-      id: 3,
-      name: 'Emma Wilson',
-      lastMessage: 'Thank you for the feedback!',
-      timestamp: '3 days ago',
-      unread: 1,
-      avatar: '✍️',
-      project: 'Content Writing'
+  useEffect(() => {
+    if (user) {
+      initializeMessaging();
     }
-  ];
+    
+    return () => {
+      messageService.disconnect();
+    };
+  }, [user]);
 
-  const mockMessages = {
-    1: [
-      {
-        id: 1,
-        sender: 'Sarah Johnson',
-        message: 'Hi! I\'m excited to work on your logo design project.',
-        timestamp: '10:30 AM',
-        isOwn: false
-      },
-      {
-        id: 2,
-        sender: 'You',
-        message: 'Great! I\'ve attached the brand guidelines and requirements.',
-        timestamp: '10:45 AM',
-        isOwn: true
-      },
-      {
-        id: 3,
-        sender: 'Sarah Johnson',
-        message: 'Perfect! I\'ll review these and get started on some initial concepts.',
-        timestamp: '11:00 AM',
-        isOwn: false
-      },
-      {
-        id: 4,
-        sender: 'Sarah Johnson',
-        message: 'I\'ve completed the logo design. Please review and let me know your thoughts!',
-        timestamp: '2:30 PM',
-        isOwn: false
-      }
-    ],
-    2: [
-      {
-        id: 1,
-        sender: 'Mike Chen',
-        message: 'Hello! I\'m ready to start on your website project.',
-        timestamp: 'Yesterday',
-        isOwn: false
-      },
-      {
-        id: 2,
-        sender: 'Mike Chen',
-        message: 'When can we schedule the project kickoff?',
-        timestamp: 'Yesterday',
-        isOwn: false
-      }
-    ],
-    3: [
-      {
-        id: 1,
-        sender: 'Emma Wilson',
-        message: 'I\'ve submitted the first draft of your content.',
-        timestamp: '3 days ago',
-        isOwn: false
-      },
-      {
-        id: 2,
-        sender: 'You',
-        message: 'Looks good! Just a few minor revisions needed.',
-        timestamp: '3 days ago',
-        isOwn: true
-      },
-      {
-        id: 3,
-        sender: 'Emma Wilson',
-        message: 'Thank you for the feedback!',
-        timestamp: '3 days ago',
-        isOwn: false
-      }
-    ]
+  useEffect(() => {
+    if (selectedConversation) {
+      loadMessages(selectedConversation._id);
+      messageService.joinConversation(selectedConversation._id);
+    }
+  }, [selectedConversation]);
+
+  const initializeMessaging = async () => {
+    try {
+      setLoading(true);
+      
+      const socket = messageService.connect();
+      
+      messageService.onNewMessage((messageData) => {
+        if (selectedConversation && messageData.conversationId === selectedConversation._id) {
+          setMessages(prev => [...prev, {
+            _id: Date.now(),
+            content: messageData.content,
+            sender: messageData.sender,
+            createdAt: messageData.timestamp,
+            isOwn: messageData.sender._id === user._id
+          }]);
+        }
+        
+        loadConversations();
+      });
+      
+      await loadConversations();
+    } catch (error) {
+      setError('Failed to initialize messaging');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const currentConversation = mockConversations.find(conv => conv.id === selectedConversation);
-  const currentMessages = mockMessages[selectedConversation] || [];
+  const loadConversations = async () => {
+    try {
+      const response = await messageService.getConversations();
+      setConversations(response);
+    } catch (error) {
+      setError('Failed to load conversations');
+    }
+  };
 
-  const handleSendMessage = (e) => {
+  const loadMessages = async (conversationId) => {
+    try {
+      const response = await messageService.getMessages(conversationId);
+      setMessages(response.map(msg => ({
+        ...msg,
+        isOwn: msg.sender._id === user._id
+      })));
+    } catch (error) {
+      setError('Failed to load messages');
+    }
+  };
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (newMessage.trim()) {
-      console.log('Sending message:', newMessage);
+    if (!newMessage.trim() || !selectedConversation) return;
+
+    try {
+      await messageService.sendMessageAPI(selectedConversation._id, newMessage);
+      
+      messageService.sendMessage(selectedConversation._id, newMessage);
+      
+      setMessages(prev => [...prev, {
+        _id: Date.now(),
+        content: newMessage,
+        sender: user,
+        createdAt: new Date(),
+        isOwn: true
+      }]);
+      
       setNewMessage('');
+    } catch (error) {
+      setError('Failed to send message');
     }
   };
+
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  if (loading) return <div className="loading">Loading messages...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="messages-page">
@@ -127,40 +125,40 @@ function Messages() {
           </div>
           
           <div className="conversations-list">
-            {mockConversations.map(conversation => (
-              <div
-                key={conversation.id}
-                className={`conversation-item ${selectedConversation === conversation.id ? 'active' : ''}`}
-                onClick={() => setSelectedConversation(conversation.id)}
-              >
-                <div className="conversation-avatar">
-                  <span>{conversation.avatar}</span>
-                </div>
-                <div className="conversation-info">
-                  <div className="conversation-header">
-                    <h4>{conversation.name}</h4>
-                    <span className="timestamp">{conversation.timestamp}</span>
+            {conversations.map(conversation => {
+              const otherParticipant = conversation.participants.find(p => p.user._id !== user._id);
+              return (
+                <div
+                  key={conversation._id}
+                  className={`conversation-item ${selectedConversation?._id === conversation._id ? 'active' : ''}`}
+                  onClick={() => setSelectedConversation(conversation)}
+                >
+                  <div className="conversation-avatar">
+                    <span>👤</span>
                   </div>
-                  <p className="project-name">{conversation.project}</p>
-                  <p className="last-message">{conversation.lastMessage}</p>
+                  <div className="conversation-info">
+                    <div className="conversation-header">
+                      <h4>{otherParticipant?.user.firstName} {otherParticipant?.user.lastName}</h4>
+                      <span className="timestamp">{formatTimestamp(conversation.updatedAt)}</span>
+                    </div>
+                    <p className="project-name">{conversation.relatedJob?.title || 'General'}</p>
+                    <p className="last-message">{conversation.lastMessage?.content || 'No messages yet'}</p>
+                  </div>
                 </div>
-                {conversation.unread > 0 && (
-                  <div className="unread-badge">{conversation.unread}</div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         <div className="chat-area">
-          {currentConversation ? (
+          {selectedConversation ? (
             <>
               <div className="chat-header">
                 <div className="chat-user-info">
-                  <span className="chat-avatar">{currentConversation.avatar}</span>
+                  <span className="chat-avatar">👤</span>
                   <div>
-                    <h3>{currentConversation.name}</h3>
-                    <p>{currentConversation.project}</p>
+                    <h3>{selectedConversation.participants.find(p => p.user._id !== user._id)?.user.firstName}</h3>
+                    <p>{selectedConversation.relatedJob?.title || 'General Chat'}</p>
                   </div>
                 </div>
                 <div className="chat-actions">
@@ -170,14 +168,14 @@ function Messages() {
               </div>
 
               <div className="messages-area">
-                {currentMessages.map(message => (
+                {messages.map(message => (
                   <div
-                    key={message.id}
+                    key={message._id}
                     className={`message ${message.isOwn ? 'message-own' : 'message-other'}`}
                   >
                     <div className="message-content">
-                      <p>{message.message}</p>
-                      <span className="message-timestamp">{message.timestamp}</span>
+                      <p>{message.content}</p>
+                      <span className="message-timestamp">{formatTimestamp(message.createdAt)}</span>
                     </div>
                   </div>
                 ))}
