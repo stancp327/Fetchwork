@@ -6,6 +6,9 @@ import jobService from '../services/jobService';
 function PostJob() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  const today = new Date().toISOString().split('T')[0];
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -34,10 +37,18 @@ function PostJob() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'deadline') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     if (errors[name]) {
       setErrors(prev => ({
@@ -88,13 +99,30 @@ function PostJob() {
       setIsLoading(true);
       
       try {
+        let formattedDeadline = '';
+        if (formData.deadline) {
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(formData.deadline)) {
+            formattedDeadline = new Date(formData.deadline + 'T00:00:00.000Z').toISOString();
+          } else {
+            const date = new Date(formData.deadline);
+            if (!isNaN(date.getTime())) {
+              formattedDeadline = date.toISOString();
+            } else {
+              throw new Error('Invalid date format');
+            }
+          }
+        }
+        
+        console.log('Sending deadline:', formattedDeadline);
+        
         const response = await jobService.createJob({
           title: formData.title,
           description: formData.description,
           category: formData.category,
-          budget: formData.budget,
+          budget: parseFloat(formData.budget),
           budgetType: formData.budgetType,
-          deadline: formData.deadline,
+          deadline: formattedDeadline,
           skills: formData.skills
         });
         
@@ -105,6 +133,7 @@ function PostJob() {
           setErrors({ general: response.message || 'Failed to post job' });
         }
       } catch (error) {
+        console.error('Job creation error:', error);
         setErrors({ general: 'Failed to post job. Please try again.' });
       } finally {
         setIsLoading(false);
@@ -234,12 +263,12 @@ function PostJob() {
             <div className="form-group">
               <label htmlFor="deadline">Project Deadline *</label>
               <input
-                type="date"
+                type="text"
                 id="deadline"
                 name="deadline"
                 value={formData.deadline}
                 onChange={handleInputChange}
-                min={new Date().toISOString().split('T')[0]}
+                placeholder="YYYY-MM-DD (e.g., 2025-08-15)"
                 className={errors.deadline ? 'error' : ''}
               />
               {errors.deadline && <span className="error-message">{errors.deadline}</span>}
