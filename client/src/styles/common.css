@@ -1,0 +1,904 @@
+/* Additional styling for pages and components */
+
+.error {
+  border-color: #ff6b6b !important;
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.error-banner {
+  background-color: #ffe6e6;
+  color: #d63031;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #ff6b6b;
+}
+
+.success-banner {
+  background-color: #e6ffe6;
+  color: #00b894;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #00b894;
+}
+
+/* Auth pages styling */
+.auth-container {
+  min-height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  padding: 2rem;
+}
+
+.auth-card {
+  max-width: 500px;
+  width: 100%;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+  color: #282c34;
+  margin-bottom: 0.5rem;
+}
+
+.auth-form {
+  margin-bottom: 1.5rem;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 1rem;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.forgot-link, .auth-link {
+  color: #61dafb;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.forgot-link:hover, .auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #ddd;
+}
+
+.auth-divider span {
+  background: white;
+  padding: 0 1rem;
+  color: #666;
+}
+
+.social-login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.social-btn {
+  width: 100%;
+  padding: 0.75rem;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+/* User type selection */
+.user-type-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.user-type-card {
+  text-align: center;
+  padding: 2rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.user-type-card:hover {
+  border-color: #61dafb;
+  transform: translateY(-2px);
+}
+
+.user-type-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.user-type-card h3 {
+  color: #282c34;
+  margin-bottom: 0.5rem;
+}
+
+.user-type-card ul {
+  text-align: left;
+  margin: 1rem 0;
+  padding-left: 1rem;
+}
+
+.user-type-card li {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Messages page styling */
+.messages-page {
+  height: calc(100vh - 70px);
+}
+
+.messages-container {
+  display: flex;
+  height: 100%;
+}
+
+.conversations-sidebar {
+  width: 350px;
+  border-right: 1px solid #ddd;
+  background: white;
+}
+
+.sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.conversations-list {
+  overflow-y: auto;
+  height: calc(100% - 80px);
+}
+
+.conversation-item {
+  display: flex;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.conversation-item:hover {
+  background-color: #f8f9fa;
+}
+
+.conversation-item.active {
+  background-color: #e3f2fd;
+}
+
+.conversation-avatar {
+  font-size: 2rem;
+  margin-right: 1rem;
+}
+
+.conversation-info {
+  flex: 1;
+}
+
+.conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.conversation-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.timestamp {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.project-name {
+  font-size: 0.8rem;
+  color: #61dafb;
+  margin: 0.25rem 0;
+}
+
+.last-message {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread-badge {
+  background-color: #61dafb;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.chat-header {
+  padding: 1rem;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chat-avatar {
+  font-size: 2rem;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.messages-area {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  background-color: #f8f9fa;
+}
+
+.message {
+  margin-bottom: 1rem;
+  display: flex;
+}
+
+.message-own {
+  justify-content: flex-end;
+}
+
+.message-content {
+  max-width: 70%;
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  position: relative;
+}
+
+.message-own .message-content {
+  background-color: #61dafb;
+  color: white;
+}
+
+.message-other .message-content {
+  background-color: white;
+  border: 1px solid #ddd;
+}
+
+.message-timestamp {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.message-input-area {
+  padding: 1rem;
+  border-top: 1px solid #ddd;
+}
+
+.message-input-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.message-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 25px;
+  outline: none;
+}
+
+.attachment-btn, .send-btn {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.attachment-btn {
+  background: #f8f9fa;
+}
+
+.send-btn {
+  background: #61dafb;
+  color: white;
+}
+
+.no-conversation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+}
+
+/* Dashboard styling */
+.dashboard-stats {
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #282c34;
+  margin: 0.5rem 0;
+}
+
+.stat-change {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.stat-change.positive {
+  color: #00b894;
+}
+
+.stat-change.negative {
+  color: #e17055;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.job-list, .project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-item, .project-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 5px;
+}
+
+.job-info, .project-info {
+  flex: 1;
+}
+
+.job-info h4, .project-info h4 {
+  margin: 0 0 0.25rem 0;
+  color: #282c34;
+}
+
+.job-info p, .project-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.job-status, .project-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.status.in-progress {
+  background-color: #ffeaa7;
+  color: #fdcb6e;
+}
+
+.status.completed {
+  background-color: #d1f2eb;
+  color: #00b894;
+}
+
+.status.review {
+  background-color: #e3f2fd;
+  color: #0984e3;
+}
+
+.status.disputed {
+  background-color: #ffe6e6;
+  color: #e17055;
+}
+
+.budget, .earnings {
+  font-weight: bold;
+  color: #282c34;
+}
+
+/* Profile styling */
+.profile-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.avatar-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  border: 3px solid #ddd;
+}
+
+.skills-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skill-tag {
+  background-color: #61dafb;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+}
+
+.experience-item {
+  border: 1px solid #eee;
+  border-radius: 5px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.experience-display h4 {
+  margin: 0 0 0.5rem 0;
+  color: #282c34;
+}
+
+.company {
+  font-weight: bold;
+  color: #61dafb;
+  margin: 0.25rem 0;
+}
+
+.duration {
+  font-style: italic;
+  color: #666;
+  margin: 0.25rem 0;
+}
+
+.description {
+  margin: 0.5rem 0 0 0;
+  line-height: 1.5;
+}
+
+/* Admin dashboard styling */
+.admin-stats {
+  margin-bottom: 2rem;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.admin-tabs button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.admin-tabs button:hover {
+  background-color: #f8f9fa;
+}
+
+.admin-tabs button.tab-active {
+  border-bottom-color: #61dafb;
+  color: #61dafb;
+}
+
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.tab-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.search-input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 200px;
+}
+
+.users-table, .jobs-table, .disputes-table {
+  overflow-x: auto;
+}
+
+.users-table table, .jobs-table table, .disputes-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th, .jobs-table th, .disputes-table th,
+.users-table td, .jobs-table td, .disputes-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.users-table th, .jobs-table th, .disputes-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.status.active {
+  background-color: #d1f2eb;
+  color: #00b894;
+}
+
+.status.suspended {
+  background-color: #ffe6e6;
+  color: #e17055;
+}
+
+.status.open {
+  background-color: #ffeaa7;
+  color: #fdcb6e;
+}
+
+.status.resolved {
+  background-color: #d1f2eb;
+  color: #00b894;
+}
+
+.btn-danger {
+  background-color: #e17055;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #d63031;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+}
+
+.activity-icon {
+  font-size: 1.2rem;
+}
+
+.activity-time {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.payment-controls, .payment-stats {
+  margin-bottom: 2rem;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.payment-stat h5 {
+  margin: 0 0 0.5rem 0;
+  color: #666;
+}
+
+.payment-stat p {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #282c34;
+}
+
+/* Browse services styling */
+.search-filters {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.search-bar {
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+}
+
+.filters .form-group {
+  flex: 1;
+}
+
+.services-grid {
+  margin-top: 2rem;
+}
+
+.service-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.service-image {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.service-icon {
+  font-size: 3rem;
+}
+
+.service-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #282c34;
+}
+
+.service-description {
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.service-freelancer {
+  margin-bottom: 0.5rem;
+}
+
+.service-freelancer span {
+  color: #61dafb;
+  font-size: 0.9rem;
+}
+
+.service-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.rating {
+  color: #f39c12;
+  font-size: 0.9rem;
+}
+
+.reviews {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.service-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.service-price {
+  font-weight: bold;
+  color: #282c34;
+}
+
+.no-results {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+/* Post job styling */
+.job-form {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-section h2 {
+  margin: 0 0 1.5rem 0;
+  color: #282c34;
+  border-bottom: 2px solid #61dafb;
+  padding-bottom: 0.5rem;
+}
+
+.radio-group {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .user-type-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .messages-container {
+    flex-direction: column;
+  }
+  
+  .conversations-sidebar {
+    width: 100%;
+    height: 40%;
+  }
+  
+  .filters {
+    flex-direction: column;
+  }
+  
+  .dashboard-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .admin-actions {
+    flex-direction: column;
+  }
+  
+  .tab-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .radio-group {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+}
