@@ -51,6 +51,8 @@
 .filter-row {
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .filter-select {
@@ -206,6 +208,40 @@
   color: #4a5568;
   font-size: 24px;
   margin-bottom: 10px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-weight: 500;
+  color: #666;
 }
 
 @media (max-width: 768px) {

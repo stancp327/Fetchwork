@@ -12,22 +12,23 @@ const Navigation = () => {
   const getNavigationItems = () => {
     const commonItems = [
       { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
+      { path: '/search', label: 'Search', icon: '🔍' },
       { path: '/profile', label: 'Profile', icon: '👤' },
       { path: '/messages', label: 'Messages', icon: '💬' }
     ];
 
     if (user?.userType === 'freelancer') {
       return [
-        ...commonItems.slice(0, 1),
-        { path: '/browse-jobs', label: 'Browse Jobs', icon: '🔍' },
-        ...commonItems.slice(1)
+        ...commonItems.slice(0, 2),
+        { path: '/browse-jobs', label: 'Browse Jobs', icon: '💼' },
+        ...commonItems.slice(2)
       ];
     } else {
       return [
-        ...commonItems.slice(0, 1),
+        ...commonItems.slice(0, 2),
         { path: '/post-job', label: 'Post Job', icon: '📝' },
         { path: '/browse-jobs', label: 'Browse Freelancers', icon: '👥' },
-        ...commonItems.slice(1)
+        ...commonItems.slice(2)
       ];
     }
   };

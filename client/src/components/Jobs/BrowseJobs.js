@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './Jobs.css';
 
 const BrowseJobs = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [budgetRange, setBudgetRange] = useState('all');
+  const [experienceLevel, setExperienceLevel] = useState('all');
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -18,11 +21,35 @@ const BrowseJobs = () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (experienceLevel !== 'all') params.append('experienceLevel', experienceLevel);
+      
+      if (budgetRange !== 'all') {
+        switch (budgetRange) {
+          case 'Under $500':
+            params.append('maxBudget', '500');
+            break;
+          case '$500 - $1,000':
+            params.append('minBudget', '500');
+            params.append('maxBudget', '1000');
+            break;
+          case '$1,000 - $3,000':
+            params.append('minBudget', '1000');
+            params.append('maxBudget', '3000');
+            break;
+          case '$3,000+':
+            params.append('minBudget', '3000');
+            break;
+        }
+      }
+      
+      params.append('page', currentPage);
+      params.append('limit', '10');
 
       const response = await fetch(`${API_BASE_URL}/api/jobs?${params}`);
       if (response.ok) {
         const data = await response.json();
         setJobs(data.jobs || []);
+        setTotalPages(data.totalPages || 1);
       } else {
         console.error('Failed to fetch jobs');
         setJobs([]);
@@ -33,11 +60,22 @@ const BrowseJobs = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, budgetRange, experienceLevel, currentPage]);
+
+  const debouncedSearchTerm = useMemo(() => {
+    const timeoutId = setTimeout(() => searchTerm, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, selectedCategory, budgetRange, experienceLevel]);
 
 
   const formatBudget = (budget) => {
@@ -59,8 +97,9 @@ const BrowseJobs = () => {
     return `${diffInDays} days ago`;
   };
 
-  const categories = ['all', 'Web Development', 'Design', 'Writing', 'Data Science', 'Marketing'];
+  const categories = ['all', 'Web Development', 'Mobile Development', 'Design', 'Writing', 'Data Science', 'Marketing', 'Video & Animation', 'Music & Audio', 'Programming & Tech', 'Business'];
   const budgetRanges = ['all', 'Under $500', '$500 - $1,000', '$1,000 - $3,000', '$3,000+'];
+  const experienceLevels = ['all', 'entry', 'intermediate', 'expert'];
 
   const filteredJobs = jobs;
 
@@ -106,6 +145,18 @@ const BrowseJobs = () => {
               </option>
             ))}
           </select>
+
+          <select
+            value={experienceLevel}
+            onChange={(e) => setExperienceLevel(e.target.value)}
+            className="filter-select"
+          >
+            {experienceLevels.map(level => (
+              <option key={level} value={level}>
+                {level === 'all' ? 'All Experience Levels' : level.charAt(0).toUpperCase() + level.slice(1)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -148,10 +199,34 @@ const BrowseJobs = () => {
         )}
       </div>
 
-      {filteredJobs.length === 0 && (
+      {filteredJobs.length === 0 && !loading && (
         <div className="no-jobs">
           <h3>No jobs found</h3>
           <p>Try adjusting your search criteria or check back later for new opportunities.</p>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button 
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="pagination-btn"
+          >
+            Previous
+          </button>
+          
+          <span className="pagination-info">
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <button 
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="pagination-btn"
+          >
+            Next
+          </button>
         </div>
       )}
     </div>
