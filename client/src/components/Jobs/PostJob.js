@@ -41,23 +41,57 @@ const PostJob = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:10000'
+        : 'https://user:31bfdb3e3b3497d64ac61e2dd563996c@fetchwork-verification-app-tunnel-guxp61eo.devinapps.com';
+
+      const response = await fetch(`${API_BASE_URL}/api/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          budget: {
+            amount: parseFloat(formData.budget),
+            type: formData.budgetType
+          },
+          skills: formData.skills ? formData.skills.split(',').map(skill => skill.trim()).filter(skill => skill) : [],
+          duration: formData.duration,
+          experienceLevel: formData.experienceLevel
+        })
+      });
+
+      if (response.ok) {
+        setIsSubmitting(false);
+        setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+          setFormData({
+            title: '',
+            description: '',
+            category: 'Web Development',
+            budget: '',
+            budgetType: 'fixed',
+            skills: '',
+            duration: 'less-than-1-month',
+            experienceLevel: 'intermediate'
+          });
+        }, 3000);
+      } else {
+        const errorData = await response.json();
+        setIsSubmitting(false);
+        alert(errorData.message || 'Failed to post job');
+      }
+    } catch (error) {
       setIsSubmitting(false);
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setFormData({
-          title: '',
-          description: '',
-          category: 'Web Development',
-          budget: '',
-          budgetType: 'fixed',
-          skills: '',
-          duration: 'less-than-1-month',
-          experienceLevel: 'intermediate'
-        });
-      }, 3000);
-    }, 1500);
+      alert('Error posting job: ' + error.message);
+    }
   };
 
   // if (user?.userType !== 'client') {

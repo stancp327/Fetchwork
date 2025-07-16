@@ -1,73 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Jobs.css';
 
 const BrowseJobs = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [budgetRange, setBudgetRange] = useState('all');
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const sampleJobs = [
-    {
-      id: 1,
-      title: 'React Developer for E-commerce Platform',
-      description: 'Looking for an experienced React developer to build a modern e-commerce platform with payment integration.',
-      budget: '$2,500 - $5,000',
-      category: 'Web Development',
-      client: 'TechCorp Solutions',
-      posted: '2 hours ago',
-      proposals: 8,
-      skills: ['React', 'Node.js', 'MongoDB', 'Stripe']
-    },
-    {
-      id: 2,
-      title: 'Mobile App UI/UX Design',
-      description: 'Need a talented designer to create modern, user-friendly interfaces for our fitness tracking mobile app.',
-      budget: '$1,200 - $2,000',
-      category: 'Design',
-      client: 'FitLife Inc',
-      posted: '5 hours ago',
-      proposals: 12,
-      skills: ['Figma', 'Mobile Design', 'Prototyping', 'User Research']
-    },
-    {
-      id: 3,
-      title: 'Content Writer for Tech Blog',
-      description: 'Seeking a skilled content writer to create engaging articles about emerging technologies and software development.',
-      budget: '$500 - $800',
-      category: 'Writing',
-      client: 'DevBlog Media',
-      posted: '1 day ago',
-      proposals: 15,
-      skills: ['Technical Writing', 'SEO', 'Research', 'Technology']
-    },
-    {
-      id: 4,
-      title: 'Python Data Analysis Project',
-      description: 'Need help analyzing customer data and creating visualizations for business insights.',
-      budget: '$800 - $1,500',
-      category: 'Data Science',
-      client: 'Analytics Pro',
-      posted: '2 days ago',
-      proposals: 6,
-      skills: ['Python', 'Pandas', 'Matplotlib', 'SQL']
+  const fetchJobs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:10000'
+        : 'https://user:31bfdb3e3b3497d64ac61e2dd563996c@fetchwork-verification-app-tunnel-guxp61eo.devinapps.com';
+
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (selectedCategory !== 'all') params.append('category', selectedCategory);
+
+      const response = await fetch(`${API_BASE_URL}/api/jobs?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setJobs(data.jobs || []);
+      } else {
+        console.error('Failed to fetch jobs');
+        setJobs([]);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      setJobs([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, [searchTerm, selectedCategory]);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+
+  const formatBudget = (budget) => {
+    if (budget.type === 'fixed') {
+      return `$${budget.amount} (Fixed)`;
+    } else {
+      return `$${budget.amount}/hr`;
+    }
+  };
+
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const posted = new Date(date);
+    const diffInHours = Math.floor((now - posted) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just posted';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} days ago`;
+  };
 
   const categories = ['all', 'Web Development', 'Design', 'Writing', 'Data Science', 'Marketing'];
   const budgetRanges = ['all', 'Under $500', '$500 - $1,000', '$1,000 - $3,000', '$3,000+'];
 
-  const filteredJobs = sampleJobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || job.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredJobs = jobs;
 
   return (
     <div className="browse-jobs">
       <div className="jobs-header">
         <h1>Browse Jobs</h1>
-        <p>Find your next opportunity from {sampleJobs.length} available projects</p>
+        <p>Find your next opportunity from {jobs.length} available projects</p>
       </div>
 
       <div className="jobs-filters">
@@ -109,38 +110,42 @@ const BrowseJobs = () => {
       </div>
 
       <div className="jobs-list">
-        {filteredJobs.map(job => (
-          <div key={job.id} className="job-card">
-            <div className="job-header">
-              <h3 className="job-title">{job.title}</h3>
-              <div className="job-budget">{job.budget}</div>
-            </div>
-            
-            <p className="job-description">{job.description}</p>
-            
-            <div className="job-skills">
-              {job.skills.map(skill => (
-                <span key={skill} className="skill-tag">{skill}</span>
-              ))}
-            </div>
-            
-            <div className="job-meta">
-              <div className="job-client">
-                <strong>Client:</strong> {job.client}
+        {loading ? (
+          <div className="loading">Loading jobs...</div>
+        ) : (
+          filteredJobs.map(job => (
+            <div key={job._id} className="job-card">
+              <div className="job-header">
+                <h3 className="job-title">{job.title}</h3>
+                <div className="job-budget">{formatBudget(job.budget)}</div>
               </div>
-              <div className="job-stats">
-                <span>{job.proposals} proposals</span>
-                <span>•</span>
-                <span>{job.posted}</span>
+              
+              <p className="job-description">{job.description}</p>
+              
+              <div className="job-skills">
+                {job.skills.map(skill => (
+                  <span key={skill} className="skill-tag">{skill}</span>
+                ))}
+              </div>
+              
+              <div className="job-meta">
+                <div className="job-client">
+                  <strong>Client:</strong> {job.client?.profile?.firstName || 'Anonymous'} {job.client?.profile?.lastName || ''}
+                </div>
+                <div className="job-stats">
+                  <span>{job.applications?.length || 0} proposals</span>
+                  <span>•</span>
+                  <span>{formatTimeAgo(job.createdAt)}</span>
+                </div>
+              </div>
+              
+              <div className="job-actions">
+                <button className="apply-btn">Apply Now</button>
+                <button className="save-btn">Save Job</button>
               </div>
             </div>
-            
-            <div className="job-actions">
-              <button className="apply-btn">Apply Now</button>
-              <button className="save-btn">Save Job</button>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {filteredJobs.length === 0 && (
