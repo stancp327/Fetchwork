@@ -9,13 +9,16 @@ const auth = require('../middleware/auth');
 
 const requireAdmin = async (req, res, next) => {
   try {
+    console.log('Checking admin access for user:', req.user.userId);
     const admin = await Admin.getAdminByUserId(req.user.userId);
+    console.log('Admin found:', admin ? 'Yes' : 'No');
     if (!admin) {
       return res.status(403).json({ message: 'Admin access required' });
     }
     req.admin = admin;
     next();
   } catch (error) {
+    console.error('Admin middleware error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
