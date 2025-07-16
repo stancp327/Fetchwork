@@ -18,9 +18,28 @@ const userSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['freelancer', 'client'],
+    enum: ['freelancer', 'client', 'admin'],
     required: true
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  isBanned: {
+    type: Boolean,
+    default: false
+  },
+  suspendedAt: Date,
+  suspendedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  bannedAt: Date,
+  bannedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  banReason: String,
   bio: {
     type: String,
     default: ''

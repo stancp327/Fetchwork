@@ -24,6 +24,9 @@ const Navigation = () => {
         <Link to="/post-job">Post Job</Link>
         <Link to="/profile">Profile</Link>
         <Link to="/messages">Messages</Link>
+        {user && user.userType === 'admin' && (
+          <Link to="/admin" className="admin-link">Admin</Link>
+        )}
       </div>
       <div className="nav-user">
         <span>Welcome, {user.name}</span>

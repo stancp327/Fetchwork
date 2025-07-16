@@ -8,6 +8,7 @@ import BrowseJobs from './components/BrowseJobs';
 import PostJob from './components/PostJob';
 import Profile from './components/Profile';
 import Messages from './components/Messages';
+import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
 const AppRoutes = () => {
@@ -44,6 +45,11 @@ const AppRoutes = () => {
       <Route path="/messages" element={
         <ProtectedRoute>
           <Messages />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin" element={
+        <ProtectedRoute>
+          <AdminDashboard />
         </ProtectedRoute>
       } />
     </Routes>

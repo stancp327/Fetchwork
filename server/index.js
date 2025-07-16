@@ -23,6 +23,7 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/admin', require('./routes/admin'));
 
 app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
