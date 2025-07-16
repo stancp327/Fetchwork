@@ -31,10 +31,22 @@ const AdminDashboard = () => {
       ]);
 
       if (statsRes.ok) setStats(await statsRes.json());
-      if (usersRes.ok) setUsers(await usersRes.json());
-      if (jobsRes.ok) setJobs(await jobsRes.json());
-      if (paymentsRes.ok) setPayments(await paymentsRes.json());
-      if (reviewsRes.ok) setReviews(await reviewsRes.json());
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(usersData.users || []);
+      }
+      if (jobsRes.ok) {
+        const jobsData = await jobsRes.json();
+        setJobs(jobsData.jobs || []);
+      }
+      if (paymentsRes.ok) {
+        const paymentsData = await paymentsRes.json();
+        setPayments(paymentsData.payments || []);
+      }
+      if (reviewsRes.ok) {
+        const reviewsData = await reviewsRes.json();
+        setReviews(reviewsData.reviews || []);
+      }
 
       setError('');
     } catch (error) {
@@ -205,7 +217,7 @@ const AdminDashboard = () => {
                 <div className="users-tab">
                   <h2>User Management</h2>
                   <div className="users-list">
-                    {users.map(user => (
+                    {users && users.length > 0 ? users.map(user => (
                       <div key={user._id} className="user-item">
                         <div className="user-info">
                           <h4>{user.name}</h4>
@@ -239,7 +251,7 @@ const AdminDashboard = () => {
                           </button>
                         </div>
                       </div>
-                    ))}
+                    )) : <p>No users found</p>}
                   </div>
                 </div>
               )}
@@ -248,7 +260,7 @@ const AdminDashboard = () => {
                 <div className="jobs-tab">
                   <h2>Job Management</h2>
                   <div className="jobs-list">
-                    {jobs.map(job => (
+                    {jobs && jobs.length > 0 ? jobs.map(job => (
                       <div key={job._id} className="job-item">
                         <div className="job-info">
                           <h4>{job.title}</h4>
@@ -260,7 +272,7 @@ const AdminDashboard = () => {
                           <button className="view-btn">View Details</button>
                         </div>
                       </div>
-                    ))}
+                    )) : <p>No jobs found</p>}
                   </div>
                 </div>
               )}
@@ -269,7 +281,7 @@ const AdminDashboard = () => {
                 <div className="payments-tab">
                   <h2>Payment Management</h2>
                   <div className="payments-list">
-                    {payments.map(payment => (
+                    {payments && payments.length > 0 ? payments.map(payment => (
                       <div key={payment._id} className="payment-item">
                         <div className="payment-info">
                           <h4>Job: {payment.job?.title}</h4>
@@ -297,7 +309,7 @@ const AdminDashboard = () => {
                           )}
                         </div>
                       </div>
-                    ))}
+                    )) : <p>No payments found</p>}
                   </div>
                 </div>
               )}
@@ -306,7 +318,7 @@ const AdminDashboard = () => {
                 <div className="reviews-tab">
                   <h2>Review Moderation</h2>
                   <div className="reviews-list">
-                    {reviews.map(review => (
+                    {reviews && reviews.length > 0 ? reviews.map(review => (
                       <div key={review._id} className="review-item">
                         <div className="review-info">
                           <h4>Job: {review.job?.title}</h4>
@@ -331,7 +343,7 @@ const AdminDashboard = () => {
                           </button>
                         </div>
                       </div>
-                    ))}
+                    )) : <p>No reviews found</p>}
                   </div>
                 </div>
               )}
