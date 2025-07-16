@@ -23,7 +23,32 @@ const userSchema = new mongoose.Schema({
     bio: String,
     skills: [String],
     profilePicture: String,
-    location: String
+    location: String,
+    hourlyRate: Number,
+    experience: {
+      type: String,
+      enum: ['entry', 'intermediate', 'expert'],
+      default: 'intermediate'
+    },
+    workHistory: [{
+      title: String,
+      company: String,
+      description: String,
+      startDate: Date,
+      endDate: Date,
+      current: Boolean
+    }],
+    portfolio: [{
+      title: String,
+      description: String,
+      imageUrl: String,
+      projectUrl: String,
+      technologies: [String]
+    }],
+    rating: {
+      average: { type: Number, default: 0 },
+      count: { type: Number, default: 0 }
+    }
   }
 }, {
   timestamps: true

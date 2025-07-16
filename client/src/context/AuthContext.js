@@ -88,11 +88,33 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateProfile = async (profileData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`${API_BASE_URL}/api/profile`, profileData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const { user: userData } = response.data;
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return { success: true, message: 'Profile updated successfully' };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Profile update failed' 
+      };
+    }
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
+    updateProfile,
     loading
   };
 

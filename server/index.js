@@ -21,7 +21,9 @@ app.use(cors({
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');
+const profileRoutes = require('./routes/profile');
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)

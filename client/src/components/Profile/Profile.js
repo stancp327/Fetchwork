@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import './Profile.css';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     firstName: user?.profile?.firstName || '',
@@ -22,11 +22,29 @@ const Profile = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setTimeout(() => {
+    
+    const profileData = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      bio: formData.bio,
+      location: formData.location,
+      skills: formData.skills
+    };
+
+    if (user?.userType === 'freelancer') {
+      profileData.hourlyRate = formData.hourlyRate;
+      profileData.experience = formData.experience;
+    }
+
+    const result = await updateProfile(profileData);
+    
+    if (result.success) {
       setIsEditing(false);
-    }, 1000);
+    } else {
+      alert(result.message || 'Failed to update profile');
+    }
   };
 
   const handleCancel = () => {
