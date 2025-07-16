@@ -16,6 +16,7 @@ import UniversalSearch from './components/Search/UniversalSearch';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import ProjectManagement from './components/Projects/ProjectManagement';
 import Security from './components/Security/Security';
+import ChatBot from './components/ChatBot/ChatBot';
 import Navigation from './components/Navigation/Navigation';
 import './App.css';
 
@@ -46,6 +47,7 @@ function AppContent() {
   return (
     <div className="App">
       <Navigation />
+      <ChatBot />
       <Routes>
         <Route path="/login" element={
           <PublicRoute>

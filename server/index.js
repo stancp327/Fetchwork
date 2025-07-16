@@ -44,6 +44,7 @@ const paymentRoutes = require('./routes/payments');
 const reviewRoutes = require('./routes/reviews');
 const adminRoutes = require('./routes/admin');
 const projectRoutes = require('./routes/projects');
+const chatbotRoutes = require('./routes/chatbot');
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/jobs', jobRoutes);
@@ -53,6 +54,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
