@@ -2,6 +2,8 @@
 
 All-in-one freelance platform for remote and local services with secure payments, messaging, and AI support.
 
+> **Note**: This project uses Node.js v18.20.4 for optimal compatibility.
+
 ## Structure
 
 - `client/` - React frontend
