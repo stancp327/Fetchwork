@@ -11,6 +11,7 @@ import PostJob from './components/Jobs/PostJob';
 import Profile from './components/Profile/Profile';
 import Messages from './components/Messages/Messages';
 import Payments from './components/Payments/Payments';
+import Reviews from './components/Reviews/Reviews';
 import UniversalSearch from './components/Search/UniversalSearch';
 import Navigation from './components/Navigation/Navigation';
 import './App.css';
@@ -81,6 +82,11 @@ function AppContent() {
         <Route path="/payments" element={
           <ProtectedRoute>
             <Payments />
+          </ProtectedRoute>
+        } />
+        <Route path="/reviews" element={
+          <ProtectedRoute>
+            <Reviews />
           </ProtectedRoute>
         } />
         <Route path="/search" element={
