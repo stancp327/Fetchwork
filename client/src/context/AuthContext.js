@@ -3,6 +3,15 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
+const getApiBaseUrl = () => {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:10000';
+  }
+  return 'https://fetchwork-verification-app-tunnel-o4fzxnj8.devinapps.com';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -29,7 +38,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:10000/api/auth/login', {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
         email,
         password
       });
@@ -50,7 +59,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (email, password, userType, firstName, lastName) => {
     try {
-      const response = await axios.post('http://localhost:10000/api/auth/register', {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, {
         email,
         password,
         userType,

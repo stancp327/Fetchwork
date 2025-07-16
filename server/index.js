@@ -10,7 +10,13 @@ const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://fetchwork-verification-app-tunnel-9z8nqh3b.devinapps.com'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 const authRoutes = require('./routes/auth');
