@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -37,7 +38,7 @@ function AppContent() {
 
   return (
     <div className="App">
-      {user && <Navigation />}
+      <Navigation />
       <Routes>
         <Route path="/login" element={
           <PublicRoute>
@@ -74,7 +75,7 @@ function AppContent() {
             <Messages />
           </ProtectedRoute>
         } />
-        <Route path="/" element={<Navigate to="/dashboard" />} />
+        <Route path="/" element={<Home />} />
       </Routes>
     </div>
   );
