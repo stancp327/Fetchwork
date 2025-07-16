@@ -7,7 +7,7 @@ const getApiBaseUrl = () => {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:10000';
   }
-  return 'https://fetchwork-verification-app-tunnel-o4fzxnj8.devinapps.com';
+  return 'https://fetchwork-verification-app-tunnel-guxp61eo.devinapps.com';
 };
 
 const API_BASE_URL = getApiBaseUrl();
