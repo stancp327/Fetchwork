@@ -1,82 +1,140 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import Navigation from './Navigation';
 
 const Messages = () => {
-  const [selectedConversation, setSelectedConversation] = useState(0);
+  const { token, user } = useAuth();
+  const [selectedConversation, setSelectedConversation] = useState(null);
   const [newMessage, setNewMessage] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const conversations = [
-    {
-      id: 1,
-      name: 'TechCorp Inc.',
-      lastMessage: 'Thanks for your proposal. When can you start?',
-      time: '2 hours ago',
-      unread: 2,
-      avatar: 'T'
-    },
-    {
-      id: 2,
-      name: 'StartupXYZ',
-      lastMessage: 'The logo designs look great!',
-      time: '5 hours ago',
-      unread: 0,
-      avatar: 'S'
-    },
-    {
-      id: 3,
-      name: 'Digital Agency',
-      lastMessage: 'Can you send the first draft by Friday?',
-      time: '1 day ago',
-      unread: 1,
-      avatar: 'D'
+  useEffect(() => {
+    if (token) {
+      fetchConversations();
     }
-  ];
+  }, [token]);
 
-  const messages = [
-    {
-      id: 1,
-      sender: 'TechCorp Inc.',
-      content: 'Hi! We reviewed your profile and are interested in your React development services.',
-      time: '10:30 AM',
-      isOwn: false
-    },
-    {
-      id: 2,
-      sender: 'You',
-      content: 'Thank you for reaching out! I\'d be happy to help with your project. Could you provide more details about the requirements?',
-      time: '10:45 AM',
-      isOwn: true
-    },
-    {
-      id: 3,
-      sender: 'TechCorp Inc.',
-      content: 'We need a modern e-commerce platform built with React and Node.js. The timeline is about 6 weeks.',
-      time: '11:00 AM',
-      isOwn: false
-    },
-    {
-      id: 4,
-      sender: 'You',
-      content: 'That sounds like a great project! I have extensive experience with React and Node.js. My rate is $50/hour. Would you like to schedule a call to discuss the details?',
-      time: '11:15 AM',
-      isOwn: true
-    },
-    {
-      id: 5,
-      sender: 'TechCorp Inc.',
-      content: 'Thanks for your proposal. When can you start?',
-      time: '2 hours ago',
-      isOwn: false
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation._id);
     }
-  ];
+  }, [selectedConversation]);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (newMessage.trim()) {
-      console.log('Sending message:', newMessage);
-      setNewMessage('');
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/messages/conversations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setConversations(data);
+        if (data.length > 0 && !selectedConversation) {
+          setSelectedConversation(data[0]);
+        }
+        setError('');
+      } else {
+        setError(data.message || 'Failed to fetch conversations');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const fetchMessages = async (conversationId) => {
+    try {
+      const response = await fetch(`/api/messages/conversations/${conversationId}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessages(data);
+        setError('');
+      } else {
+        setError(data.message || 'Failed to fetch messages');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedConversation) return;
+
+    try {
+      const response = await fetch(`/api/messages/conversations/${selectedConversation._id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content: newMessage.trim()
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setNewMessage('');
+        fetchMessages(selectedConversation._id);
+        fetchConversations();
+      } else {
+        setError(result.message || 'Failed to send message');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Less than an hour ago';
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  };
+
+  const formatMessageTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getOtherParticipant = (conversation) => {
+    return conversation.participants.find(p => p._id !== user._id);
+  };
+
+  if (!token) {
+    return (
+      <div>
+        <Navigation />
+        <div className="page-container">
+          <div className="messages">
+            <h1>Messages</h1>
+            <p>Please log in to view your messages.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -85,78 +143,97 @@ const Messages = () => {
         <div className="messages">
           <h1>Messages</h1>
           
-          <div className="messages-container">
+          {error && <div className="error-message">{error}</div>}
+          
+          {loading ? (
+            <div className="loading">Loading conversations...</div>
+          ) : conversations.length === 0 ? (
+            <div className="no-conversations">
+              <p>No conversations yet. Start by applying to jobs or posting your own!</p>
+            </div>
+          ) : (
+            <div className="messages-container"></div>
+          )}
             <div className="conversations-list">
               <h3>Conversations</h3>
-              {conversations.map((conversation, index) => (
-                <div
-                  key={conversation.id}
-                  className={`conversation-item ${selectedConversation === index ? 'active' : ''}`}
-                  onClick={() => setSelectedConversation(index)}
-                >
-                  <div className="conversation-avatar">
-                    {conversation.avatar}
-                  </div>
-                  <div className="conversation-info">
-                    <div className="conversation-header">
-                      <span className="conversation-name">{conversation.name}</span>
-                      <span className="conversation-time">{conversation.time}</span>
+              {conversations.map((conversation) => {
+                const otherParticipant = getOtherParticipant(conversation);
+                return (
+                  <div
+                    key={conversation._id}
+                    className={`conversation-item ${selectedConversation?._id === conversation._id ? 'active' : ''}`}
+                    onClick={() => setSelectedConversation(conversation)}
+                  >
+                    <div className="conversation-avatar">
+                      {otherParticipant?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <div className="conversation-preview">
-                      <span className="last-message">{conversation.lastMessage}</span>
-                      {conversation.unread > 0 && (
-                        <span className="unread-badge">{conversation.unread}</span>
-                      )}
+                    <div className="conversation-info">
+                      <div className="conversation-header">
+                        <span className="conversation-name">{otherParticipant?.name || 'Unknown User'}</span>
+                        <span className="conversation-time">{formatTimeAgo(conversation.lastActivity)}</span>
+                      </div>
+                      <div className="conversation-preview">
+                        <span className="last-message">
+                          {conversation.lastMessage?.content || 'No messages yet'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <div className="chat-area">
-              <div className="chat-header">
-                <div className="chat-user-info">
-                  <div className="chat-avatar">
-                    {conversations[selectedConversation]?.avatar}
-                  </div>
-                  <span className="chat-user-name">
-                    {conversations[selectedConversation]?.name}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="messages-list">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`message ${message.isOwn ? 'own-message' : 'other-message'}`}
-                  >
-                    <div className="message-content">
-                      {message.content}
-                    </div>
-                    <div className="message-time">
-                      {message.time}
+              {selectedConversation ? (
+                <>
+                  <div className="chat-header">
+                    <div className="chat-user-info">
+                      <div className="chat-avatar">
+                        {getOtherParticipant(selectedConversation)?.name?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <span className="chat-user-name">
+                        {getOtherParticipant(selectedConversation)?.name || 'Unknown User'}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-              
-              <form onSubmit={handleSendMessage} className="message-input-form">
-                <div className="message-input-container">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="message-input"
-                  />
-                  <button type="submit" className="send-btn">
-                    Send
-                  </button>
+                  
+                  <div className="messages-list">
+                    {messages.map((message) => (
+                      <div
+                        key={message._id}
+                        className={`message ${message.sender._id === user._id ? 'own-message' : 'other-message'}`}
+                      >
+                        <div className="message-content">
+                          {message.content}
+                        </div>
+                        <div className="message-time">
+                          {formatMessageTime(message.createdAt)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <form onSubmit={handleSendMessage} className="message-input-form">
+                    <div className="message-input-container">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type your message..."
+                        className="message-input"
+                      />
+                      <button type="submit" className="send-btn">
+                        Send
+                      </button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <div className="no-conversation-selected">
+                  <p>Select a conversation to start messaging</p>
                 </div>
-              </form>
+              )}
             </div>
-          </div>
         </div>
       </div>
     </div>

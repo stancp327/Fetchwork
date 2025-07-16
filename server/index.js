@@ -19,6 +19,7 @@ mongoose.connect(MONGO_URI)
 
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/messages', require('./routes/messages'));
 
 app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
