@@ -45,6 +45,7 @@ const reviewRoutes = require('./routes/reviews');
 const adminRoutes = require('./routes/admin');
 const projectRoutes = require('./routes/projects');
 const chatbotRoutes = require('./routes/chatbot');
+const contentProtectionRoutes = require('./routes/contentProtection');
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/jobs', jobRoutes);
@@ -55,6 +56,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/content-protection', contentProtectionRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
