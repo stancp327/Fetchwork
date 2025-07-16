@@ -20,6 +20,75 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['freelancer', 'client'],
     required: true
+  },
+  bio: {
+    type: String,
+    default: ''
+  },
+  skills: [{
+    type: String
+  }],
+  hourlyRate: {
+    type: Number,
+    default: 0
+  },
+  location: {
+    type: String,
+    default: ''
+  },
+  phone: {
+    type: String,
+    default: ''
+  },
+  website: {
+    type: String,
+    default: ''
+  },
+  profilePicture: {
+    type: String,
+    default: ''
+  },
+  workHistory: [{
+    title: String,
+    company: String,
+    duration: String,
+    description: String,
+    startDate: Date,
+    endDate: Date
+  }],
+  portfolio: [{
+    title: String,
+    description: String,
+    imageUrl: String,
+    projectUrl: String,
+    technologies: [String],
+    completedDate: Date
+  }],
+  rating: {
+    average: {
+      type: Number,
+      default: 0
+    },
+    count: {
+      type: Number,
+      default: 0
+    }
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationBadges: [{
+    type: String,
+    enum: ['email', 'phone', 'identity', 'payment']
+  }],
+  totalEarnings: {
+    type: Number,
+    default: 0
+  },
+  completedJobs: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
