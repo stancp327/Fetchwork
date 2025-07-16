@@ -18,6 +18,7 @@ mongoose.connect(MONGO_URI)
 .catch((err) => console.error('MongoDB connection error:', err));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/jobs', require('./routes/jobs'));
 
 app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
