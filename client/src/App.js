@@ -13,6 +13,7 @@ import Messages from './components/Messages/Messages';
 import Payments from './components/Payments/Payments';
 import Reviews from './components/Reviews/Reviews';
 import UniversalSearch from './components/Search/UniversalSearch';
+import AdminDashboard from './components/Admin/AdminDashboard';
 import Navigation from './components/Navigation/Navigation';
 import './App.css';
 
@@ -92,6 +93,11 @@ function AppContent() {
         <Route path="/search" element={
           <ProtectedRoute>
             <UniversalSearch />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <AdminDashboard />
           </ProtectedRoute>
         } />
         <Route path="/" element={<Home />} />
