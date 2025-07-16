@@ -1,146 +1,234 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useMessaging } from '../../context/MessagingContext';
 import './Messages.css';
 
 const Messages = () => {
   const { user } = useAuth();
+  const {
+    conversations,
+    messages,
+    connected,
+    typingUsers,
+    onlineUsers,
+    fetchConversations,
+    fetchMessages,
+    sendMessage,
+    createConversation,
+    joinConversation,
+    leaveConversation,
+    sendTypingIndicator
+  } = useMessaging();
+
   const [selectedChat, setSelectedChat] = useState(null);
   const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
+  const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
-  const sampleChats = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      userType: user?.userType === 'freelancer' ? 'client' : 'freelancer',
-      lastMessage: 'Thanks for the quick turnaround on the design!',
-      timestamp: '2 hours ago',
-      unread: 2,
-      avatar: 'SJ',
-      online: true
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      userType: user?.userType === 'freelancer' ? 'client' : 'freelancer',
-      lastMessage: 'Can we schedule a call to discuss the project requirements?',
-      timestamp: '5 hours ago',
-      unread: 0,
-      avatar: 'MC',
-      online: false
-    },
-    {
-      id: 3,
-      name: 'Emma Wilson',
-      userType: user?.userType === 'freelancer' ? 'client' : 'freelancer',
-      lastMessage: 'The website looks great! Just a few minor changes needed.',
-      timestamp: '1 day ago',
-      unread: 1,
-      avatar: 'EW',
-      online: true
-    },
-    {
-      id: 4,
-      name: 'David Rodriguez',
-      userType: user?.userType === 'freelancer' ? 'client' : 'freelancer',
-      lastMessage: 'Payment has been released. Thank you for the excellent work!',
-      timestamp: '2 days ago',
-      unread: 0,
-      avatar: 'DR',
-      online: false
+  useEffect(() => {
+    if (user) {
+      loadConversations();
     }
-  ];
+  }, [user]);
 
-  const sampleMessages = {
-    1: [
-      {
-        id: 1,
-        sender: 'Sarah Johnson',
-        message: 'Hi! I saw your portfolio and I\'m interested in hiring you for a web design project.',
-        timestamp: '10:30 AM',
-        isOwn: false
-      },
-      {
-        id: 2,
-        sender: 'You',
-        message: 'Hello Sarah! Thank you for reaching out. I\'d be happy to help with your project. Could you tell me more about what you\'re looking for?',
-        timestamp: '10:45 AM',
-        isOwn: true
-      },
-      {
-        id: 3,
-        sender: 'Sarah Johnson',
-        message: 'I need a modern, responsive website for my consulting business. The design should be clean and professional.',
-        timestamp: '11:00 AM',
-        isOwn: false
-      },
-      {
-        id: 4,
-        sender: 'You',
-        message: 'That sounds like a great project! I have experience with modern web design and responsive layouts. What\'s your timeline and budget for this project?',
-        timestamp: '11:15 AM',
-        isOwn: true
-      },
-      {
-        id: 5,
-        sender: 'Sarah Johnson',
-        message: 'Thanks for the quick turnaround on the design!',
-        timestamp: '2:30 PM',
-        isOwn: false
-      }
-    ]
+  useEffect(() => {
+    if (selectedChat) {
+      joinConversation(selectedChat.id);
+      loadMessages(selectedChat.id);
+      
+      return () => {
+        leaveConversation(selectedChat.id);
+      };
+    }
+  }, [selectedChat]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, selectedChat]);
+
+  const loadConversations = async () => {
+    setLoading(true);
+    try {
+      await fetchConversations();
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSendMessage = (e) => {
+  const loadMessages = async (conversationId) => {
+    try {
+      await fetchMessages(conversationId);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  };
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleChatSelect = (conversation) => {
+    if (selectedChat) {
+      leaveConversation(selectedChat.id);
+    }
+    setSelectedChat(conversation);
+  };
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (newMessage.trim() && selectedChat) {
-      setNewMessage('');
+      try {
+        await sendMessage(selectedChat.id, newMessage.trim());
+        setNewMessage('');
+        handleTypingStop();
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
     }
   };
 
-  const handleChatSelect = (chat) => {
-    setSelectedChat(chat);
+  const handleTypingStart = () => {
+    if (!isTyping && selectedChat) {
+      setIsTyping(true);
+      sendTypingIndicator(selectedChat.id, true);
+    }
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      handleTypingStop();
+    }, 3000);
   };
+
+  const handleTypingStop = () => {
+    if (isTyping && selectedChat) {
+      setIsTyping(false);
+      sendTypingIndicator(selectedChat.id, false);
+    }
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setNewMessage(e.target.value);
+    handleTypingStart();
+  };
+
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+      return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes} min ago`;
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)} hour${Math.floor(diffInHours) > 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const currentMessages = selectedChat ? messages.get(selectedChat.id) || [] : [];
+  const currentTypingUsers = selectedChat ? Array.from(typingUsers.entries()).filter(([userId]) => userId !== user?.id) : [];
+
+  if (loading) {
+    return (
+      <div className="messages">
+        <div className="loading">Loading conversations...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="messages">
       <div className="messages-sidebar">
         <div className="sidebar-header">
           <h2>Messages</h2>
-          <button className="new-message-btn">+ New</button>
+          <button 
+            className="new-message-btn"
+            onClick={() => setShowNewConversationModal(true)}
+          >
+            + New
+          </button>
         </div>
         
         <div className="chat-list">
-          {sampleChats.map(chat => (
-            <div
-              key={chat.id}
-              className={`chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
-              onClick={() => handleChatSelect(chat)}
-            >
-              <div className="chat-avatar">
-                <div className="avatar-circle">
-                  {chat.avatar}
-                </div>
-                {chat.online && <div className="online-indicator"></div>}
-              </div>
-              
-              <div className="chat-info">
-                <div className="chat-header">
-                  <h4 className="chat-name">{chat.name}</h4>
-                  <span className="chat-timestamp">{chat.timestamp}</span>
-                </div>
-                <p className="chat-preview">{chat.lastMessage}</p>
-                <div className="chat-meta">
-                  <span className="user-type-label">
-                    {chat.userType === 'client' ? 'Client' : 'Freelancer'}
-                  </span>
-                  {chat.unread > 0 && (
-                    <span className="unread-badge">{chat.unread}</span>
-                  )}
-                </div>
-              </div>
+          {conversations.length === 0 ? (
+            <div className="no-conversations">
+              <p>No conversations yet</p>
+              <p>Start a new conversation to begin messaging</p>
             </div>
-          ))}
+          ) : (
+            conversations.map(chat => {
+              const participant = chat.participant;
+              const isOnline = onlineUsers.has(participant?._id);
+              const initials = getInitials(participant?.profile?.firstName && participant?.profile?.lastName 
+                ? `${participant.profile.firstName} ${participant.profile.lastName}` 
+                : participant?.email);
+              
+              return (
+                <div 
+                  key={chat.id} 
+                  className={`chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
+                  onClick={() => handleChatSelect(chat)}
+                >
+                  <div className="chat-avatar">
+                    <div className="avatar-circle">
+                      {initials}
+                    </div>
+                    {isOnline && <div className="online-indicator"></div>}
+                  </div>
+                  
+                  <div className="chat-info">
+                    <div className="chat-header">
+                      <h4 className="chat-name">
+                        {participant?.profile?.firstName && participant?.profile?.lastName 
+                          ? `${participant.profile.firstName} ${participant.profile.lastName}`
+                          : participant?.email || 'Unknown User'}
+                      </h4>
+                      <span className="chat-timestamp">
+                        {chat.lastMessage ? formatTimestamp(chat.lastMessage.createdAt) : ''}
+                      </span>
+                    </div>
+                    <p className="chat-preview">
+                      {chat.lastMessage?.content || 'No messages yet'}
+                    </p>
+                    <div className="chat-meta">
+                      <span className="user-type-label">{participant?.userType || 'user'}</span>
+                      {chat.unreadCount > 0 && (
+                        <span className="unread-badge">{chat.unreadCount}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
+        
+        {!connected && (
+          <div className="connection-status">
+            <p>⚠️ Disconnected from messaging server</p>
+          </div>
+        )}
       </div>
 
       <div className="messages-main">
@@ -148,16 +236,19 @@ const Messages = () => {
           <>
             <div className="chat-header">
               <div className="chat-user-info">
-                <div className="chat-avatar">
-                  <div className="avatar-circle">
-                    {selectedChat.avatar}
-                  </div>
-                  {selectedChat.online && <div className="online-indicator"></div>}
+                <div className="avatar-circle">
+                  {getInitials(selectedChat.participant?.profile?.firstName && selectedChat.participant?.profile?.lastName 
+                    ? `${selectedChat.participant.profile.firstName} ${selectedChat.participant.profile.lastName}` 
+                    : selectedChat.participant?.email)}
                 </div>
                 <div>
-                  <h3>{selectedChat.name}</h3>
+                  <h3>
+                    {selectedChat.participant?.profile?.firstName && selectedChat.participant?.profile?.lastName 
+                      ? `${selectedChat.participant.profile.firstName} ${selectedChat.participant.profile.lastName}`
+                      : selectedChat.participant?.email || 'Unknown User'}
+                  </h3>
                   <p className="user-status">
-                    {selectedChat.online ? 'Online' : 'Last seen 2 hours ago'} • {selectedChat.userType}
+                    {onlineUsers.has(selectedChat.participant?._id) ? 'Online' : 'Offline'}
                   </p>
                 </div>
               </div>
@@ -165,35 +256,58 @@ const Messages = () => {
               <div className="chat-actions">
                 <button className="action-btn">📞</button>
                 <button className="action-btn">📹</button>
-                <button className="action-btn">📎</button>
-                <button className="action-btn">⋯</button>
+                <button className="action-btn">ℹ️</button>
               </div>
             </div>
 
             <div className="messages-container">
-              {(sampleMessages[selectedChat.id] || []).map(message => (
-                <div
-                  key={message.id}
-                  className={`message ${message.isOwn ? 'own-message' : 'other-message'}`}
-                >
-                  <div className="message-content">
-                    <p>{message.message}</p>
-                    <span className="message-time">{message.timestamp}</span>
+              {currentMessages.length === 0 ? (
+                <div className="no-messages">
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                currentMessages.map(message => (
+                  <div 
+                    key={message._id} 
+                    className={`message ${message.sender._id === user?.id ? 'own-message' : 'other-message'}`}
+                  >
+                    <div className="message-content">
+                      <p>{message.content}</p>
+                      <span className="message-time">
+                        {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+              
+              {currentTypingUsers.length > 0 && (
+                <div className="typing-indicator">
+                  <div className="typing-content">
+                    <span>{currentTypingUsers.map(([, email]) => email).join(', ')} is typing...</span>
+                    <div className="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
                   </div>
                 </div>
-              ))}
+              )}
+              
+              <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="message-input-form">
+            <form className="message-input-form" onSubmit={handleSendMessage}>
               <div className="input-container">
                 <input
                   type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
                   className="message-input"
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={handleInputChange}
+                  onBlur={handleTypingStop}
                 />
-                <button type="submit" className="send-btn" disabled={!newMessage.trim()}>
+                <button type="submit" className="send-btn" disabled={!newMessage.trim() || !connected}>
                   Send
                 </button>
               </div>
@@ -204,7 +318,7 @@ const Messages = () => {
             <div className="no-chat-content">
               <div className="no-chat-icon">💬</div>
               <h3>Select a conversation</h3>
-              <p>Choose a chat from the sidebar to start messaging</p>
+              <p>Choose a conversation from the sidebar to start messaging</p>
             </div>
           </div>
         )}

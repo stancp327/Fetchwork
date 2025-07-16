@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { MessagingProvider } from './context/MessagingContext';
 import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -90,9 +91,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <MessagingProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </MessagingProvider>
     </AuthProvider>
   );
 }
