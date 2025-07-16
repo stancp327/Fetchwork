@@ -15,6 +15,7 @@ import Reviews from './components/Reviews/Reviews';
 import UniversalSearch from './components/Search/UniversalSearch';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import ProjectManagement from './components/Projects/ProjectManagement';
+import Security from './components/Security/Security';
 import Navigation from './components/Navigation/Navigation';
 import './App.css';
 
@@ -104,6 +105,11 @@ function AppContent() {
         <Route path="/projects" element={
           <ProtectedRoute>
             <ProjectManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/security" element={
+          <ProtectedRoute>
+            <Security />
           </ProtectedRoute>
         } />
         <Route path="/" element={<Home />} />
