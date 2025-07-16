@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 // Load .env.local first (for local development), then .env as fallback
 require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
@@ -9,7 +10,11 @@ const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
 
 // Middleware
+app.use(cors());
 app.use(express.json());
+
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
