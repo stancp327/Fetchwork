@@ -17,6 +17,7 @@ const Navigation = () => {
       { path: '/messages', label: 'Messages', icon: '💬' },
       { path: '/payments', label: 'Payments', icon: '💳' },
       { path: '/reviews', label: 'Reviews', icon: '⭐' },
+      { path: '/projects', label: 'Projects', icon: '📊' },
       { path: '/admin', label: 'Admin', icon: '⚙️' }
     ];
 

@@ -14,6 +14,7 @@ import Payments from './components/Payments/Payments';
 import Reviews from './components/Reviews/Reviews';
 import UniversalSearch from './components/Search/UniversalSearch';
 import AdminDashboard from './components/Admin/AdminDashboard';
+import ProjectManagement from './components/Projects/ProjectManagement';
 import Navigation from './components/Navigation/Navigation';
 import './App.css';
 
@@ -98,6 +99,11 @@ function AppContent() {
         <Route path="/admin" element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/projects" element={
+          <ProtectedRoute>
+            <ProjectManagement />
           </ProtectedRoute>
         } />
         <Route path="/" element={<Home />} />
