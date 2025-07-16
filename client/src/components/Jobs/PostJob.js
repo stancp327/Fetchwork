@@ -60,16 +60,16 @@ const PostJob = () => {
     }, 1500);
   };
 
-  if (user?.userType !== 'client') {
-    return (
-      <div className="post-job">
-        <div className="access-denied">
-          <h2>Access Restricted</h2>
-          <p>Only clients can post jobs. Switch to a client account to access this feature.</p>
-        </div>
-      </div>
-    );
-  }
+  // if (user?.userType !== 'client') {
+  //   return (
+  //     <div className="post-job">
+  //       <div className="access-denied">
+  //         <h2>Access Restricted</h2>
+  //         <p>Only clients can post jobs. Switch to a client account to access this feature.</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (success) {
     return (

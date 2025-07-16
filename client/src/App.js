@@ -18,7 +18,8 @@ const ProtectedRoute = ({ children }) => {
     return <div className="loading">Loading...</div>;
   }
   
-  return user ? children : <Navigate to="/login" />;
+  // TODO: Re-enable authentication later: return user ? children : <Navigate to="/login" />;
+  return children;
 };
 
 const PublicRoute = ({ children }) => {

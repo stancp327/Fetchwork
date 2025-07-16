@@ -6,6 +6,9 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
 
   const getGreeting = () => {
+    if (!user) {
+      return 'Welcome to FetchWork!';
+    }
     if (user?.userType === 'freelancer') {
       return `Welcome back, ${user.profile?.firstName || 'Freelancer'}!`;
     } else {
@@ -14,6 +17,14 @@ const Dashboard = () => {
   };
 
   const getQuickActions = () => {
+    if (!user) {
+      return [
+        { title: 'Browse Jobs', description: 'Find new opportunities', link: '/browse-jobs' },
+        { title: 'Post a Job', description: 'Find the right freelancer', link: '/post-job' },
+        { title: 'Browse Freelancers', description: 'Discover talent', link: '/browse-jobs' },
+        { title: 'Messages', description: 'Connect with others', link: '/messages' }
+      ];
+    }
     if (user?.userType === 'freelancer') {
       return [
         { title: 'Browse Jobs', description: 'Find new opportunities', link: '/browse-jobs' },
@@ -37,12 +48,14 @@ const Dashboard = () => {
         <div className="header-content">
           <h1>{getGreeting()}</h1>
           <p className="user-type-badge">
-            {user?.userType === 'freelancer' ? 'Freelancer Account' : 'Client Account'}
+            {!user ? 'Guest Mode' : (user?.userType === 'freelancer' ? 'Freelancer Account' : 'Client Account')}
           </p>
         </div>
-        <button onClick={logout} className="logout-btn">
-          Logout
-        </button>
+        {user && (
+          <button onClick={logout} className="logout-btn">
+            Logout
+          </button>
+        )}
       </div>
 
       <div className="dashboard-content">
