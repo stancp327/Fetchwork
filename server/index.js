@@ -1,5 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
+// Load .env.local first (for local development), then .env as fallback
+require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 
 const app = express();
