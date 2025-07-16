@@ -1,20 +1,30 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
+
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
 mongoose.connect(MONGO_URI)
 .then(() => console.log('MongoDB connected'))
 .catch((err) => console.error('MongoDB connection error:', err));
 
-// Simple route
+app.use('/api/auth', authRoutes);
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/messages', require('./routes/messages'));
+app.use('/api/profile', require('./routes/profile'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/admin', require('./routes/admin'));
+
 app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
 });
