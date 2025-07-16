@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import Navigation from './Navigation';
 
 const PostJob = () => {
+  const { token } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -12,6 +14,8 @@ const PostJob = () => {
     skills: '',
     deadline: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -20,20 +24,61 @@ const PostJob = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Job posted:', formData);
-    alert('Job posted successfully!');
-    setFormData({
-      title: '',
-      description: '',
-      category: '',
-      budget: '',
-      location: '',
-      jobType: 'remote',
-      skills: '',
-      deadline: ''
-    });
+    setLoading(true);
+    setError('');
+
+    try {
+      const budgetParts = formData.budget.split(' - ');
+      const minBudget = parseInt(budgetParts[0].replace(/[^0-9]/g, ''));
+      const maxBudget = parseInt(budgetParts[1]?.replace(/[^0-9]/g, '') || minBudget);
+
+      const jobData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        budget: {
+          min: minBudget,
+          max: maxBudget
+        },
+        jobType: formData.jobType,
+        location: formData.location || 'Remote',
+        requiredSkills: formData.skills ? formData.skills.split(',').map(skill => skill.trim()) : [],
+        deadline: formData.deadline
+      };
+
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(jobData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Job posted successfully!');
+        setFormData({
+          title: '',
+          description: '',
+          category: '',
+          budget: '',
+          location: '',
+          jobType: 'remote',
+          skills: '',
+          deadline: ''
+        });
+      } else {
+        setError(result.message || 'Failed to post job');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,6 +87,8 @@ const PostJob = () => {
       <div className="page-container">
         <div className="post-job">
           <h1>Post a New Job</h1>
+          
+          {error && <div className="error-message">{error}</div>}
           
           <form onSubmit={handleSubmit} className="job-form">
             <div className="form-group">
@@ -158,7 +205,9 @@ const PostJob = () => {
             </div>
             
             <div className="form-actions">
-              <button type="submit" className="submit-btn">Post Job</button>
+              <button type="submit" className="submit-btn" disabled={loading}>
+                {loading ? 'Posting...' : 'Post Job'}
+              </button>
               <button type="button" className="cancel-btn">Cancel</button>
             </div>
           </form>
