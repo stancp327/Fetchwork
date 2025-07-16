@@ -13,7 +13,8 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://fetchwork-verification-app-tunnel-9z8nqh3b.devinapps.com'
+    'https://fetchwork-verification-app-tunnel-9z8nqh3b.devinapps.com',
+    'https://fetchwork-verification-app-tunnel-c8wwvhm2.devinapps.com'
   ],
   credentials: true
 }));
