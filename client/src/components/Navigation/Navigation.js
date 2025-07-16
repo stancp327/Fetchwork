@@ -14,7 +14,8 @@ const Navigation = () => {
       { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
       { path: '/search', label: 'Search', icon: '🔍' },
       { path: '/profile', label: 'Profile', icon: '👤' },
-      { path: '/messages', label: 'Messages', icon: '💬' }
+      { path: '/messages', label: 'Messages', icon: '💬' },
+      { path: '/payments', label: 'Payments', icon: '💳' }
     ];
 
     if (user?.userType === 'freelancer') {

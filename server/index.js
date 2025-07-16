@@ -40,11 +40,13 @@ const profileRoutes = require('./routes/profile');
 const jobRoutes = require('./routes/jobs');
 const userRoutes = require('./routes/users');
 const messageRoutes = require('./routes/messages');
+const paymentRoutes = require('./routes/payments');
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)

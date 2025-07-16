@@ -10,6 +10,7 @@ import BrowseJobs from './components/Jobs/BrowseJobs';
 import PostJob from './components/Jobs/PostJob';
 import Profile from './components/Profile/Profile';
 import Messages from './components/Messages/Messages';
+import Payments from './components/Payments/Payments';
 import UniversalSearch from './components/Search/UniversalSearch';
 import Navigation from './components/Navigation/Navigation';
 import './App.css';
@@ -75,6 +76,11 @@ function AppContent() {
         <Route path="/messages" element={
           <ProtectedRoute>
             <Messages />
+          </ProtectedRoute>
+        } />
+        <Route path="/payments" element={
+          <ProtectedRoute>
+            <Payments />
           </ProtectedRoute>
         } />
         <Route path="/search" element={
