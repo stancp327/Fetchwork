@@ -111,7 +111,6 @@ const knowledgeBaseSchema = new mongoose.Schema({
 });
 
 chatSessionSchema.index({ user: 1, createdAt: -1 });
-chatSessionSchema.index({ sessionId: 1 });
 chatSessionSchema.index({ status: 1 });
 chatSessionSchema.index({ escalatedToHuman: 1, status: 1 });
 

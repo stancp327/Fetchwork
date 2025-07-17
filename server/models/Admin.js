@@ -57,7 +57,6 @@ const adminSchema = new mongoose.Schema({
   timestamps: true
 });
 
-adminSchema.index({ userId: 1 });
 adminSchema.index({ role: 1 });
 adminSchema.index({ isActive: 1 });
 
