@@ -28,7 +28,7 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 10000;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL;
 
 // Middleware
 app.use(cors({
@@ -71,9 +71,17 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/content-protection', contentProtectionRoutes);
 
 // Connect to MongoDB
+if (!MONGO_URI) {
+  console.error('MongoDB URI not found. Please set MONGO_URI or DATABASE_URL environment variable.');
+  process.exit(1);
+}
+
 mongoose.connect(MONGO_URI)
 .then(() => console.log('MongoDB connected'))
-.catch((err) => console.error('MongoDB connection error:', err));
+.catch((err) => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
+});
 
 // Simple route
 app.get('/', (req, res) => {
@@ -87,7 +95,7 @@ io.use(async (socket, next) => {
       return next(new Error('Authentication error'));
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
     const User = require('./models/User');
     const user = await User.findById(decoded.userId);
     
