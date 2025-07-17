@@ -16,12 +16,11 @@ const io = socketIo(server, {
       'http://localhost:3000',
       'https://fetchwork.net',
       'https://www.fetchwork.net',
-      'https://fetchwork-production.up.railway.app',
-      'https://fetchwork-production-c9f5.up.railway.app',
+      'https://fetchwork-production.onrender.com',
       'https://fetchwork-git-devin-1752653015-dummy-pr-verification-fetch-work.vercel.app',
       'https://fetchwork-wkmt-git-devin-1752653015-dummy-pr-483479-fetch-work.vercel.app',
       /\.vercel\.app$/,
-      /\.railway\.app$/
+      /\.onrender\.com$/
     ],
     credentials: true
   }
@@ -29,25 +28,11 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 10000;
 
-const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || process.env.MONGO_PUBLIC_URL ||
+const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || 
+  process.env.MONGODB_URL || process.env.MONGODB_URI ||
   (process.env.MONGOUSER && process.env.MONGOPASSWORD && process.env.MONGOHOST && process.env.MONGOPORT 
     ? `mongodb://${process.env.MONGOUSER}:${process.env.MONGOPASSWORD}@${process.env.MONGOHOST}:${process.env.MONGOPORT}/fetchwork`
-    : process.env.MONGO_URL);
-
-console.log('=== MongoDB Connection Debug Info ===');
-console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'UNDEFINED');
-console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'UNDEFINED'); 
-console.log('MONGO_PUBLIC_URL:', process.env.MONGO_PUBLIC_URL ? 'SET' : 'UNDEFINED');
-console.log('MONGO_URL:', process.env.MONGO_URL ? 'SET' : 'UNDEFINED');
-console.log('MONGOUSER:', process.env.MONGOUSER ? 'SET' : 'UNDEFINED');
-console.log('MONGOPASSWORD:', process.env.MONGOPASSWORD ? 'SET' : 'UNDEFINED');
-console.log('MONGOHOST:', process.env.MONGOHOST ? 'SET' : 'UNDEFINED');
-console.log('MONGOPORT:', process.env.MONGOPORT ? 'SET' : 'UNDEFINED');
-console.log('Final MONGO_URI value:', MONGO_URI);
-console.log('MONGO_URI type:', typeof MONGO_URI);
-console.log('MONGO_URI length:', MONGO_URI ? MONGO_URI.length : 'N/A');
-console.log('MONGO_URI starts with mongodb:', MONGO_URI ? MONGO_URI.startsWith('mongodb') : 'N/A');
-console.log('=====================================');
+    : 'mongodb://localhost:27017/fetchwork');
 
 // Middleware
 app.use(cors({
@@ -55,12 +40,11 @@ app.use(cors({
     'http://localhost:3000',
     'https://fetchwork.net',
     'https://www.fetchwork.net',
-    'https://fetchwork-production.up.railway.app',
-    'https://fetchwork-production-c9f5.up.railway.app',
+    'https://fetchwork-production.onrender.com',
     'https://fetchwork-git-devin-1752653015-dummy-pr-verification-fetch-work.vercel.app',
     'https://fetchwork-wkmt-git-devin-1752653015-dummy-pr-483479-fetch-work.vercel.app',
     /\.vercel\.app$/,
-    /\.railway\.app$/
+    /\.onrender\.com$/
   ],
   credentials: true
 }));
