@@ -16,6 +16,8 @@ const io = socketIo(server, {
       'http://localhost:3000',
       'https://fetchwork.net',
       'https://www.fetchwork.net',
+      'https://fetchwork-production.up.railway.app',
+      'https://fetchwork-production-c9f5.up.railway.app',
       /\.vercel\.app$/,
       /\.railway\.app$/
     ],
@@ -32,6 +34,8 @@ app.use(cors({
     'http://localhost:3000',
     'https://fetchwork.net',
     'https://www.fetchwork.net',
+    'https://fetchwork-production.up.railway.app',
+    'https://fetchwork-production-c9f5.up.railway.app',
     /\.vercel\.app$/,
     /\.railway\.app$/
   ],
