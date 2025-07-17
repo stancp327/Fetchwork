@@ -46,16 +46,16 @@
 
 4. **Configure Custom Domain (Optional)**
    - In Vercel dashboard, go to Settings → Domains
-   - Add `fetchwork.com` and `www.fetchwork.com`
+   - Add `fetchwork.net` and `www.fetchwork.net`
    - Follow Vercel's DNS configuration instructions
 
 4. **Note the Frontend URL**
-   - Vercel will provide a URL like: `https://fetchwork.com` (or `https://fetchwork.vercel.app` initially)
+   - Vercel will provide a URL like: `https://fetchwork.net` (or `https://fetchwork.vercel.app` initially)
 
 ### Final Configuration
 
 1. **Update Backend CORS**
-   - CORS is already configured for `fetchwork.com` and Vercel domains
+   - CORS is already configured for `fetchwork.net` and Vercel domains
    - Redeploy backend if needed
 
 2. **Test Production Deployment**

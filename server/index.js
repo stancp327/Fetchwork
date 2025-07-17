@@ -14,8 +14,8 @@ const io = socketIo(server, {
   cors: {
     origin: [
       'http://localhost:3000',
-      'https://fetchwork.com',
-      'https://www.fetchwork.com',
+      'https://fetchwork.net',
+      'https://www.fetchwork.net',
       /\.vercel\.app$/,
       /\.railway\.app$/
     ],
@@ -30,8 +30,8 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://fetchwork.com',
-    'https://www.fetchwork.com',
+    'https://fetchwork.net',
+    'https://www.fetchwork.net',
     /\.vercel\.app$/,
     /\.railway\.app$/
   ],
