@@ -179,11 +179,9 @@ const theftReportSchema = new mongoose.Schema({
 
 digitalAssetSchema.index({ uploadedBy: 1, createdAt: -1 });
 digitalAssetSchema.index({ jobId: 1 });
-digitalAssetSchema.index({ assetId: 1 });
 digitalAssetSchema.index({ 'securityFlags.suspiciousActivity': 1 });
 
 theftReportSchema.index({ reportedBy: 1, createdAt: -1 });
-theftReportSchema.index({ assetId: 1 });
 theftReportSchema.index({ status: 1 });
 
 const DigitalAsset = mongoose.model('DigitalAsset', digitalAssetSchema);
