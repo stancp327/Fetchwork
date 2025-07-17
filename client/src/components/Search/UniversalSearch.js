@@ -11,7 +11,8 @@ const UniversalSearch = () => {
     budgetRange: 'all',
     experienceLevel: 'all',
     skills: '',
-    location: ''
+    location: '',
+    locationType: 'all'
   });
 
   const fetchResults = useCallback(async () => {
@@ -32,6 +33,7 @@ const UniversalSearch = () => {
       if (searchType === 'jobs') {
         if (filters.category !== 'all') params.append('category', filters.category);
         if (filters.experienceLevel !== 'all') params.append('experienceLevel', filters.experienceLevel);
+        if (filters.locationType !== 'all') params.append('locationType', filters.locationType);
         
         if (filters.budgetRange !== 'all') {
           switch (filters.budgetRange) {
@@ -183,6 +185,17 @@ const UniversalSearch = () => {
                     {level === 'all' ? 'All Experience Levels' : level.charAt(0).toUpperCase() + level.slice(1)}
                   </option>
                 ))}
+              </select>
+
+              <select
+                value={filters.locationType}
+                onChange={(e) => handleFilterChange('locationType', e.target.value)}
+                className="filter-select"
+              >
+                <option value="all">All Types</option>
+                <option value="remote">Remote</option>
+                <option value="local">Local</option>
+                <option value="hybrid">Hybrid</option>
               </select>
             </>
           )}

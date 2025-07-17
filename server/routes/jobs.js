@@ -25,7 +25,7 @@ const authenticateToken = (req, res, next) => {
 
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { title, description, category, budget, skills, duration, experienceLevel, deadline } = req.body;
+    const { title, description, category, budget, skills, duration, experienceLevel, deadline, locationType, location } = req.body;
 
     const user = await User.findById(req.userId);
     if (!user) {
@@ -50,7 +50,9 @@ router.post('/', authenticateToken, async (req, res) => {
       duration,
       experienceLevel,
       client: req.userId,
-      deadline: deadline ? new Date(deadline) : undefined
+      deadline: deadline ? new Date(deadline) : undefined,
+      locationType: locationType || 'remote',
+      location: location || {}
     });
 
     await newJob.save();
@@ -73,6 +75,9 @@ router.get('/', async (req, res) => {
       minBudget, 
       maxBudget, 
       experienceLevel, 
+      locationType,
+      city,
+      state,
       page = 1, 
       limit = 10 
     } = req.query;
@@ -89,6 +94,18 @@ router.get('/', async (req, res) => {
 
     if (experienceLevel && experienceLevel !== 'all') {
       query.experienceLevel = experienceLevel;
+    }
+
+    if (locationType && locationType !== 'all') {
+      query.locationType = locationType;
+    }
+
+    if (city) {
+      query['location.city'] = { $regex: city, $options: 'i' };
+    }
+
+    if (state) {
+      query['location.state'] = { $regex: state, $options: 'i' };
     }
 
     if (minBudget || maxBudget) {

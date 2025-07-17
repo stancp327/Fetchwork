@@ -7,6 +7,7 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import BrowseJobs from './components/Jobs/BrowseJobs';
+import LocalJobs from './components/Jobs/LocalJobs';
 import PostJob from './components/Jobs/PostJob';
 import Profile from './components/Profile/Profile';
 import Messages from './components/Messages/Messages';
@@ -64,11 +65,8 @@ function AppContent() {
             <Dashboard />
           </ProtectedRoute>
         } />
-        <Route path="/browse-jobs" element={
-          <ProtectedRoute>
-            <BrowseJobs />
-          </ProtectedRoute>
-        } />
+        <Route path="/browse-jobs" element={<BrowseJobs />} />
+        <Route path="/local-jobs" element={<LocalJobs />} />
         <Route path="/post-job" element={
           <ProtectedRoute>
             <PostJob />
@@ -94,11 +92,7 @@ function AppContent() {
             <Reviews />
           </ProtectedRoute>
         } />
-        <Route path="/search" element={
-          <ProtectedRoute>
-            <UniversalSearch />
-          </ProtectedRoute>
-        } />
+        <Route path="/search" element={<UniversalSearch />} />
         <Route path="/admin" element={
           <ProtectedRoute>
             <AdminDashboard />

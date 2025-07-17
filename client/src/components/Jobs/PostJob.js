@@ -12,7 +12,14 @@ const PostJob = () => {
     budgetType: 'fixed',
     skills: '',
     duration: 'less-than-1-month',
-    experienceLevel: 'intermediate'
+    experienceLevel: 'intermediate',
+    locationType: 'remote',
+    location: {
+      address: '',
+      city: '',
+      state: '',
+      zipCode: ''
+    }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -27,14 +34,35 @@ const PostJob = () => {
     'Video & Animation',
     'Music & Audio',
     'Programming & Tech',
-    'Business'
+    'Business',
+    'Home Improvement',
+    'Cleaning',
+    'Moving',
+    'Tutoring',
+    'Personal Care',
+    'Event Services',
+    'Automotive',
+    'Pet Services'
   ];
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    if (name.startsWith('location.')) {
+      const locationField = name.split('.')[1];
+      setFormData({
+        ...formData,
+        location: {
+          ...formData.location,
+          [locationField]: value
+        }
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -63,7 +91,9 @@ const PostJob = () => {
           },
           skills: formData.skills ? formData.skills.split(',').map(skill => skill.trim()).filter(skill => skill) : [],
           duration: formData.duration,
-          experienceLevel: formData.experienceLevel
+          experienceLevel: formData.experienceLevel,
+          locationType: formData.locationType,
+          location: formData.locationType === 'local' ? formData.location : {}
         })
       });
 
@@ -80,7 +110,14 @@ const PostJob = () => {
             budgetType: 'fixed',
             skills: '',
             duration: 'less-than-1-month',
-            experienceLevel: 'intermediate'
+            experienceLevel: 'intermediate',
+            locationType: 'remote',
+            location: {
+              address: '',
+              city: '',
+              state: '',
+              zipCode: ''
+            }
           });
         }, 3000);
       } else {
@@ -183,6 +220,77 @@ const PostJob = () => {
               placeholder="e.g. React, Node.js, MongoDB (comma separated)"
             />
           </div>
+
+          <div className="form-group">
+            <label htmlFor="locationType">Job Type *</label>
+            <select
+              id="locationType"
+              name="locationType"
+              value={formData.locationType}
+              onChange={handleChange}
+              required
+            >
+              <option value="remote">Remote</option>
+              <option value="local">Local/On-site</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+          </div>
+
+          {formData.locationType === 'local' && (
+            <div className="location-fields">
+              <h4>Location Details</h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="location.address">Address</label>
+                  <input
+                    type="text"
+                    id="location.address"
+                    name="location.address"
+                    value={formData.location.address}
+                    onChange={handleChange}
+                    placeholder="Street address"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="location.city">City *</label>
+                  <input
+                    type="text"
+                    id="location.city"
+                    name="location.city"
+                    value={formData.location.city}
+                    onChange={handleChange}
+                    placeholder="City"
+                    required={formData.locationType === 'local'}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="location.state">State *</label>
+                  <input
+                    type="text"
+                    id="location.state"
+                    name="location.state"
+                    value={formData.location.state}
+                    onChange={handleChange}
+                    placeholder="State"
+                    required={formData.locationType === 'local'}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="location.zipCode">ZIP Code</label>
+                  <input
+                    type="text"
+                    id="location.zipCode"
+                    name="location.zipCode"
+                    value={formData.location.zipCode}
+                    onChange={handleChange}
+                    placeholder="ZIP Code"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="form-section">

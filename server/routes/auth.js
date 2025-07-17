@@ -355,4 +355,34 @@ router.get('/security-status', auth, async (req, res) => {
   }
 });
 
+router.put('/switch-role', authenticateToken, async (req, res) => {
+  try {
+    const { newUserType } = req.body;
+    
+    if (!['client', 'freelancer'].includes(newUserType)) {
+      return res.status(400).json({ message: 'Invalid user type' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.userType = newUserType;
+    await user.save();
+
+    res.json({
+      message: 'User type switched successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        userType: user.userType,
+        profile: user.profile
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;

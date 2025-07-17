@@ -6,6 +6,7 @@ const BrowseJobs = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [budgetRange, setBudgetRange] = useState('all');
   const [experienceLevel, setExperienceLevel] = useState('all');
+  const [locationType, setLocationType] = useState('all');
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
@@ -22,6 +23,7 @@ const BrowseJobs = () => {
       if (searchTerm) params.append('search', searchTerm);
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       if (experienceLevel !== 'all') params.append('experienceLevel', experienceLevel);
+      if (locationType !== 'all') params.append('locationType', locationType);
       
       if (budgetRange !== 'all') {
         switch (budgetRange) {
@@ -60,7 +62,7 @@ const BrowseJobs = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedCategory, budgetRange, experienceLevel, currentPage]);
+  }, [searchTerm, selectedCategory, budgetRange, experienceLevel, locationType, currentPage]);
 
   const debouncedSearchTerm = useMemo(() => {
     const timeoutId = setTimeout(() => searchTerm, 500);
@@ -75,7 +77,7 @@ const BrowseJobs = () => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [searchTerm, selectedCategory, budgetRange, experienceLevel]);
+  }, [searchTerm, selectedCategory, budgetRange, experienceLevel, locationType]);
 
 
   const formatBudget = (budget) => {
@@ -157,6 +159,17 @@ const BrowseJobs = () => {
               </option>
             ))}
           </select>
+
+          <select
+            value={locationType}
+            onChange={(e) => setLocationType(e.target.value)}
+            className="filter-select"
+          >
+            <option value="all">All Types</option>
+            <option value="remote">Remote</option>
+            <option value="local">Local</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
         </div>
       </div>
 
@@ -172,6 +185,12 @@ const BrowseJobs = () => {
               </div>
               
               <p className="job-description">{job.description}</p>
+              
+              {job.location && (job.location.city || job.location.state) && (
+                <div className="job-location">
+                  📍 {job.location.city}{job.location.city && job.location.state ? ', ' : ''}{job.location.state}
+                </div>
+              )}
               
               <div className="job-skills">
                 {job.skills.map(skill => (

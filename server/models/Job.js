@@ -23,8 +23,32 @@ const jobSchema = new mongoose.Schema({
       'Video & Animation',
       'Music & Audio',
       'Programming & Tech',
-      'Business'
+      'Business',
+      'Home Improvement',
+      'Cleaning',
+      'Moving',
+      'Tutoring',
+      'Personal Care',
+      'Event Services',
+      'Automotive',
+      'Pet Services'
     ]
+  },
+  locationType: {
+    type: String,
+    enum: ['remote', 'local', 'hybrid'],
+    required: true,
+    default: 'remote'
+  },
+  location: {
+    address: String,
+    city: String,
+    state: String,
+    zipCode: String,
+    coordinates: {
+      lat: Number,
+      lng: Number
+    }
   },
   budget: {
     amount: {

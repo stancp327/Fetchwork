@@ -109,12 +109,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const switchUserType = async (newUserType) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`${API_BASE_URL}/api/auth/switch-role`, {
+        newUserType
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.data.user) {
+        setUser(response.data.user);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        return { success: true };
+      }
+    } catch (error) {
+      console.error('Role switch error:', error);
+      return { success: false, error: error.response?.data?.message || 'Failed to switch role' };
+    }
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
     updateProfile,
+    switchUserType,
     loading
   };
 
