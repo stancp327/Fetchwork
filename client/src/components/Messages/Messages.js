@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useMessaging } from '../../context/MessagingContext';
 import './Messages.css';
@@ -14,7 +14,6 @@ const Messages = () => {
     fetchConversations,
     fetchMessages,
     sendMessage,
-    createConversation,
     joinConversation,
     leaveConversation,
     sendTypingIndicator
@@ -24,15 +23,33 @@ const Messages = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
-  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  const loadConversations = useCallback(async () => {
+    setLoading(true);
+    try {
+      await fetchConversations();
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchConversations]);
+
+  const loadMessages = useCallback(async (conversationId) => {
+    try {
+      await fetchMessages(conversationId);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  }, [fetchMessages]);
 
   useEffect(() => {
     if (user) {
       loadConversations();
     }
-  }, [user]);
+  }, [user, loadConversations]);
 
   useEffect(() => {
     if (selectedChat) {
@@ -43,30 +60,11 @@ const Messages = () => {
         leaveConversation(selectedChat.id);
       };
     }
-  }, [selectedChat]);
+  }, [selectedChat, joinConversation, loadMessages, leaveConversation]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, selectedChat]);
-
-  const loadConversations = async () => {
-    setLoading(true);
-    try {
-      await fetchConversations();
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMessages = async (conversationId) => {
-    try {
-      await fetchMessages(conversationId);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    }
-  };
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -164,7 +162,7 @@ const Messages = () => {
           <h2>Messages</h2>
           <button 
             className="new-message-btn"
-            onClick={() => setShowNewConversationModal(true)}
+            onClick={() => console.log('New conversation modal not implemented')}
           >
             + New
           </button>
@@ -226,7 +224,7 @@ const Messages = () => {
         
         {!connected && (
           <div className="connection-status">
-            <p>⚠️ Disconnected from messaging server</p>
+            <p><span role="img" aria-label="warning">⚠️</span> Disconnected from messaging server</p>
           </div>
         )}
       </div>
@@ -254,9 +252,9 @@ const Messages = () => {
               </div>
               
               <div className="chat-actions">
-                <button className="action-btn">📞</button>
-                <button className="action-btn">📹</button>
-                <button className="action-btn">ℹ️</button>
+                <button className="action-btn"><span role="img" aria-label="phone">📞</span></button>
+                <button className="action-btn"><span role="img" aria-label="video camera">📹</span></button>
+                <button className="action-btn"><span role="img" aria-label="information">ℹ️</span></button>
               </div>
             </div>
 
@@ -316,7 +314,7 @@ const Messages = () => {
         ) : (
           <div className="no-chat-selected">
             <div className="no-chat-content">
-              <div className="no-chat-icon">💬</div>
+              <div className="no-chat-icon"><span role="img" aria-label="speech bubble">💬</span></div>
               <h3>Select a conversation</h3>
               <p>Choose a conversation from the sidebar to start messaging</p>
             </div>

@@ -97,21 +97,21 @@ const Dashboard = () => {
           <h2>Recent Activity</h2>
           <div className="activity-list">
             <div className="activity-item">
-              <div className="activity-icon">💼</div>
+              <div className="activity-icon"><span role="img" aria-label="briefcase">💼</span></div>
               <div className="activity-content">
                 <p><strong>New job posted:</strong> React Developer Needed</p>
                 <span className="activity-time">2 hours ago</span>
               </div>
             </div>
             <div className="activity-item">
-              <div className="activity-icon">💬</div>
+              <div className="activity-icon"><span role="img" aria-label="speech bubble">💬</span></div>
               <div className="activity-content">
                 <p><strong>Message received</strong> from Sarah Johnson</p>
                 <span className="activity-time">4 hours ago</span>
               </div>
             </div>
             <div className="activity-item">
-              <div className="activity-icon">✅</div>
+              <div className="activity-icon"><span role="img" aria-label="check mark">✅</span></div>
               <div className="activity-content">
                 <p><strong>Project completed:</strong> Website Design</p>
                 <span className="activity-time">1 day ago</span>

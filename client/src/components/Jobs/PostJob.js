@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import './Jobs.css';
 
 const PostJob = () => {
-  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -146,7 +144,7 @@ const PostJob = () => {
     return (
       <div className="post-job">
         <div className="success-message">
-          <div className="success-icon">✅</div>
+          <div className="success-icon"><span role="img" aria-label="check mark">✅</span></div>
           <h2>Job Posted Successfully!</h2>
           <p>Your job has been published and freelancers can now apply.</p>
           <button onClick={() => setSuccess(false)} className="post-another-btn">

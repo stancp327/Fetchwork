@@ -8,7 +8,7 @@ const Home = () => {
       <div className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">
-            <span className="brand-icon">⚡</span>
+            <span className="brand-icon"><span role="img" aria-label="lightning bolt">⚡</span></span>
             Welcome to FetchWork
           </h1>
           <p className="hero-subtitle">
@@ -35,37 +35,37 @@ const Home = () => {
           <h2>Why Choose FetchWork?</h2>
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">🔍</div>
+              <div className="feature-icon"><span role="img" aria-label="magnifying glass">🔍</span></div>
               <h3>Smart Matching</h3>
               <p>AI-powered system connects you with the perfect freelancers or jobs based on skills and requirements.</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">💰</div>
+              <div className="feature-icon"><span role="img" aria-label="money bag">💰</span></div>
               <h3>Secure Payments</h3>
               <p>Escrow system ensures safe transactions. Money is held until work is completed to satisfaction.</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">💬</div>
+              <div className="feature-icon"><span role="img" aria-label="speech bubble">💬</span></div>
               <h3>Real-time Chat</h3>
               <p>Built-in messaging system with file sharing and notifications keeps projects moving smoothly.</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">⭐</div>
+              <div className="feature-icon"><span role="img" aria-label="star">⭐</span></div>
               <h3>Rating System</h3>
               <p>Transparent reviews and ratings help build trust and showcase quality work.</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">🛡️</div>
+              <div className="feature-icon"><span role="img" aria-label="shield">🛡️</span></div>
               <h3>Verified Profiles</h3>
               <p>Email and SMS verification plus identity checks ensure authentic, reliable users.</p>
             </div>
             
             <div className="feature-card">
-              <div className="feature-icon">📊</div>
+              <div className="feature-icon"><span role="img" aria-label="bar chart">📊</span></div>
               <h3>Project Management</h3>
               <p>Built-in tools for tracking progress, deadlines, and deliverables in one place.</p>
             </div>

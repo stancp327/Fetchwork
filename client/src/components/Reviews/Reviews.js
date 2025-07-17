@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './Reviews.css';
 
@@ -20,14 +20,7 @@ const Reviews = () => {
   const [categoryAverages, setCategoryAverages] = useState({});
   const [pagination, setPagination] = useState({ current: 1, pages: 1, total: 0 });
 
-  useEffect(() => {
-    if (user) {
-      fetchUserReviews();
-      fetchEligibleJobs();
-    }
-  }, [user]);
-
-  const fetchUserReviews = async (page = 1) => {
+  const fetchUserReviews = useCallback(async (page = 1) => {
     try {
       const response = await fetch(`${getApiBaseUrl()}/api/reviews/user/${user.id}?page=${page}&limit=10`);
       const data = await response.json();
@@ -44,9 +37,9 @@ const Reviews = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const fetchEligibleJobs = async () => {
+  const fetchEligibleJobs = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${getApiBaseUrl()}/api/jobs/my-jobs`, {
@@ -63,7 +56,14 @@ const Reviews = () => {
     } catch (error) {
       console.error('Error fetching jobs:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserReviews();
+      fetchEligibleJobs();
+    }
+  }, [user, fetchUserReviews, fetchEligibleJobs]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {

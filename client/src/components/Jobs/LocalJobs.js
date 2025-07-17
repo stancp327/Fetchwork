@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './Jobs.css';
@@ -41,11 +41,7 @@ const LocalJobs = () => {
 
   const experienceLevels = ['all', 'entry', 'intermediate', 'expert'];
 
-  useEffect(() => {
-    fetchJobs();
-  }, [filters, currentPage]);
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     try {
       setLoading(true);
       const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -80,6 +76,8 @@ const LocalJobs = () => {
           case '$1,000+':
             params.append('minBudget', '1000');
             break;
+          default:
+            break;
         }
       }
 
@@ -94,7 +92,11 @@ const LocalJobs = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, filters]);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [filters, currentPage, fetchJobs]);
 
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({
@@ -234,7 +236,7 @@ const LocalJobs = () => {
                   
                   {job.location && (job.location.city || job.location.state) && (
                     <div className="job-location">
-                      📍 {job.location.city}{job.location.city && job.location.state ? ', ' : ''}{job.location.state}
+                      <span role="img" aria-label="round pushpin">📍</span> {job.location.city}{job.location.city && job.location.state ? ', ' : ''}{job.location.state}
                     </div>
                   )}
                   

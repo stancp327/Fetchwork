@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Security.css';
 
 const Security = () => {
-  const { user } = useAuth();
   const [securityStatus, setSecurityStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -26,11 +24,7 @@ const Security = () => {
 
   const API_BASE_URL = getApiBaseUrl();
 
-  useEffect(() => {
-    fetchSecurityStatus();
-  }, []);
-
-  const fetchSecurityStatus = async () => {
+  const fetchSecurityStatus = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/auth/security-status`, {
@@ -38,7 +32,7 @@ const Security = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-
+      
       if (response.ok) {
         const data = await response.json();
         setSecurityStatus(data);
@@ -48,7 +42,11 @@ const Security = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL]);
+
+  useEffect(() => {
+    fetchSecurityStatus();
+  }, [fetchSecurityStatus]);
 
   const resendEmailVerification = async () => {
     try {
@@ -293,9 +291,9 @@ const Security = () => {
               </div>
               <div className="security-status">
                 {securityStatus?.isLocked ? (
-                  <span className="locked">🔒 Temporarily Locked</span>
+                  <span className="locked"><span role="img" aria-label="locked">🔒</span> Temporarily Locked</span>
                 ) : (
-                  <span className="active">✓ Active</span>
+                  <span className="active"><span role="img" aria-label="check mark">✓</span> Active</span>
                 )}
               </div>
             </div>

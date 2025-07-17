@@ -64,22 +64,22 @@ const Navigation = () => {
         <div className="nav-container">
           <div className="nav-brand">
             <Link to="/" className="brand-link">
-              <span className="brand-icon">⚡</span>
+              <span className="brand-icon"><span role="img" aria-label="lightning bolt">⚡</span></span>
               <span className="brand-text">FetchWork</span>
             </Link>
           </div>
 
           <div className="nav-menu">
             <Link to="/browse-jobs" className="nav-item">
-              <span className="nav-icon">💼</span>
+              <span className="nav-icon"><span role="img" aria-label="briefcase">💼</span></span>
               <span className="nav-label">Browse Jobs</span>
             </Link>
             <Link to="/local-jobs" className="nav-item">
-              <span className="nav-icon">📍</span>
+              <span className="nav-icon"><span role="img" aria-label="round pushpin">📍</span></span>
               <span className="nav-label">Local Jobs</span>
             </Link>
             <Link to="/search" className="nav-item">
-              <span className="nav-icon">🔍</span>
+              <span className="nav-icon"><span role="img" aria-label="magnifying glass">🔍</span></span>
               <span className="nav-label">Search</span>
             </Link>
           </div>
@@ -98,7 +98,7 @@ const Navigation = () => {
       <div className="nav-container">
         <div className="nav-brand">
           <Link to="/dashboard" className="brand-link">
-            <span className="brand-icon">⚡</span>
+            <span className="brand-icon"><span role="img" aria-label="lightning bolt">⚡</span></span>
             <span className="brand-text">FetchWork</span>
           </Link>
         </div>
@@ -156,7 +156,7 @@ const Navigation = () => {
                 onClick={handleRoleSwitch}
                 disabled={switchingRole}
               >
-                <span className="dropdown-icon">🔄</span>
+                <span className="dropdown-icon"><span role="img" aria-label="counterclockwise arrows button">🔄</span></span>
                 <span className="dropdown-label">
                   {switchingRole ? 'Switching...' : `Switch to ${user.userType === 'client' ? 'Freelancer' : 'Client'}`}
                 </span>
@@ -171,7 +171,7 @@ const Navigation = () => {
                   setShowUserDropdown(false);
                 }}
               >
-                <span className="dropdown-icon">🚪</span>
+                <span className="dropdown-icon"><span role="img" aria-label="door">🚪</span></span>
                 <span className="dropdown-label">Logout</span>
               </button>
             </div>

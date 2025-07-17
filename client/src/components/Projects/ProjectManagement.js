@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import './ProjectManagement.css';
 
 const ProjectManagement = () => {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -21,13 +19,7 @@ const ProjectManagement = () => {
 
   const API_BASE_URL = getApiBaseUrl();
 
-  useEffect(() => {
-    fetchDashboardData();
-    fetchUserJobs();
-    fetchCalendarEvents();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/projects/dashboard`, {
@@ -43,9 +35,9 @@ const ProjectManagement = () => {
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
-  };
+  }, [API_BASE_URL]);
 
-  const fetchUserJobs = async () => {
+  const fetchUserJobs = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/jobs`, {
@@ -61,94 +53,103 @@ const ProjectManagement = () => {
     } catch (error) {
       console.error('Error fetching jobs:', error);
     }
-  };
+  }, [API_BASE_URL]);
 
-  const fetchJobTimeline = async (jobId) => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/projects/job/${jobId}/timeline`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setTimeline(data);
-        setSelectedJob(data.job);
-      }
-    } catch (error) {
-      console.error('Error fetching timeline:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCalendarEvents = async () => {
+  const fetchCalendarEvents = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 30);
-      
+
       const response = await fetch(`${API_BASE_URL}/api/projects/calendar?start=${startDate.toISOString()}&end=${endDate.toISOString()}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
-        const data = await response.json();
-        setCalendarEvents(data);
+        const events = await response.json();
+        setCalendarEvents(events);
       }
     } catch (error) {
       console.error('Error fetching calendar events:', error);
     }
-  };
+  }, [API_BASE_URL]);
 
-  const createMilestone = async (jobId, milestoneData) => {
+  useEffect(() => {
+    fetchDashboardData();
+    fetchUserJobs();
+    fetchCalendarEvents();
+  }, [fetchDashboardData, fetchUserJobs, fetchCalendarEvents]);
+
+  const fetchJobTimeline = async (jobId) => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/projects/job/${jobId}/milestones`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/projects/timeline/${jobId}`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(milestoneData)
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      
+
       if (response.ok) {
-        fetchJobTimeline(jobId);
-        fetchCalendarEvents();
+        const timelineData = await response.json();
+        setTimeline(timelineData);
+        setSelectedJob(timelineData.job);
       }
     } catch (error) {
-      console.error('Error creating milestone:', error);
+      console.error('Error fetching job timeline:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const createTask = async (jobId, taskData) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/projects/job/${jobId}/tasks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(taskData)
-      });
+
+  // const createMilestone = async (jobId, milestoneData) => {
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const response = await fetch(`${API_BASE_URL}/api/projects/job/${jobId}/milestones`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': `Bearer ${token}`
+  //       },
+  //       body: JSON.stringify(milestoneData)
+  //     });
       
-      if (response.ok) {
-        fetchJobTimeline(jobId);
-        fetchCalendarEvents();
-      }
-    } catch (error) {
-      console.error('Error creating task:', error);
-    }
-  };
+  //     if (response.ok) {
+  //       fetchJobTimeline(jobId);
+  //       fetchCalendarEvents();
+  //     }
+  //   } catch (error) {
+  //     console.error('Error creating milestone:', error);
+  //   }
+  // };
+
+  // const createTask = async (jobId, taskData) => {
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const response = await fetch(`${API_BASE_URL}/api/projects/job/${jobId}/tasks`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'Authorization': `Bearer ${token}`
+  //       },
+  //       body: JSON.stringify(taskData)
+  //     });
+      
+  //     if (response.ok) {
+  //       fetchJobTimeline(jobId);
+  //       fetchCalendarEvents();
+  //     }
+  //   } catch (error) {
+  //     console.error('Error creating task:', error);
+  //   }
+  // };
 
   const updateMilestoneStatus = async (milestoneId, status) => {
     try {
@@ -410,19 +411,19 @@ const ProjectManagement = () => {
           className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}
         >
-          📊 Dashboard
+          <span role="img" aria-label="bar chart">📊</span> Dashboard
         </button>
         <button 
           className={`tab ${activeTab === 'timeline' ? 'active' : ''}`}
           onClick={() => setActiveTab('timeline')}
         >
-          📈 Timeline
+          <span role="img" aria-label="trending up">📈</span> Timeline
         </button>
         <button 
           className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
           onClick={() => setActiveTab('calendar')}
         >
-          📅 Calendar
+          <span role="img" aria-label="calendar">📅</span> Calendar
         </button>
       </div>
 

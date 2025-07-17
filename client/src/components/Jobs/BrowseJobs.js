@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import './Jobs.css';
@@ -45,6 +45,8 @@ const BrowseJobs = () => {
           case '$3,000+':
             params.append('minBudget', '3000');
             break;
+          default:
+            break;
         }
       }
       
@@ -68,10 +70,6 @@ const BrowseJobs = () => {
     }
   }, [searchTerm, selectedCategory, budgetRange, experienceLevel, locationType, currentPage]);
 
-  const debouncedSearchTerm = useMemo(() => {
-    const timeoutId = setTimeout(() => searchTerm, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
 
   useEffect(() => {
     fetchJobs();
@@ -81,7 +79,7 @@ const BrowseJobs = () => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [searchTerm, selectedCategory, budgetRange, experienceLevel, locationType]);
+  }, [searchTerm, selectedCategory, budgetRange, experienceLevel, locationType, currentPage]);
 
 
   const formatBudget = (budget) => {
@@ -208,7 +206,7 @@ const BrowseJobs = () => {
               
               {job.location && (job.location.city || job.location.state) && (
                 <div className="job-location">
-                  📍 {job.location.city}{job.location.city && job.location.state ? ', ' : ''}{job.location.state}
+                  <span role="img" aria-label="round pushpin">📍</span> {job.location.city}{job.location.city && job.location.state ? ', ' : ''}{job.location.state}
                 </div>
               )}
               

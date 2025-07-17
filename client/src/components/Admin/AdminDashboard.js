@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './AdminDashboard.css';
 
@@ -16,11 +16,7 @@ const AdminDashboard = () => {
     return window.location.origin.replace(/:\d+/, ':10000');
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -42,7 +38,11 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
 const OverviewTab = ({ dashboardData, formatCurrency, formatDate }) => {
   if (!dashboardData) return <div>No data available</div>;
 
-  const { overview, stats, recent, alerts } = dashboardData;
+  const { overview, recent, alerts } = dashboardData;
 
   return (
     <div className="overview-tab">
@@ -235,11 +235,7 @@ const UserManagementTab = () => {
     return window.location.origin.replace(/:\d+/, ':10000');
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage, searchTerm, userTypeFilter, statusFilter]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -269,7 +265,11 @@ const UserManagementTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, userTypeFilter, statusFilter]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleSuspendUser = async (userId, suspend, reason = '') => {
     try {
@@ -356,7 +356,7 @@ const UserManagementTab = () => {
                 </div>
                 <div className="table-cell">
                   <div className="rating">
-                    ⭐ {user.rating?.average?.toFixed(1) || '0.0'} ({user.rating?.count || 0})
+                    <span role="img" aria-label="star">⭐</span> {user.rating?.average?.toFixed(1) || '0.0'} ({user.rating?.count || 0})
                   </div>
                 </div>
                 <div className="table-cell">

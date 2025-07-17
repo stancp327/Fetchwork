@@ -51,6 +51,8 @@ const UniversalSearch = () => {
             case '$3,000+':
               params.append('minBudget', '3000');
               break;
+            default:
+              break;
           }
         }
 

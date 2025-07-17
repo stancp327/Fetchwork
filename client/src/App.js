@@ -42,7 +42,6 @@ const PublicRoute = ({ children }) => {
 };
 
 function AppContent() {
-  const { user } = useAuth();
 
   return (
     <div className="App">

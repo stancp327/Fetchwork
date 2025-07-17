@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import './ChatBot.css';
 
 const ChatBot = () => {
-  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -200,7 +198,7 @@ const ChatBot = () => {
     <>
       {/* Chat Toggle Button */}
       <div className={`chatbot-toggle ${isOpen ? 'open' : ''}`} onClick={toggleChat}>
-        {isOpen ? '✕' : '💬'}
+        {isOpen ? <span role="img" aria-label="multiplication sign">✕</span> : <span role="img" aria-label="speech balloon">💬</span>}
         {!isOpen && <span className="chatbot-badge">AI Support</span>}
       </div>
 
@@ -209,13 +207,13 @@ const ChatBot = () => {
         <div className="chatbot-window">
           <div className="chatbot-header">
             <div className="chatbot-title">
-              <span className="chatbot-icon">🤖</span>
+              <span className="chatbot-icon"><span role="img" aria-label="robot">🤖</span></span>
               <div>
                 <h3>FetchWork AI Assistant</h3>
                 <p>Online • Ready to help</p>
               </div>
             </div>
-            <button className="chatbot-close" onClick={toggleChat}>✕</button>
+            <button className="chatbot-close" onClick={toggleChat}><span role="img" aria-label="multiplication sign">✕</span></button>
           </div>
 
           <div className="chatbot-messages">
@@ -223,7 +221,7 @@ const ChatBot = () => {
               <div key={index} className={`message ${message.role}`}>
                 <div className="message-content">
                   {message.role === 'assistant' && (
-                    <div className="message-avatar">🤖</div>
+                    <div className="message-avatar"><span role="img" aria-label="robot">🤖</span></div>
                   )}
                   <div className="message-bubble">
                     <p>{message.content}</p>
@@ -235,7 +233,7 @@ const ChatBot = () => {
                     )}
                   </div>
                   {message.role === 'user' && (
-                    <div className="message-avatar user">👤</div>
+                    <div className="message-avatar user"><span role="img" aria-label="bust in silhouette">👤</span></div>
                   )}
                 </div>
               </div>
@@ -244,7 +242,7 @@ const ChatBot = () => {
             {isTyping && (
               <div className="message assistant">
                 <div className="message-content">
-                  <div className="message-avatar">🤖</div>
+                  <div className="message-avatar"><span role="img" aria-label="robot">🤖</span></div>
                   <div className="message-bubble typing">
                     <div className="typing-indicator">
                       <span></span>
@@ -290,7 +288,7 @@ const ChatBot = () => {
                 disabled={!inputMessage.trim() || isLoading}
                 className="send-button"
               >
-                {isLoading ? '⏳' : '➤'}
+                {isLoading ? <span role="img" aria-label="hourglass not done">⏳</span> : <span role="img" aria-label="black right-pointing triangle">➤</span>}
               </button>
             </div>
             <div className="chatbot-footer">

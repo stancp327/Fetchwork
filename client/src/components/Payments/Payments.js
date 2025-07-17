@@ -236,7 +236,7 @@ const Payments = () => {
           
           {payments.length === 0 ? (
             <div className="no-payments">
-              <div className="no-payments-icon">💳</div>
+              <div className="no-payments-icon"><span role="img" aria-label="credit card">💳</span></div>
               <h3>No payments yet</h3>
               <p>
                 {user?.userType === 'client' 
