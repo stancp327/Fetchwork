@@ -29,7 +29,7 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 10000;
 
-const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || 
+const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || process.env.MONGO_PUBLIC_URL ||
   (process.env.MONGOUSER && process.env.MONGOPASSWORD && process.env.MONGOHOST && process.env.MONGOPORT 
     ? `mongodb://${process.env.MONGOUSER}:${process.env.MONGOPASSWORD}@${process.env.MONGOHOST}:${process.env.MONGOPORT}/fetchwork`
     : process.env.MONGO_URL);
@@ -37,6 +37,7 @@ const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL ||
 console.log('=== MongoDB Connection Debug Info ===');
 console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'UNDEFINED');
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'UNDEFINED'); 
+console.log('MONGO_PUBLIC_URL:', process.env.MONGO_PUBLIC_URL ? 'SET' : 'UNDEFINED');
 console.log('MONGO_URL:', process.env.MONGO_URL ? 'SET' : 'UNDEFINED');
 console.log('MONGOUSER:', process.env.MONGOUSER ? 'SET' : 'UNDEFINED');
 console.log('MONGOPASSWORD:', process.env.MONGOPASSWORD ? 'SET' : 'UNDEFINED');
