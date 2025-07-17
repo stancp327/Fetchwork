@@ -28,7 +28,7 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 10000;
-const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL;
+const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || process.env.MONGO_URL;
 
 // Middleware
 app.use(cors({
