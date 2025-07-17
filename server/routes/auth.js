@@ -355,7 +355,7 @@ router.get('/security-status', auth, async (req, res) => {
   }
 });
 
-router.put('/switch-role', authenticateToken, async (req, res) => {
+router.put('/switch-role', auth, async (req, res) => {
   try {
     const { newUserType } = req.body;
     
@@ -363,7 +363,7 @@ router.put('/switch-role', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'Invalid user type' });
     }
 
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
