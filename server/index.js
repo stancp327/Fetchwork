@@ -30,6 +30,16 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || process.env.MONGO_URL;
 
+console.log('=== MongoDB Connection Debug Info ===');
+console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'UNDEFINED');
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'UNDEFINED'); 
+console.log('MONGO_URL:', process.env.MONGO_URL ? 'SET' : 'UNDEFINED');
+console.log('Final MONGO_URI value:', MONGO_URI);
+console.log('MONGO_URI type:', typeof MONGO_URI);
+console.log('MONGO_URI length:', MONGO_URI ? MONGO_URI.length : 'N/A');
+console.log('MONGO_URI starts with mongodb:', MONGO_URI ? MONGO_URI.startsWith('mongodb') : 'N/A');
+console.log('=====================================');
+
 // Middleware
 app.use(cors({
   origin: [
