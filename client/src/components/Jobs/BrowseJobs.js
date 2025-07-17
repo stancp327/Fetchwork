@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './Jobs.css';
 
 const BrowseJobs = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [budgetRange, setBudgetRange] = useState('all');
@@ -104,6 +108,22 @@ const BrowseJobs = () => {
   const experienceLevels = ['all', 'entry', 'intermediate', 'expert'];
 
   const filteredJobs = jobs;
+
+  const handleApplyJob = (jobId) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    console.log('Applying to job:', jobId);
+  };
+
+  const handleSaveJob = (jobId) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    console.log('Saving job:', jobId);
+  };
 
   return (
     <div className="browse-jobs">
@@ -210,8 +230,18 @@ const BrowseJobs = () => {
               </div>
               
               <div className="job-actions">
-                <button className="apply-btn">Apply Now</button>
-                <button className="save-btn">Save Job</button>
+                <button 
+                  className="apply-btn"
+                  onClick={() => handleApplyJob(job._id)}
+                >
+                  Apply Now
+                </button>
+                <button 
+                  className="save-btn"
+                  onClick={() => handleSaveJob(job._id)}
+                >
+                  Save Job
+                </button>
               </div>
             </div>
           ))

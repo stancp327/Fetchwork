@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './Jobs.css';
 
 const LocalJobs = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -119,6 +123,22 @@ const LocalJobs = () => {
     return `${diffInDays} days ago`;
   };
 
+  const handleApplyJob = (jobId) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    console.log('Applying to local job:', jobId);
+  };
+
+  const handleSaveJob = (jobId) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    console.log('Saving local job:', jobId);
+  };
+
   return (
     <div className="browse-jobs local-jobs">
       <div className="jobs-header">
@@ -233,8 +253,18 @@ const LocalJobs = () => {
                   </div>
                   
                   <div className="job-actions">
-                    <button className="apply-btn">Apply Now</button>
-                    <button className="save-btn">Save</button>
+                    <button 
+                      className="apply-btn"
+                      onClick={() => handleApplyJob(job._id)}
+                    >
+                      Apply Now
+                    </button>
+                    <button 
+                      className="save-btn"
+                      onClick={() => handleSaveJob(job._id)}
+                    >
+                      Save
+                    </button>
                   </div>
                 </div>
               ))}
