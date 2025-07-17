@@ -49,9 +49,9 @@ router.get('/dashboard', auth, requireAdmin, async (req, res) => {
       Payment.countDocuments(),
       Review.countDocuments(),
       User.find().sort({ createdAt: -1 }).limit(5).select('email profile createdAt'),
-      Job.find().sort({ createdAt: -1 }).limit(5).populate('clientId', 'email profile'),
+      Job.find().sort({ createdAt: -1 }).limit(5).populate('client', 'email profile'),
       Review.find({ 'adminModeration.flagged': true, 'adminModeration.adminReviewed': false }).limit(10),
-      Payment.find({ status: 'pending' }).limit(10).populate('jobId clientId')
+      Payment.find({ status: 'pending' }).limit(10).populate('jobId client')
     ]);
 
     const userStats = await User.aggregate([
@@ -204,7 +204,7 @@ router.get('/jobs', auth, requireAdmin, requirePermission('jobManagement'), asyn
     }
 
     const jobs = await Job.find(query)
-      .populate('clientId', 'email profile')
+      .populate('client', 'email profile')
       .populate('assignedTo', 'email profile')
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -236,8 +236,8 @@ router.get('/payments', auth, requireAdmin, requirePermission('paymentOverride')
 
     const payments = await Payment.find(query)
       .populate('jobId', 'title')
-      .populate('clientId', 'email profile')
-      .populate('freelancerId', 'email profile')
+      .populate('client', 'email profile')
+      .populate('freelancer', 'email profile')
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);

@@ -21,7 +21,7 @@ const BrowseJobs = () => {
       setLoading(true);
       const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:10000'
-        : 'https://user:31bfdb3e3b3497d64ac61e2dd563996c@fetchwork-verification-app-tunnel-guxp61eo.devinapps.com';
+        : process.env.REACT_APP_API_URL || 'https://fetchwork-api.railway.app';
 
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
