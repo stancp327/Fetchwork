@@ -18,6 +18,8 @@ const io = socketIo(server, {
       'https://www.fetchwork.net',
       'https://fetchwork-production.up.railway.app',
       'https://fetchwork-production-c9f5.up.railway.app',
+      'https://fetchwork-git-devin-1752653015-dummy-pr-verification-fetch-work.vercel.app',
+      'https://fetchwork-wkmt-git-devin-1752653015-dummy-pr-483479-fetch-work.vercel.app',
       /\.vercel\.app$/,
       /\.railway\.app$/
     ],
@@ -36,6 +38,8 @@ app.use(cors({
     'https://www.fetchwork.net',
     'https://fetchwork-production.up.railway.app',
     'https://fetchwork-production-c9f5.up.railway.app',
+    'https://fetchwork-git-devin-1752653015-dummy-pr-verification-fetch-work.vercel.app',
+    'https://fetchwork-wkmt-git-devin-1752653015-dummy-pr-483479-fetch-work.vercel.app',
     /\.vercel\.app$/,
     /\.railway\.app$/
   ],
