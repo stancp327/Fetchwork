@@ -14,6 +14,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://fetchwork-production.up.railway.app"
+    "REACT_APP_API_URL": "https://fetchwork-production-c9f5.up.railway.app"
   }
 }
