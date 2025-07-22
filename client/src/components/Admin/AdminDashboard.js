@@ -33,12 +33,26 @@ const AdminDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${apiBaseUrl}/api/admin/dashboard`);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await axios.get(`${apiBaseUrl}/api/admin/dashboard`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setDashboardData(response.data);
       setError(null);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
-      setError(error.response?.data?.error || 'Failed to load dashboard data');
+      if (error.response?.status === 401) {
+        setError('Authentication failed - please log in again');
+      } else {
+        setError(error.response?.data?.error || 'Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,8 +60,12 @@ const AdminDashboard = () => {
 
   const fetchUsersData = useCallback(async (page = 1, search = '', status = 'all') => {
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${apiBaseUrl}/api/admin/users`, {
-        params: { page, search, status, limit: 10 }
+        params: { page, search, status, limit: 10 },
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       setUsersData(response.data);
     } catch (error) {
@@ -57,8 +75,12 @@ const AdminDashboard = () => {
 
   const fetchJobsData = useCallback(async (page = 1, status = 'all') => {
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${apiBaseUrl}/api/admin/jobs`, {
-        params: { page, status, limit: 10 }
+        params: { page, status, limit: 10 },
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       setJobsData(response.data);
     } catch (error) {
@@ -68,8 +90,12 @@ const AdminDashboard = () => {
 
   const fetchPaymentsData = useCallback(async (page = 1, status = 'all') => {
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${apiBaseUrl}/api/admin/payments`, {
-        params: { page, status, limit: 10 }
+        params: { page, status, limit: 10 },
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       setPaymentsData(response.data);
     } catch (error) {
@@ -79,8 +105,12 @@ const AdminDashboard = () => {
 
   const fetchReviewsData = useCallback(async (page = 1, status = 'all') => {
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.get(`${apiBaseUrl}/api/admin/reviews`, {
-        params: { page, status, limit: 10 }
+        params: { page, status, limit: 10 },
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       setReviewsData(response.data);
     } catch (error) {
