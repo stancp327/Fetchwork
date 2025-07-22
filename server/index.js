@@ -159,6 +159,13 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
+const jobRoutes = require('./routes/jobs');
+const messageRoutes = require('./routes/messages');
+const userRoutes = require('./routes/users');
+
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/messages', require('./routes/messages'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
