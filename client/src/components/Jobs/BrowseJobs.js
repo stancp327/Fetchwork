@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import '../UserComponents.css';
@@ -12,6 +13,7 @@ const getApiBaseUrl = () => {
 
 const BrowseJobs = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -237,7 +239,10 @@ const BrowseJobs = () => {
                   <div className="card-meta">
                     {job.proposalCount} proposals • {job.views} views • {job.location}
                   </div>
-                  <button className="btn btn-primary">
+                  <button 
+                    onClick={() => navigate(`/jobs/${job._id}`)}
+                    className="btn btn-primary"
+                  >
                     View Details
                   </button>
                 </div>

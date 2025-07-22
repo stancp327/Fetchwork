@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AdminProvider } from './context/AdminContext';
@@ -9,6 +9,7 @@ import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import BrowseJobs from './components/Jobs/BrowseJobs';
 import PostJob from './components/Jobs/PostJob';
+import JobDetails from './components/Jobs/JobDetails';
 import Profile from './components/Profile/Profile';
 import Messages from './components/Messages/Messages';
 import Payments from './components/Payments/Payments';
@@ -51,6 +52,16 @@ const AdminRoute = () => {
   return <AdminDashboard />;
 };
 
+const LogoutHandler = () => {
+  const { logout } = useAuth();
+  
+  useEffect(() => {
+    logout();
+  }, [logout]);
+  
+  return <Navigate to="/login" />;
+};
+
 function AppContent() {
 
   return (
@@ -76,6 +87,11 @@ function AppContent() {
         <Route path="/browse-jobs" element={
           <ProtectedRoute>
             <BrowseJobs />
+          </ProtectedRoute>
+        } />
+        <Route path="/jobs/:id" element={
+          <ProtectedRoute>
+            <JobDetails />
           </ProtectedRoute>
         } />
         <Route path="/post-job" element={
@@ -124,6 +140,7 @@ function AppContent() {
           </ProtectedRoute>
         } />
         <Route path="/" element={<Home />} />
+        <Route path="/logout" element={<LogoutHandler />} />
       </Routes>
     </div>
   );
