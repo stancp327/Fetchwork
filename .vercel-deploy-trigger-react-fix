@@ -1,0 +1,15 @@
+# Vercel Deployment Trigger - React Compatibility Fix
+
+This file forces Vercel to deploy the React compatibility fix from PR #12.
+
+## Issue
+- PR #12 merged successfully with React 18.2.0 + react-scripts 5.0.1 fix
+- Vercel still serving cached JavaScript bundles (main.2111dbc5.chunk.js) 
+- AdminDashboard stuck on "Loading..." for 25+ minutes
+- Console shows "Admin not authenticated" from old cached code
+
+## Solution
+Force fresh Vercel deployment without build cache to serve updated React 18.2.0 bundles.
+
+Timestamp: 2025-07-22 12:26:02 UTC
+Commits: d3fdb00, cb1533d (React compatibility fix)

@@ -15,6 +15,8 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
 
+app.set('trust proxy', true);
+
 app.use(helmet());
 app.use(cors());
 
