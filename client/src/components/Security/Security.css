@@ -1,0 +1,307 @@
+.security-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.security-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.security-header h1 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+.security-header p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.security-loading {
+  text-align: center;
+  padding: 50px;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.security-message {
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  position: relative;
+  color: #1976d2;
+}
+
+.close-message {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #1976d2;
+}
+
+.security-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.security-section {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
+.security-section h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+}
+
+.verification-status {
+  margin-bottom: 20px;
+}
+
+.verification-level {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verification-badge {
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.verification-items,
+.security-items {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.verification-item,
+.security-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.verification-info,
+.security-info {
+  flex: 1;
+}
+
+.verification-info h3,
+.security-info h3 {
+  margin: 0 0 5px 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.verification-info p,
+.security-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.verification-status,
+.security-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verified,
+.enabled,
+.active {
+  color: #4caf50;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.locked {
+  color: #f44336;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.verify-button,
+.enable-button,
+.report-button,
+.submit-button {
+  background: #2196f3;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.verify-button:hover,
+.enable-button:hover,
+.report-button:hover,
+.submit-button:hover {
+  background: #1976d2;
+}
+
+.enable-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.phone-verification {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phone-input,
+.code-input {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.phone-field,
+.code-field {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  min-width: 150px;
+}
+
+.fraud-report-form {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  margin-top: 15px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-button:hover {
+  background: #5a6268;
+}
+
+@media (max-width: 768px) {
+  .security-container {
+    padding: 15px;
+  }
+  
+  .verification-item,
+  .security-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .verification-status,
+  .security-status {
+    width: 100%;
+  }
+  
+  .phone-input,
+  .code-input {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .phone-field,
+  .code-field {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .submit-button,
+  .cancel-button {
+    width: 100%;
+  }
+}
