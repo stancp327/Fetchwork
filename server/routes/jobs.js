@@ -1,0 +1,289 @@
+const express = require('express');
+const router = express.Router();
+const Job = require('../models/Job');
+const { authenticateToken } = require('../middleware/auth');
+
+router.get('/', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+    
+    const filters = {
+      isActive: true,
+      status: 'open',
+      expiresAt: { $gt: new Date() }
+    };
+    
+    if (req.query.category && req.query.category !== 'all') {
+      filters.category = req.query.category;
+    }
+    
+    if (req.query.skills) {
+      const skills = req.query.skills.split(',').map(skill => skill.trim());
+      filters.skills = { $in: skills };
+    }
+    
+    if (req.query.minBudget || req.query.maxBudget) {
+      filters['budget.amount'] = {};
+      if (req.query.minBudget) {
+        filters['budget.amount'].$gte = parseFloat(req.query.minBudget);
+      }
+      if (req.query.maxBudget) {
+        filters['budget.amount'].$lte = parseFloat(req.query.maxBudget);
+      }
+    }
+    
+    if (req.query.experienceLevel && req.query.experienceLevel !== 'all') {
+      filters.experienceLevel = req.query.experienceLevel;
+    }
+    
+    if (req.query.duration && req.query.duration !== 'all') {
+      filters.duration = req.query.duration;
+    }
+    
+    if (req.query.search) {
+      filters.$or = [
+        { title: { $regex: req.query.search, $options: 'i' } },
+        { description: { $regex: req.query.search, $options: 'i' } },
+        { skills: { $in: [new RegExp(req.query.search, 'i')] } }
+      ];
+    }
+    
+    const jobs = await Job.find(filters)
+      .populate('client', 'firstName lastName profilePicture rating totalJobs')
+      .sort({ createdAt: -1, isFeatured: -1, isUrgent: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    const total = await Job.countDocuments(filters);
+    
+    res.json({
+      jobs,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching jobs:', error);
+    res.status(500).json({ error: 'Failed to fetch jobs' });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('client', 'firstName lastName profilePicture rating totalJobs memberSince')
+      .populate('freelancer', 'firstName lastName profilePicture rating totalJobs')
+      .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
+    
+    if (!job || !job.isActive) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    await job.incrementViews();
+    
+    res.json({ job });
+  } catch (error) {
+    console.error('Error fetching job:', error);
+    res.status(500).json({ error: 'Failed to fetch job' });
+  }
+});
+
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      category,
+      subcategory,
+      skills,
+      budget,
+      duration,
+      experienceLevel,
+      location,
+      isRemote,
+      isUrgent
+    } = req.body;
+    
+    if (!title || !description || !category || !budget || !duration || !experienceLevel) {
+      return res.status(400).json({ 
+        error: 'Title, description, category, budget, duration, and experience level are required' 
+      });
+    }
+    
+    const job = new Job({
+      title,
+      description,
+      category,
+      subcategory,
+      skills: skills || [],
+      budget,
+      duration,
+      experienceLevel,
+      location: location || 'Remote',
+      isRemote: isRemote !== false,
+      isUrgent: isUrgent || false,
+      client: req.user._id,
+      status: 'open'
+    });
+    
+    await job.save();
+    
+    const populatedJob = await Job.findById(job._id)
+      .populate('client', 'firstName lastName profilePicture rating totalJobs');
+    
+    res.status(201).json({
+      message: 'Job posted successfully',
+      job: populatedJob
+    });
+  } catch (error) {
+    console.error('Error creating job:', error);
+    res.status(500).json({ error: 'Failed to create job' });
+  }
+});
+
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    if (job.client.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Not authorized to edit this job' });
+    }
+    
+    if (job.status !== 'draft' && job.status !== 'open') {
+      return res.status(400).json({ error: 'Cannot edit job in current status' });
+    }
+    
+    const allowedUpdates = [
+      'title', 'description', 'category', 'subcategory', 'skills',
+      'budget', 'duration', 'experienceLevel', 'location', 'isRemote', 'isUrgent'
+    ];
+    
+    allowedUpdates.forEach(field => {
+      if (req.body[field] !== undefined) {
+        job[field] = req.body[field];
+      }
+    });
+    
+    await job.save();
+    
+    const populatedJob = await Job.findById(job._id)
+      .populate('client', 'firstName lastName profilePicture rating totalJobs');
+    
+    res.json({
+      message: 'Job updated successfully',
+      job: populatedJob
+    });
+  } catch (error) {
+    console.error('Error updating job:', error);
+    res.status(500).json({ error: 'Failed to update job' });
+  }
+});
+
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    if (job.client.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Not authorized to delete this job' });
+    }
+    
+    if (job.status === 'in_progress') {
+      return res.status(400).json({ error: 'Cannot delete job in progress' });
+    }
+    
+    job.isActive = false;
+    job.status = 'cancelled';
+    await job.save();
+    
+    res.json({ message: 'Job deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    res.status(500).json({ error: 'Failed to delete job' });
+  }
+});
+
+router.post('/:id/proposals', authenticateToken, async (req, res) => {
+  try {
+    const { coverLetter, proposedBudget, proposedDuration, attachments } = req.body;
+    
+    if (!coverLetter || !proposedBudget || !proposedDuration) {
+      return res.status(400).json({ 
+        error: 'Cover letter, proposed budget, and proposed duration are required' 
+      });
+    }
+    
+    const job = await Job.findById(req.params.id);
+    
+    if (!job || !job.isActive || job.status !== 'open') {
+      return res.status(404).json({ error: 'Job not found or not accepting proposals' });
+    }
+    
+    if (job.client.toString() === req.user._id.toString()) {
+      return res.status(400).json({ error: 'Cannot apply to your own job' });
+    }
+    
+    const existingProposal = job.proposals.find(
+      p => p.freelancer.toString() === req.user._id.toString()
+    );
+    
+    if (existingProposal) {
+      return res.status(400).json({ error: 'You have already submitted a proposal for this job' });
+    }
+    
+    const proposal = {
+      freelancer: req.user._id,
+      coverLetter,
+      proposedBudget: parseFloat(proposedBudget),
+      proposedDuration,
+      attachments: attachments || []
+    };
+    
+    await job.addProposal(proposal);
+    
+    const updatedJob = await Job.findById(job._id)
+      .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
+    
+    res.status(201).json({
+      message: 'Proposal submitted successfully',
+      proposal: updatedJob.proposals[updatedJob.proposals.length - 1]
+    });
+  } catch (error) {
+    console.error('Error submitting proposal:', error);
+    res.status(500).json({ error: 'Failed to submit proposal' });
+  }
+});
+
+router.get('/:id/proposals', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    if (job.client.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Not authorized to view proposals' });
+    }
+    
+    res.json({ proposals: job.proposals });
+  } catch (error) {
+    console.error('Error fetching proposals:', error);
+    res.status(500).json({ error: 'Failed to fetch proposals' });
+  }
+});
+
+module.exports = router;
