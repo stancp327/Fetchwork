@@ -22,13 +22,13 @@ import Navigation from './components/Navigation/Navigation';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
   
-  return children;
+  return user ? children : <Navigate to="/login" />;
 };
 
 const PublicRoute = ({ children }) => {
@@ -39,6 +39,16 @@ const PublicRoute = ({ children }) => {
   }
   
   return user ? <Navigate to="/dashboard" /> : children;
+};
+
+const AdminRoute = () => {
+  const { user } = useAuth();
+  
+  if (!user?.isAdmin) {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return <AdminDashboard />;
 };
 
 function AppContent() {
@@ -100,7 +110,7 @@ function AppContent() {
         } />
         <Route path="/admin" element={
           <ProtectedRoute>
-            <AdminDashboard />
+            <AdminRoute />
           </ProtectedRoute>
         } />
         <Route path="/projects" element={

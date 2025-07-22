@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useAdmin } from '../../context/AdminContext';
+import { useAuth } from '../../context/AuthContext';
 import './AdminDashboard.css';
 
 const getApiBaseUrl = () => {
@@ -11,7 +11,7 @@ const getApiBaseUrl = () => {
 };
 
 const AdminDashboard = () => {
-  const { isAdminAuthenticated, setTempAdminToken } = useAdmin();
+  const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [usersData, setUsersData] = useState(null);
   const [jobsData, setJobsData] = useState(null);
@@ -22,10 +22,11 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   const apiBaseUrl = getApiBaseUrl();
+  const isAdminAuthenticated = user?.isAdmin;
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
-      console.log('Admin not authenticated - please log in through proper admin login flow');
+      console.log('Admin not authenticated - user does not have admin privileges');
     }
   }, [isAdminAuthenticated]);
 

@@ -88,12 +88,13 @@ app.post('/api/auth/register', async (req, res) => {
     const user = new User({ email, password, firstName, lastName });
     await user.save();
     
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const isAdmin = user.email === 'admin@fetchwork.com';
+    const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
     res.status(201).json({
       message: 'User created successfully',
       token,
-      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName }
+      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -119,15 +120,39 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const isAdmin = user.email === 'admin@fetchwork.com';
+    const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
     res.json({
       message: 'Login successful',
       token,
-      user: { id: user._id, email: user.email }
+      user: { id: user._id, email: user.email, isAdmin }
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const isAdmin = user.email === 'admin@fetchwork.com';
+    res.json({
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        firstName: user.firstName, 
+        lastName: user.lastName,
+        isAdmin 
+      }
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
