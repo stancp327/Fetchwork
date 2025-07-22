@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Job = require('../models/Job');
+const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
@@ -253,12 +254,46 @@ router.post('/:id/proposals', authenticateToken, async (req, res) => {
     
     await job.addProposal(proposal);
     
+    console.log('DEBUG: Starting notification system for proposal submission');
+    console.log('DEBUG: job.client:', job.client);
+    console.log('DEBUG: req.user._id:', req.user._id);
+    
+    let conversation = await Conversation.findByParticipants(job.client, req.user._id);
+    console.log('DEBUG: Found existing conversation:', conversation);
+    
+    if (!conversation) {
+      console.log('DEBUG: Creating new conversation');
+      conversation = new Conversation({
+        participants: [job.client, req.user._id],
+        job: job._id
+      });
+      await conversation.save();
+      console.log('DEBUG: New conversation created:', conversation._id);
+    }
+    
+    console.log('DEBUG: Creating system message');
+    const systemMessage = new Message({
+      conversation: conversation._id,
+      sender: req.user._id,
+      recipient: job.client,
+      content: `🔔 New Proposal Received for "${job.title}"\n\nFreelancer: ${req.user.firstName} ${req.user.lastName}\nProposed Budget: $${proposedBudget}\nTimeline: ${proposedDuration}\nSubmitted: ${new Date().toLocaleString()}\n\nCover Letter:\n${coverLetter}`,
+      messageType: 'system'
+    });
+    
+    await systemMessage.save();
+    console.log('DEBUG: System message saved:', systemMessage._id);
+    
+    conversation.lastMessage = systemMessage._id;
+    await conversation.updateLastActivity();
+    console.log('DEBUG: Conversation updated with last message');
+    
     const updatedJob = await Job.findById(job._id)
       .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
     
     res.status(201).json({
       message: 'Proposal submitted successfully',
-      proposal: updatedJob.proposals[updatedJob.proposals.length - 1]
+      proposal: updatedJob.proposals[updatedJob.proposals.length - 1],
+      conversationCreated: !conversation.lastMessage || conversation.lastMessage.toString() === systemMessage._id.toString()
     });
   } catch (error) {
     console.error('Error submitting proposal:', error);

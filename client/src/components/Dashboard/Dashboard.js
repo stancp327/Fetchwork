@@ -201,6 +201,61 @@ const Dashboard = () => {
             </div>
           )}
 
+          {recentActivity.proposalsReceived && recentActivity.proposalsReceived.length > 0 && (
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ marginBottom: '15px', color: '#495057', display: 'flex', alignItems: 'center' }}>
+                🔔 New Proposals Received
+                <span style={{ 
+                  background: '#dc3545', 
+                  color: 'white', 
+                  borderRadius: '50%', 
+                  padding: '4px 8px', 
+                  fontSize: '0.7rem',
+                  marginLeft: '10px',
+                  minWidth: '20px',
+                  textAlign: 'center'
+                }}>
+                  {recentActivity.proposalsReceived.length}
+                </span>
+              </h3>
+              {recentActivity.proposalsReceived.map((job) => (
+                <div key={job._id} className="card" style={{ border: '2px solid #28a745', background: '#f8fff9' }}>
+                  <div className="card-header">
+                    <div>
+                      <h4 className="card-title" style={{ color: '#28a745' }}>
+                        💼 {job.title}
+                      </h4>
+                      <div className="card-meta">
+                        <strong>New proposal from:</strong> {job.proposals[0].freelancer.firstName} {job.proposals[0].freelancer.lastName} • 
+                        <strong>Bid:</strong> ${job.proposals[0].proposedBudget} • 
+                        <strong>Timeline:</strong> {job.proposals[0].proposedDuration}
+                      </div>
+                      <div className="card-meta" style={{ marginTop: '5px', fontSize: '0.85rem' }}>
+                        📅 Received {new Date(job.proposals[0].submittedAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <span className="tag success" style={{ background: '#28a745' }}>
+                      NEW
+                    </span>
+                  </div>
+                  <div className="card-footer">
+                    <div className="card-meta">
+                      Total proposals: {job.proposalCount} • Job budget: ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <Link to={`/jobs/${job._id}/proposals`} className="btn btn-primary">
+                        View All Proposals
+                      </Link>
+                      <Link to={`/messages`} className="btn btn-outline">
+                        Message Freelancer
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {recentActivity.pendingProposals && recentActivity.pendingProposals.length > 0 && (
             <div>
               <h3 style={{ marginBottom: '15px', color: '#495057' }}>Pending Proposals</h3>
