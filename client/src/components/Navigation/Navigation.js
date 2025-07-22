@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useRole } from '../../context/RoleContext';
 
 const Navigation = () => {
   const { user, isAuthenticated } = useAuth();
-  const [currentRole, setCurrentRole] = useState('freelancer');
+  const { currentRole, switchRole } = useRole();
 
   const handleRoleSwitch = (role) => {
-    setCurrentRole(role);
+    switchRole(role);
   };
 
   return (

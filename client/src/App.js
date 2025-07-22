@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { RoleProvider } from './context/RoleContext';
 import { AdminProvider } from './context/AdminContext';
 import { MessagingProvider } from './context/MessagingContext';
 import Home from './components/Home/Home';
@@ -159,13 +160,15 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AdminProvider>
-        <MessagingProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </MessagingProvider>
-      </AdminProvider>
+      <RoleProvider>
+        <AdminProvider>
+          <MessagingProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </MessagingProvider>
+        </AdminProvider>
+      </RoleProvider>
     </AuthProvider>
   );
 }
