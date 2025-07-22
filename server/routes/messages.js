@@ -6,7 +6,7 @@ const { authenticateToken } = require('../middleware/auth');
 router.get('/conversations', authenticateToken, async (req, res) => {
   try {
     const conversations = await Conversation.find({
-      participants: req.user.userId,
+      participants: req.user._id,
       isActive: true
     })
     .populate('participants', 'firstName lastName profilePicture')
@@ -26,7 +26,7 @@ router.get('/conversations/:conversationId', authenticateToken, async (req, res)
     const conversation = await Conversation.findById(req.params.conversationId)
       .populate('participants', 'firstName lastName profilePicture');
     
-    if (!conversation || !conversation.participants.some(p => p._id.toString() === req.user.userId)) {
+    if (!conversation || !conversation.participants.some(p => p._id.toString() === req.user._id.toString())) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
     
@@ -51,7 +51,7 @@ router.get('/conversations/:conversationId', authenticateToken, async (req, res)
     await Message.updateMany(
       {
         conversation: req.params.conversationId,
-        recipient: req.user.userId,
+        recipient: req.user._id,
         isRead: false
       },
       {
@@ -84,15 +84,15 @@ router.post('/conversations', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Recipient and message content are required' });
     }
     
-    if (recipientId === req.user.userId) {
+    if (recipientId === req.user._id.toString()) {
       return res.status(400).json({ error: 'Cannot send message to yourself' });
     }
     
-    let conversation = await Conversation.findByParticipants(req.user.userId, recipientId);
+    let conversation = await Conversation.findByParticipants(req.user._id, recipientId);
     
     if (!conversation) {
       conversation = new Conversation({
-        participants: [req.user.userId, recipientId],
+        participants: [req.user._id, recipientId],
         job: jobId || null
       });
       await conversation.save();
@@ -100,7 +100,7 @@ router.post('/conversations', authenticateToken, async (req, res) => {
     
     const message = new Message({
       conversation: conversation._id,
-      sender: req.user.userId,
+      sender: req.user._id,
       recipient: recipientId,
       content
     });
@@ -134,17 +134,17 @@ router.post('/conversations/:conversationId/messages', authenticateToken, async 
     
     const conversation = await Conversation.findById(req.params.conversationId);
     
-    if (!conversation || !conversation.participants.includes(req.user.userId)) {
+    if (!conversation || !conversation.participants.some(p => p.toString() === req.user._id.toString())) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
     
     const recipientId = conversation.participants.find(
-      p => p.toString() !== req.user.userId
+      p => p.toString() !== req.user._id.toString()
     );
     
     const message = new Message({
       conversation: conversation._id,
-      sender: req.user.userId,
+      sender: req.user._id,
       recipient: recipientId,
       content
     });
@@ -170,7 +170,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, async 
 router.get('/unread-count', authenticateToken, async (req, res) => {
   try {
     const unreadCount = await Message.countDocuments({
-      recipient: req.user.userId,
+      recipient: req.user._id,
       isRead: false,
       isDeleted: false
     });

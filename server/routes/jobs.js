@@ -254,16 +254,24 @@ router.post('/:id/proposals', authenticateToken, async (req, res) => {
     
     await job.addProposal(proposal);
     
+    console.log('DEBUG: Starting notification system for proposal submission');
+    console.log('DEBUG: job.client:', job.client);
+    console.log('DEBUG: req.user._id:', req.user._id);
+    
     let conversation = await Conversation.findByParticipants(job.client, req.user._id);
+    console.log('DEBUG: Found existing conversation:', conversation);
     
     if (!conversation) {
+      console.log('DEBUG: Creating new conversation');
       conversation = new Conversation({
         participants: [job.client, req.user._id],
         job: job._id
       });
       await conversation.save();
+      console.log('DEBUG: New conversation created:', conversation._id);
     }
     
+    console.log('DEBUG: Creating system message');
     const systemMessage = new Message({
       conversation: conversation._id,
       sender: req.user._id,
@@ -273,8 +281,11 @@ router.post('/:id/proposals', authenticateToken, async (req, res) => {
     });
     
     await systemMessage.save();
+    console.log('DEBUG: System message saved:', systemMessage._id);
+    
     conversation.lastMessage = systemMessage._id;
     await conversation.updateLastActivity();
+    console.log('DEBUG: Conversation updated with last message');
     
     const updatedJob = await Job.findById(job._id)
       .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
