@@ -38,33 +38,45 @@ const authenticateToken = async (req, res, next) => {
 
 const authenticateAdmin = async (req, res, next) => {
   try {
+    console.log('=== ADMIN AUTH DEBUG ===');
     const authHeader = req.headers['authorization'];
+    console.log('Auth header:', authHeader ? 'Bearer token present' : 'No auth header');
     const token = authHeader && authHeader.split(' ')[1];
     
     if (!token) {
+      console.log('❌ No token provided');
       return res.status(401).json({ error: 'Access token required' });
     }
     
+    console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Decoded token payload:', decoded);
     
     if (!decoded.isAdmin) {
+      console.log('❌ Token missing isAdmin flag:', decoded.isAdmin);
       return res.status(403).json({ error: 'Admin access required' });
     }
     
+    console.log('✅ Token has isAdmin flag, looking up user:', decoded.userId);
     const user = await User.findById(decoded.userId);
+    console.log('User found:', user ? `${user.email} (id: ${user._id})` : 'No user found');
     
     if (!user) {
+      console.log('❌ User not found in database');
       return res.status(401).json({ error: 'Invalid admin token' });
     }
     
     if (user.isSuspended) {
+      console.log('❌ User account suspended');
       return res.status(403).json({ error: 'Admin account suspended' });
     }
     
+    console.log('✅ Admin authentication successful');
     req.admin = user;
     req.user = user;
     next();
   } catch (error) {
+    console.log('❌ Admin auth error:', error.message);
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Admin token expired' });
     }
