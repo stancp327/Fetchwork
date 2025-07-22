@@ -97,12 +97,14 @@ app.get('/test-db', async (req, res) => {
     res.json({ 
       status: 'success', 
       message: '✅ MongoDB Connected!',
-      database: mongoose.connection.name 
+      database: mongoose.connection.name,
+      connectionString: MONGO_URI ? MONGO_URI.substring(0, 50) + '...' : 'undefined'
     });
   } catch (error) {
     res.status(500).json({ 
       status: 'error', 
-      message: '❌ MongoDB Error: ' + error.message 
+      message: '❌ MongoDB Error: ' + error.message,
+      connectionString: MONGO_URI ? MONGO_URI.substring(0, 50) + '...' : 'undefined'
     });
   }
 });
