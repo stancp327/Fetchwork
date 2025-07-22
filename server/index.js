@@ -21,6 +21,14 @@ app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
 });
 
+app.get('/test-db', (req, res) => {
+  if (mongoose.connection.readyState === 1) {
+    res.send('✅ MongoDB Connected!');
+  } else {
+    res.status(500).send('❌ MongoDB Not Connected');
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
