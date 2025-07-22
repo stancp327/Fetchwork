@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
+const adminRoutes = require('./routes/admin');
 
 // Load .env.local first (for local development), then .env as fallback
 require('dotenv').config({ path: '.env.local' });
@@ -59,10 +60,10 @@ const authenticateToken = (req, res, next) => {
 
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, firstName, lastName } = req.body;
     
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({ error: 'Email, password, first name, and last name are required' });
     }
     
     if (password.length < 6) {
@@ -74,7 +75,7 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
     
-    const user = new User({ email, password });
+    const user = new User({ email, password, firstName, lastName });
     await user.save();
     
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -82,7 +83,7 @@ app.post('/api/auth/register', async (req, res) => {
     res.status(201).json({
       message: 'User created successfully',
       token,
-      user: { id: user._id, email: user.email }
+      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -120,6 +121,8 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
