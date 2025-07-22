@@ -103,6 +103,18 @@ const JobDetails = () => {
     });
   };
 
+  const formatJobStatus = (status) => {
+    const statusMap = {
+      'draft': 'Draft',
+      'open': 'Open',
+      'in_progress': 'In Progress',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled',
+      'disputed': 'Disputed'
+    };
+    return statusMap[status] || status;
+  };
+
   if (loading) {
     return (
       <div className="user-container">
@@ -160,7 +172,10 @@ const JobDetails = () => {
 
         <div className="job-content">
           <div className="job-main">
-            <h1 className="job-title">{job.title}</h1>
+            <div className="job-title-section">
+              <h1 className="job-title">{job.title}</h1>
+              <span className={`job-status-badge ${job.status}`}>{formatJobStatus(job.status)}</span>
+            </div>
             
             <div className="job-overview">
               <div className="job-stat">
