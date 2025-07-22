@@ -29,7 +29,16 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = useCallback(async () => {
     try {
       const response = await axios.get(`${apiBaseUrl}/api/auth/me`);
-      setUser(response.data.user);
+      const userData = response.data.user;
+      
+      const currentToken = localStorage.getItem('token');
+      if (currentToken) {
+        const decoded = jwtDecode(currentToken);
+        const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
+        setUser(userWithAdmin);
+      } else {
+        setUser(userData);
+      }
     } catch (error) {
       console.error('Failed to fetch user:', error);
       logout();

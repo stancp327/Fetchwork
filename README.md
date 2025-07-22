@@ -442,3 +442,5 @@ For issues or questions:
 **Version**: 2.0.0 (AdminDashboard Restoration Complete)  
 **Maintainer**: Chaz (@stancp327)  
 **Link to Devin run**: https://app.devin.ai/sessions/9375e0bf42cd410d9fdf014edb91af44
+
+<!-- Deployment trigger: 2025-07-22 10:38 -->
