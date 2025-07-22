@@ -38,7 +38,7 @@ const Navigation = () => {
         </Link>
       </div>
       
-      {isAuthenticated && user?.role === 'freelancer' && (
+      {isAuthenticated && (user?.accountType === 'freelancer' || user?.accountType === 'both') && (
         <div className="role-switcher">
           <span className="role-label">Viewing as:</span>
           <div className="role-toggle">
