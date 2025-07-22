@@ -78,7 +78,7 @@ const JobDetails = () => {
         throw new Error(errorData.error || 'Failed to submit proposal');
       }
 
-      alert('Proposal submitted successfully!');
+      alert('Proposal submitted successfully! Check your messages for updates.');
       navigate('/dashboard');
     } catch (error) {
       console.error('Error submitting proposal:', error);
@@ -292,14 +292,39 @@ const JobDetails = () => {
                         </div>
                       </div>
 
-                      {error && <div className="error-message">{error}</div>}
+                      {error && (
+                        <div className="error-message" style={{ 
+                          background: '#f8d7da', 
+                          color: '#721c24', 
+                          padding: '10px', 
+                          borderRadius: '4px',
+                          marginBottom: '15px',
+                          border: '1px solid #f5c6cb'
+                        }}>
+                          {error}
+                        </div>
+                      )}
                       
                       <button 
                         type="submit" 
                         className="btn btn-primary btn-full"
                         disabled={applying}
+                        style={{
+                          background: applying ? '#6c757d' : '#667eea',
+                          cursor: applying ? 'not-allowed' : 'pointer'
+                        }}
                       >
-                        {applying ? 'Submitting...' : 'Submit Proposal'}
+                        {applying ? (
+                          <>
+                            <span style={{ marginRight: '8px' }}>⏳</span>
+                            Submitting Proposal...
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ marginRight: '8px' }}>📝</span>
+                            Submit Proposal
+                          </>
+                        )}
                       </button>
                     </form>
                   </div>

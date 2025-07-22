@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useRole } from '../../context/RoleContext';
 import { Link } from 'react-router-dom';
 import '../UserComponents.css';
 
@@ -13,6 +14,7 @@ const getApiBaseUrl = () => {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { currentRole, isFreelancerMode, isClientMode } = useRole();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -95,53 +97,70 @@ const Dashboard = () => {
   return (
     <div className="user-container">
       <div className="user-header">
-        <h1>Welcome back, {user?.firstName}!</h1>
-        <p>Here's what's happening with your projects</p>
+        <div className="dashboard-role-header">
+          <div>
+            <h1>Welcome back, {user?.firstName}!</h1>
+            <p>Here's what's happening with your projects</p>
+          </div>
+          <div className="role-badge">
+            {currentRole === 'freelancer' ? '👨‍💻 Freelancer View' : '👔 Client View'}
+          </div>
+        </div>
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
-          <h3>Jobs Posted</h3>
-          <div className="value">{stats.activeJobsAsClient || 0}</div>
-          <div className="change">Active projects</div>
-        </div>
+        {isClientMode && (
+          <>
+            <div className="stat-card">
+              <h3>Jobs Posted</h3>
+              <div className="value">{stats.activeJobsAsClient || 0}</div>
+              <div className="change">Active projects</div>
+            </div>
 
-        <div className="stat-card">
-          <h3>Jobs Working On</h3>
-          <div className="value">{stats.activeJobsAsFreelancer || 0}</div>
-          <div className="change">In progress</div>
-        </div>
+            <div className="stat-card">
+              <h3>Total Spent</h3>
+              <div className="value">{formatCurrency(stats.totalSpent || 0)}</div>
+              <div className="change">As client</div>
+            </div>
+          </>
+        )}
 
-        <div className="stat-card">
-          <h3>Total Earned</h3>
-          <div className="value">{formatCurrency(stats.totalEarnings || 0)}</div>
-          <div className="change">As freelancer</div>
-        </div>
+        {isFreelancerMode && (
+          <>
+            <div className="stat-card">
+              <h3>Jobs Working On</h3>
+              <div className="value">{stats.activeJobsAsFreelancer || 0}</div>
+              <div className="change">In progress</div>
+            </div>
 
-        <div className="stat-card">
-          <h3>Total Spent</h3>
-          <div className="value">{formatCurrency(stats.totalSpent || 0)}</div>
-          <div className="change">As client</div>
-        </div>
+            <div className="stat-card">
+              <h3>Total Earned</h3>
+              <div className="value">{formatCurrency(stats.totalEarnings || 0)}</div>
+              <div className="change">As freelancer</div>
+            </div>
+
+            <div className="stat-card">
+              <h3>Pending Proposals</h3>
+              <div className="value">{stats.pendingProposals || 0}</div>
+              <div className="change">Awaiting response</div>
+            </div>
+          </>
+        )}
 
         <div className="stat-card">
           <h3>Unread Messages</h3>
           <div className="value">{stats.unreadMessages || 0}</div>
           <div className="change">New notifications</div>
         </div>
-
-        <div className="stat-card">
-          <h3>Pending Proposals</h3>
-          <div className="value">{stats.pendingProposals || 0}</div>
-          <div className="change">Awaiting response</div>
-        </div>
       </div>
 
       <div className="content-grid">
         <div className="main-content">
-          <div className="section-title">Recent Activity</div>
+          <div className="section-title">
+            Recent Activity - {currentRole === 'freelancer' ? 'Freelancer View' : 'Client View'}
+          </div>
 
-          {recentActivity.jobsAsClient && recentActivity.jobsAsClient.length > 0 && (
+          {isClientMode && recentActivity.jobsAsClient && recentActivity.jobsAsClient.length > 0 && (
             <div style={{ marginBottom: '30px' }}>
               <h3 style={{ marginBottom: '15px', color: '#495057' }}>Jobs You Posted</h3>
               {recentActivity.jobsAsClient.map((job) => (
@@ -171,7 +190,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          {recentActivity.jobsAsFreelancer && recentActivity.jobsAsFreelancer.length > 0 && (
+          {isFreelancerMode && recentActivity.jobsAsFreelancer && recentActivity.jobsAsFreelancer.length > 0 && (
             <div style={{ marginBottom: '30px' }}>
               <h3 style={{ marginBottom: '15px', color: '#495057' }}>Jobs You're Working On</h3>
               {recentActivity.jobsAsFreelancer.map((job) => (
@@ -201,7 +220,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          {recentActivity.proposalsReceived && recentActivity.proposalsReceived.length > 0 && (
+          {isClientMode && recentActivity.proposalsReceived && recentActivity.proposalsReceived.length > 0 && (
             <div style={{ marginBottom: '30px' }}>
               <h3 style={{ marginBottom: '15px', color: '#495057', display: 'flex', alignItems: 'center' }}>
                 🔔 New Proposals Received
@@ -256,7 +275,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          {recentActivity.pendingProposals && recentActivity.pendingProposals.length > 0 && (
+          {isFreelancerMode && recentActivity.pendingProposals && recentActivity.pendingProposals.length > 0 && (
             <div>
               <h3 style={{ marginBottom: '15px', color: '#495057' }}>Pending Proposals</h3>
               {recentActivity.pendingProposals.map((job) => (
@@ -284,19 +303,36 @@ const Dashboard = () => {
             </div>
           )}
 
-          {(!recentActivity.jobsAsClient || recentActivity.jobsAsClient.length === 0) &&
-           (!recentActivity.jobsAsFreelancer || recentActivity.jobsAsFreelancer.length === 0) &&
-           (!recentActivity.pendingProposals || recentActivity.pendingProposals.length === 0) && (
+          {((isClientMode && (!recentActivity.jobsAsClient || recentActivity.jobsAsClient.length === 0) && (!recentActivity.proposalsReceived || recentActivity.proposalsReceived.length === 0)) ||
+            (isFreelancerMode && (!recentActivity.jobsAsFreelancer || recentActivity.jobsAsFreelancer.length === 0) && (!recentActivity.pendingProposals || recentActivity.pendingProposals.length === 0))) && (
             <div className="empty-state">
               <h3>No recent activity</h3>
-              <p>Start by posting a job or browsing available opportunities</p>
+              <p>
+                {isClientMode 
+                  ? 'Start by posting a job to find talented freelancers' 
+                  : 'Start by browsing jobs or creating service offerings'
+                }
+              </p>
               <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
-                <Link to="/post-job" className="btn btn-primary">
-                  Post a Job
-                </Link>
-                <Link to="/browse-jobs" className="btn btn-outline">
-                  Browse Jobs
-                </Link>
+                {isClientMode ? (
+                  <>
+                    <Link to="/post-job" className="btn btn-primary">
+                      Post a Job
+                    </Link>
+                    <Link to="/browse-services" className="btn btn-outline">
+                      Browse Services
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/browse-jobs" className="btn btn-primary">
+                      Browse Jobs
+                    </Link>
+                    <Link to="/create-service" className="btn btn-outline">
+                      Create Service
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -306,11 +342,23 @@ const Dashboard = () => {
           <div className="section-title">Quick Actions</div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <Link to="/post-job" className="btn btn-primary">
-              Post a New Job
-            </Link>
-            <Link to="/browse-jobs" className="btn btn-outline">
-              Browse Jobs
+            {isClientMode && (
+              <Link to="/post-job" className="btn btn-primary">
+                Post a New Job
+              </Link>
+            )}
+            {isFreelancerMode && (
+              <>
+                <Link to="/browse-jobs" className="btn btn-primary">
+                  Browse Jobs
+                </Link>
+                <Link to="/create-service" className="btn btn-outline">
+                  Create Service
+                </Link>
+              </>
+            )}
+            <Link to="/browse-services" className="btn btn-outline">
+              Browse Services
             </Link>
             <Link to="/messages" className="btn btn-outline">
               View Messages
