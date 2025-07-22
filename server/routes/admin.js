@@ -7,6 +7,18 @@ const Job = require('../models/Job');
 const Payment = require('../models/Payment');
 const Review = require('../models/Review');
 
+router.get('/profile', authenticateAdmin, async (req, res) => {
+  try {
+    res.json({
+      message: 'Admin profile retrieved successfully',
+      admin: req.admin.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Admin profile error:', error);
+    res.status(500).json({ error: 'Failed to retrieve admin profile' });
+  }
+});
+
 router.get('/dashboard', authenticateAdmin, async (req, res) => {
   try {
     const stats = {

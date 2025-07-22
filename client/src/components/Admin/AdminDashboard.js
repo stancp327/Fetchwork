@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useAdmin } from '../../context/AdminContext';
 import './AdminDashboard.css';
 
 const getApiBaseUrl = () => {
@@ -10,7 +11,12 @@ const getApiBaseUrl = () => {
 };
 
 const AdminDashboard = () => {
+  const { isAdminAuthenticated, setTempAdminToken } = useAdmin();
   const [dashboardData, setDashboardData] = useState(null);
+  const [usersData, setUsersData] = useState(null);
+  const [jobsData, setJobsData] = useState(null);
+  const [paymentsData, setPaymentsData] = useState(null);
+  const [reviewsData, setReviewsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -18,10 +24,12 @@ const AdminDashboard = () => {
   const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (!isAdminAuthenticated) {
+      console.log('Admin not authenticated - please log in through proper admin login flow');
+    }
+  }, [isAdminAuthenticated]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${apiBaseUrl}/api/admin/dashboard`);
@@ -32,6 +40,87 @@ const AdminDashboard = () => {
       setError(error.response?.data?.error || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
+    }
+  }, [apiBaseUrl]);
+
+  const fetchUsersData = useCallback(async (page = 1, search = '', status = 'all') => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/admin/users`, {
+        params: { page, search, status, limit: 10 }
+      });
+      setUsersData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users data:', error);
+    }
+  }, [apiBaseUrl]);
+
+  const fetchJobsData = useCallback(async (page = 1, status = 'all') => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/admin/jobs`, {
+        params: { page, status, limit: 10 }
+      });
+      setJobsData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch jobs data:', error);
+    }
+  }, [apiBaseUrl]);
+
+  const fetchPaymentsData = useCallback(async (page = 1, status = 'all') => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/admin/payments`, {
+        params: { page, status, limit: 10 }
+      });
+      setPaymentsData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch payments data:', error);
+    }
+  }, [apiBaseUrl]);
+
+  const fetchReviewsData = useCallback(async (page = 1, status = 'all') => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/admin/reviews`, {
+        params: { page, status, limit: 10 }
+      });
+      setReviewsData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch reviews data:', error);
+    }
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    if (isAdminAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAdminAuthenticated, fetchDashboardData]);
+
+  useEffect(() => {
+    if (activeTab === 'users' && isAdminAuthenticated) {
+      fetchUsersData();
+    } else if (activeTab === 'jobs' && isAdminAuthenticated) {
+      fetchJobsData();
+    } else if (activeTab === 'payments' && isAdminAuthenticated) {
+      fetchPaymentsData();
+    } else if (activeTab === 'reviews' && isAdminAuthenticated) {
+      fetchReviewsData();
+    }
+  }, [activeTab, isAdminAuthenticated, fetchUsersData, fetchJobsData, fetchPaymentsData, fetchReviewsData]);
+
+
+  const suspendUser = async (userId, reason) => {
+    try {
+      await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/suspend`, { reason });
+      fetchUsersData();
+    } catch (error) {
+      console.error('Failed to suspend user:', error);
+    }
+  };
+
+  const unsuspendUser = async (userId) => {
+    try {
+      await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/unsuspend`);
+      fetchUsersData();
+    } catch (error) {
+      console.error('Failed to unsuspend user:', error);
     }
   };
 
@@ -127,26 +216,26 @@ const AdminDashboard = () => {
             <div className="stats-grid">
               <StatCard
                 title="Total Users"
-                value={dashboardData.stats?.users?.total || 0}
-                subtitle={`${dashboardData.stats?.users?.active || 0} active`}
+                value={dashboardData.users?.total || 0}
+                subtitle={`${dashboardData.users?.active || 0} active`}
                 className="users-stat"
               />
               <StatCard
                 title="Total Jobs"
-                value={dashboardData.stats?.jobs?.total || 0}
-                subtitle={`${dashboardData.stats?.jobs?.active || 0} active`}
+                value={dashboardData.jobs?.total || 0}
+                subtitle={`${dashboardData.jobs?.active || 0} active`}
                 className="jobs-stat"
               />
               <StatCard
                 title="Payment Volume"
-                value={`$${(dashboardData.stats?.payments?.totalVolume || 0).toLocaleString()}`}
-                subtitle={`$${(dashboardData.stats?.payments?.thisMonth || 0).toLocaleString()} this month`}
+                value={`$${(dashboardData.payments?.volume || 0).toLocaleString()}`}
+                subtitle={`${dashboardData.payments?.total || 0} payments`}
                 className="payments-stat"
               />
               <StatCard
                 title="Average Rating"
-                value={dashboardData.stats?.reviews?.averageRating || 0}
-                subtitle={`${dashboardData.stats?.reviews?.total || 0} total reviews`}
+                value={(dashboardData.reviews?.average || 0).toFixed(1)}
+                subtitle={`${dashboardData.reviews?.total || 0} total reviews`}
                 className="reviews-stat"
               />
             </div>
@@ -157,33 +246,36 @@ const AdminDashboard = () => {
                 <div className="activity-section">
                   <h3>New Users</h3>
                   <div className="activity-list">
-                    {dashboardData.recentActivity?.newUsers?.map((user, index) => (
+                    {dashboardData.recent?.users?.length > 0 ? dashboardData.recent.users.map((user, index) => (
                       <div key={index} className="activity-item">
-                        <span className="user-name">
-                          {user.firstName} {user.lastName}
-                        </span>
-                        <span className="user-email">{user.email}</span>
-                        <span className="activity-date">
+                        <div>
+                          <div className="user-name">
+                            {user.firstName} {user.lastName}
+                          </div>
+                          <div className="user-email">{user.email}</div>
+                        </div>
+                        <div className="activity-date">
                           {new Date(user.createdAt).toLocaleDateString()}
-                        </span>
+                        </div>
                       </div>
-                    )) || <p>No recent users</p>}
+                    )) : <p>No recent users</p>}
                   </div>
                 </div>
 
                 <div className="activity-section">
                   <h3>Recent Jobs</h3>
                   <div className="activity-list">
-                    {dashboardData.recentActivity?.recentJobs?.map((job, index) => (
+                    {dashboardData.recent?.jobs?.length > 0 ? dashboardData.recent.jobs.map((job, index) => (
                       <div key={index} className="activity-item">
-                        <span className="job-title">{job.title}</span>
-                        <span className="job-budget">${job.budget}</span>
-                        <span className="job-status">{job.status}</span>
-                        <span className="activity-date">
+                        <div>
+                          <div className="job-title">{job.title}</div>
+                          <div className="job-budget">${job.budget}</div>
+                        </div>
+                        <div className="activity-date">
                           {new Date(job.createdAt).toLocaleDateString()}
-                        </span>
+                        </div>
                       </div>
-                    )) || <p>No recent jobs</p>}
+                    )) : <p>No recent jobs</p>}
                   </div>
                 </div>
               </div>
@@ -194,28 +286,327 @@ const AdminDashboard = () => {
         {activeTab === 'users' && (
           <div className="users-tab">
             <h2>User Management</h2>
-            <p>User management functionality will be implemented here.</p>
+            {usersData ? (
+              <div className="users-management">
+                <div className="users-controls">
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    className="search-input"
+                    onChange={(e) => fetchUsersData(1, e.target.value)}
+                  />
+                  <select
+                    className="status-filter"
+                    onChange={(e) => fetchUsersData(1, '', e.target.value)}
+                  >
+                    <option value="all">All Users</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                <div className="users-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersData.users.map((user) => (
+                        <tr key={user._id}>
+                          <td>{user.firstName} {user.lastName}</td>
+                          <td>{user.email}</td>
+                          <td>
+                            <span className={`status ${user.isSuspended ? 'suspended' : user.isActive ? 'active' : 'inactive'}`}>
+                              {user.isSuspended ? 'Suspended' : user.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            {user.isSuspended ? (
+                              <button
+                                className="action-btn unsuspend"
+                                onClick={() => unsuspendUser(user._id)}
+                              >
+                                Unsuspend
+                              </button>
+                            ) : (
+                              <button
+                                className="action-btn suspend"
+                                onClick={() => {
+                                  const reason = prompt('Reason for suspension:');
+                                  if (reason) suspendUser(user._id, reason);
+                                }}
+                              >
+                                Suspend
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="pagination">
+                  <span>Page {usersData.pagination.current} of {usersData.pagination.pages}</span>
+                  <span>Total: {usersData.pagination.total} users</span>
+                </div>
+              </div>
+            ) : (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading users...</p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'jobs' && (
           <div className="jobs-tab">
             <h2>Job Management</h2>
-            <p>Job management functionality will be implemented here.</p>
+            {jobsData ? (
+              <div className="jobs-management">
+                <div className="jobs-controls">
+                  <select
+                    className="status-filter"
+                    onChange={(e) => fetchJobsData(1, e.target.value)}
+                  >
+                    <option value="all">All Jobs</option>
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div className="jobs-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Client</th>
+                        <th>Budget</th>
+                        <th>Status</th>
+                        <th>Posted</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {jobsData.jobs.length > 0 ? jobsData.jobs.map((job) => (
+                        <tr key={job._id}>
+                          <td>{job.title}</td>
+                          <td>{job.client ? `${job.client.firstName} ${job.client.lastName}` : 'N/A'}</td>
+                          <td>${job.budget}</td>
+                          <td>
+                            <span className={`status ${job.status}`}>
+                              {job.status}
+                            </span>
+                          </td>
+                          <td>{new Date(job.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            <button
+                              className="action-btn cancel"
+                              onClick={() => {
+                                const reason = prompt('Reason for cancellation:');
+                                if (reason) {
+                                  axios.put(`${apiBaseUrl}/api/admin/jobs/${job._id}/cancel`, { reason })
+                                    .then(() => fetchJobsData())
+                                    .catch(err => console.error('Failed to cancel job:', err));
+                                }
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan="6" className="no-data">No jobs found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="pagination">
+                  <span>Page {jobsData.pagination.current} of {jobsData.pagination.pages}</span>
+                  <span>Total: {jobsData.pagination.total} jobs</span>
+                </div>
+              </div>
+            ) : (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading jobs...</p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'payments' && (
           <div className="payments-tab">
             <h2>Payment Management</h2>
-            <p>Payment management functionality will be implemented here.</p>
+            {paymentsData ? (
+              <div className="payments-management">
+                <div className="payments-controls">
+                  <select
+                    className="status-filter"
+                    onChange={(e) => fetchPaymentsData(1, e.target.value)}
+                  >
+                    <option value="all">All Payments</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="refunded">Refunded</option>
+                  </select>
+                </div>
+                <div className="payments-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Amount</th>
+                        <th>Client</th>
+                        <th>Freelancer</th>
+                        <th>Job</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paymentsData.payments.length > 0 ? paymentsData.payments.map((payment) => (
+                        <tr key={payment._id}>
+                          <td>${payment.amount}</td>
+                          <td>{payment.client ? `${payment.client.firstName} ${payment.client.lastName}` : 'N/A'}</td>
+                          <td>{payment.freelancer ? `${payment.freelancer.firstName} ${payment.freelancer.lastName}` : 'N/A'}</td>
+                          <td>{payment.job ? payment.job.title : 'N/A'}</td>
+                          <td>
+                            <span className={`status ${payment.status}`}>
+                              {payment.status}
+                            </span>
+                          </td>
+                          <td>{new Date(payment.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            <button className="action-btn view">View Details</button>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan="7" className="no-data">No payments found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="pagination">
+                  <span>Page {paymentsData.pagination.current} of {paymentsData.pagination.pages}</span>
+                  <span>Total: {paymentsData.pagination.total} payments</span>
+                </div>
+              </div>
+            ) : (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading payments...</p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'reviews' && (
           <div className="reviews-tab">
             <h2>Review Management</h2>
-            <p>Review management functionality will be implemented here.</p>
+            {reviewsData ? (
+              <div className="reviews-management">
+                <div className="reviews-controls">
+                  <select
+                    className="status-filter"
+                    onChange={(e) => fetchReviewsData(1, e.target.value)}
+                  >
+                    <option value="all">All Reviews</option>
+                    <option value="flagged">Flagged</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="hidden">Hidden</option>
+                  </select>
+                </div>
+                <div className="reviews-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Rating</th>
+                        <th>Reviewer</th>
+                        <th>Reviewee</th>
+                        <th>Job</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reviewsData.reviews.length > 0 ? reviewsData.reviews.map((review) => (
+                        <tr key={review._id}>
+                          <td>
+                            <div className="rating">
+                              {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                            </div>
+                          </td>
+                          <td>{review.reviewer ? `${review.reviewer.firstName} ${review.reviewer.lastName}` : 'N/A'}</td>
+                          <td>{review.reviewee ? `${review.reviewee.firstName} ${review.reviewee.lastName}` : 'N/A'}</td>
+                          <td>{review.job ? review.job.title : 'N/A'}</td>
+                          <td>
+                            <span className={`status ${review.moderationStatus || 'pending'}`}>
+                              {review.moderationStatus || 'Pending'}
+                            </span>
+                          </td>
+                          <td>{new Date(review.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            <div className="review-actions">
+                              <button
+                                className="action-btn approve"
+                                onClick={() => {
+                                  axios.put(`${apiBaseUrl}/api/admin/reviews/${review._id}/moderate`, {
+                                    status: 'approved'
+                                  }).then(() => fetchReviewsData()).catch(err => console.error('Failed to approve review:', err));
+                                }}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="action-btn reject"
+                                onClick={() => {
+                                  const notes = prompt('Reason for rejection:');
+                                  axios.put(`${apiBaseUrl}/api/admin/reviews/${review._id}/moderate`, {
+                                    status: 'rejected',
+                                    notes
+                                  }).then(() => fetchReviewsData()).catch(err => console.error('Failed to reject review:', err));
+                                }}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan="7" className="no-data">No reviews found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="pagination">
+                  <span>Page {reviewsData.pagination.current} of {reviewsData.pagination.pages}</span>
+                  <span>Total: {reviewsData.pagination.total} reviews</span>
+                </div>
+              </div>
+            ) : (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading reviews...</p>
+              </div>
+            )}
           </div>
         )}
       </div>
