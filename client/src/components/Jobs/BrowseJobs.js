@@ -94,6 +94,30 @@ const BrowseJobs = () => {
     return category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  const formatJobStatus = (status) => {
+    const statusMap = {
+      'draft': 'Draft',
+      'open': 'Open',
+      'in_progress': 'In Progress',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled',
+      'disputed': 'Disputed'
+    };
+    return statusMap[status] || status;
+  };
+
+  const getStatusClass = (status) => {
+    const statusClasses = {
+      'draft': 'status-tag draft',
+      'open': 'status-tag open',
+      'in_progress': 'status-tag in-progress',
+      'completed': 'status-tag completed',
+      'cancelled': 'status-tag cancelled',
+      'disputed': 'status-tag disputed'
+    };
+    return statusClasses[status] || 'status-tag';
+  };
+
   if (loading) {
     return (
       <div className="user-container">
@@ -215,6 +239,7 @@ const BrowseJobs = () => {
                     </div>
                   </div>
                   <div className="tags">
+                    <span className={getStatusClass(job.status)}>{formatJobStatus(job.status)}</span>
                     <span className="tag primary">{formatCategory(job.category)}</span>
                     <span className="tag">{job.experienceLevel}</span>
                     {job.isUrgent && <span className="tag warning">Urgent</span>}

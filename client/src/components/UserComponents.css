@@ -890,3 +890,112 @@
     transform: translateY(0);
   }
 }
+
+/* Job Status Tags */
+.status-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.status-tag.draft {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.status-tag.open {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-tag.in-progress {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-tag.completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-tag.cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-tag.disputed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Job Details Status Badge */
+.job-title-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.job-status-badge {
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.job-status-badge.draft {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+}
+
+.job-status-badge.open {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+}
+
+.job-status-badge.in_progress {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  color: #212529;
+}
+
+.job-status-badge.completed {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  color: white;
+}
+
+.job-status-badge.cancelled {
+  background: linear-gradient(135deg, #dc3545, #bd2130);
+  color: white;
+}
+
+.job-status-badge.disputed {
+  background: linear-gradient(135deg, #fd7e14, #e55100);
+  color: white;
+}
+
+/* Mobile responsive adjustments for job status */
+@media (max-width: 768px) {
+  .job-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .job-status-badge {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+
+  .status-tag {
+    font-size: 0.8rem;
+    padding: 3px 10px;
+  }
+}
