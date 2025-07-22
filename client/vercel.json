@@ -14,6 +14,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://fetchwork-1.onrender.com"
+    "REACT_APP_API_URL": "https://fetchwork-2.onrender.com"
   }
 }

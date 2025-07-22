@@ -16,7 +16,7 @@ const io = socketIo(server, {
       'http://localhost:3000',
       'https://fetchwork.net',
       'https://www.fetchwork.net',
-      'https://fetchwork-1.onrender.com',
+      'https://fetchwork-2.onrender.com',
       'https://fetchwork-git-devin-1752653015-dummy-pr-verification-fetch-work.vercel.app',
       'https://fetchwork-wkmt-git-devin-1752653015-dummy-pr-483479-fetch-work.vercel.app',
       /\.vercel\.app$/,
@@ -40,7 +40,7 @@ app.use(cors({
     'http://localhost:3000',
     'https://fetchwork.net',
     'https://www.fetchwork.net',
-    'https://fetchwork-1.onrender.com',
+    'https://fetchwork-2.onrender.com',
     'https://fetchwork-git-devin-1752653015-dummy-pr-verification-fetch-work.vercel.app',
     'https://fetchwork-wkmt-git-devin-1752653015-dummy-pr-483479-fetch-work.vercel.app',
     /\.vercel\.app$/,
@@ -97,14 +97,12 @@ app.get('/test-db', async (req, res) => {
     res.json({ 
       status: 'success', 
       message: '✅ MongoDB Connected!',
-      database: mongoose.connection.name,
-      connectionString: MONGO_URI ? MONGO_URI.substring(0, 50) + '...' : 'undefined'
+      database: mongoose.connection.name
     });
   } catch (error) {
     res.status(500).json({ 
       status: 'error', 
-      message: '❌ MongoDB Error: ' + error.message,
-      connectionString: MONGO_URI ? MONGO_URI.substring(0, 50) + '...' : 'undefined'
+      message: '❌ MongoDB Error: ' + error.message
     });
   }
 });
