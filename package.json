@@ -1,0 +1,16 @@
+{
+  "name": "fetchwork",
+  "version": "1.0.0",
+  "description": "All-in-one freelance platform for remote and local services",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "client": "cd client && npm start",
+    "server": "cd server && node index.js",
+    "build": "cd client && npm run build",
+    "test": "cd client && npm test -- --watchAll=false",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

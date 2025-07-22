@@ -1,5 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
+// Load .env.local first (for local development), then .env as fallback
+require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 
 const app = express();
@@ -17,6 +19,14 @@ mongoose.connect(MONGO_URI)
 // Simple route
 app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
+});
+
+app.get('/test-db', (req, res) => {
+  if (mongoose.connection.readyState === 1) {
+    res.send('✅ MongoDB Connected!');
+  } else {
+    res.status(500).send('❌ MongoDB Not Connected');
+  }
 });
 
 app.listen(PORT, () => {
