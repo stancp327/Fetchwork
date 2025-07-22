@@ -91,6 +91,22 @@ app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
 });
 
+app.get('/test-db', async (req, res) => {
+  try {
+    await mongoose.connection.db.admin().ping();
+    res.json({ 
+      status: 'success', 
+      message: '✅ MongoDB Connected!',
+      database: mongoose.connection.name 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error', 
+      message: '❌ MongoDB Error: ' + error.message 
+    });
+  }
+});
+
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
