@@ -8,6 +8,9 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import BrowseJobs from './components/Jobs/BrowseJobs';
+import BrowseServices from './components/Services/BrowseServices';
+import CreateService from './components/Services/CreateService';
+import ServiceDetails from './components/Services/ServiceDetails';
 import PostJob from './components/Jobs/PostJob';
 import JobDetails from './components/Jobs/JobDetails';
 import Profile from './components/Profile/Profile';
@@ -89,6 +92,13 @@ function AppContent() {
             <BrowseJobs />
           </ProtectedRoute>
         } />
+        <Route path="/browse-services" element={<BrowseServices />} />
+        <Route path="/create-service" element={
+          <ProtectedRoute>
+            <CreateService />
+          </ProtectedRoute>
+        } />
+        <Route path="/services/:id" element={<ServiceDetails />} />
         <Route path="/jobs/:id" element={
           <ProtectedRoute>
             <JobDetails />
