@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Job = require('../models/Job');
+const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
@@ -253,12 +254,35 @@ router.post('/:id/proposals', authenticateToken, async (req, res) => {
     
     await job.addProposal(proposal);
     
+    let conversation = await Conversation.findByParticipants(job.client, req.user._id);
+    
+    if (!conversation) {
+      conversation = new Conversation({
+        participants: [job.client, req.user._id],
+        job: job._id
+      });
+      await conversation.save();
+    }
+    
+    const systemMessage = new Message({
+      conversation: conversation._id,
+      sender: req.user._id,
+      recipient: job.client,
+      content: `🔔 New Proposal Received for "${job.title}"\n\nFreelancer: ${req.user.firstName} ${req.user.lastName}\nProposed Budget: $${proposedBudget}\nTimeline: ${proposedDuration}\nSubmitted: ${new Date().toLocaleString()}\n\nCover Letter:\n${coverLetter}`,
+      messageType: 'system'
+    });
+    
+    await systemMessage.save();
+    conversation.lastMessage = systemMessage._id;
+    await conversation.updateLastActivity();
+    
     const updatedJob = await Job.findById(job._id)
       .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
     
     res.status(201).json({
       message: 'Proposal submitted successfully',
-      proposal: updatedJob.proposals[updatedJob.proposals.length - 1]
+      proposal: updatedJob.proposals[updatedJob.proposals.length - 1],
+      conversationCreated: !conversation.lastMessage || conversation.lastMessage.toString() === systemMessage._id.toString()
     });
   } catch (error) {
     console.error('Error submitting proposal:', error);

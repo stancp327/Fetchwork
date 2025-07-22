@@ -98,6 +98,16 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
         }
       }
     ]);
+
+    const proposalsReceived = await Job.find({
+      client: userId,
+      isActive: true,
+      status: 'open',
+      'proposals.0': { $exists: true } // Has at least one proposal
+    })
+    .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs')
+    .sort({ 'proposals.submittedAt': -1 })
+    .limit(5);
     
     const dashboardData = {
       stats: {
@@ -111,7 +121,8 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
       recentActivity: {
         jobsAsClient: recentJobsAsClient,
         jobsAsFreelancer: recentJobsAsFreelancer,
-        pendingProposals
+        pendingProposals,
+        proposalsReceived
       }
     };
     
