@@ -46,21 +46,23 @@ const authenticateAdmin = async (req, res, next) => {
     }
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const admin = await Admin.findById(decoded.adminId || decoded.userId);
     
-    if (!admin) {
+    if (!decoded.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
       return res.status(401).json({ error: 'Invalid admin token' });
     }
     
-    if (!admin.isActive) {
-      return res.status(403).json({ error: 'Admin account deactivated' });
+    if (user.isSuspended) {
+      return res.status(403).json({ error: 'Admin account suspended' });
     }
     
-    if (admin.isLocked) {
-      return res.status(423).json({ error: 'Admin account locked due to failed login attempts' });
-    }
-    
-    req.admin = admin;
+    req.admin = user;
+    req.user = user;
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
