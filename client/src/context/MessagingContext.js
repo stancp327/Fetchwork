@@ -11,21 +11,13 @@ export const useMessaging = () => {
   return context;
 };
 
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 export const MessagingProvider = ({ children }) => {
-  const [messages, setMessages] = useState([]);
-  const [conversations, setConversations] = useState([]);
+  const [messages] = useState([]);
+  const [conversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount] = useState(0);
   const { user } = useAuth();
-
-  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     if (user) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AdminProvider } from './context/AdminContext';
 import { MessagingProvider } from './context/MessagingContext';
 import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
@@ -21,7 +22,7 @@ import Navigation from './components/Navigation/Navigation';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -41,7 +42,6 @@ const PublicRoute = ({ children }) => {
 };
 
 function AppContent() {
-  const { user } = useAuth();
 
   return (
     <div className="App">
@@ -122,11 +122,13 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <MessagingProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </MessagingProvider>
+      <AdminProvider>
+        <MessagingProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </MessagingProvider>
+      </AdminProvider>
     </AuthProvider>
   );
 }
