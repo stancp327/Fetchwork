@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext();
 
@@ -55,12 +56,15 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, user: userData } = response.data;
       
+      const decoded = jwtDecode(newToken);
+      const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
+      
       localStorage.setItem('token', newToken);
       setToken(newToken);
-      setUser(userData);
+      setUser(userWithAdmin);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
-      return { success: true, user: userData };
+      
+      return { success: true, user: userWithAdmin };
     } catch (error) {
       console.error('Login failed:', error);
       return { 
@@ -76,12 +80,15 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, user: newUser } = response.data;
       
+      const decoded = jwtDecode(newToken);
+      const userWithAdmin = { ...newUser, isAdmin: decoded.isAdmin };
+      
       localStorage.setItem('token', newToken);
       setToken(newToken);
-      setUser(newUser);
+      setUser(userWithAdmin);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
-      return { success: true, user: newUser };
+      
+      return { success: true, user: userWithAdmin };
     } catch (error) {
       console.error('Registration failed:', error);
       return { 
