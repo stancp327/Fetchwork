@@ -290,6 +290,13 @@ router.post('/:id/proposals', authenticateToken, async (req, res) => {
     const updatedJob = await Job.findById(job._id)
       .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
     
+    const emailService = require('../services/emailService');
+    const User = require('../models/User');
+    const client = await User.findById(job.client);
+    if (client) {
+      await emailService.sendJobNotification(client, job, 'new_proposal');
+    }
+
     res.status(201).json({
       message: 'Proposal submitted successfully',
       proposal: updatedJob.proposals[updatedJob.proposals.length - 1],

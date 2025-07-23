@@ -1,0 +1,140 @@
+.admin-email-panel {
+  padding: 20px;
+}
+
+.admin-email-panel h2 {
+  color: #333;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #4285f4;
+  padding-bottom: 10px;
+}
+
+.email-status {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.email-status h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.status-indicator {
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid;
+}
+
+.status-indicator.configured {
+  background: #d4edda;
+  border-color: #28a745;
+  color: #155724;
+}
+
+.status-indicator.not-configured {
+  background: #f8d7da;
+  border-color: #dc3545;
+  color: #721c24;
+}
+
+.email-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.broadcast-section,
+.test-section {
+  background: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.broadcast-section h3,
+.test-section h3 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #555;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+button[type="submit"] {
+  background: #4285f4;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  background: #3367d6;
+}
+
+button[type="submit"]:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.message {
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+@media (max-width: 768px) {
+  .email-actions {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .broadcast-section,
+  .test-section {
+    padding: 20px;
+  }
+}

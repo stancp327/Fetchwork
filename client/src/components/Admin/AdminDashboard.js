@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import AdminDisputePanel from './AdminDisputePanel';
+import AdminEmailPanel from './AdminEmailPanel';
 import './AdminDashboard.css';
 
 const getApiBaseUrl = () => {
@@ -244,6 +245,12 @@ const AdminDashboard = () => {
           id="disputes"
           label="Disputes"
           active={activeTab === 'disputes'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="email"
+          label="Email"
+          active={activeTab === 'email'}
           onClick={setActiveTab}
         />
       </div>
@@ -652,6 +659,13 @@ const AdminDashboard = () => {
           <div className="disputes-tab">
             <h2>Dispute Management</h2>
             <AdminDisputePanel />
+          </div>
+        )}
+
+        {activeTab === 'email' && (
+          <div className="email-tab">
+            <h2>Email Management</h2>
+            <AdminEmailPanel />
           </div>
         )}
       </div>
