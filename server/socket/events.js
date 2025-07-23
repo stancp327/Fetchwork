@@ -68,7 +68,7 @@ module.exports = (io) => {
           };
 
           console.log(`📤 Broadcasting group message to room ${roomId}`);
-          io.to(roomId).emit('message:receive', { message: messageWithId });
+          socket.to(roomId).emit('message:receive', { message: messageWithId });
 
           if (onlineMembers.length > 0) {
             socket.emit('message:delivered', {
@@ -198,7 +198,7 @@ module.exports = (io) => {
 
           console.log(`✅ Marked ${messageIds.length} group messages as read`);
 
-          io.to(roomId).emit('message:read', {
+          socket.to(roomId).emit('message:read', {
             roomId,
             messageIds,
             readAt: new Date(),
@@ -330,6 +330,56 @@ module.exports = (io) => {
         console.log(`🔄 Marked ${messageIds.length} messages as delivered for user ${senderId}`);
       } catch (error) {
         console.error('🔄 Error syncing missed messages:', error);
+      }
+    });
+
+    socket.on('room:join', async (data) => {
+      const { roomId } = data;
+      const userId = senderId;
+
+      try {
+        if (!roomId) {
+          socket.emit('error', { message: 'Room ID is required' });
+          return;
+        }
+
+        const room = await ChatRoom.findById(roomId);
+        if (!room || !room.isMember(userId)) {
+          socket.emit('error', { message: 'Room not found or access denied' });
+          return;
+        }
+
+        socket.join(roomId);
+        console.log(`🏠 User ${userId} joined room: ${roomId} (${room.name})`);
+        
+        socket.emit('room:joined', { roomId, roomName: room.name });
+        socket.to(roomId).emit('user:joined_room', { userId, roomId });
+
+      } catch (err) {
+        console.error('Error handling room:join:', err);
+        socket.emit('error', { message: 'Failed to join room' });
+      }
+    });
+
+    socket.on('room:leave', async (data) => {
+      const { roomId } = data;
+      const userId = senderId;
+
+      try {
+        if (!roomId) {
+          socket.emit('error', { message: 'Room ID is required' });
+          return;
+        }
+
+        socket.leave(roomId);
+        console.log(`🚪 User ${userId} left room: ${roomId}`);
+        
+        socket.emit('room:left', { roomId });
+        socket.to(roomId).emit('user:left_room', { userId, roomId });
+
+      } catch (err) {
+        console.error('Error handling room:leave:', err);
+        socket.emit('error', { message: 'Failed to leave room' });
       }
     });
 
