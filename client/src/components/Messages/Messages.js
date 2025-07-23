@@ -21,6 +21,8 @@ const Messages = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState(null);
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [deliveryStatus, setDeliveryStatus] = useState(new Map());
   const typingTimeoutRef = useRef(null);
 
   const apiBaseUrl = getApiBaseUrl();
@@ -72,6 +74,36 @@ const Messages = () => {
           }
           break;
         
+        case 'user:online':
+          console.log('[UI] User came online:', data);
+          setOnlineUsers(prev => new Set([...prev, data.userId]));
+          break;
+        
+        case 'user:offline':
+          console.log('[UI] User went offline:', data);
+          setOnlineUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(data.userId);
+            return newSet;
+          });
+          break;
+        
+        case 'message:delivered':
+          console.log('[UI] Message delivered:', data);
+          setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
+          break;
+        
+        case 'user:online_status':
+          console.log('[UI] Online status update:', data);
+          setOnlineUsers(prev => {
+            const newSet = new Set();
+            Object.entries(data).forEach(([userId, isOnline]) => {
+              if (isOnline) newSet.add(userId);
+            });
+            return newSet;
+          });
+          break;
+        
         default:
           console.warn('[UI] Unhandled socket event:', event);
       }
@@ -118,6 +150,15 @@ const Messages = () => {
           conversationId,
           messageIds: unreadMessages.map(m => m._id)
         });
+      }
+      
+      if (response.data.conversation && socketRef.current) {
+        const otherParticipant = getOtherParticipant(response.data.conversation);
+        if (otherParticipant) {
+          socketRef.current.emit('user:get_online_status', {
+            userIds: [otherParticipant._id]
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
@@ -416,7 +457,7 @@ const Messages = () => {
                           {formatMessageTime(message.createdAt)}
                           {message.sender._id === user?.id && (
                             <span style={{ fontSize: '0.7rem' }}>
-                              {message.isRead ? '✓✓' : '✓'}
+                              {message.isRead ? '✓✓' : deliveryStatus.has(message._id) ? '✓✓' : '✓'}
                             </span>
                           )}
                         </div>

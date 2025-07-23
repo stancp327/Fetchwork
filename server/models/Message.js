@@ -37,6 +37,10 @@ const messageSchema = new mongoose.Schema({
     default: false
   },
   readAt: Date,
+  deliveredAt: {
+    type: Date,
+    default: null
+  },
   isEdited: {
     type: Boolean,
     default: false

@@ -40,7 +40,17 @@ export const useSocket = ({ token, onEvent }) => {
       console.error('[SOCKET] Socket error:', error);
     });
 
-    const eventList = ['message:receive', 'message:read', 'conversation:update', 'typing:start', 'typing:stop'];
+    const eventList = [
+      'message:receive', 
+      'message:read', 
+      'conversation:update', 
+      'typing:start', 
+      'typing:stop',
+      'user:online',
+      'user:offline', 
+      'message:delivered',
+      'user:online_status'
+    ];
     eventList.forEach((event) => {
       socket.on(event, (data) => {
         console.log(`[SOCKET] Received ${event}:`, data);

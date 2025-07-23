@@ -1,6 +1,9 @@
 const { Message, Conversation } = require('../models/Message');
 const User = require('../models/User');
 
+const activeUsers = new Map(); // userId -> Set of socketIds
+const socketToUser = new Map(); // socketId -> userId
+
 module.exports = (io) => {
   io.on('connection', (socket) => {
     const senderId = socket.user.userId;
@@ -8,6 +11,17 @@ module.exports = (io) => {
     
     socket.join(senderId);
     console.log(`🏠 User ${senderId} joined room: ${senderId}`);
+    
+    socketToUser.set(socket.id, senderId);
+    
+    if (!activeUsers.has(senderId)) {
+      activeUsers.set(senderId, new Set());
+      socket.broadcast.emit('user:online', { userId: senderId });
+      console.log(`👁️ User ${senderId} is now online`);
+    }
+    activeUsers.get(senderId).add(socket.id);
+    
+    rejoinUserRooms(socket, senderId);
 
     socket.on('message:send', async (data) => {
       const { recipientId, content, messageType = 'text', attachments = [], jobId } = data;
@@ -61,6 +75,20 @@ module.exports = (io) => {
             s.join(conversation._id.toString());
           }
         });
+
+        const isRecipientOnline = activeUsers.has(recipientId);
+        
+        if (isRecipientOnline) {
+          newMessage.deliveredAt = new Date();
+          await newMessage.save();
+          
+          socket.emit('message:delivered', {
+            messageId: newMessage._id.toString(),
+            deliveredAt: newMessage.deliveredAt
+          });
+          
+          console.log(`📦 Message ${newMessage._id} delivered to online recipient`);
+        }
 
         const messageWithId = {
           ...newMessage.toObject(),
@@ -172,8 +200,82 @@ module.exports = (io) => {
       }
     });
 
+    socket.on('user:get_online_status', async (data) => {
+      const { userIds } = data;
+      const onlineStatus = {};
+      
+      userIds.forEach(userId => {
+        onlineStatus[userId] = activeUsers.has(userId);
+      });
+      
+      socket.emit('user:online_status', onlineStatus);
+      console.log(`👁️ Sent online status for users:`, onlineStatus);
+    });
+
+    socket.on('user:sync_missed_messages', async () => {
+      try {
+        const undeliveredMessages = await Message.find({
+          recipient: senderId,
+          deliveredAt: null
+        }).populate('sender', 'firstName lastName');
+
+        const messageIds = undeliveredMessages.map(msg => msg._id);
+        await Message.updateMany(
+          { _id: { $in: messageIds } },
+          { deliveredAt: new Date() }
+        );
+
+        for (const message of undeliveredMessages) {
+          if (activeUsers.has(message.sender._id.toString())) {
+            io.to(message.sender._id.toString()).emit('message:delivered', {
+              messageId: message._id.toString(),
+              deliveredAt: new Date()
+            });
+          }
+        }
+
+        console.log(`🔄 Marked ${messageIds.length} messages as delivered for user ${senderId}`);
+      } catch (error) {
+        console.error('🔄 Error syncing missed messages:', error);
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`❌ User disconnected: ${senderId}`);
+      
+      const userId = socketToUser.get(socket.id);
+      if (userId && activeUsers.has(userId)) {
+        const userSockets = activeUsers.get(userId);
+        userSockets.delete(socket.id);
+        
+        if (userSockets.size === 0) {
+          activeUsers.delete(userId);
+          socket.broadcast.emit('user:offline', { userId });
+          console.log(`👁️ User ${userId} is now offline`);
+        }
+      }
+      socketToUser.delete(socket.id);
     });
   });
+
+  async function rejoinUserRooms(socket, userId) {
+    try {
+      const conversations = await Conversation.find({
+        participants: userId
+      });
+
+      conversations.forEach(conversation => {
+        socket.join(conversation._id.toString());
+        console.log(`🔄 User ${userId} rejoined conversation room: ${conversation._id}`);
+      });
+
+      socket.emit('user:sync_missed_messages');
+      
+    } catch (error) {
+      console.error('🔄 Error rejoining rooms:', error);
+    }
+  }
+
+  io.getActiveUsers = () => activeUsers;
+  io.isUserOnline = (userId) => activeUsers.has(userId);
 };
