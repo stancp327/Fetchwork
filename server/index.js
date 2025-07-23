@@ -4,6 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
+const http = require('http');
+const { Server } = require('socket.io');
 const User = require('./models/User');
 const adminRoutes = require('./routes/admin');
 
@@ -12,8 +14,19 @@ require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
+
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:3000', 'https://fetchwork.vercel.app'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+app.set('io', io);
 
 app.set('trust proxy', true);
 
@@ -172,6 +185,26 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/email', require('./routes/email'));
 app.use('/api/admin', adminRoutes);
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('No token provided'));
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return next(new Error('Invalid token'));
+    socket.user = user;
+    next();
+  });
+});
+
+io.on('connection', (socket) => {
+  console.log(`🔌 User connected: ${socket.user.userId}`);
+  socket.join(socket.user.userId); // Join room based on user ID
+
+  socket.on('disconnect', () => {
+    console.log(`❌ User disconnected: ${socket.user.userId}`);
+  });
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
@@ -181,6 +214,6 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
