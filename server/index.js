@@ -4,6 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
+const http = require('http');
+const { Server } = require('socket.io');
 const User = require('./models/User');
 const adminRoutes = require('./routes/admin');
 
@@ -12,8 +14,19 @@ require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
+
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:3000', 'https://fetchwork.vercel.app'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+app.set('io', io);
 
 app.set('trust proxy', true);
 
@@ -165,12 +178,27 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/messages', require('./routes/messages'));
+app.use('/api/chatrooms', require('./routes/chatrooms'));
 app.use('/api/disputes', require('./routes/disputes'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/email', require('./routes/email'));
 app.use('/api/admin', adminRoutes);
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('No token provided'));
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return next(new Error('Invalid token'));
+    socket.user = user;
+    next();
+  });
+});
+
+const registerSocketEvents = require('./socket/events');
+registerSocketEvents(io);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -181,6 +209,6 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
