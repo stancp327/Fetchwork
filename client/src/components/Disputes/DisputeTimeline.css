@@ -1,0 +1,171 @@
+.dispute-timeline {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+}
+
+.dispute-timeline h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.timeline-steps {
+  margin-bottom: 1.5rem;
+}
+
+.timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  position: relative;
+  padding: 0.75rem 0;
+}
+
+.timeline-step:first-child {
+  padding-top: 0;
+}
+
+.timeline-step:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.timeline-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: bold;
+  background: #f0f0f0;
+  color: #999;
+  border: 2px solid #ddd;
+  transition: all 0.3s ease;
+}
+
+.timeline-circle.completed {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.timeline-line {
+  width: 2px;
+  height: 40px;
+  background: #ddd;
+  margin-top: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.timeline-line.completed {
+  background: #4CAF50;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-top: 0.25rem;
+}
+
+.timeline-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-step.completed .timeline-title {
+  color: #4CAF50;
+}
+
+.timeline-description {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-date {
+  font-size: 0.75rem;
+  color: #4CAF50;
+  font-weight: 500;
+}
+
+.resolution-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 4px solid #4CAF50;
+}
+
+.resolution-summary h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.resolution-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resolution-details div {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.resolution-details strong {
+  color: #333;
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  .dispute-timeline {
+    margin: 0 1rem 1.5rem 1rem;
+    padding: 1rem;
+  }
+
+  .dispute-timeline h3 {
+    font-size: 1.2rem;
+  }
+
+  .timeline-step {
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+  }
+
+  .timeline-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+
+  .timeline-line {
+    height: 35px;
+  }
+
+  .timeline-title {
+    font-size: 0.9rem;
+  }
+
+  .timeline-description {
+    font-size: 0.8rem;
+  }
+
+  .resolution-summary {
+    padding: 1rem;
+  }
+}

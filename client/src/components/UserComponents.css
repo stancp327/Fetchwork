@@ -1011,6 +1011,35 @@
   color: white;
 }
 
+/* Dispute System Styles */
+.btn-danger {
+  background: #f44336;
+  color: white;
+  border: 1px solid #f44336;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #d32f2f;
+  border-color: #d32f2f;
+}
+
+.dispute-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.dispute-btn {
+  font-size: 0.9rem;
+  padding: 8px 16px;
+}
+
 /* Mobile responsive adjustments for job status */
 @media (max-width: 768px) {
   .job-title-section {

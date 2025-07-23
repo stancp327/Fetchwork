@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import DisputeFilingForm from '../Disputes/DisputeFilingForm';
 import '../UserComponents.css';
 
 const JobDetails = () => {
@@ -11,6 +12,7 @@ const JobDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [proposal, setProposal] = useState({
     coverLetter: '',
     proposedBudget: '',
@@ -86,6 +88,11 @@ const JobDetails = () => {
     } finally {
       setApplying(false);
     }
+  };
+
+  const handleDisputeFiled = (dispute) => {
+    setJob({...job, status: 'disputed', disputeStatus: 'pending'});
+    alert('Dispute filed successfully. An admin will review your case.');
   };
 
   const formatBudget = (budget) => {
@@ -359,9 +366,29 @@ const JobDetails = () => {
                 </button>
               </div>
             )}
+
+            {(job.status === 'in_progress' || job.status === 'completed') && 
+             user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
+              <div className="dispute-section">
+                <button 
+                  className="btn btn-danger dispute-btn"
+                  onClick={() => setShowDisputeModal(true)}
+                >
+                  File Dispute
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {showDisputeModal && (
+        <DisputeFilingForm
+          jobId={job._id}
+          onClose={() => setShowDisputeModal(false)}
+          onSubmit={handleDisputeFiled}
+        />
+      )}
     </div>
   );
 };
