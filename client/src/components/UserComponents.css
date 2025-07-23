@@ -1040,6 +1040,34 @@
   padding: 8px 16px;
 }
 
+.review-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.review-btn {
+  background: #4CAF50;
+  color: white;
+  border: 2px solid #4CAF50;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-btn:hover {
+  background: #45a049;
+  border-color: #45a049;
+}
+
+.review-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
 /* Mobile responsive adjustments for job status */
 @media (max-width: 768px) {
   .job-title-section {

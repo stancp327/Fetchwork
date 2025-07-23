@@ -185,7 +185,11 @@ userSchema.methods.updateLastLogin = function() {
 
 userSchema.methods.calculateRating = async function() {
   const Review = mongoose.model('Review');
-  const reviews = await Review.find({ freelancer: this._id });
+  const reviews = await Review.find({ 
+    reviewee: this._id,
+    moderationStatus: 'approved',
+    isPublic: true
+  });
   
   if (reviews.length === 0) {
     this.rating = 0;

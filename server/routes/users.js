@@ -8,7 +8,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     
     const activeJobsAsClient = await Job.countDocuments({
       client: userId,
@@ -133,9 +133,10 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/profile', authenticateToken, async (req, res) => {
+router.get('/profile/:userId?', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const userId = req.params.userId || req.user._id;
+    const user = await User.findById(userId);
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -150,7 +151,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user._id);
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -189,16 +190,16 @@ router.get('/jobs', authenticateToken, async (req, res) => {
     let filters = { isActive: true };
     
     if (type === 'posted') {
-      filters.client = req.user.userId;
+      filters.client = req.user._id;
     } else if (type === 'working') {
-      filters.freelancer = req.user.userId;
+      filters.freelancer = req.user._id;
     } else if (type === 'applied') {
-      filters['proposals.freelancer'] = req.user.userId;
+      filters['proposals.freelancer'] = req.user._id;
     } else {
       filters.$or = [
-        { client: req.user.userId },
-        { freelancer: req.user.userId },
-        { 'proposals.freelancer': req.user.userId }
+        { client: req.user._id },
+        { freelancer: req.user._id },
+        { 'proposals.freelancer': req.user._id }
       ];
     }
     
