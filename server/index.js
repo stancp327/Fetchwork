@@ -196,14 +196,8 @@ io.use((socket, next) => {
   });
 });
 
-io.on('connection', (socket) => {
-  console.log(`🔌 User connected: ${socket.user.userId}`);
-  socket.join(socket.user.userId); // Join room based on user ID
-
-  socket.on('disconnect', () => {
-    console.log(`❌ User disconnected: ${socket.user.userId}`);
-  });
-});
+const registerSocketEvents = require('./socket/events');
+registerSocketEvents(io);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
