@@ -90,6 +90,9 @@ app.post('/api/auth/register', async (req, res) => {
     const user = new User({ email, password, firstName, lastName });
     await user.save();
     
+    const emailService = require('./services/emailService');
+    await emailService.sendWelcomeEmail(user);
+    
     const isAdmin = user.email === 'admin@fetchwork.com';
     const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
@@ -163,7 +166,10 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/disputes', require('./routes/disputes'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/email', require('./routes/email'));
 app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
