@@ -6,6 +6,7 @@ const Admin = require('../models/Admin');
 const Job = require('../models/Job');
 const Payment = require('../models/Payment');
 const Review = require('../models/Review');
+const { Message, ChatRoom } = require('../models/Message');
 
 router.get('/profile', authenticateAdmin, async (req, res) => {
   try {
@@ -454,6 +455,68 @@ router.get('/analytics', authenticateAdmin, requirePermission('analytics_view'),
   } catch (error) {
     console.error('Admin analytics error:', error);
     res.status(500).json({ error: 'Failed to retrieve analytics data' });
+  }
+});
+
+router.get('/monitoring', authenticateAdmin, async (req, res) => {
+  try {
+    const io = req.app.get('io');
+    const activeUsers = io.getActiveUsers();
+    
+    const connectionStats = {
+      totalConnections: Array.from(activeUsers.values()).reduce((sum, sockets) => sum + sockets.size, 0),
+      uniqueUsers: activeUsers.size,
+      averageConnectionsPerUser: activeUsers.size > 0 ? 
+        Array.from(activeUsers.values()).reduce((sum, sockets) => sum + sockets.size, 0) / activeUsers.size : 0
+    };
+
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const messageStats = {
+      totalMessages: await Message.countDocuments({ createdAt: { $gte: last24Hours } }),
+      groupMessages: await Message.countDocuments({ 
+        roomId: { $exists: true }, 
+        createdAt: { $gte: last24Hours } 
+      }),
+      directMessages: await Message.countDocuments({ 
+        conversation: { $exists: true }, 
+        createdAt: { $gte: last24Hours } 
+      }),
+      unreadMessages: await Message.countDocuments({ isRead: false })
+    };
+
+    const roomStats = {
+      totalRooms: await ChatRoom.countDocuments({ isActive: true }),
+      activeRooms: await ChatRoom.countDocuments({ 
+        isActive: true, 
+        lastActivity: { $gte: last24Hours } 
+      }),
+      averageMembersPerRoom: await ChatRoom.aggregate([
+        { $match: { isActive: true } },
+        { $project: { memberCount: { $size: '$members' } } },
+        { $group: { _id: null, avg: { $avg: '$memberCount' } } }
+      ]).then(result => Math.round((result[0]?.avg || 0) * 10) / 10)
+    };
+
+    const onlineUsersList = await User.find({
+      _id: { $in: Array.from(activeUsers.keys()) }
+    }).select('firstName lastName email lastActive').limit(50);
+
+    res.json({
+      message: 'Monitoring data retrieved successfully',
+      timestamp: new Date(),
+      connectionStats,
+      messageStats,
+      roomStats,
+      onlineUsers: onlineUsersList,
+      systemHealth: {
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        nodeVersion: process.version
+      }
+    });
+  } catch (error) {
+    console.error('Admin monitoring error:', error);
+    res.status(500).json({ error: 'Failed to retrieve monitoring data' });
   }
 });
 

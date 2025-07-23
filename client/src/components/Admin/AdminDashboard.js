@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import AdminDisputePanel from './AdminDisputePanel';
 import AdminEmailPanel from './AdminEmailPanel';
 import './AdminDashboard.css';
+import './AdminMonitoring.css';
 
 const getApiBaseUrl = () => {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -19,6 +20,8 @@ const AdminDashboard = () => {
   const [jobsData, setJobsData] = useState(null);
   const [paymentsData, setPaymentsData] = useState(null);
   const [reviewsData, setReviewsData] = useState(null);
+  const [monitoringData, setMonitoringData] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -120,6 +123,20 @@ const AdminDashboard = () => {
     }
   }, [apiBaseUrl]);
 
+  const fetchMonitoringData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${apiBaseUrl}/api/admin/monitoring`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setMonitoringData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch monitoring data:', error);
+    }
+  }, [apiBaseUrl]);
+
   useEffect(() => {
     if (isAdminAuthenticated) {
       fetchDashboardData();
@@ -135,8 +152,20 @@ const AdminDashboard = () => {
       fetchPaymentsData();
     } else if (activeTab === 'reviews' && isAdminAuthenticated) {
       fetchReviewsData();
+    } else if (activeTab === 'monitoring' && isAdminAuthenticated) {
+      fetchMonitoringData();
     }
-  }, [activeTab, isAdminAuthenticated, fetchUsersData, fetchJobsData, fetchPaymentsData, fetchReviewsData]);
+  }, [activeTab, isAdminAuthenticated, fetchUsersData, fetchJobsData, fetchPaymentsData, fetchReviewsData, fetchMonitoringData]);
+
+  useEffect(() => {
+    let interval;
+    if (activeTab === 'monitoring' && autoRefresh && isAdminAuthenticated) {
+      interval = setInterval(fetchMonitoringData, 30000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeTab, autoRefresh, isAdminAuthenticated, fetchMonitoringData]);
 
 
   const suspendUser = async (userId, reason) => {
@@ -251,6 +280,12 @@ const AdminDashboard = () => {
           id="email"
           label="Email"
           active={activeTab === 'email'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="monitoring"
+          label="Monitoring"
+          active={activeTab === 'monitoring'}
           onClick={setActiveTab}
         />
       </div>
@@ -666,6 +701,104 @@ const AdminDashboard = () => {
           <div className="email-tab">
             <h2>Email Management</h2>
             <AdminEmailPanel />
+          </div>
+        )}
+
+        {activeTab === 'monitoring' && (
+          <div className="monitoring-tab">
+            <div className="monitoring-header">
+              <h2>Real-time System Monitoring</h2>
+              <div className="monitoring-controls">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                  />
+                  Auto-refresh (30s)
+                </label>
+                <button onClick={fetchMonitoringData} className="refresh-button">
+                  Refresh Now
+                </button>
+              </div>
+            </div>
+
+            {monitoringData ? (
+              <div className="monitoring-content">
+                <div className="stats-grid">
+                  <StatCard
+                    title="Active Connections"
+                    value={monitoringData.connectionStats?.totalConnections || 0}
+                    subtitle={`${monitoringData.connectionStats?.uniqueUsers || 0} unique users`}
+                    className="connections-stat"
+                  />
+                  <StatCard
+                    title="Messages (24h)"
+                    value={monitoringData.messageStats?.totalMessages || 0}
+                    subtitle={`${monitoringData.messageStats?.groupMessages || 0} group, ${monitoringData.messageStats?.directMessages || 0} direct`}
+                    className="messages-stat"
+                  />
+                  <StatCard
+                    title="Active Rooms"
+                    value={monitoringData.roomStats?.activeRooms || 0}
+                    subtitle={`${monitoringData.roomStats?.totalRooms || 0} total rooms`}
+                    className="rooms-stat"
+                  />
+                  <StatCard
+                    title="Unread Messages"
+                    value={monitoringData.messageStats?.unreadMessages || 0}
+                    subtitle="Across all users"
+                    className="unread-stat"
+                  />
+                </div>
+
+                <div className="monitoring-sections">
+                  <div className="online-users-section">
+                    <h3>Online Users ({monitoringData.onlineUsers?.length || 0})</h3>
+                    <div className="online-users-list">
+                      {monitoringData.onlineUsers?.length > 0 ? monitoringData.onlineUsers.map((user, index) => (
+                        <div key={index} className="online-user-item">
+                          <div className="user-info">
+                            <div className="user-name">{user.firstName} {user.lastName}</div>
+                            <div className="user-email">{user.email}</div>
+                          </div>
+                          <div className="connection-indicator online"></div>
+                        </div>
+                      )) : <p>No users currently online</p>}
+                    </div>
+                  </div>
+
+                  <div className="system-health-section">
+                    <h3>System Health</h3>
+                    <div className="health-metrics">
+                      <div className="health-item">
+                        <span className="metric-label">Uptime:</span>
+                        <span className="metric-value">
+                          {Math.floor((monitoringData.systemHealth?.uptime || 0) / 3600)}h {Math.floor(((monitoringData.systemHealth?.uptime || 0) % 3600) / 60)}m
+                        </span>
+                      </div>
+                      <div className="health-item">
+                        <span className="metric-label">Memory Usage:</span>
+                        <span className="metric-value">
+                          {Math.round((monitoringData.systemHealth?.memoryUsage?.used || 0) / 1024 / 1024)}MB
+                        </span>
+                      </div>
+                      <div className="health-item">
+                        <span className="metric-label">Last Updated:</span>
+                        <span className="metric-value">
+                          {new Date(monitoringData.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading monitoring data...</p>
+              </div>
+            )}
           </div>
         )}
       </div>
