@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
+import RatingsReview from '../Reviews/RatingsReview';
 import '../UserComponents.css';
 
 const JobDetails = () => {
@@ -13,6 +14,7 @@ const JobDetails = () => {
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [proposal, setProposal] = useState({
     coverLetter: '',
     proposedBudget: '',
@@ -93,6 +95,10 @@ const JobDetails = () => {
   const handleDisputeFiled = (dispute) => {
     setJob({...job, status: 'disputed', disputeStatus: 'pending'});
     alert('Dispute filed successfully. An admin will review your case.');
+  };
+
+  const handleReviewSubmitted = (review) => {
+    alert('Review submitted successfully! It will be visible after admin approval.');
   };
 
   const formatBudget = (budget) => {
@@ -378,6 +384,18 @@ const JobDetails = () => {
                 </button>
               </div>
             )}
+
+            {(job.status === 'completed' || job.status === 'open') && user && 
+             (job.client._id === user._id || job.freelancer?._id === user._id) && (
+              <div className="review-section">
+                <button 
+                  className="btn btn-primary review-btn"
+                  onClick={() => setShowReviewModal(true)}
+                >
+                  Leave Review (Test)
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -387,6 +405,19 @@ const JobDetails = () => {
           jobId={job._id}
           onClose={() => setShowDisputeModal(false)}
           onSubmit={handleDisputeFiled}
+        />
+      )}
+
+      {showReviewModal && (
+        <RatingsReview
+          jobId={job._id}
+          revieweeId={job.client._id === user._id ? job.freelancer._id : job.client._id}
+          revieweeName={job.client._id === user._id 
+            ? `${job.freelancer.firstName} ${job.freelancer.lastName}`
+            : `${job.client.firstName} ${job.client.lastName}`
+          }
+          onSubmit={handleReviewSubmitted}
+          onClose={() => setShowReviewModal(false)}
         />
       )}
     </div>

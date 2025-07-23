@@ -1,0 +1,144 @@
+.reviews-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.reviews-section h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.reviews-summary {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.average-rating {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.star-display {
+  display: flex;
+  gap: 0.1rem;
+}
+
+.star-display span {
+  font-size: 1.2rem;
+  color: #ddd;
+}
+
+.star-display span.filled {
+  color: #ffc107;
+}
+
+.rating-number {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.review-item {
+  padding: 1.5rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.reviewer-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.reviewer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.reviewer-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.review-date {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.review-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.review-comment {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+  color: #555;
+}
+
+.review-job {
+  font-size: 0.9rem;
+  color: #666;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eee;
+}
+
+.job-label {
+  font-weight: 600;
+}
+
+.loading-reviews,
+.error-reviews,
+.no-reviews {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+@media (max-width: 767px) {
+  .reviews-section {
+    margin: 0 1rem 1.5rem 1rem;
+    padding: 1rem;
+  }
+
+  .review-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .reviewer-info {
+    width: 100%;
+  }
+
+  .review-item {
+    padding: 1rem;
+  }
+}
