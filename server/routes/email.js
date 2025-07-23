@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const emailService = require('../services/emailService');
 const User = require('../models/User');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 
-router.post('/test', requireAdmin, async (req, res) => {
+router.post('/test', authenticateAdmin, async (req, res) => {
   try {
     const { email, type = 'welcome' } = req.body;
     
@@ -39,7 +39,7 @@ router.post('/test', requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/broadcast', requireAdmin, async (req, res) => {
+router.post('/broadcast', authenticateAdmin, async (req, res) => {
   try {
     const { subject, message, userType = 'all' } = req.body;
     
@@ -79,7 +79,7 @@ router.post('/broadcast', requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/status', requireAdmin, async (req, res) => {
+router.get('/status', authenticateAdmin, async (req, res) => {
   try {
     const hasApiKey = !!process.env.RESEND_API_KEY;
     const fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.com';
