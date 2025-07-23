@@ -5,6 +5,36 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
+.dashboard-onboarding {
+  margin-bottom: 2rem;
+}
+
+.onboarding-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 1023px) {
+  .onboarding-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+.dashboard-profile-completion,
+.dashboard-milestone-tracker {
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard-profile-completion .completion-progress-wrapper,
+.dashboard-milestone-tracker .milestone-tracker {
+  width: 100%;
+  max-width: 400px;
+}
+
 .user-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;

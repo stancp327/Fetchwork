@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
 import { Link } from 'react-router-dom';
+import ProfileCompletion from '../Onboarding/ProfileCompletion';
+import OnboardingMilestone from '../Onboarding/OnboardingMilestone';
 import '../UserComponents.css';
 
 const getApiBaseUrl = () => {
@@ -91,6 +93,15 @@ const Dashboard = () => {
     );
   }
 
+  const shouldShowOnboarding = user && (
+    !user.bio || 
+    !user.hourlyRate || 
+    !user.skills || 
+    user.skills.length === 0 ||
+    !user.phone ||
+    !user.profilePicture
+  );
+
   const stats = dashboardData?.stats || {};
   const recentActivity = dashboardData?.recentActivity || {};
 
@@ -107,6 +118,19 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {shouldShowOnboarding && (
+        <div className="dashboard-onboarding">
+          <div className="onboarding-row">
+            <div className="dashboard-profile-completion">
+              <ProfileCompletion showInDashboard={true} />
+            </div>
+            <div className="dashboard-milestone-tracker">
+              <OnboardingMilestone showInDashboard={true} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="stats-grid">
         {isClientMode && (
