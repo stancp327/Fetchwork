@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../socket/useSocket';
 import '../UserComponents.css';
 
 const getApiBaseUrl = () => {
@@ -19,8 +20,63 @@ const Messages = () => {
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState(null);
+  const [typingUsers, setTypingUsers] = useState(new Set());
+  const typingTimeoutRef = useRef(null);
 
   const apiBaseUrl = getApiBaseUrl();
+  const token = localStorage.getItem('token');
+
+  const socketRef = useSocket({
+    token,
+    onEvent: (event, data) => {
+      switch (event) {
+        case 'message:receive':
+          console.log('[UI] Received new message:', data.message);
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg._id === data.message._id);
+            if (messageExists) return prev;
+            return [...prev, data.message];
+          });
+          fetchConversations();
+          break;
+        
+        case 'message:read':
+          console.log('[UI] Messages marked as read:', data);
+          setMessages(prev => prev.map(msg => 
+            data.messageIds.includes(msg._id) 
+              ? { ...msg, isRead: true, readAt: data.readAt }
+              : msg
+          ));
+          break;
+        
+        case 'conversation:update':
+          console.log('[UI] Conversation updated:', data.conversation);
+          fetchConversations();
+          break;
+        
+        case 'typing:start':
+          console.log('[UI] User started typing:', data);
+          if (data.conversationId === selectedConversation?._id) {
+            setTypingUsers(prev => new Set([...prev, data.userId]));
+          }
+          break;
+        
+        case 'typing:stop':
+          console.log('[UI] User stopped typing:', data);
+          if (data.conversationId === selectedConversation?._id) {
+            setTypingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(data.userId);
+              return newSet;
+            });
+          }
+          break;
+        
+        default:
+          console.warn('[UI] Unhandled socket event:', event);
+      }
+    }
+  });
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -51,11 +107,23 @@ const Messages = () => {
       });
       setMessages(response.data.messages);
       setSelectedConversation(response.data.conversation);
+      
+      const unreadMessages = response.data.messages.filter(msg => 
+        !msg.isRead && msg.recipient === user?.id
+      );
+      
+      if (unreadMessages.length > 0 && socketRef.current) {
+        console.log('[UI] Marking messages as read via socket:', unreadMessages.map(m => m._id));
+        socketRef.current.emit('message:read', {
+          conversationId,
+          messageIds: unreadMessages.map(m => m._id)
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
       setError(error.response?.data?.error || 'Failed to load messages');
     }
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, user?.id]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -66,25 +134,54 @@ const Messages = () => {
 
     setSendingMessage(true);
     
+    const optimisticMessage = {
+      _id: `temp-${Date.now()}`,
+      content: newMessage.trim(),
+      sender: { _id: user?.id, firstName: user?.firstName, lastName: user?.lastName },
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      conversation: selectedConversation._id
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    const messageContent = newMessage.trim();
+    setNewMessage('');
+    
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${apiBaseUrl}/api/messages/conversations/${selectedConversation._id}/messages`,
-        { content: newMessage.trim() },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
+      if (socketRef.current) {
+        console.log('[UI] Sending message via socket:', {
+          recipientId: getOtherParticipant(selectedConversation)?._id,
+          content: messageContent,
+          messageType: 'text'
+        });
+        
+        socketRef.current.emit('message:send', {
+          recipientId: getOtherParticipant(selectedConversation)?._id,
+          content: messageContent,
+          messageType: 'text'
+        });
+      } else {
+        console.log('[UI] Socket not available, falling back to REST API');
+        const response = await axios.post(
+          `${apiBaseUrl}/api/messages/conversations/${selectedConversation._id}/messages`,
+          { content: messageContent },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
           }
-        }
-      );
-      
-      setMessages(prev => [...prev, response.data.data]);
-      setNewMessage('');
-      
-      await fetchConversations();
+        );
+        
+        setMessages(prev => prev.map(msg => 
+          msg._id === optimisticMessage._id ? response.data.data : msg
+        ));
+        
+        await fetchConversations();
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       setError(error.response?.data?.error || 'Failed to send message');
+      setMessages(prev => prev.filter(msg => msg._id !== optimisticMessage._id));
     } finally {
       setSendingMessage(false);
     }
@@ -299,7 +396,8 @@ const Messages = () => {
                           background: message.sender._id === user?.id ? '#667eea' : '#f1f3f4',
                           color: message.sender._id === user?.id ? 'white' : '#333',
                           fontSize: '0.9rem',
-                          lineHeight: '1.4'
+                          lineHeight: '1.4',
+                          opacity: message._id.startsWith('temp-') ? 0.7 : 1
                         }}
                       >
                         <div>{message.content}</div>
@@ -308,14 +406,42 @@ const Messages = () => {
                             fontSize: '0.75rem',
                             opacity: 0.7,
                             marginTop: '4px',
-                            textAlign: 'right'
+                            textAlign: 'right',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: '4px'
                           }}
                         >
                           {formatMessageTime(message.createdAt)}
+                          {message.sender._id === user?.id && (
+                            <span style={{ fontSize: '0.7rem' }}>
+                              {message.isRead ? '✓✓' : '✓'}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))
+                )}
+                
+                {typingUsers.size > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-start',
+                    marginTop: '10px'
+                  }}>
+                    <div style={{
+                      padding: '8px 12px',
+                      background: '#f1f3f4',
+                      borderRadius: '12px',
+                      fontSize: '0.8rem',
+                      color: '#6c757d',
+                      fontStyle: 'italic'
+                    }}>
+                      {getOtherParticipant(selectedConversation)?.firstName} is typing...
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -328,7 +454,35 @@ const Messages = () => {
                 <input
                   type="text"
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    
+                    if (socketRef.current && selectedConversation) {
+                      socketRef.current.emit('typing:start', {
+                        conversationId: selectedConversation._id
+                      });
+                      
+                      if (typingTimeoutRef.current) {
+                        clearTimeout(typingTimeoutRef.current);
+                      }
+                      
+                      typingTimeoutRef.current = setTimeout(() => {
+                        socketRef.current.emit('typing:stop', {
+                          conversationId: selectedConversation._id
+                        });
+                      }, 2000);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (socketRef.current && selectedConversation) {
+                      socketRef.current.emit('typing:stop', {
+                        conversationId: selectedConversation._id
+                      });
+                    }
+                    if (typingTimeoutRef.current) {
+                      clearTimeout(typingTimeoutRef.current);
+                    }
+                  }}
                   placeholder="Type your message..."
                   style={{
                     flex: 1,
