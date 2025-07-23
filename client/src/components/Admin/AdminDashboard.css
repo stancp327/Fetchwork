@@ -530,4 +530,32 @@
     font-size: 0.8rem;
     padding: 4px 8px;
   }
+
+  /* Enhanced mobile table responsiveness */
+  .users-table table, .jobs-table table, .payments-table table, .reviews-table table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .users-table th, .jobs-table th, .payments-table th, .reviews-table th,
+  .users-table td, .jobs-table td, .payments-table td, .reviews-table td {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  /* Hide less critical columns on mobile */
+  .users-table th:nth-child(n+4), .users-table td:nth-child(n+4),
+  .jobs-table th:nth-child(n+5), .jobs-table td:nth-child(n+5) {
+    display: none;
+  }
+  
+  .tab-button {
+    font-size: 0.9rem;
+    padding: 10px 16px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 2rem;
+  }
 }
