@@ -237,11 +237,19 @@ chatRoomSchema.methods.updateLastActivity = function() {
 };
 
 chatRoomSchema.methods.isMember = function(userId) {
-  return this.members.some(m => m.user.toString() === userId.toString());
+  return this.members.some(m => {
+    if (!m.user) return false;
+    const memberUserId = m.user._id ? m.user._id.toString() : m.user.toString();
+    return memberUserId === userId.toString();
+  });
 };
 
 chatRoomSchema.methods.getMemberRole = function(userId) {
-  const member = this.members.find(m => m.user.toString() === userId.toString());
+  const member = this.members.find(m => {
+    if (!m.user) return false;
+    const memberUserId = m.user._id ? m.user._id.toString() : m.user.toString();
+    return memberUserId === userId.toString();
+  });
   return member ? member.role : null;
 };
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Message, Conversation } = require('../models/Message');
+const { Message, Conversation, ChatRoom } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 
 router.get('/conversations', authenticateToken, async (req, res) => {
