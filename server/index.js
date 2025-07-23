@@ -163,6 +163,8 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/disputes', require('./routes/disputes'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', adminRoutes);
 

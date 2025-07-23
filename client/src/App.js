@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { RoleProvider } from './context/RoleContext';
 import { AdminProvider } from './context/AdminContext';
 import { MessagingProvider } from './context/MessagingContext';
+import { StripeProvider } from './context/StripeContext';
 import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -159,17 +160,19 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <RoleProvider>
-        <AdminProvider>
-          <MessagingProvider>
-            <Router>
-              <AppContent />
-            </Router>
-          </MessagingProvider>
-        </AdminProvider>
-      </RoleProvider>
-    </AuthProvider>
+    <StripeProvider>
+      <AuthProvider>
+        <RoleProvider>
+          <AdminProvider>
+            <MessagingProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </MessagingProvider>
+          </AdminProvider>
+        </RoleProvider>
+      </AuthProvider>
+    </StripeProvider>
   );
 }
 
