@@ -133,9 +133,10 @@ const Messages = () => {
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: '1fr 2fr', 
+        gridTemplateColumns: window.innerWidth <= 767 ? '1fr' : '1fr 2fr',
         gap: '20px', 
-        height: '600px',
+        height: window.innerWidth <= 767 ? 'auto' : '600px',
+        minHeight: window.innerWidth <= 767 ? '70vh' : '600px',
         background: 'white',
         borderRadius: '12px',
         overflow: 'hidden',
