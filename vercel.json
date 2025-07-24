@@ -1,15 +1,27 @@
 {
   "version": 2,
-  "buildCommand": "cd client && npm run build",
-  "outputDirectory": "client/build",
-  "framework": "create-react-app",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/((?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|map)).*)",
-      "destination": "/index.html"
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "client/build"
+      }
     }
   ],
-  "env": {
-    "REACT_APP_API_URL": "https://fetchwork-1.onrender.com"
-  }
+  "routes": [
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|eot))",
+      "headers": { "Cache-Control": "public,max-age=31536000,immutable" },
+      "continue": true
+    },
+    {
+      "src": "/(favicon\\.ico|manifest\\.json)",
+      "continue": true
+    },
+    {
+      "src": "/(admin|register|browse-services|dashboard|messages|.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
