@@ -64,7 +64,7 @@ export const useSocket = ({ token, onEvent }) => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token]);
+  }, [token, onEvent]);
 
   return socketRef;
 };

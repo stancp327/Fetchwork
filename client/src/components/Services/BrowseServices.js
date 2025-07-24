@@ -12,7 +12,6 @@ const getApiBaseUrl = () => {
 };
 
 const BrowseServices = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -35,7 +35,7 @@ const ProfileCompletion = ({ showInDashboard = false }) => {
         totalSteps: steps.length
       });
     }
-  }, [user]);
+  }, [user, steps]);
 
   if (!user || completionData.percentage === 100) {
     return null;

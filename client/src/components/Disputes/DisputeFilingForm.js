@@ -4,7 +4,6 @@ import axios from 'axios';
 import './DisputeFilingForm.css';
 
 const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
-  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [disputeData, setDisputeData] = useState({
     reason: '',

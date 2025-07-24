@@ -65,7 +65,7 @@ const OnboardingMilestone = ({ showInDashboard = false }) => {
 
       setMilestones(updatedMilestones);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, baseMilestones]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '';

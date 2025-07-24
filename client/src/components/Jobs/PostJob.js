@@ -12,7 +12,6 @@ const getApiBaseUrl = () => {
 };
 
 const PostJob = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -118,7 +117,7 @@ const PostJob = () => {
       };
 
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${apiBaseUrl}/api/jobs`, jobData, {
+      await axios.post(`${apiBaseUrl}/api/jobs`, jobData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

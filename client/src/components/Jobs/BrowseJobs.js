@@ -12,7 +12,6 @@ const getApiBaseUrl = () => {
 };
 
 const BrowseJobs = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
