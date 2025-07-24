@@ -1,23 +1,12 @@
 {
   "version": 2,
+  "buildCommand": "cd client && npm run build",
+  "outputDirectory": "client/build",
   "framework": "create-react-app",
-  "builds": [
+  "rewrites": [
     {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(favicon\\.ico|manifest\\.json|robots\\.txt|logo192\\.png|logo512\\.png|static/.*)",
-      "headers": { "cache-control": "public,max-age=31536000,immutable" }
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/((?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|map)).*)",
+      "destination": "/index.html"
     }
   ],
   "env": {
