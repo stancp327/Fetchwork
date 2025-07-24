@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../UserComponents.css';
 
@@ -12,7 +11,6 @@ const getApiBaseUrl = () => {
 };
 
 const CreateService = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -120,7 +118,7 @@ const CreateService = () => {
       };
 
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${apiBaseUrl}/api/services`, serviceData, {
+      await axios.post(`${apiBaseUrl}/api/services`, serviceData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

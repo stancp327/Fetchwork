@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import './ProfileCompletion.css';
@@ -11,13 +11,13 @@ const ProfileCompletion = ({ showInDashboard = false }) => {
     totalSteps: 5
   });
 
-  const steps = [
+  const steps = useMemo(() => [
     { id: 'bio', label: 'Write your bio', field: 'bio' },
     { id: 'skills', label: 'Add your skills', field: 'skills' },
     { id: 'hourlyRate', label: 'Set your hourly rate', field: 'hourlyRate' },
     { id: 'phone', label: 'Verify your phone', field: 'phone' },
     { id: 'photo', label: 'Upload a photo', field: 'profilePicture' }
-  ];
+  ], []);
 
   useEffect(() => {
     if (user) {
@@ -35,7 +35,7 @@ const ProfileCompletion = ({ showInDashboard = false }) => {
         totalSteps: steps.length
       });
     }
-  }, [user]);
+  }, [user, steps]);
 
   if (!user || completionData.percentage === 100) {
     return null;

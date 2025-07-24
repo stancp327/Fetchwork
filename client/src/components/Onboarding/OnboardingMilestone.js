@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './OnboardingMilestone.css';
 
@@ -6,7 +6,7 @@ const OnboardingMilestone = ({ showInDashboard = false }) => {
   const { user, isAuthenticated } = useAuth();
   const [milestones, setMilestones] = useState([]);
 
-  const baseMilestones = [
+  const baseMilestones = useMemo(() => [
     {
       id: 'signup',
       title: 'Sign up for FetchWork',
@@ -31,7 +31,7 @@ const OnboardingMilestone = ({ showInDashboard = false }) => {
       completedDate: null,
       order: 3
     }
-  ];
+  ], []);
 
   useEffect(() => {
     if (user && isAuthenticated) {
@@ -65,7 +65,7 @@ const OnboardingMilestone = ({ showInDashboard = false }) => {
 
       setMilestones(updatedMilestones);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, baseMilestones]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '';

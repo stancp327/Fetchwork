@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
 import '../UserComponents.css';
 
 const getApiBaseUrl = () => {
@@ -12,7 +11,6 @@ const getApiBaseUrl = () => {
 };
 
 const BrowseServices = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
