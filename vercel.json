@@ -1,31 +1,12 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "client/build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|eot))",
-      "status": 200,
-      "dest": "/$1"
-    },
-    {
-      "src": "/(favicon\\.ico|manifest\\.json)",
-      "status": 200,
-      "dest": "/$1"
-    },
-    {
-      "src": "/(admin|register|browse-services|dashboard|.*)",
-      "dest": "/index.html"
-    }
-  ],
   "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/build",
-  "framework": "create-react-app"
+  "framework": "create-react-app",
+  "rewrites": [
+    {
+      "source": "/((?!api|_next|_static|_vercel|favicon\\.ico|manifest\\.json|robots\\.txt|.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)).*)",
+      "destination": "/index.html"
+    }
+  ]
 }
