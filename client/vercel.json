@@ -1,20 +1,11 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/manifest.json",
-      "destination": "/manifest.json"
+      "handle": "filesystem"
     },
     {
-      "source": "/favicon.ico", 
-      "destination": "/favicon.ico"
-    },
-    {
-      "source": "/static/(.*)",
-      "destination": "/static/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "framework": "create-react-app"
