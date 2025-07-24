@@ -1,8 +1,6 @@
 {
-  "rewrites": [
-    {
-      "source": "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|logo192.png|logo512.png|static/).*)$",
-      "destination": "/index.html"
-    }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
   ]
 }
