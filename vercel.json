@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "framework": "create-react-app",
   "builds": [
     {
       "src": "client/package.json",
@@ -11,7 +12,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!.*\\.(?:js|css|png|jpg|jpeg|svg|ico|json|txt|map|woff2?|ttf|eot|otf)).*)",
+      "source": "/((?!.*\\.(?:js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|map)).*)",
       "destination": "/index.html"
     }
   ],
