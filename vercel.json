@@ -10,10 +10,14 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!.*\\.(?:js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|map)).*)",
-      "destination": "/index.html"
+      "src": "/(favicon\\.ico|manifest\\.json|robots\\.txt|logo192\\.png|logo512\\.png|static/.*)",
+      "headers": { "cache-control": "public,max-age=31536000,immutable" }
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
     }
   ],
   "env": {
