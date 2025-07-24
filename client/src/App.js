@@ -26,21 +26,42 @@ import ChatBot from './components/ChatBot/ChatBot';
 import Navigation from './components/Navigation/Navigation';
 import './App.css';
 
+class AuthErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    console.error('❌ AuthErrorBoundary caught error:', error);
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div>Authentication error occurred. Please refresh the page.</div>;
+    }
+    return this.props.children;
+  }
+}
+
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
-  console.log('ProtectedRoute - user:', user, 'loading:', loading, 'token:', localStorage.getItem('token'));
+  console.log('🔍 ProtectedRoute - user:', user, 'loading:', loading, 'token:', localStorage.getItem('token') ? 'present' : 'missing');
   
   if (loading) {
-    console.log('ProtectedRoute - showing loading state');
+    console.log('🔍 ProtectedRoute - showing loading state');
     return <div className="loading">Loading...</div>;
   }
   
   if (!user) {
-    console.log('ProtectedRoute - no user, redirecting to login');
+    console.log('🔍 ProtectedRoute - no user, redirecting to login');
+    return <Navigate to="/login" />;
   }
   
-  return user ? children : <Navigate to="/login" />;
+  console.log('🔍 ProtectedRoute - user authenticated, rendering protected content');
+  return children;
 };
 
 const PublicRoute = ({ children }) => {
@@ -165,17 +186,19 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <RoleProvider>
-        <AdminProvider>
-          <MessagingProvider>
-            <Router>
-              <AppContent />
-            </Router>
-          </MessagingProvider>
-        </AdminProvider>
-      </RoleProvider>
-    </AuthProvider>
+    <AuthErrorBoundary>
+      <AuthProvider>
+        <RoleProvider>
+          <AdminProvider>
+            <MessagingProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </MessagingProvider>
+          </AdminProvider>
+        </RoleProvider>
+      </AuthProvider>
+    </AuthErrorBoundary>
   );
 }
 

@@ -28,32 +28,35 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = useCallback(async () => {
     try {
+      console.log('🔍 AuthContext - fetchUser called');
       const response = await axios.get(`${apiBaseUrl}/api/auth/me`);
       const userData = response.data.user;
       
       const currentToken = localStorage.getItem('token');
-      console.log('fetchUser - token:', currentToken ? 'present' : 'missing');
+      console.log('🔍 AuthContext - token from localStorage:', currentToken ? 'present' : 'missing');
       
       if (currentToken) {
         try {
           const decoded = jwtDecode(currentToken);
-          console.log('fetchUser - decoded token:', decoded);
+          console.log('🔍 AuthContext - decoded token:', decoded);
           const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
           setUser(userWithAdmin);
-          console.log('fetchUser - user set with admin flag:', userWithAdmin);
+          console.log('🔍 AuthContext - user set with admin flag:', userWithAdmin);
         } catch (decodeError) {
-          console.error('JWT decode failed:', decodeError);
+          console.error('❌ AuthContext - JWT decode error:', decodeError);
           logout();
           return;
         }
       } else {
+        console.log('🔍 AuthContext - no token found');
         setUser(userData);
       }
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error('❌ AuthContext - fetchUser error:', error);
       logout();
     } finally {
       setLoading(false);
+      console.log('🔍 AuthContext - loading set to false');
     }
   }, [apiBaseUrl]);
 
