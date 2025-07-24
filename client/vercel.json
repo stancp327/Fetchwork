@@ -1,15 +1,8 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "cleanUrls": false,
-  "trailingSlash": false,
-  "headers": [
     {
-      "source": "/manifest.json",
-      "headers": [
-        { "key": "Content-Type", "value": "application/manifest+json" }
-      ]
+      "source": "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|logo192.png|logo512.png|static/).*)$",
+      "destination": "/index.html"
     }
   ]
 }
