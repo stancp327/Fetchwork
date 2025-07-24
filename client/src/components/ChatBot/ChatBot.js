@@ -2,10 +2,18 @@ import React, { useEffect } from 'react';
 
 const ChatBot = () => {
   useEffect(() => {
+    const chatbaseId = process.env.REACT_APP_CHATBASE_ID;
+    console.log('ChatBot - REACT_APP_CHATBASE_ID:', chatbaseId);
+    
+    if (!chatbaseId || chatbaseId === 'your-chatbot-id') {
+      console.warn('ChatBot - No valid Chatbase ID configured');
+      return;
+    }
+    
     const script = document.createElement('script');
     script.src = 'https://www.chatbase.co/embed.min.js';
     script.defer = true;
-    script.setAttribute('chatbotId', process.env.REACT_APP_CHATBASE_ID || 'your-chatbot-id');
+    script.setAttribute('chatbotId', chatbaseId);
     script.setAttribute('domain', window.location.hostname);
     
     document.head.appendChild(script);

@@ -32,10 +32,20 @@ export const AuthProvider = ({ children }) => {
       const userData = response.data.user;
       
       const currentToken = localStorage.getItem('token');
+      console.log('fetchUser - token:', currentToken ? 'present' : 'missing');
+      
       if (currentToken) {
-        const decoded = jwtDecode(currentToken);
-        const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
-        setUser(userWithAdmin);
+        try {
+          const decoded = jwtDecode(currentToken);
+          console.log('fetchUser - decoded token:', decoded);
+          const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
+          setUser(userWithAdmin);
+          console.log('fetchUser - user set with admin flag:', userWithAdmin);
+        } catch (decodeError) {
+          console.error('JWT decode failed:', decodeError);
+          logout();
+          return;
+        }
       } else {
         setUser(userData);
       }
