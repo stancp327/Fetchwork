@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!manifest\\.json|favicon\\.ico|.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
