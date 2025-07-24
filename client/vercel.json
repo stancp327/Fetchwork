@@ -1,23 +1,9 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "build" }
+      "source": "/((?!.*\\.(json|ico|js|css|png|jpg|jpeg|svg|webp|woff2?|ttf|eot)$).*)",
+      "destination": "/index.html"
     }
   ],
-  "routes": [
-    {
-      "src": "/(manifest\\.json|favicon\\.ico|.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot))",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" }
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
-    }
-  ]
+  "framework": "create-react-app"
 }

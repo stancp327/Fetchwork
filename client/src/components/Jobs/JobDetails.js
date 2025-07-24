@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
@@ -24,11 +24,7 @@ const JobDetails = () => {
     ? 'https://fetchwork-1.onrender.com' 
     : 'http://localhost:10000';
 
-  useEffect(() => {
-    fetchJobDetails();
-  }, [id, fetchJobDetails]);
-
-  const fetchJobDetails = async () => {
+  const fetchJobDetails = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -51,7 +47,11 @@ const JobDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchJobDetails();
+  }, [fetchJobDetails]);
 
   const handleApply = async (e) => {
     e.preventDefault();
