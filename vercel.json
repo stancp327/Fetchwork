@@ -1,12 +1,5 @@
 {
-  "version": 2,
   "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/build",
-  "framework": "create-react-app",
-  "rewrites": [
-    {
-      "source": "/((?!api|_next|_static|_vercel|favicon\\.ico|manifest\\.json|robots\\.txt|.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)).*)",
-      "destination": "/index.html"
-    }
-  ]
+  "framework": "create-react-app"
 }
