@@ -3,10 +3,12 @@
   "builds": [
     {
       "src": "client/package.json",
-      "use": "@vercel/static-build"
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "client/build"
+      }
     }
   ],
-  "framework": "create-react-app",
   "routes": [
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|eot))",
@@ -23,7 +25,7 @@
       "dest": "/index.html"
     }
   ],
-  "buildCommand": "npm run build",
+  "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/build",
-  "public": "client/public"
+  "framework": "create-react-app"
 }
