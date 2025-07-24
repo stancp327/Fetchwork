@@ -72,53 +72,256 @@ FetchWork/
 └── README.md                  # This file
 ```
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18.20.4 recommended)
-- MongoDB
+- **Node.js 18.20.4** (use nvm for version management)
+- **MongoDB Atlas account** (free tier available)
+- **Git** (latest version)
+- **Vercel account** (for frontend deployment)
+- **Render account** (for backend deployment)
 
-### 1. Install Dependencies
+### Quick Start (5 minutes)
 
-From the root of `client` and `server`, run:
-```
-npm install
-```
+1. **Clone and Setup**
+   ```bash
+   git clone https://github.com/stancp327/Fetchwork.git
+   cd Fetchwork
+   
+   # Use correct Node.js version
+   nvm use 18.20.4  # or nvm install 18.20.4
+   
+   # Install all dependencies
+   npm install
+   cd client && npm install
+   cd ../server && npm install
+   cd ..
+   ```
 
-### 2. Start Development Servers
+2. **Environment Configuration**
+   
+   **Server Environment** (create `server/.env.local`):
+   ```env
+   # Database
+   MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/fetchwork
+   
+   # Authentication
+   JWT_SECRET=your_super_secure_jwt_secret_minimum_32_characters
+   
+   # Email Service (Resend)
+   RESEND_API_KEY=re_your_resend_api_key_here
+   FROM_EMAIL=noreply@yourapp.com
+   
+   # Frontend URL
+   CLIENT_URL=http://localhost:3000
+   
+   # Optional: Socket.io configuration
+   SOCKET_CORS_ORIGIN=http://localhost:3000
+   
+   # Server Configuration
+   PORT=10000
+   NODE_ENV=development
+   ```
+   
+   **Client Environment** (create `client/.env.local`):
+   ```env
+   # Backend API
+   REACT_APP_API_URL=http://localhost:10000
+   
+   # Chatbot Integration
+   REACT_APP_CHATBASE_ID=your_chatbase_chatbot_id
+   
+   # Optional: Development settings
+   GENERATE_SOURCEMAP=false
+   ```
 
-From `client/`:
-```
-npm start
-```
+3. **Database Setup (MongoDB Atlas)**
+   ```bash
+   # 1. Go to https://cloud.mongodb.com
+   # 2. Create free cluster
+   # 3. Create database user
+   # 4. Whitelist IP (0.0.0.0/0 for development)
+   # 5. Get connection string
+   # 6. Replace <password> and <dbname> in connection string
+   ```
 
-From `server/`:
-```
-node index.js
-```
+4. **Start Development**
+   ```bash
+   # Option 1: Start both services (recommended)
+   npm run dev
+   
+   # Option 2: Start individually
+   npm run client   # Frontend: http://localhost:3000
+   npm run server   # Backend: http://localhost:10000
+   
+   # Option 3: Manual start
+   cd client && npm start &
+   cd server && node index.js
+   ```
 
-### 3. Environment Variables
+### Advanced Setup
 
-#### Server (.env.local)
+#### Email Service (Resend)
+1. **Create Account**: Go to [resend.com](https://resend.com)
+2. **Generate API Key**: Dashboard → API Keys → Create
+3. **Add to Environment**: Copy key to `RESEND_API_KEY`
+4. **Verify Setup**: Check admin panel email tab
+
+#### Chatbot Integration (Chatbase)
+1. **Create Chatbot**: Go to [chatbase.co](https://chatbase.co)
+2. **Get Chatbot ID**: Settings → Embed → Copy ID
+3. **Add to Environment**: Set `REACT_APP_CHATBASE_ID`
+4. **Test Widget**: Should appear on frontend pages
+
+#### WebSocket Messaging
+- **Automatic**: Starts with backend server
+- **Port**: Same as backend (10000)
+- **Test**: Real-time messaging in app
+- **Debug**: Check browser console for socket connections
+
+### Production Deployment
+
+#### Frontend (Vercel)
+1. **Connect Repository**: Import from GitHub
+2. **Configure Build**:
+   - Build Command: `cd client && npm run build`
+   - Output Directory: `client/build`
+   - Root Directory: Leave empty (monorepo)
+3. **Environment Variables**:
+   ```env
+   REACT_APP_API_URL=https://your-backend.onrender.com
+   REACT_APP_CHATBASE_ID=your_chatbase_id
+   ```
+4. **Deploy**: Automatic on git push
+
+#### Backend (Render)
+1. **Create Web Service**: Connect GitHub repository
+2. **Configure Service**:
+   - Root Directory: `server`
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+3. **Environment Variables**: Add all server environment variables
+4. **Deploy**: Automatic on git push
+
+### Development Workflow
+
+#### Local Testing
 ```bash
-# MongoDB Configuration
-MONGO_URI=mongodb+srv://Fetchwork_user:YOUR_PASSWORD@fetchwork.sch7kdf.mongodb.net/?retryWrites=true&w=majority&authSource=admin&appName=Fetchwork
+# Run tests
+cd client && npm test
+cd server && npm test
 
-# JWT Configuration
-JWT_SECRET=your_super_secure_jwt_secret_key_here
+# Build for production
+cd client && npm run build
 
-# Server Configuration
-PORT=10000
-NODE_ENV=development
+# Serve production build locally
+cd client && npx serve -s build
+
+# Check backend health
+curl http://localhost:10000/test-db
 ```
 
-#### Client (.env.local)
+#### Git Workflow
 ```bash
-# API Configuration
-REACT_APP_API_URL=http://localhost:10000
+# Create feature branch
+git checkout -b feature/your-feature-name
 
-# Development Configuration
-GENERATE_SOURCEMAP=false
+# Make changes and commit
+git add .
+git commit -m "feat: your feature description"
+
+# Push and create PR
+git push origin feature/your-feature-name
+```
+
+#### Debugging
+```bash
+# Check logs
+npm run logs:client
+npm run logs:server
+
+# Debug WebSocket
+# Open browser console and check socket connections
+
+# Test API endpoints
+curl -X POST http://localhost:10000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password"}'
+```
+
+### Project Structure
+```
+Fetchwork/
+├── client/                 # React frontend
+│   ├── public/            # Static assets
+│   ├── src/               # React components
+│   ├── build/             # Production build
+│   └── package.json       # Frontend dependencies
+├── server/                # Express backend
+│   ├── models/            # MongoDB models
+│   ├── routes/            # API routes
+│   ├── socket/            # WebSocket handlers
+│   ├── services/          # Business logic
+│   └── package.json       # Backend dependencies
+├── vercel.json            # Vercel deployment config
+├── package.json           # Root package (dev scripts)
+└── README.md              # This file
+```
+
+### Verification Checklist
+
+After setup, verify these work:
+- [ ] Frontend loads at http://localhost:3000
+- [ ] Backend responds at http://localhost:10000/test-db
+- [ ] User registration creates account
+- [ ] Login redirects to dashboard
+- [ ] Admin panel accessible (create admin user first)
+- [ ] Real-time messaging works
+- [ ] Email service configured (check admin panel)
+- [ ] Chatbot widget appears
+
+### Common Setup Issues
+
+#### Node.js Version
+```bash
+# Check version
+node --version  # Should be 18.20.4
+
+# Fix version
+nvm install 18.20.4
+nvm use 18.20.4
+nvm alias default 18.20.4
+```
+
+#### Port Conflicts
+```bash
+# Check what's using port 3000/10000
+lsof -i :3000
+lsof -i :10000
+
+# Kill processes if needed
+kill -9 $(lsof -t -i:3000)
+```
+
+#### MongoDB Connection
+```bash
+# Test connection string
+mongosh "your_connection_string"
+
+# Common issues:
+# - Wrong password
+# - IP not whitelisted
+# - Network restrictions
+```
+
+#### Environment Variables Not Loading
+```bash
+# Check if files exist
+ls -la client/.env.local
+ls -la server/.env.local
+
+# Verify format (no spaces around =)
+cat server/.env.local
 ```
 
 ## Authentication System
@@ -382,7 +585,110 @@ npm run server  # Express backend on :10000
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### Vercel Deployment Issues
+
+#### Blank Pages on Admin/Register Routes
+**Symptoms**: Routes like `/admin`, `/register`, `/browse-services` show blank pages while `/` and `/login` work
+**Root Cause**: Vercel not detecting React SPA structure properly, causing routing failures
+
+**Solutions**:
+1. **Clear Vercel Build Cache**:
+   - Go to Vercel Dashboard → Your Project → Deployments
+   - Click latest deployment → "Redeploy" → "Clear build cache & deploy"
+   - Wait 5-10 minutes for CDN propagation
+
+2. **Verify vercel.json Configuration**:
+   ```json
+   {
+     "version": 2,
+     "builds": [
+       {
+         "src": "client/package.json",
+         "use": "@vercel/static-build",
+         "config": {
+           "distDir": "client/build"
+         }
+       }
+     ],
+     "routes": [
+       {
+         "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|eot))",
+         "status": 200,
+         "dest": "/$1"
+       },
+       {
+         "src": "/(favicon\\.ico|manifest\\.json)",
+         "status": 200,
+         "dest": "/$1"
+       },
+       {
+         "src": "/(admin|register|browse-services|dashboard|.*)",
+         "dest": "/index.html"
+       }
+     ],
+     "buildCommand": "cd client && npm run build",
+     "outputDirectory": "client/build",
+     "framework": "create-react-app"
+   }
+   ```
+
+3. **Check Framework Detection**:
+   - Vercel logs should show "Framework: Create React App"
+   - If showing "No framework detected", rebuild with cache clear
+
+#### Static Files Served as HTML
+**Symptoms**: `/manifest.json` returns HTML instead of JSON, causing "Manifest: Line: 1, column: 1, Syntax error"
+**Cause**: Vercel rewriting static file requests to index.html
+
+**Solutions**:
+1. Ensure static file routes in vercel.json have `"status": 200` and `"dest": "/$1"`
+2. Test static files directly: `https://yourapp.vercel.app/manifest.json`
+3. Check browser Network tab for correct MIME types
+
+#### Monorepo Structure Issues
+**Symptoms**: Build failures or incorrect file paths
+**Cause**: Vercel not finding correct build directory in monorepo
+
+**Solutions**:
+1. Verify `buildCommand` includes `cd client &&`
+2. Ensure `outputDirectory` points to `client/build`
+3. Check `distDir` in builds config matches actual build output
+
+### WebSocket Messaging Issues
+
+#### Connection Failures
+**Symptoms**: Real-time messaging not working, socket connection errors
+**Cause**: Socket.io configuration or authentication problems
+
+**Solutions**:
+1. **Check Socket.io Availability**:
+   ```bash
+   curl https://fetchwork-1.onrender.com/socket.io/socket.io.js
+   ```
+2. **Verify Environment Variables**:
+   - `SOCKET_CORS_ORIGIN` set to frontend URL
+   - `CLIENT_URL` matches frontend domain
+3. **Test Connection**:
+   - Open browser console on frontend
+   - Look for socket connection logs
+   - Check for authentication errors
+
+#### Message Delivery Issues
+**Symptoms**: Messages not appearing in real-time, delivery failures
+**Cause**: Room management or event handling problems
+
+**Solutions**:
+1. **Check Room Joining**:
+   - Users should join rooms based on conversation ID
+   - Verify socket.join() calls in backend
+2. **Test Event Flow**:
+   - message:send → save to DB → emit to room
+   - Verify all steps complete successfully
+3. **Debug Tools**:
+   - Use browser DevTools → Network → WS tab
+   - Monitor socket events and responses
+
+### Backend Deployment Issues
 
 **MongoDB Connection Failed**
 - Verify MONGO_URI in environment variables
@@ -394,15 +700,168 @@ npm run server  # Express backend on :10000
 - Check token format in Authorization header: `Bearer <token>`
 - Ensure user exists in database with correct fields
 
+**Email Service Failures**
+- **Cause**: Missing RESEND_API_KEY environment variable
+- **Solution**: Add RESEND_API_KEY to your Render environment variables
+- **Critical**: Service fails to start without this variable
+
 **AdminDashboard Access Denied**
 - Create admin user in MongoDB with `role: 'admin'`
 - Verify admin token is being sent in requests
 - Check admin middleware authentication logic
 
+**CORS Errors**
+- **Cause**: Frontend and backend URL mismatch
+- **Solution**: Update CORS configuration in server/index.js
+- **Check**: Verify CLIENT_URL environment variable matches frontend domain
+
+### Local Development Issues
+
+**Node.js Version Conflicts**
+- **Cause**: Wrong Node.js version
+- **Solution**: Use Node.js 18.20.4 (specified in .nvmrc)
+- **Commands**: `nvm use 18.20.4` or `nvm install 18.20.4`
+
+**Build Failures with OpenSSL**
+- **Symptoms**: Build fails with OpenSSL legacy provider errors
+- **Solution**: Use `NODE_OPTIONS="--openssl-legacy-provider" npm run build`
+- **Note**: This is automatically configured in the project
+
 **Frontend Build Issues**
 - Run `npm install` in both client and server directories
 - Check for missing dependencies in package.json
 - Verify Node.js version compatibility (18.20.4 recommended)
+
+**Environment Variables Not Loading**
+- **Cause**: Missing .env.local files
+- **Solution**: Create `.env.local` files in both client/ and server/ directories
+- **Security**: Never commit .env.local files to git
+
+### Testing and Verification
+
+#### Manual Testing Checklist
+1. **Frontend Routes**:
+   - [ ] Homepage (/) loads correctly
+   - [ ] Login (/login) works
+   - [ ] Admin panel (/admin) accessible
+   - [ ] Registration (/register) functional
+   - [ ] Browse services (/browse-services) loads
+
+2. **Static Files**:
+   - [ ] manifest.json returns valid JSON
+   - [ ] favicon.ico loads correctly
+   - [ ] CSS/JS files load with correct MIME types
+
+3. **Backend Endpoints**:
+   - [ ] /test-db returns MongoDB connection status
+   - [ ] /api/auth/login accepts credentials
+   - [ ] /api/admin/* routes require authentication
+
+4. **Real-time Features**:
+   - [ ] WebSocket connection establishes
+   - [ ] Messages send/receive in real-time
+   - [ ] Typing indicators work
+   - [ ] Online status updates
+
+#### Debugging Tools
+- **Browser DevTools**: Check Network tab for failed requests
+- **Vercel Logs**: Monitor deployment and runtime logs
+- **Render Logs**: Check backend service logs
+- **Socket.io Admin**: Use for WebSocket debugging
+
+#### Automated Testing Script
+```bash
+# Create test script
+cat > test-deployment.js << 'EOF'
+const axios = require('axios');
+
+async function testDeployment() {
+  const tests = [
+    { name: 'Homepage', url: 'https://fetchwork.vercel.app/' },
+    { name: 'Manifest', url: 'https://fetchwork.vercel.app/manifest.json' },
+    { name: 'Admin Route', url: 'https://fetchwork.vercel.app/admin' },
+    { name: 'Backend Health', url: 'https://fetchwork-1.onrender.com/test-db' }
+  ];
+  
+  for (const test of tests) {
+    try {
+      const response = await axios.get(test.url, { timeout: 10000 });
+      console.log(`✅ ${test.name}: ${response.status}`);
+    } catch (error) {
+      console.log(`❌ ${test.name}: ${error.message}`);
+    }
+  }
+}
+
+testDeploymentTest();
+EOF
+
+# Run test
+node test-deployment.js
+```
+
+### Emergency Deployment Recovery
+
+If deployment is completely broken:
+
+1. **Rollback to last working commit**:
+   ```bash
+   git log --oneline  # Find last working commit
+   git revert HEAD~1  # Revert last commit
+   git push origin main
+   ```
+
+2. **Minimal vercel.json for emergency**:
+   ```json
+   {
+     "version": 2,
+     "rewrites": [
+       {
+         "source": "/(.*)",
+         "destination": "/index.html"
+       }
+     ]
+   }
+   ```
+
+3. **Move frontend to root** (temporary fix):
+   ```bash
+   # Copy client files to root
+   cp -r client/* .
+   # Update vercel.json for root deployment
+   # Redeploy
+   ```
+
+4. **Contact support**:
+   - Vercel: Check status.vercel.com
+   - Render: Check status.render.com
+   - Create GitHub issue with deployment logs
+
+### Getting Help
+
+If you encounter issues:
+1. **Check Logs**: Review Vercel and Render deployment logs
+2. **Verify Environment**: Ensure all environment variables are set
+3. **Test Locally**: Confirm functionality works in development
+4. **Clear Caches**: Try clearing browser and deployment caches
+5. **Check Status**: Verify service status pages for Vercel/Render
+
+**Emergency Contacts**:
+- Create GitHub issue for code-related problems
+- Check Vercel/Render status pages for service outages
+- Review this troubleshooting guide for common solutions
+
+**Useful Commands**:
+```bash
+# Test local build
+cd client && npm run build && npx serve -s build
+
+# Check backend health
+curl https://fetchwork-1.onrender.com/test-db
+
+# Verify frontend deployment
+curl -I https://fetchwork.vercel.app/manifest.json
+```
 
 ## 📊 Development Status
 
