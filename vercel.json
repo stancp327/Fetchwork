@@ -1,11 +1,19 @@
 {
-  "buildCommand": "cd client && npm run build",
-  "outputDirectory": "client/build", 
-  "framework": "create-react-app",
-  "rewrites": [
-    { 
-      "source": "/((?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|eot|map)).*)", 
-      "destination": "/index.html" 
+  "version": 2,
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "client/build" }
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
     }
   ]
 }
