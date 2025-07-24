@@ -3,6 +3,9 @@
   "outputDirectory": "client/build", 
   "framework": "create-react-app",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { 
+      "source": "/((?!.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|txt|woff2?|ttf|eot|map)).*)", 
+      "destination": "/index.html" 
+    }
   ]
 }
