@@ -3,8 +3,9 @@ const router = express.Router();
 const Job = require('../models/Job');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
+const { validateJobPost, validateProposal, validateQueryParams, validateMongoId } = require('../middleware/validation');
 
-router.get('/', async (req, res) => {
+router.get('/', validateQueryParams, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -74,7 +75,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
       .populate('client', 'firstName lastName profilePicture rating totalJobs memberSince')
@@ -94,7 +95,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, validateJobPost, async (req, res) => {
   try {
     const {
       title,
@@ -109,12 +110,6 @@ router.post('/', authenticateToken, async (req, res) => {
       isRemote,
       isUrgent
     } = req.body;
-    
-    if (!title || !description || !category || !budget || !duration || !experienceLevel) {
-      return res.status(400).json({ 
-        error: 'Title, description, category, budget, duration, and experience level are required' 
-      });
-    }
     
     const job = new Job({
       title,
@@ -147,7 +142,7 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, validateMongoId, validateJobPost, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
     
@@ -189,7 +184,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
     
@@ -216,15 +211,9 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/:id/proposals', authenticateToken, async (req, res) => {
+router.post('/:id/proposals', authenticateToken, validateMongoId, validateProposal, async (req, res) => {
   try {
     const { coverLetter, proposedBudget, proposedDuration, attachments } = req.body;
-    
-    if (!coverLetter || !proposedBudget || !proposedDuration) {
-      return res.status(400).json({ 
-        error: 'Cover letter, proposed budget, and proposed duration are required' 
-      });
-    }
     
     const job = await Job.findById(req.params.id);
     
@@ -308,7 +297,7 @@ router.post('/:id/proposals', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/:id/proposals', authenticateToken, async (req, res) => {
+router.get('/:id/proposals', authenticateToken, validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
       .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');

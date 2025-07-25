@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { Message, Conversation, ChatRoom } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
+const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
 
-router.get('/conversations', authenticateToken, async (req, res) => {
+router.get('/conversations', authenticateToken, validateQueryParams, async (req, res) => {
   try {
     const conversations = await Conversation.find({
       participants: req.user._id,
@@ -21,7 +22,7 @@ router.get('/conversations', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/conversations/:conversationId', authenticateToken, async (req, res) => {
+router.get('/conversations/:conversationId', authenticateToken, validateConversationIdParam, validateQueryParams, async (req, res) => {
   try {
     const conversation = await Conversation.findById(req.params.conversationId)
       .populate('participants', 'firstName lastName profilePicture');
@@ -76,13 +77,9 @@ router.get('/conversations/:conversationId', authenticateToken, async (req, res)
   }
 });
 
-router.post('/conversations', authenticateToken, async (req, res) => {
+router.post('/conversations', authenticateToken, validateMessage, async (req, res) => {
   try {
     const { recipientId, jobId, content } = req.body;
-    
-    if (!recipientId || !content) {
-      return res.status(400).json({ error: 'Recipient and message content are required' });
-    }
     
     if (recipientId === req.user._id.toString()) {
       return res.status(400).json({ error: 'Cannot send message to yourself' });
@@ -124,13 +121,9 @@ router.post('/conversations', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/conversations/:conversationId/messages', authenticateToken, async (req, res) => {
+router.post('/conversations/:conversationId/messages', authenticateToken, validateConversationIdParam, validateMessage, async (req, res) => {
   try {
     const { content } = req.body;
-    
-    if (!content) {
-      return res.status(400).json({ error: 'Message content is required' });
-    }
     
     const conversation = await Conversation.findById(req.params.conversationId);
     

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateAdmin, requirePermission } = require('../middleware/auth');
+const { validateUserSuspension, validateReviewModeration, validateQueryParams, validateUserIdParam, validateJobIdParam, validateReviewIdParam } = require('../middleware/validation');
 const User = require('../models/User');
 const Admin = require('../models/Admin');
 const Job = require('../models/Job');
@@ -96,7 +97,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
   }
 });
 
-router.get('/users', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+router.get('/users', authenticateAdmin, requirePermission('user_management'), validateQueryParams, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -153,14 +154,10 @@ router.get('/users', authenticateAdmin, requirePermission('user_management'), as
   }
 });
 
-router.put('/users/:userId/suspend', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+router.put('/users/:userId/suspend', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, validateUserSuspension, async (req, res) => {
   try {
     const { userId } = req.params;
     const { reason } = req.body;
-
-    if (!reason) {
-      return res.status(400).json({ error: 'Suspension reason is required' });
-    }
 
     const user = await User.findById(userId);
     if (!user) {
@@ -179,7 +176,7 @@ router.put('/users/:userId/suspend', authenticateAdmin, requirePermission('user_
   }
 });
 
-router.put('/users/:userId/unsuspend', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+router.put('/users/:userId/unsuspend', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -200,7 +197,7 @@ router.put('/users/:userId/unsuspend', authenticateAdmin, requirePermission('use
   }
 });
 
-router.get('/jobs', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+router.get('/jobs', authenticateAdmin, requirePermission('job_management'), validateQueryParams, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -243,7 +240,7 @@ router.get('/jobs', authenticateAdmin, requirePermission('job_management'), asyn
   }
 });
 
-router.put('/jobs/:jobId/cancel', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+router.put('/jobs/:jobId/cancel', authenticateAdmin, requirePermission('job_management'), validateJobIdParam, async (req, res) => {
   try {
     const { jobId } = req.params;
     const { reason } = req.body;
@@ -265,7 +262,7 @@ router.put('/jobs/:jobId/cancel', authenticateAdmin, requirePermission('job_mana
   }
 });
 
-router.get('/payments', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+router.get('/payments', authenticateAdmin, requirePermission('payment_management'), validateQueryParams, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -309,7 +306,7 @@ router.get('/payments', authenticateAdmin, requirePermission('payment_management
   }
 });
 
-router.get('/reviews', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+router.get('/reviews', authenticateAdmin, requirePermission('content_moderation'), validateQueryParams, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -352,14 +349,10 @@ router.get('/reviews', authenticateAdmin, requirePermission('content_moderation'
   }
 });
 
-router.put('/reviews/:reviewId/moderate', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+router.put('/reviews/:reviewId/moderate', authenticateAdmin, requirePermission('content_moderation'), validateReviewIdParam, validateReviewModeration, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const { status, notes } = req.body;
-
-    if (!['approved', 'rejected', 'hidden'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid moderation status' });
-    }
 
     const review = await Review.findById(reviewId);
     if (!review) {
@@ -378,7 +371,7 @@ router.put('/reviews/:reviewId/moderate', authenticateAdmin, requirePermission('
   }
 });
 
-router.get('/analytics', authenticateAdmin, requirePermission('analytics_view'), async (req, res) => {
+router.get('/analytics', authenticateAdmin, requirePermission('analytics_view'), validateQueryParams, async (req, res) => {
   try {
     const { period = '30d' } = req.query;
     
