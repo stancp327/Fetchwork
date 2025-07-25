@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
@@ -21,7 +21,6 @@ const Messages = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState(null);
   const [typingUsers, setTypingUsers] = useState(new Set());
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [deliveryStatus, setDeliveryStatus] = useState(new Map());
   const typingTimeoutRef = useRef(null);
 
@@ -76,16 +75,10 @@ const Messages = () => {
         
         case 'user:online':
           console.log('[UI] User came online:', data);
-          setOnlineUsers(prev => new Set([...prev, data.userId]));
           break;
         
         case 'user:offline':
           console.log('[UI] User went offline:', data);
-          setOnlineUsers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(data.userId);
-            return newSet;
-          });
           break;
         
         case 'message:delivered':
@@ -95,13 +88,6 @@ const Messages = () => {
         
         case 'user:online_status':
           console.log('[UI] Online status update:', data);
-          setOnlineUsers(prev => {
-            const newSet = new Set();
-            Object.entries(data).forEach(([userId, isOnline]) => {
-              if (isOnline) newSet.add(userId);
-            });
-            return newSet;
-          });
           break;
         
         default:

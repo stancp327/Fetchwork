@@ -47,7 +47,7 @@ const JobDetails = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, API_BASE_URL]);
 
   useEffect(() => {
     fetchJobDetails();
