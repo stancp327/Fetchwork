@@ -23,7 +23,7 @@
   align-items: center;
   justify-content: center;
   gap: 20px;
-  margin-bottom: 30px;
+  margin-bottom: var(--space-px-30);
 }
 
 .logo-image {
@@ -56,7 +56,7 @@
 
 .btn {
   padding: 12px 30px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   text-decoration: none;
   font-weight: 600;
   font-size: 1rem;
@@ -122,8 +122,8 @@
 
 .section-title {
   text-align: center;
-  font-size: 2.5rem;
-  color: #333;
+  font-size: var(--font-size-3xl);
+  color: var(--color-text-primary);
   margin-bottom: 60px;
   font-weight: 700;
 }
@@ -137,8 +137,8 @@
 
 .feature-card {
   text-align: center;
-  padding: 40px 30px;
-  border-radius: 12px;
+  padding: var(--space-px-40) var(--space-px-30);
+  border-radius: var(--radius-xl);
   background: #f8f9fa;
   transition: all 0.3s ease;
   border: 1px solid #e9ecef;
@@ -152,19 +152,19 @@
 
 .feature-icon {
   font-size: 3rem;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-px-20);
   display: block;
 }
 
 .feature-card h3 {
-  font-size: 1.5rem;
-  color: #333;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
   margin-bottom: 15px;
   font-weight: 600;
 }
 
 .feature-card p {
-  color: #666;
+  color: var(--color-text-secondary);
   line-height: 1.6;
   font-size: 1rem;
 }
@@ -177,8 +177,8 @@
 }
 
 .cta-content h2 {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-px-20);
   font-weight: 700;
 }
 
@@ -212,7 +212,7 @@
   }
   
   .hero-title {
-    font-size: 2.5rem;
+    font-size: var(--font-size-3xl);
   }
   
   .hero-subtitle {
@@ -239,7 +239,7 @@
   }
   
   .feature-card {
-    padding: 30px 20px;
+    padding: var(--space-px-30) var(--space-px-20);
   }
   
   .cta-content h2 {

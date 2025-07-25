@@ -8,6 +8,7 @@ import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Navigation from './components/Navigation/Navigation';
+import Footer from './components/common/Footer';
 import ChatBot from './components/ChatBot/ChatBot';
 import './App.css';
 
@@ -219,6 +220,7 @@ function AppContent() {
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>
       </Suspense>
+      <Footer />
     </div>
   );
 }

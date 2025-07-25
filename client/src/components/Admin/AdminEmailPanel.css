@@ -1,24 +1,24 @@
 .admin-email-panel {
-  padding: 20px;
+  padding: var(--space-px-20);
 }
 
 .admin-email-panel h2 {
-  color: #333;
-  margin-bottom: 30px;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-px-30);
   border-bottom: 2px solid #4285f4;
   padding-bottom: 10px;
 }
 
 .email-status {
   background: #f8f9fa;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
+  padding: var(--space-px-20);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-px-30);
 }
 
 .email-status h3 {
   margin-top: 0;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .status-indicator {
@@ -49,20 +49,20 @@
 .test-section {
   background: white;
   padding: 25px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .broadcast-section h3,
 .test-section h3 {
   margin-top: 0;
-  color: #333;
+  color: var(--color-text-primary);
   border-bottom: 1px solid #eee;
   padding-bottom: 10px;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-px-20);
 }
 
 .form-group label {
@@ -135,6 +135,6 @@ button[type="submit"]:disabled {
   
   .broadcast-section,
   .test-section {
-    padding: 20px;
+    padding: var(--space-px-20);
   }
 }

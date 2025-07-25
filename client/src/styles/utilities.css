@@ -1,0 +1,87 @@
+/* Mobile-first utility classes */
+
+/* Typography utilities */
+.text-xs { font-size: var(--font-size-xs); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-base { font-size: var(--font-size-base); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-2xl { font-size: var(--font-size-2xl); }
+.text-3xl { font-size: var(--font-size-3xl); }
+
+.font-normal { font-weight: var(--font-weight-normal); }
+.font-medium { font-weight: var(--font-weight-medium); }
+.font-semibold { font-weight: var(--font-weight-semibold); }
+.font-bold { font-weight: var(--font-weight-bold); }
+
+/* Spacing utilities */
+.p-xs { padding: var(--space-xs); }
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+.p-xl { padding: var(--space-xl); }
+
+.m-xs { margin: var(--space-xs); }
+.m-sm { margin: var(--space-sm); }
+.m-md { margin: var(--space-md); }
+.m-lg { margin: var(--space-lg); }
+.m-xl { margin: var(--space-xl); }
+
+/* Mobile-first responsive utilities */
+.mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .mobile-stack {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.mobile-center {
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .mobile-center {
+    text-align: left;
+  }
+}
+
+.mobile-full-width {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .mobile-full-width {
+    width: auto;
+  }
+}
+
+/* Button improvements for mobile */
+.btn-mobile-friendly {
+  min-height: 44px;
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--font-size-base);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+}
+
+/* Card improvements */
+.card-mobile {
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+}
+
+@media (min-width: 768px) {
+  .card-mobile {
+    padding: var(--space-xl);
+    margin-bottom: var(--space-xl);
+  }
+}
