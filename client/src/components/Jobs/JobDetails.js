@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { formatBudget } from '../../utils/formatters';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
 import '../UserComponents.css';
 
@@ -95,12 +96,6 @@ const JobDetails = () => {
     alert('Dispute filed successfully. An admin will review your case.');
   };
 
-  const formatBudget = (budget) => {
-    if (typeof budget === 'object' && budget.amount) {
-      return `$${budget.amount.toLocaleString()} ${budget.type || 'fixed'}`;
-    }
-    return `$${budget}`;
-  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {

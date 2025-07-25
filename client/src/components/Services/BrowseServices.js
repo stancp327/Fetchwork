@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { formatCategory } from '../../utils/formatters';
 import '../UserComponents.css';
 
 const getApiBaseUrl = () => {
@@ -62,10 +63,6 @@ const BrowseServices = () => {
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
-  };
-
-  const formatCategory = (category) => {
-    return category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   if (loading) {

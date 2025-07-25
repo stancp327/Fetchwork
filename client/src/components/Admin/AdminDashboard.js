@@ -3,6 +3,9 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import AdminDisputePanel from './AdminDisputePanel';
 import AdminEmailPanel from './AdminEmailPanel';
+import ActivitySection from './ActivitySection';
+import StatCard from '../common/StatCard';
+import TabButton from '../common/TabButton';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -186,23 +189,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const StatCard = ({ title, value, subtitle, className = '' }) => (
-    <div className={`stat-card ${className}`}>
-      <h3>{title}</h3>
-      <div className="stat-value">{value}</div>
-      {subtitle && <div className="stat-subtitle">{subtitle}</div>}
-    </div>
-  );
-
-  const TabButton = ({ id, label, active, onClick }) => (
-    <button
-      className={`tab-button ${active ? 'active' : ''}`}
-      onClick={() => onClick(id)}
-    >
-      {label}
-    </button>
-  );
-
   if (loading) {
     return (
       <div className="admin-dashboard">
@@ -323,41 +309,39 @@ const AdminDashboard = () => {
             <div className="recent-activity">
               <h2>Recent Activity</h2>
               <div className="activity-grid">
-                <div className="activity-section">
-                  <h3>New Users</h3>
-                  <div className="activity-list">
-                    {dashboardData.recent?.users?.length > 0 ? dashboardData.recent.users.map((user, index) => (
-                      <div key={index} className="activity-item">
-                        <div>
-                          <div className="user-name">
-                            {user.firstName} {user.lastName}
-                          </div>
-                          <div className="user-email">{user.email}</div>
+                <ActivitySection
+                  title="New Users"
+                  items={dashboardData.recent?.users}
+                  renderItem={(user) => (
+                    <>
+                      <div>
+                        <div className="user-name">
+                          {user.firstName} {user.lastName}
                         </div>
-                        <div className="activity-date">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </div>
+                        <div className="user-email">{user.email}</div>
                       </div>
-                    )) : <p>No recent users</p>}
-                  </div>
-                </div>
+                      <div className="activity-date">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </div>
+                    </>
+                  )}
+                />
 
-                <div className="activity-section">
-                  <h3>Recent Jobs</h3>
-                  <div className="activity-list">
-                    {dashboardData.recent?.jobs?.length > 0 ? dashboardData.recent.jobs.map((job, index) => (
-                      <div key={index} className="activity-item">
-                        <div>
-                          <div className="job-title">{job.title}</div>
-                          <div className="job-budget">${job.budget}</div>
-                        </div>
-                        <div className="activity-date">
-                          {new Date(job.createdAt).toLocaleDateString()}
-                        </div>
+                <ActivitySection
+                  title="Recent Jobs"
+                  items={dashboardData.recent?.jobs}
+                  renderItem={(job) => (
+                    <>
+                      <div>
+                        <div className="job-title">{job.title}</div>
+                        <div className="job-budget">${job.budget}</div>
                       </div>
-                    )) : <p>No recent jobs</p>}
-                  </div>
-                </div>
+                      <div className="activity-date">
+                        {new Date(job.createdAt).toLocaleDateString()}
+                      </div>
+                    </>
+                  )}
+                />
               </div>
             </div>
           </div>
