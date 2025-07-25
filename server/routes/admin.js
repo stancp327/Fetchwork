@@ -23,48 +23,115 @@ router.get('/profile', authenticateAdmin, async (req, res) => {
 
 router.get('/dashboard', authenticateAdmin, async (req, res) => {
   try {
+    const thisMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    
+    const userStatsAgg = await User.aggregate([
+      {
+        $facet: {
+          total: [{ $count: 'count' }],
+          active: [
+            { $match: { isActive: true, isSuspended: false } },
+            { $count: 'count' }
+          ],
+          suspended: [
+            { $match: { isSuspended: true } },
+            { $count: 'count' }
+          ],
+          newThisMonth: [
+            { $match: { createdAt: { $gte: thisMonthStart } } },
+            { $count: 'count' }
+          ]
+        }
+      }
+    ]);
+
+    const jobStatsAgg = await Job.aggregate([
+      {
+        $facet: {
+          total: [{ $count: 'count' }],
+          active: [
+            { $match: { status: { $in: ['open', 'in_progress'] } } },
+            { $count: 'count' }
+          ],
+          completed: [
+            { $match: { status: 'completed' } },
+            { $count: 'count' }
+          ],
+          disputed: [
+            { $match: { status: 'disputed' } },
+            { $count: 'count' }
+          ]
+        }
+      }
+    ]);
+
+    const paymentStatsAgg = await Payment.aggregate([
+      {
+        $facet: {
+          totalVolume: [
+            { $match: { status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+          ],
+          pendingEscrow: [
+            { $match: { type: 'escrow', status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+          ],
+          thisMonth: [
+            {
+              $match: {
+                status: 'completed',
+                createdAt: { $gte: thisMonthStart }
+              }
+            },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+          ]
+        }
+      }
+    ]);
+
+    const reviewStatsAgg = await Review.aggregate([
+      {
+        $facet: {
+          total: [{ $count: 'count' }],
+          pending: [
+            { $match: { moderationStatus: 'pending' } },
+            { $count: 'count' }
+          ],
+          flagged: [
+            { $match: { 'flags.status': 'pending' } },
+            { $count: 'count' }
+          ],
+          averageRating: [
+            { $match: { moderationStatus: 'approved' } },
+            { $group: { _id: null, avg: { $avg: '$rating' } } }
+          ]
+        }
+      }
+    ]);
+
     const stats = {
       users: {
-        total: await User.countDocuments(),
-        active: await User.countDocuments({ isActive: true, isSuspended: false }),
-        suspended: await User.countDocuments({ isSuspended: true }),
-        newThisMonth: await User.countDocuments({
-          createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
-        })
+        total: userStatsAgg[0].total[0]?.count || 0,
+        active: userStatsAgg[0].active[0]?.count || 0,
+        suspended: userStatsAgg[0].suspended[0]?.count || 0,
+        newThisMonth: userStatsAgg[0].newThisMonth[0]?.count || 0
       },
       jobs: {
-        total: await Job.countDocuments(),
-        active: await Job.countDocuments({ status: { $in: ['open', 'in_progress'] } }),
-        completed: await Job.countDocuments({ status: 'completed' }),
-        disputed: await Job.countDocuments({ status: 'disputed' })
+        total: jobStatsAgg[0].total[0]?.count || 0,
+        active: jobStatsAgg[0].active[0]?.count || 0,
+        completed: jobStatsAgg[0].completed[0]?.count || 0,
+        disputed: jobStatsAgg[0].disputed[0]?.count || 0
       },
       payments: {
-        totalVolume: await Payment.aggregate([
-          { $match: { status: 'completed' } },
-          { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]).then(result => result[0]?.total || 0),
-        pendingEscrow: await Payment.aggregate([
-          { $match: { type: 'escrow', status: 'completed' } },
-          { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]).then(result => result[0]?.total || 0),
-        thisMonth: await Payment.aggregate([
-          {
-            $match: {
-              status: 'completed',
-              createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
-            }
-          },
-          { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]).then(result => result[0]?.total || 0)
+        totalVolume: paymentStatsAgg[0].totalVolume[0]?.total || 0,
+        pendingEscrow: paymentStatsAgg[0].pendingEscrow[0]?.total || 0,
+        thisMonth: paymentStatsAgg[0].thisMonth[0]?.total || 0
       },
       reviews: {
-        total: await Review.countDocuments(),
-        pending: await Review.countDocuments({ moderationStatus: 'pending' }),
-        flagged: await Review.countDocuments({ 'flags.status': 'pending' }),
-        averageRating: await Review.aggregate([
-          { $match: { moderationStatus: 'approved' } },
-          { $group: { _id: null, avg: { $avg: '$rating' } } }
-        ]).then(result => Math.round((result[0]?.avg || 0) * 10) / 10)
+        total: reviewStatsAgg[0].total[0]?.count || 0,
+        pending: reviewStatsAgg[0].pending[0]?.count || 0,
+        flagged: reviewStatsAgg[0].flagged[0]?.count || 0,
+        averageRating: Math.round((reviewStatsAgg[0].averageRating[0]?.avg || 0) * 10) / 10
       }
     };
 
@@ -72,17 +139,20 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
       newUsers: await User.find({ isActive: true })
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('firstName lastName email createdAt'),
+        .select('firstName lastName email createdAt')
+        .lean(),
       recentJobs: await Job.find()
         .populate('client', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('title status budget createdAt client'),
+        .select('title status budget createdAt client')
+        .lean(),
       pendingReviews: await Review.find({ moderationStatus: 'pending' })
         .populate('reviewer reviewee', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .limit(5)
         .select('rating comment reviewer reviewee createdAt')
+        .lean()
     };
 
     res.json({
@@ -373,7 +443,7 @@ router.put('/reviews/:reviewId/moderate', authenticateAdmin, requirePermission('
 
 router.get('/analytics', authenticateAdmin, requirePermission('analytics_view'), validateQueryParams, async (req, res) => {
   try {
-    const { period = '30d' } = req.query;
+    const { period = '30d', page = 1, limit = 100 } = req.query;
     
     let dateFilter;
     const now = new Date();
@@ -436,14 +506,19 @@ router.get('/analytics', authenticateAdmin, requirePermission('analytics_view'),
         { $match: { createdAt: { $gte: dateFilter } } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 10 }
+        { $skip: (parseInt(page) - 1) * parseInt(limit) },
+        { $limit: parseInt(limit) }
       ])
     };
 
     res.json({
       message: 'Analytics data retrieved successfully',
       period,
-      analytics
+      analytics,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
     });
   } catch (error) {
     console.error('Admin analytics error:', error);
@@ -464,30 +539,76 @@ router.get('/monitoring', authenticateAdmin, async (req, res) => {
     };
 
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const messageStatsAgg = await Message.aggregate([
+      {
+        $facet: {
+          totalMessages: [
+            { $match: { createdAt: { $gte: last24Hours } } },
+            { $count: 'count' }
+          ],
+          groupMessages: [
+            { 
+              $match: { 
+                roomId: { $exists: true }, 
+                createdAt: { $gte: last24Hours } 
+              } 
+            },
+            { $count: 'count' }
+          ],
+          directMessages: [
+            { 
+              $match: { 
+                conversation: { $exists: true }, 
+                createdAt: { $gte: last24Hours } 
+              } 
+            },
+            { $count: 'count' }
+          ],
+          unreadMessages: [
+            { $match: { isRead: false } },
+            { $count: 'count' }
+          ]
+        }
+      }
+    ]);
+
+    const roomStatsAgg = await ChatRoom.aggregate([
+      {
+        $facet: {
+          totalRooms: [
+            { $match: { isActive: true } },
+            { $count: 'count' }
+          ],
+          activeRooms: [
+            { 
+              $match: { 
+                isActive: true, 
+                lastActivity: { $gte: last24Hours } 
+              } 
+            },
+            { $count: 'count' }
+          ],
+          averageMembersPerRoom: [
+            { $match: { isActive: true } },
+            { $project: { memberCount: { $size: '$members' } } },
+            { $group: { _id: null, avg: { $avg: '$memberCount' } } }
+          ]
+        }
+      }
+    ]);
+
     const messageStats = {
-      totalMessages: await Message.countDocuments({ createdAt: { $gte: last24Hours } }),
-      groupMessages: await Message.countDocuments({ 
-        roomId: { $exists: true }, 
-        createdAt: { $gte: last24Hours } 
-      }),
-      directMessages: await Message.countDocuments({ 
-        conversation: { $exists: true }, 
-        createdAt: { $gte: last24Hours } 
-      }),
-      unreadMessages: await Message.countDocuments({ isRead: false })
+      totalMessages: messageStatsAgg[0].totalMessages[0]?.count || 0,
+      groupMessages: messageStatsAgg[0].groupMessages[0]?.count || 0,
+      directMessages: messageStatsAgg[0].directMessages[0]?.count || 0,
+      unreadMessages: messageStatsAgg[0].unreadMessages[0]?.count || 0
     };
 
     const roomStats = {
-      totalRooms: await ChatRoom.countDocuments({ isActive: true }),
-      activeRooms: await ChatRoom.countDocuments({ 
-        isActive: true, 
-        lastActivity: { $gte: last24Hours } 
-      }),
-      averageMembersPerRoom: await ChatRoom.aggregate([
-        { $match: { isActive: true } },
-        { $project: { memberCount: { $size: '$members' } } },
-        { $group: { _id: null, avg: { $avg: '$memberCount' } } }
-      ]).then(result => Math.round((result[0]?.avg || 0) * 10) / 10)
+      totalRooms: roomStatsAgg[0].totalRooms[0]?.count || 0,
+      activeRooms: roomStatsAgg[0].activeRooms[0]?.count || 0,
+      averageMembersPerRoom: Math.round((roomStatsAgg[0].averageMembersPerRoom[0]?.avg || 0) * 10) / 10
     };
 
     const onlineUsersList = await User.find({
