@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const { Server } = require('socket.io');
+const { validateRegister, validateLogin } = require('./middleware/validation');
 const User = require('./models/User');
 const adminRoutes = require('./routes/admin');
 
@@ -83,17 +84,9 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', validateRegister, async (req, res) => {
   try {
     const { email, password, firstName, lastName } = req.body;
-    
-    if (!email || !password || !firstName || !lastName) {
-      return res.status(400).json({ error: 'Email, password, first name, and last name are required' });
-    }
-    
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
     
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -120,13 +113,9 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
     
     const user = await User.findOne({ email });
     if (!user) {
