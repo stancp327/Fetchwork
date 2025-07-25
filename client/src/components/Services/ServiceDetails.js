@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
@@ -24,11 +24,7 @@ const ServiceDetails = () => {
 
   const apiBaseUrl = getApiBaseUrl();
 
-  useEffect(() => {
-    fetchService();
-  }, [id]);
-
-  const fetchService = async () => {
+  const fetchService = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${apiBaseUrl}/api/services/${id}`);
@@ -40,7 +36,12 @@ const ServiceDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBaseUrl, id]);
+
+  useEffect(() => {
+    fetchService();
+  }, [fetchService]);
+
 
   const handleOrder = async () => {
     if (!isAuthenticated) {

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { RoleProvider } from './context/RoleContext';
@@ -7,29 +7,30 @@ import { MessagingProvider } from './context/MessagingContext';
 import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
-import Dashboard from './components/Dashboard/Dashboard';
-import BrowseJobs from './components/Jobs/BrowseJobs';
-import BrowseServices from './components/Services/BrowseServices';
-import CreateService from './components/Services/CreateService';
-import ServiceDetails from './components/Services/ServiceDetails';
-import PostJob from './components/Jobs/PostJob';
-import JobDetails from './components/Jobs/JobDetails';
-import Profile from './components/Profile/Profile';
-import Messages from './components/Messages/Messages';
-import Payments from './components/Payments/Payments';
-import Reviews from './components/Reviews/Reviews';
-import UniversalSearch from './components/Search/UniversalSearch';
-import AdminDashboard from './components/Admin/AdminDashboard';
-import ProjectManagement from './components/Projects/ProjectManagement';
-import Security from './components/Security/Security';
-import ChatBot from './components/ChatBot/ChatBot';
 import Navigation from './components/Navigation/Navigation';
+import ChatBot from './components/ChatBot/ChatBot';
 import './App.css';
+
+const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
+const BrowseJobs = React.lazy(() => import('./components/Jobs/BrowseJobs'));
+const BrowseServices = React.lazy(() => import('./components/Services/BrowseServices'));
+const CreateService = React.lazy(() => import('./components/Services/CreateService'));
+const ServiceDetails = React.lazy(() => import('./components/Services/ServiceDetails'));
+const PostJob = React.lazy(() => import('./components/Jobs/PostJob'));
+const JobDetails = React.lazy(() => import('./components/Jobs/JobDetails'));
+const Profile = React.lazy(() => import('./components/Profile/Profile'));
+const Messages = React.lazy(() => import('./components/Messages/Messages'));
+const Payments = React.lazy(() => import('./components/Payments/Payments'));
+const Reviews = React.lazy(() => import('./components/Reviews/Reviews'));
+const UniversalSearch = React.lazy(() => import('./components/Search/UniversalSearch'));
+const AdminDashboard = React.lazy(() => import('./components/Admin/AdminDashboard'));
+const ProjectManagement = React.lazy(() => import('./components/Projects/ProjectManagement'));
+const Security = React.lazy(() => import('./components/Security/Security'));
 
 class AuthErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -37,9 +38,30 @@ class AuthErrorBoundary extends React.Component {
     return { hasError: true };
   }
 
+  componentDidCatch(error, errorInfo) {
+    console.error('❌ AuthErrorBoundary error details:', error, errorInfo);
+    this.setState({ errorInfo });
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, errorInfo: null });
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
-      return <div>Authentication error occurred. Please refresh the page.</div>;
+      return (
+        <div className="auth-error-boundary">
+          <h2>Authentication Error</h2>
+          <p>Something went wrong with authentication. Please try again.</p>
+          <button onClick={this.handleRetry} className="retry-button">
+            Retry
+          </button>
+          <button onClick={() => window.location.href = '/login'} className="login-button">
+            Go to Login
+          </button>
+        </div>
+      );
     }
     return this.props.children;
   }
@@ -52,12 +74,18 @@ const ProtectedRoute = ({ children }) => {
   
   if (loading) {
     console.log('🔍 ProtectedRoute - showing loading state');
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
   }
   
   if (!user) {
     console.log('🔍 ProtectedRoute - no user, redirecting to login');
-    return <Navigate to="/login" />;
+    localStorage.removeItem('token');
+    return <Navigate to="/login" replace />;
   }
   
   console.log('🔍 ProtectedRoute - user authenticated, rendering protected content');
@@ -68,10 +96,15 @@ const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
   }
   
-  return user ? <Navigate to="/dashboard" /> : children;
+  return user ? <Navigate to="/dashboard" replace /> : children;
 };
 
 const AdminRoute = () => {
@@ -98,88 +131,94 @@ const LogoutHandler = () => {
 };
 
 function AppContent() {
-
   return (
     <div className="App">
       <Navigation />
       <ChatBot />
-      <Routes>
-        <Route path="/login" element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        } />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/browse-jobs" element={
-          <ProtectedRoute>
-            <BrowseJobs />
-          </ProtectedRoute>
-        } />
-        <Route path="/browse-services" element={<BrowseServices />} />
-        <Route path="/create-service" element={
-          <ProtectedRoute>
-            <CreateService />
-          </ProtectedRoute>
-        } />
-        <Route path="/services/:id" element={<ServiceDetails />} />
-        <Route path="/jobs/:id" element={
-          <ProtectedRoute>
-            <JobDetails />
-          </ProtectedRoute>
-        } />
-        <Route path="/post-job" element={
-          <ProtectedRoute>
-            <PostJob />
-          </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } />
-        <Route path="/messages" element={
-          <ProtectedRoute>
-            <Messages />
-          </ProtectedRoute>
-        } />
-        <Route path="/payments" element={
-          <ProtectedRoute>
-            <Payments />
-          </ProtectedRoute>
-        } />
-        <Route path="/reviews" element={
-          <ProtectedRoute>
-            <Reviews />
-          </ProtectedRoute>
-        } />
-        <Route path="/search" element={
-          <ProtectedRoute>
-            <UniversalSearch />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin" element={
-          <ProtectedRoute>
-            <AdminRoute />
-          </ProtectedRoute>
-        } />
-        <Route path="/projects" element={
-          <ProtectedRoute>
-            <ProjectManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/security" element={
-          <ProtectedRoute>
-            <Security />
-          </ProtectedRoute>
-        } />
-        <Route path="/" element={<Home />} />
-        <Route path="/logout" element={<LogoutHandler />} />
-      </Routes>
+      <Suspense fallback={
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      }>
+        <Routes>
+          <Route path="/login" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/browse-jobs" element={
+            <ProtectedRoute>
+              <BrowseJobs />
+            </ProtectedRoute>
+          } />
+          <Route path="/browse-services" element={<BrowseServices />} />
+          <Route path="/create-service" element={
+            <ProtectedRoute>
+              <CreateService />
+            </ProtectedRoute>
+          } />
+          <Route path="/services/:id" element={<ServiceDetails />} />
+          <Route path="/jobs/:id" element={
+            <ProtectedRoute>
+              <JobDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/post-job" element={
+            <ProtectedRoute>
+              <PostJob />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/messages" element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          } />
+          <Route path="/payments" element={
+            <ProtectedRoute>
+              <Payments />
+            </ProtectedRoute>
+          } />
+          <Route path="/reviews" element={
+            <ProtectedRoute>
+              <Reviews />
+            </ProtectedRoute>
+          } />
+          <Route path="/search" element={
+            <ProtectedRoute>
+              <UniversalSearch />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminRoute />
+            </ProtectedRoute>
+          } />
+          <Route path="/projects" element={
+            <ProtectedRoute>
+              <ProjectManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/security" element={
+            <ProtectedRoute>
+              <Security />
+            </ProtectedRoute>
+          } />
+          <Route path="/" element={<Home />} />
+          <Route path="/logout" element={<LogoutHandler />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 }

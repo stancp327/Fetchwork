@@ -29,31 +29,45 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = useCallback(async () => {
     try {
       console.log('🔍 AuthContext - fetchUser called');
-      const response = await axios.get(`${apiBaseUrl}/api/auth/me`);
-      const userData = response.data.user;
-      
       const currentToken = localStorage.getItem('token');
       console.log('🔍 AuthContext - token from localStorage:', currentToken ? 'present' : 'missing');
       
-      if (currentToken) {
-        try {
-          const decoded = jwtDecode(currentToken);
-          console.log('🔍 AuthContext - decoded token:', decoded);
-          const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
-          setUser(userWithAdmin);
-          console.log('🔍 AuthContext - user set with admin flag:', userWithAdmin);
-        } catch (decodeError) {
-          console.error('❌ AuthContext - JWT decode error:', decodeError);
+      if (!currentToken) {
+        console.log('🔍 AuthContext - no token found, setting loading to false');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const decoded = jwtDecode(currentToken);
+        console.log('🔍 AuthContext - decoded token:', decoded);
+        
+        if (decoded.exp * 1000 < Date.now()) {
+          console.log('🔍 AuthContext - token expired, logging out');
           logout();
           return;
         }
-      } else {
-        console.log('🔍 AuthContext - no token found');
-        setUser(userData);
+      } catch (decodeError) {
+        console.error('❌ AuthContext - JWT decode error:', decodeError);
+        logout();
+        return;
       }
+
+      const response = await axios.get(`${apiBaseUrl}/api/auth/me`);
+      const userData = response.data.user;
+      
+      const decoded = jwtDecode(currentToken);
+      const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
+      setUser(userWithAdmin);
+      console.log('🔍 AuthContext - user set with admin flag:', userWithAdmin);
     } catch (error) {
       console.error('❌ AuthContext - fetchUser error:', error);
-      logout();
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        logout();
+      } else {
+        console.log('🔍 AuthContext - network error, keeping user logged in');
+        setLoading(false);
+      }
     } finally {
       setLoading(false);
       console.log('🔍 AuthContext - loading set to false');
