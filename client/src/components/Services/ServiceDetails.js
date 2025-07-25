@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { formatCategory } from '../../utils/formatters';
 import '../UserComponents.css';
 
 const getApiBaseUrl = () => {
@@ -75,9 +76,6 @@ const ServiceDetails = () => {
     }
   };
 
-  const formatCategory = (category) => {
-    return category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   if (loading) {
     return (
