@@ -23,8 +23,9 @@ const BrowseJobs = () => {
     duration: 'all',
     minBudget: '',
     maxBudget: '',
-    location: '',
-    workType: 'all',
+    workLocation: 'all',
+    specificLocation: '',
+    jobType: 'all',
     datePosted: 'all',
     sortBy: 'newest',
     urgentOnly: false,
@@ -53,8 +54,9 @@ const BrowseJobs = () => {
       if (filters.duration !== 'all') params.append('duration', filters.duration);
       if (filters.minBudget) params.append('minBudget', filters.minBudget);
       if (filters.maxBudget) params.append('maxBudget', filters.maxBudget);
-      if (filters.location) params.append('location', filters.location);
-      if (filters.workType !== 'all') params.append('workType', filters.workType);
+      if (filters.workLocation !== 'all') params.append('workLocation', filters.workLocation);
+      if (filters.specificLocation) params.append('specificLocation', filters.specificLocation);
+      if (filters.jobType !== 'all') params.append('jobType', filters.jobType);
       if (filters.datePosted !== 'all') params.append('datePosted', filters.datePosted);
       if (filters.sortBy !== 'newest') params.append('sortBy', filters.sortBy);
       if (filters.urgentOnly) params.append('urgentOnly', 'true');

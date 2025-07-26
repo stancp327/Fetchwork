@@ -134,6 +134,11 @@ const jobSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  jobType: {
+    type: String,
+    enum: ['fixed_price', 'hourly', 'full_time', 'part_time', 'contract', 'freelance'],
+    default: 'freelance'
+  },
   isUrgent: {
     type: Boolean,
     default: false
@@ -238,6 +243,7 @@ jobSchema.index({ isActive: 1, status: 1 });
 jobSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 jobSchema.index({ location: 1 });
 jobSchema.index({ isRemote: 1 });
+jobSchema.index({ jobType: 1 });
 jobSchema.index({ isUrgent: 1 });
 jobSchema.index({ isFeatured: 1 });
 jobSchema.index({ proposalCount: 1 });

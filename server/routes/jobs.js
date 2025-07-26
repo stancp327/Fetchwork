@@ -45,22 +45,45 @@ router.get('/', validateQueryParams, async (req, res) => {
       filters.duration = req.query.duration;
     }
     
-    if (req.query.location) {
-      const locationFilters = [
-        { location: { $regex: req.query.location, $options: 'i' } }
-      ];
-      if (req.query.location.toLowerCase().includes('remote')) {
-        locationFilters.push({ isRemote: true });
+    if (req.query.workLocation && req.query.workLocation !== 'all') {
+      switch (req.query.workLocation) {
+        case 'remote':
+          filters.isRemote = true;
+          break;
+        case 'local':
+          filters.isRemote = false;
+          filters.location = { $exists: true, $ne: '', $ne: 'Remote' };
+          break;
+        case 'hybrid':
+          filters.$or = filters.$or ? [...filters.$or, 
+            { isRemote: true },
+            { $and: [{ isRemote: false }, { location: { $exists: true, $ne: '', $ne: 'Remote' } }] }
+          ] : [
+            { isRemote: true },
+            { $and: [{ isRemote: false }, { location: { $exists: true, $ne: '', $ne: 'Remote' } }] }
+          ];
+          break;
       }
-      filters.$or = filters.$or ? [...filters.$or, ...locationFilters] : locationFilters;
     }
 
-    if (req.query.workType && req.query.workType !== 'all') {
-      if (req.query.workType === 'remote') {
+    if (req.query.specificLocation && req.query.specificLocation.trim() !== '') {
+      const locationQuery = req.query.specificLocation.trim();
+      if (locationQuery.toLowerCase() === 'remote') {
         filters.isRemote = true;
-      } else if (req.query.workType === 'onsite') {
-        filters.isRemote = false;
+      } else {
+        filters.$and = filters.$and || [];
+        filters.$and.push({
+          $or: [
+            { location: { $regex: locationQuery, $options: 'i' } },
+            { isRemote: false }
+          ]
+        });
+        filters.location = { $regex: locationQuery, $options: 'i' };
       }
+    }
+
+    if (req.query.jobType && req.query.jobType !== 'all') {
+      filters.jobType = req.query.jobType;
     }
 
     if (req.query.datePosted && req.query.datePosted !== 'all') {
@@ -185,7 +208,8 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       experienceLevel,
       location,
       isRemote,
-      isUrgent
+      isUrgent,
+      jobType
     } = req.body;
     
     const job = new Job({
@@ -200,6 +224,7 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       location: location || 'Remote',
       isRemote: isRemote !== false,
       isUrgent: isUrgent || false,
+      jobType: jobType || 'freelance',
       client: req.user._id,
       status: 'open'
     });
@@ -237,7 +262,7 @@ router.put('/:id', authenticateToken, validateMongoId, validateJobPost, async (r
     
     const allowedUpdates = [
       'title', 'description', 'category', 'subcategory', 'skills',
-      'budget', 'duration', 'experienceLevel', 'location', 'isRemote', 'isUrgent'
+      'budget', 'duration', 'experienceLevel', 'location', 'isRemote', 'isUrgent', 'jobType'
     ];
     
     allowedUpdates.forEach(field => {

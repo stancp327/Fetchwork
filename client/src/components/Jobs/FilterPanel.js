@@ -88,25 +88,41 @@ const FilterPanel = ({ filters, onFilterChange }) => {
       </div>
 
       <div className="filter-group">
-        <label>Location</label>
+        <label>Work Location</label>
+        <select
+          value={filters.workLocation}
+          onChange={(e) => handleFilterChange('workLocation', e.target.value)}
+        >
+          <option value="all">All Locations</option>
+          <option value="remote">Remote Only</option>
+          <option value="local">Local/On-site Only</option>
+          <option value="hybrid">Hybrid (Remote + Local)</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>Specific Location</label>
         <input
           type="text"
-          placeholder="Enter location or 'Remote'"
-          value={filters.location}
-          onChange={(e) => handleFilterChange('location', e.target.value)}
+          placeholder="City, State, Country (leave empty for remote)"
+          value={filters.specificLocation}
+          onChange={(e) => handleFilterChange('specificLocation', e.target.value)}
         />
       </div>
 
       <div className="filter-group">
-        <label>Work Type</label>
+        <label>Job Type</label>
         <select
-          value={filters.workType}
-          onChange={(e) => handleFilterChange('workType', e.target.value)}
+          value={filters.jobType}
+          onChange={(e) => handleFilterChange('jobType', e.target.value)}
         >
-          <option value="all">All Types</option>
-          <option value="remote">Remote Only</option>
-          <option value="onsite">On-site Only</option>
-          <option value="hybrid">Hybrid</option>
+          <option value="all">All Job Types</option>
+          <option value="fixed_price">Fixed Price Project</option>
+          <option value="hourly">Hourly Contract</option>
+          <option value="full_time">Full-time Position</option>
+          <option value="part_time">Part-time Position</option>
+          <option value="contract">Contract Work</option>
+          <option value="freelance">Freelance Gig</option>
         </select>
       </div>
 
