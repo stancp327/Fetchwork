@@ -7,6 +7,10 @@ import { MessagingProvider } from './context/MessagingContext';
 import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import ForgotPassword from './components/Auth/ForgotPassword';
+import ResetPassword from './components/Auth/ResetPassword';
+import VerifyEmail from './components/Auth/VerifyEmail';
+import OAuthCallback from './components/Auth/OAuthCallback';
 import Navigation from './components/Navigation/Navigation';
 import Footer from './components/common/Footer';
 import ChatBot from './components/ChatBot/ChatBot';
@@ -148,7 +152,31 @@ function AppContent() {
               <Login />
             </PublicRoute>
           } />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register" element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          } />
+          <Route path="/forgot-password" element={
+            <PublicRoute>
+              <ForgotPassword />
+            </PublicRoute>
+          } />
+          <Route path="/reset-password" element={
+            <PublicRoute>
+              <ResetPassword />
+            </PublicRoute>
+          } />
+          <Route path="/verify-email" element={
+            <PublicRoute>
+              <VerifyEmail />
+            </PublicRoute>
+          } />
+          <Route path="/auth/callback" element={
+            <PublicRoute>
+              <OAuthCallback />
+            </PublicRoute>
+          } />
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
