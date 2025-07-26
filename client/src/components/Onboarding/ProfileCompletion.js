@@ -16,13 +16,21 @@ const ProfileCompletion = ({ showInDashboard = false }) => {
     { id: 'skills', label: 'Add your skills', field: 'skills' },
     { id: 'hourlyRate', label: 'Set your hourly rate', field: 'hourlyRate' },
     { id: 'phone', label: 'Verify your phone', field: 'phone' },
-    { id: 'photo', label: 'Upload a photo', field: 'profilePicture' }
+    { id: 'photo', label: 'Upload a photo', field: 'profilePicture' },
+    { id: 'portfolio', label: 'Add portfolio link', field: 'socialLinks.portfolio' }
   ], []);
 
   useEffect(() => {
     if (user) {
       const completed = steps.filter(step => {
-        const fieldValue = user[step.field];
+        let fieldValue;
+        if (step.field.includes('.')) {
+          const [parent, child] = step.field.split('.');
+          fieldValue = user[parent]?.[child];
+        } else {
+          fieldValue = user[step.field];
+        }
+        
         if (step.id === 'skills') {
           return fieldValue && Array.isArray(fieldValue) && fieldValue.length > 0;
         }

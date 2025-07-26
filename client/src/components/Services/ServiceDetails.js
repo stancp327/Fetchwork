@@ -167,10 +167,28 @@ const ServiceDetails = () => {
                 />
                 <div>
                   <h3>{service.freelancer.firstName} {service.freelancer.lastName}</h3>
+                  {service.freelancer.bio && (
+                    <p className="freelancer-bio">{service.freelancer.bio.substring(0, 100)}...</p>
+                  )}
                   <div className="freelancer-stats">
                     <span>⭐ {service.freelancer.rating || 0} rating</span>
                     <span>📦 {service.freelancer.totalJobs || 0} orders</span>
+                    {service.freelancer.location && (
+                      <span>📍 {service.freelancer.location}</span>
+                    )}
                   </div>
+                  {service.freelancer.socialLinks?.portfolio && (
+                    <div className="freelancer-links">
+                      <a 
+                        href={service.freelancer.socialLinks.portfolio} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="portfolio-link"
+                      >
+                        🔗 View Portfolio
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

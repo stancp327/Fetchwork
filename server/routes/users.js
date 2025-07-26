@@ -158,7 +158,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
     
     const allowedUpdates = [
       'firstName', 'lastName', 'bio', 'skills', 'hourlyRate',
-      'location', 'timezone', 'profilePicture', 'portfolio'
+      'location', 'timezone', 'profilePicture', 'portfolio', 'socialLinks'
     ];
     
     allowedUpdates.forEach(field => {
