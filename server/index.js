@@ -29,7 +29,9 @@ const ADMIN_EMAILS = ['admin@fetchwork.com', 'stancp327@gmail.com'];
 const requiredEnvVars = {
   MONGO_URI: process.env.MONGO_URI,
   JWT_SECRET: process.env.JWT_SECRET,
-  RESEND_API_KEY: process.env.RESEND_API_KEY
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  FROM_EMAIL: process.env.FROM_EMAIL,
+  CLIENT_URL: process.env.CLIENT_URL
 };
 
 const missingVars = Object.entries(requiredEnvVars)
@@ -46,6 +48,16 @@ if (missingVars.length > 0) {
   console.error('- MONGO_URI: MongoDB Atlas connection string');
   console.error('- JWT_SECRET: Secure secret key (minimum 32 characters)');
   console.error('- RESEND_API_KEY: Email service API key (starts with "re_")');
+  console.error('- FROM_EMAIL: Email address for sending notifications');
+  console.error('- CLIENT_URL: Frontend URL for email links and OAuth redirects');
+  
+  if (missingVars.includes('FROM_EMAIL') || missingVars.includes('RESEND_API_KEY')) {
+    console.warn('⚠️  Email service may not function properly without proper configuration');
+  }
+  if (missingVars.includes('CLIENT_URL')) {
+    console.warn('⚠️  OAuth and email links may not work without CLIENT_URL configuration');
+  }
+  
   process.exit(1);
 }
 
@@ -293,18 +305,31 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
 app.post('/api/auth/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(`🔐 Login attempt for: ${email}`);
     
     const user = await User.findOne({ email });
     if (!user) {
+      console.log(`❌ User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    
+    console.log(`👤 User found: ${email}, created: ${user.createdAt}, isVerified: ${user.isVerified}`);
     
     const isValidPassword = await user.comparePassword(password);
+    console.log(`🔑 Password validation result for ${email}: ${isValidPassword}`);
+    
     if (!isValidPassword) {
+      console.log(`❌ Invalid password for: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    if (!user.isVerified) {
+    const authEnhancementDate = new Date('2025-07-26T10:00:00Z'); // Updated deployment time to allow existing admin account
+    const requiresVerification = user.createdAt > authEnhancementDate && !user.isVerified;
+    
+    console.log(`🔍 Auth check - Created: ${user.createdAt}, Enhancement date: ${authEnhancementDate}, Requires verification: ${requiresVerification}`);
+    
+    if (requiresVerification) {
+      console.log(`❌ Email verification required for: ${email}`);
       return res.status(401).json({ 
         error: 'Please verify your email address before logging in.',
         requiresVerification: true 
@@ -313,6 +338,8 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
     
     const isAdmin = ADMIN_EMAILS.includes(user.email);
     const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    
+    console.log(`✅ Login successful for: ${email}`);
     
     res.json({
       message: 'Login successful',
@@ -374,26 +401,35 @@ app.get('/api/auth/verify-email', async (req, res) => {
 app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
+    console.log(`🔄 Password reset request for: ${email}`);
+    
     const user = await User.findOne({ email });
     
     if (!user) {
+      console.log(`❌ User not found for password reset: ${email}`);
       return res.json({ message: 'If an account exists, a reset email has been sent.' });
     }
+    
+    console.log(`👤 User found for password reset: ${email}`);
     
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
     await user.save();
     
+    console.log(`🔑 Reset token generated for: ${email}`);
+    
     try {
       const emailService = require('./services/emailService');
       await emailService.sendPasswordResetEmail(user, resetToken);
+      console.log(`📧 Password reset email sent successfully to: ${email}`);
     } catch (emailError) {
-      console.warn('Warning: Could not send reset email:', emailError.message);
+      console.error(`❌ Failed to send password reset email to ${email}:`, emailError);
     }
     
     res.json({ message: 'If an account exists, a reset email has been sent.' });
   } catch (error) {
+    console.error('Password reset error:', error);
     res.status(500).json({ error: 'Password reset request failed' });
   }
 });

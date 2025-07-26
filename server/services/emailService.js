@@ -3,7 +3,7 @@ const { Resend } = require('resend');
 class EmailService {
   constructor() {
     this.resend = new Resend(process.env.RESEND_API_KEY);
-    this.fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.com';
+    this.fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
   }
 
   async sendWelcomeEmail(user) {
