@@ -1,4 +1,5 @@
 import React from 'react';
+import SearchSuggestions from '../common/SearchSuggestions';
 
 const FilterPanel = ({ filters, onFilterChange }) => {
   const handleFilterChange = (key, value) => {
@@ -8,11 +9,10 @@ const FilterPanel = ({ filters, onFilterChange }) => {
   return (
     <div className="filters">
       <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search jobs, skills, or keywords..."
+        <SearchSuggestions
           value={filters.search}
-          onChange={(e) => handleFilterChange('search', e.target.value)}
+          onSelect={(value) => handleFilterChange('search', value)}
+          placeholder="Search jobs, skills, or keywords..."
         />
       </div>
 
@@ -85,6 +85,79 @@ const FilterPanel = ({ filters, onFilterChange }) => {
           value={filters.maxBudget}
           onChange={(e) => handleFilterChange('maxBudget', e.target.value)}
         />
+      </div>
+
+      <div className="filter-group">
+        <label>Location</label>
+        <input
+          type="text"
+          placeholder="Enter location or 'Remote'"
+          value={filters.location}
+          onChange={(e) => handleFilterChange('location', e.target.value)}
+        />
+      </div>
+
+      <div className="filter-group">
+        <label>Work Type</label>
+        <select
+          value={filters.workType}
+          onChange={(e) => handleFilterChange('workType', e.target.value)}
+        >
+          <option value="all">All Types</option>
+          <option value="remote">Remote Only</option>
+          <option value="onsite">On-site Only</option>
+          <option value="hybrid">Hybrid</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>Posted</label>
+        <select
+          value={filters.datePosted}
+          onChange={(e) => handleFilterChange('datePosted', e.target.value)}
+        >
+          <option value="all">Any time</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>Sort By</label>
+        <select
+          value={filters.sortBy}
+          onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="budget_high">Highest Budget</option>
+          <option value="budget_low">Lowest Budget</option>
+          <option value="most_proposals">Most Proposals</option>
+          <option value="least_proposals">Least Proposals</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.urgentOnly}
+            onChange={(e) => handleFilterChange('urgentOnly', e.target.checked)}
+          />
+          Urgent jobs only
+        </label>
+      </div>
+
+      <div className="filter-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.featuredOnly}
+            onChange={(e) => handleFilterChange('featuredOnly', e.target.checked)}
+          />
+          Featured jobs only
+        </label>
       </div>
     </div>
   );

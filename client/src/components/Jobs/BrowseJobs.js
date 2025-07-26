@@ -22,7 +22,13 @@ const BrowseJobs = () => {
     experienceLevel: 'all',
     duration: 'all',
     minBudget: '',
-    maxBudget: ''
+    maxBudget: '',
+    location: '',
+    workType: 'all',
+    datePosted: 'all',
+    sortBy: 'newest',
+    urgentOnly: false,
+    featuredOnly: false
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -47,6 +53,12 @@ const BrowseJobs = () => {
       if (filters.duration !== 'all') params.append('duration', filters.duration);
       if (filters.minBudget) params.append('minBudget', filters.minBudget);
       if (filters.maxBudget) params.append('maxBudget', filters.maxBudget);
+      if (filters.location) params.append('location', filters.location);
+      if (filters.workType !== 'all') params.append('workType', filters.workType);
+      if (filters.datePosted !== 'all') params.append('datePosted', filters.datePosted);
+      if (filters.sortBy !== 'newest') params.append('sortBy', filters.sortBy);
+      if (filters.urgentOnly) params.append('urgentOnly', 'true');
+      if (filters.featuredOnly) params.append('featuredOnly', 'true');
 
       const response = await axios.get(`${apiBaseUrl}/api/jobs?${params}`);
       setJobs(response.data.jobs);

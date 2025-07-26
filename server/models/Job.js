@@ -236,6 +236,12 @@ jobSchema.index({ 'budget.amount': 1 });
 jobSchema.index({ createdAt: -1 });
 jobSchema.index({ isActive: 1, status: 1 });
 jobSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+jobSchema.index({ location: 1 });
+jobSchema.index({ isRemote: 1 });
+jobSchema.index({ isUrgent: 1 });
+jobSchema.index({ isFeatured: 1 });
+jobSchema.index({ proposalCount: 1 });
+jobSchema.index({ title: 'text', description: 'text', skills: 'text' });
 
 jobSchema.pre('save', function(next) {
   if (this.isModified('proposals')) {
