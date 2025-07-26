@@ -4,6 +4,6 @@ import App from './App';
 
 test('renders FetchWork heading', () => {
   render(<App />);
-  const headingElement = screen.getByText(/FetchWork/i);
-  expect(headingElement).toBeInTheDocument();
+  const headingElements = screen.getAllByText(/FetchWork/i);
+  expect(headingElements.length).toBeGreaterThan(0);
 });

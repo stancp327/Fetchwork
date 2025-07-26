@@ -19,6 +19,8 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
 
+const ADMIN_EMAILS = ['admin@fetchwork.com', 'stancp327@gmail.com'];
+
 const requiredEnvVars = {
   MONGO_URI: process.env.MONGO_URI,
   JWT_SECRET: process.env.JWT_SECRET,
@@ -151,7 +153,7 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
     const emailService = require('./services/emailService');
     await emailService.sendWelcomeEmail(user);
     
-    const isAdmin = user.email === 'admin@fetchwork.com';
+    const isAdmin = ADMIN_EMAILS.includes(user.email);
     const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
     res.status(201).json({
@@ -179,7 +181,7 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    const isAdmin = user.email === 'admin@fetchwork.com';
+    const isAdmin = ADMIN_EMAILS.includes(user.email);
     const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
     
     res.json({
@@ -200,7 +202,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    const isAdmin = user.email === 'admin@fetchwork.com';
+    const isAdmin = ADMIN_EMAILS.includes(user.email);
     res.json({
       user: { 
         id: user._id, 
