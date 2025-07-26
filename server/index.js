@@ -150,8 +150,12 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
     const user = new User({ email, password, firstName, lastName });
     await user.save();
     
-    const emailService = require('./services/emailService');
-    await emailService.sendWelcomeEmail(user);
+    try {
+      const emailService = require('./services/emailService');
+      await emailService.sendWelcomeEmail(user);
+    } catch (emailError) {
+      console.warn('Warning: Could not send welcome email:', emailError.message);
+    }
     
     const isAdmin = ADMIN_EMAILS.includes(user.email);
     const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });

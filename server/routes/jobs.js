@@ -279,11 +279,15 @@ router.post('/:id/proposals', authenticateToken, validateMongoId, validatePropos
     const updatedJob = await Job.findById(job._id)
       .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
     
-    const emailService = require('../services/emailService');
-    const User = require('../models/User');
-    const client = await User.findById(job.client);
-    if (client) {
-      await emailService.sendJobNotification(client, job, 'new_proposal');
+    try {
+      const emailService = require('../services/emailService');
+      const User = require('../models/User');
+      const client = await User.findById(job.client);
+      if (client) {
+        await emailService.sendJobNotification(client, job, 'new_proposal');
+      }
+    } catch (emailError) {
+      console.warn('Warning: Could not send job notification email:', emailError.message);
     }
 
     res.status(201).json({

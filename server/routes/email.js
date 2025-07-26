@@ -1,12 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const emailService = require('../services/emailService');
+
+let emailService;
+try {
+  emailService = require('../services/emailService');
+} catch (error) {
+  console.warn('Warning: emailService not available:', error.message);
+  emailService = null;
+}
 const User = require('../models/User');
 const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 
 router.post('/test', authenticateAdmin, async (req, res) => {
   try {
     const { email, type = 'welcome' } = req.body;
+    
+    if (!emailService) {
+      return res.status(503).json({ error: 'Email service temporarily unavailable' });
+    }
     
     const user = await User.findOne({ email });
     if (!user) {
@@ -45,6 +56,10 @@ router.post('/broadcast', authenticateAdmin, async (req, res) => {
     
     if (!subject || !message) {
       return res.status(400).json({ error: 'Subject and message are required' });
+    }
+
+    if (!emailService) {
+      return res.status(503).json({ error: 'Email service temporarily unavailable' });
     }
 
     let query = {};

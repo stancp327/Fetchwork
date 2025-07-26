@@ -1,7 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const stripeService = require('../services/stripeService');
-const emailService = require('../services/emailService');
+
+let emailService;
+try {
+  emailService = require('../services/emailService');
+} catch (error) {
+  console.warn('Warning: emailService not available:', error.message);
+  emailService = null;
+}
+
 const { authenticateToken } = require('../middleware/auth');
 
 router.get('/status', authenticateToken, async (req, res) => {
@@ -75,12 +83,16 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
       const job = await Job.findById(jobId).populate('freelancer');
       const client = await User.findById(req.user.userId);
       
-      if (job && job.freelancer && client) {
-        await emailService.sendPaymentNotification(job.freelancer, {
-          type: 'escrow_funded',
-          amount: amount,
-          job: job
-        });
+      if (job && job.freelancer && client && emailService) {
+        try {
+          await emailService.sendPaymentNotification(job.freelancer, {
+            type: 'escrow_funded',
+            amount: amount,
+            job: job
+          });
+        } catch (emailError) {
+          console.warn('Warning: Could not send payment notification email:', emailError.message);
+        }
       }
       
       res.json({
@@ -112,12 +124,16 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
       
       const job = await Job.findById(jobId).populate('freelancer');
       
-      if (job && job.freelancer) {
-        await emailService.sendPaymentNotification(job.freelancer, {
-          type: 'payment_released',
-          amount: result.transfer.amount / 100,
-          job: job
-        });
+      if (job && job.freelancer && emailService) {
+        try {
+          await emailService.sendPaymentNotification(job.freelancer, {
+            type: 'payment_released',
+            amount: result.transfer.amount / 100,
+            job: job
+          });
+        } catch (emailError) {
+          console.warn('Warning: Could not send payment notification email:', emailError.message);
+        }
       }
       
       res.json({

@@ -267,12 +267,16 @@ jobSchema.methods.acceptProposal = async function(proposalId, freelancerId) {
     }
   });
   
-  const emailService = require('../services/emailService');
-  const User = require('./User');
-  const freelancer = await User.findById(freelancerId);
-  
-  if (freelancer) {
-    await emailService.sendJobNotification(freelancer, this, 'job_accepted');
+  try {
+    const emailService = require('../services/emailService');
+    const User = require('./User');
+    const freelancer = await User.findById(freelancerId);
+    
+    if (freelancer) {
+      await emailService.sendJobNotification(freelancer, this, 'job_accepted');
+    }
+  } catch (emailError) {
+    console.warn('Warning: Could not send job acceptance email:', emailError.message);
   }
   
   return this.save();
@@ -283,13 +287,17 @@ jobSchema.methods.completeJob = async function() {
   this.completedAt = new Date();
   this.endDate = new Date();
   
-  const emailService = require('../services/emailService');
-  const User = require('./User');
-  const client = await User.findById(this.client);
-  const freelancer = await User.findById(this.freelancer);
-  
-  if (client) await emailService.sendJobNotification(client, this, 'job_completed');
-  if (freelancer) await emailService.sendJobNotification(freelancer, this, 'job_completed');
+  try {
+    const emailService = require('../services/emailService');
+    const User = require('./User');
+    const client = await User.findById(this.client);
+    const freelancer = await User.findById(this.freelancer);
+    
+    if (client) await emailService.sendJobNotification(client, this, 'job_completed');
+    if (freelancer) await emailService.sendJobNotification(freelancer, this, 'job_completed');
+  } catch (emailError) {
+    console.warn('Warning: Could not send job completion emails:', emailError.message);
+  }
   
   return this.save();
 };
