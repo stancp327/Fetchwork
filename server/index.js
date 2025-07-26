@@ -6,6 +6,11 @@ const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 const { Server } = require('socket.io');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const FacebookStrategy = require('passport-facebook').Strategy;
+const session = require('express-session');
+const crypto = require('crypto');
 const { validateRegister, validateLogin } = require('./middleware/validation');
 const User = require('./models/User');
 const adminRoutes = require('./routes/admin');
@@ -60,6 +65,116 @@ app.set('trust proxy', true);
 
 app.use(helmet());
 app.use(cors());
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-secret-key-for-development',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "/api/auth/google/callback"
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await User.findOne({ googleId: profile.id });
+      
+      if (user) {
+        return done(null, user);
+      }
+      
+      user = await User.findOne({ email: profile.emails[0].value });
+      if (user) {
+        user.googleId = profile.id;
+        user.providers.push('google');
+        await user.save();
+        return done(null, user);
+      }
+      
+      user = new User({
+        googleId: profile.id,
+        email: profile.emails[0].value,
+        firstName: profile.name.givenName,
+        lastName: profile.name.familyName,
+        isVerified: true, // Google accounts are pre-verified
+        providers: ['google']
+      });
+      
+      await user.save();
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
+  }));
+} else {
+  console.warn('⚠️ Google OAuth not configured - missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
+}
+
+if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+  passport.use(new FacebookStrategy({
+    clientID: process.env.FACEBOOK_APP_ID,
+    clientSecret: process.env.FACEBOOK_APP_SECRET,
+    callbackURL: "/api/auth/facebook/callback",
+    profileFields: ['id', 'emails', 'name']
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      let user = await User.findOne({ facebookId: profile.id });
+      
+      if (user) {
+        return done(null, user);
+      }
+      
+      if (profile.emails && profile.emails[0]) {
+        user = await User.findOne({ email: profile.emails[0].value });
+        if (user) {
+          user.facebookId = profile.id;
+          user.providers.push('facebook');
+          await user.save();
+          return done(null, user);
+        }
+      }
+      
+      user = new User({
+        facebookId: profile.id,
+        email: profile.emails ? profile.emails[0].value : '',
+        firstName: profile.name.givenName,
+        lastName: profile.name.familyName,
+        isVerified: true, // Facebook accounts are pre-verified
+        providers: ['facebook']
+      });
+      
+      await user.save();
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
+  }));
+} else {
+  console.warn('⚠️ Facebook OAuth not configured - missing FACEBOOK_APP_ID or FACEBOOK_APP_SECRET');
+}
+
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
 
 const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -147,19 +262,27 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
     
-    const user = new User({ email, password, firstName, lastName });
+    const user = new User({ 
+      email, 
+      password, 
+      firstName, 
+      lastName, 
+      isVerified: false,
+      emailVerificationToken: crypto.randomBytes(32).toString('hex'),
+      emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+    });
     await user.save();
     
-    const emailService = require('./services/emailService');
-    await emailService.sendWelcomeEmail(user);
-    
-    const isAdmin = ADMIN_EMAILS.includes(user.email);
-    const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    try {
+      const emailService = require('./services/emailService');
+      await emailService.sendEmailVerification(user, user.emailVerificationToken);
+    } catch (emailError) {
+      console.warn('Warning: Could not send verification email:', emailError.message);
+    }
     
     res.status(201).json({
-      message: 'User created successfully',
-      token,
-      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, isAdmin }
+      message: 'Registration successful. Please check your email to verify your account.',
+      requiresVerification: true
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -179,6 +302,13 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    if (!user.isVerified) {
+      return res.status(401).json({ 
+        error: 'Please verify your email address before logging in.',
+        requiresVerification: true 
+      });
     }
     
     const isAdmin = ADMIN_EMAILS.includes(user.email);
@@ -217,6 +347,127 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+app.get('/api/auth/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired verification token' });
+    }
+    
+    user.isVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+    
+    res.json({ message: 'Email verified successfully. You can now log in.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Email verification failed' });
+  }
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.json({ message: 'If an account exists, a reset email has been sent.' });
+    }
+    
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+    await user.save();
+    
+    try {
+      const emailService = require('./services/emailService');
+      await emailService.sendPasswordResetEmail(user, resetToken);
+    } catch (emailError) {
+      console.warn('Warning: Could not send reset email:', emailError.message);
+    }
+    
+    res.json({ message: 'If an account exists, a reset email has been sent.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Password reset request failed' });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+    
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    
+    res.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Password reset failed' });
+  }
+});
+
+app.get('/api/auth/google', passport.authenticate('google', {
+  scope: ['profile', 'email']
+}));
+
+app.get('/api/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  async (req, res) => {
+    try {
+      const isAdmin = ADMIN_EMAILS.includes(req.user.email);
+      const token = jwt.sign({ userId: req.user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      
+      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: req.user._id,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        isAdmin
+      }))}`);
+    } catch (error) {
+      res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
+    }
+  }
+);
+
+app.get('/api/auth/facebook', passport.authenticate('facebook', {
+  scope: ['email']
+}));
+
+app.get('/api/auth/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
+  async (req, res) => {
+    try {
+      const isAdmin = ADMIN_EMAILS.includes(req.user.email);
+      const token = jwt.sign({ userId: req.user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      
+      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: req.user._id,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        isAdmin
+      }))}`);
+    } catch (error) {
+      res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
+    }
+  }
+);
 
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));

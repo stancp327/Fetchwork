@@ -103,9 +103,11 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: userWithAdmin };
     } catch (error) {
       console.error('Login failed:', error);
+      const errorData = error.response?.data;
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Login failed' 
+        error: errorData?.error || 'Login failed',
+        requiresVerification: errorData?.requiresVerification || false
       };
     }
   };
@@ -113,6 +115,14 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await axios.post(`${apiBaseUrl}/api/auth/register`, userData);
+
+      if (response.data.requiresVerification) {
+        return { 
+          success: true, 
+          requiresVerification: true,
+          message: response.data.message 
+        };
+      }
 
       const { token: newToken, user: newUser } = response.data;
       
@@ -148,6 +158,40 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => ({ ...prev, ...userData }));
   };
 
+  const requestPasswordReset = async (email) => {
+    try {
+      await axios.post(`${apiBaseUrl}/api/auth/forgot-password`, { email });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || 'Password reset request failed' };
+    }
+  };
+
+  const resetPassword = async (token, password) => {
+    try {
+      await axios.post(`${apiBaseUrl}/api/auth/reset-password`, { token, password });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || 'Password reset failed' };
+    }
+  };
+
+  const verifyEmail = async (token) => {
+    try {
+      await axios.get(`${apiBaseUrl}/api/auth/verify-email?token=${token}`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || 'Email verification failed' };
+    }
+  };
+
+  const setAuthFromOAuth = (newToken, userData) => {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    setUser(userData);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+  };
+
   const value = {
     user,
     loading,
@@ -155,6 +199,10 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateUser,
+    requestPasswordReset,
+    resetPassword,
+    verifyEmail,
+    setAuthFromOAuth,
     isAuthenticated: !!user
   };
 

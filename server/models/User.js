@@ -134,7 +134,14 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   emailVerificationToken: String,
-  emailVerificationExpires: Date
+  emailVerificationExpires: Date,
+  googleId: String,
+  facebookId: String,
+  providers: [{
+    type: String,
+    enum: ['local', 'google', 'facebook'],
+    default: 'local'
+  }]
 }, {
   timestamps: true
 });
