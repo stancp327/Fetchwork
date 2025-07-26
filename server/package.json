@@ -2,6 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": "18.20.4",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "start": "node index.js",
     "build": "echo 'No build step needed'",
