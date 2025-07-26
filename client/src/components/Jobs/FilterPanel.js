@@ -1,4 +1,5 @@
 import React from 'react';
+import SearchSuggestions from '../common/SearchSuggestions';
 
 const FilterPanel = ({ filters, onFilterChange }) => {
   const handleFilterChange = (key, value) => {
@@ -8,11 +9,10 @@ const FilterPanel = ({ filters, onFilterChange }) => {
   return (
     <div className="filters">
       <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search jobs, skills, or keywords..."
+        <SearchSuggestions
           value={filters.search}
-          onChange={(e) => handleFilterChange('search', e.target.value)}
+          onSelect={(value) => handleFilterChange('search', value)}
+          placeholder="Search jobs, skills, or keywords..."
         />
       </div>
 
@@ -85,6 +85,95 @@ const FilterPanel = ({ filters, onFilterChange }) => {
           value={filters.maxBudget}
           onChange={(e) => handleFilterChange('maxBudget', e.target.value)}
         />
+      </div>
+
+      <div className="filter-group">
+        <label>Work Location</label>
+        <select
+          value={filters.workLocation}
+          onChange={(e) => handleFilterChange('workLocation', e.target.value)}
+        >
+          <option value="all">All Locations</option>
+          <option value="remote">Remote Only</option>
+          <option value="local">Local/On-site Only</option>
+          <option value="hybrid">Hybrid (Remote + Local)</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>Specific Location</label>
+        <input
+          type="text"
+          placeholder="City, State, Country (leave empty for remote)"
+          value={filters.specificLocation}
+          onChange={(e) => handleFilterChange('specificLocation', e.target.value)}
+        />
+      </div>
+
+      <div className="filter-group">
+        <label>Job Type</label>
+        <select
+          value={filters.jobType}
+          onChange={(e) => handleFilterChange('jobType', e.target.value)}
+        >
+          <option value="all">All Job Types</option>
+          <option value="fixed_price">Fixed Price Project</option>
+          <option value="hourly">Hourly Contract</option>
+          <option value="full_time">Full-time Position</option>
+          <option value="part_time">Part-time Position</option>
+          <option value="contract">Contract Work</option>
+          <option value="freelance">Freelance Gig</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>Posted</label>
+        <select
+          value={filters.datePosted}
+          onChange={(e) => handleFilterChange('datePosted', e.target.value)}
+        >
+          <option value="all">Any time</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>Sort By</label>
+        <select
+          value={filters.sortBy}
+          onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="budget_high">Highest Budget</option>
+          <option value="budget_low">Lowest Budget</option>
+          <option value="most_proposals">Most Proposals</option>
+          <option value="least_proposals">Least Proposals</option>
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.urgentOnly}
+            onChange={(e) => handleFilterChange('urgentOnly', e.target.checked)}
+          />
+          Urgent jobs only
+        </label>
+      </div>
+
+      <div className="filter-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={filters.featuredOnly}
+            onChange={(e) => handleFilterChange('featuredOnly', e.target.checked)}
+          />
+          Featured jobs only
+        </label>
       </div>
     </div>
   );

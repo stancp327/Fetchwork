@@ -24,6 +24,7 @@ const ServiceDetails = React.lazy(() => import('./components/Services/ServiceDet
 const PostJob = React.lazy(() => import('./components/Jobs/PostJob'));
 const JobDetails = React.lazy(() => import('./components/Jobs/JobDetails'));
 const Profile = React.lazy(() => import('./components/Profile/Profile'));
+const FreelancerDiscovery = React.lazy(() => import('./components/Freelancers/FreelancerDiscovery'));
 const Messages = React.lazy(() => import('./components/Messages/Messages'));
 const Payments = React.lazy(() => import('./components/Payments/Payments'));
 const Reviews = React.lazy(() => import('./components/Reviews/Reviews'));
@@ -244,6 +245,7 @@ function AppContent() {
               <Security />
             </ProtectedRoute>
           } />
+          <Route path="/freelancers" element={<FreelancerDiscovery />} />
           <Route path="/" element={<Home />} />
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>

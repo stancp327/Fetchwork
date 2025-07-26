@@ -45,17 +45,116 @@ router.get('/', validateQueryParams, async (req, res) => {
       filters.duration = req.query.duration;
     }
     
+    if (req.query.workLocation && req.query.workLocation !== 'all') {
+      switch (req.query.workLocation) {
+        case 'remote':
+          filters.isRemote = true;
+          break;
+        case 'local':
+          filters.isRemote = false;
+          filters.location = { $exists: true, $ne: '', $ne: 'Remote' };
+          break;
+        case 'hybrid':
+          filters.$or = filters.$or ? [...filters.$or, 
+            { isRemote: true },
+            { $and: [{ isRemote: false }, { location: { $exists: true, $ne: '', $ne: 'Remote' } }] }
+          ] : [
+            { isRemote: true },
+            { $and: [{ isRemote: false }, { location: { $exists: true, $ne: '', $ne: 'Remote' } }] }
+          ];
+          break;
+      }
+    }
+
+    if (req.query.specificLocation && req.query.specificLocation.trim() !== '') {
+      const locationQuery = req.query.specificLocation.trim();
+      if (locationQuery.toLowerCase() === 'remote') {
+        filters.isRemote = true;
+      } else {
+        filters.$and = filters.$and || [];
+        filters.$and.push({
+          $or: [
+            { location: { $regex: locationQuery, $options: 'i' } },
+            { isRemote: false }
+          ]
+        });
+        filters.location = { $regex: locationQuery, $options: 'i' };
+      }
+    }
+
+    if (req.query.jobType && req.query.jobType !== 'all') {
+      filters.jobType = req.query.jobType;
+    }
+
+    if (req.query.datePosted && req.query.datePosted !== 'all') {
+      const now = new Date();
+      let dateFilter;
+      switch (req.query.datePosted) {
+        case 'today':
+          dateFilter = new Date(now.setHours(0, 0, 0, 0));
+          break;
+        case 'week':
+          dateFilter = new Date(now.setDate(now.getDate() - 7));
+          break;
+        case 'month':
+          dateFilter = new Date(now.setMonth(now.getMonth() - 1));
+          break;
+      }
+      if (dateFilter) {
+        filters.createdAt = { $gte: dateFilter };
+      }
+    }
+
+    if (req.query.urgentOnly === 'true') {
+      filters.isUrgent = true;
+    }
+
+    if (req.query.featuredOnly === 'true') {
+      filters.isFeatured = true;
+    }
+
     if (req.query.search) {
-      filters.$or = [
-        { title: { $regex: req.query.search, $options: 'i' } },
-        { description: { $regex: req.query.search, $options: 'i' } },
-        { skills: { $in: [new RegExp(req.query.search, 'i')] } }
-      ];
+      const searchTerms = req.query.search.split(' ').filter(term => term.length > 0);
+      const searchFilters = [];
+      
+      searchTerms.forEach(term => {
+        searchFilters.push(
+          { title: { $regex: term, $options: 'i' } },
+          { description: { $regex: term, $options: 'i' } },
+          { skills: { $in: [new RegExp(term, 'i')] } },
+          { category: { $regex: term, $options: 'i' } }
+        );
+      });
+      
+      filters.$or = filters.$or ? [...filters.$or, ...searchFilters] : searchFilters;
+    }
+
+    let sortOptions = { createdAt: -1, isFeatured: -1, isUrgent: -1 };
+    if (req.query.sortBy) {
+      switch (req.query.sortBy) {
+        case 'oldest':
+          sortOptions = { createdAt: 1 };
+          break;
+        case 'budget_high':
+          sortOptions = { 'budget.amount': -1 };
+          break;
+        case 'budget_low':
+          sortOptions = { 'budget.amount': 1 };
+          break;
+        case 'most_proposals':
+          sortOptions = { proposalCount: -1 };
+          break;
+        case 'least_proposals':
+          sortOptions = { proposalCount: 1 };
+          break;
+        default:
+          sortOptions = { createdAt: -1, isFeatured: -1, isUrgent: -1 };
+      }
     }
     
     const jobs = await Job.find(filters)
       .populate('client', 'firstName lastName profilePicture rating totalJobs')
-      .sort({ createdAt: -1, isFeatured: -1, isUrgent: -1 })
+      .sort(sortOptions)
       .skip(skip)
       .limit(limit);
     
@@ -109,7 +208,8 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       experienceLevel,
       location,
       isRemote,
-      isUrgent
+      isUrgent,
+      jobType
     } = req.body;
     
     const job = new Job({
@@ -124,6 +224,7 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       location: location || 'Remote',
       isRemote: isRemote !== false,
       isUrgent: isUrgent || false,
+      jobType: jobType || 'freelance',
       client: req.user._id,
       status: 'open'
     });
@@ -161,7 +262,7 @@ router.put('/:id', authenticateToken, validateMongoId, validateJobPost, async (r
     
     const allowedUpdates = [
       'title', 'description', 'category', 'subcategory', 'skills',
-      'budget', 'duration', 'experienceLevel', 'location', 'isRemote', 'isUrgent'
+      'budget', 'duration', 'experienceLevel', 'location', 'isRemote', 'isUrgent', 'jobType'
     ];
     
     allowedUpdates.forEach(field => {

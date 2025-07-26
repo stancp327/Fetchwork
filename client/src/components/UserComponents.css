@@ -1282,6 +1282,205 @@
   }
 }
 
+/* Freelancer Discovery Styles */
+.freelancer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-px-20);
+  margin-bottom: var(--space-px-30);
+}
+
+.freelancer-card {
+  background: var(--background-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-px-20);
+  transition: all 0.2s ease;
+}
+
+.freelancer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.freelancer-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-px-15);
+}
+
+.freelancer-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-right: var(--space-px-15);
+  object-fit: cover;
+}
+
+.freelancer-info h3 {
+  margin: 0 0 var(--space-px-5) 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.freelancer-rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-px-8);
+  margin-bottom: var(--space-px-5);
+}
+
+.rating {
+  color: var(--warning-color);
+  font-weight: 600;
+}
+
+.reviews {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.freelancer-rate {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: var(--font-size-lg);
+}
+
+.freelancer-bio {
+  margin-bottom: var(--space-px-15);
+}
+
+.freelancer-bio p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.freelancer-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px-8);
+  margin-bottom: var(--space-px-15);
+}
+
+.skill-tag {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  padding: var(--space-px-4) var(--space-px-8);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.skill-more {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-style: italic;
+}
+
+.freelancer-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-px-15);
+  padding: var(--space-px-10) 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+.stat-label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-px-2);
+}
+
+.freelancer-location {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-px-15);
+}
+
+.freelancer-actions {
+  display: flex;
+  gap: var(--space-px-10);
+}
+
+.freelancer-actions .btn {
+  flex: 1;
+  text-align: center;
+  padding: var(--space-px-8) var(--space-px-12);
+  font-size: var(--font-size-sm);
+}
+
+/* Search Suggestions Styles */
+.search-suggestions {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--space-px-12);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--background-white);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: var(--space-px-10) var(--space-px-12);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover {
+  background: var(--background-light);
+}
+
+.suggestion-item.loading {
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.suggestion-text {
+  color: var(--text-primary);
+}
+
+.suggestion-type {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
 /* Global mobile improvements */
 @media (max-width: 767px) {
   .user-container {
@@ -1321,5 +1520,22 @@
   .modal-wrapper {
     max-height: 90vh;
     overflow-y: auto;
+  }
+  
+  .job-grid, .freelancer-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .job-card, .freelancer-card {
+    padding: var(--space-px-15);
+  }
+  
+  .job-actions, .freelancer-actions {
+    flex-direction: column;
+    gap: var(--space-px-8);
+  }
+  
+  .job-actions .btn, .freelancer-actions .btn {
+    width: 100%;
   }
 }

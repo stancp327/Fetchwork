@@ -518,6 +518,8 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/email', require('./routes/email'));
 app.use('/api/admin', adminRoutes);
+app.use('/api/freelancers', require('./routes/freelancers'));
+app.use('/api/search', require('./routes/search'));
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
