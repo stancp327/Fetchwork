@@ -205,6 +205,8 @@ app.use(generalRateLimit);
 // Middleware
 app.use(express.json());
 
+app.use('/uploads', express.static('uploads'));
+
 // Connect to MongoDB
 mongoose.connect(MONGO_URI)
 .then(() => console.log('MongoDB connected'))
