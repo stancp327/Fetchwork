@@ -242,6 +242,24 @@ const validateConversationIdParam = [
   handleValidationErrors
 ];
 
+const validateFileUpload = (req, res, next) => {
+  if (req.fileValidationError) {
+    return res.status(400).json({
+      error: 'File validation failed',
+      details: [{ msg: req.fileValidationError }]
+    });
+  }
+  next();
+};
+
+const validateProfilePictureUpdate = [
+  body('firstName').optional().trim().isLength({ min: 1, max: 50 }),
+  body('lastName').optional().trim().isLength({ min: 1, max: 50 }),
+  body('bio').optional().trim().isLength({ max: 500 }),
+  validateFileUpload,
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   validateRegister,
@@ -256,5 +274,7 @@ module.exports = {
   validateUserIdParam,
   validateJobIdParam,
   validateReviewIdParam,
-  validateConversationIdParam
+  validateConversationIdParam,
+  validateFileUpload,
+  validateProfilePictureUpdate
 };

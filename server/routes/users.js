@@ -5,6 +5,8 @@ const Job = require('../models/Job');
 const Payment = require('../models/Payment');
 const { Message } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
+const { uploadProfilePicture } = require('../middleware/upload');
+const { validateProfilePictureUpdate } = require('../middleware/validation');
 
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
@@ -148,7 +150,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put('/profile', authenticateToken, uploadProfilePicture, validateProfilePictureUpdate, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
     
@@ -158,14 +160,22 @@ router.put('/profile', authenticateToken, async (req, res) => {
     
     const allowedUpdates = [
       'firstName', 'lastName', 'bio', 'skills', 'hourlyRate',
-      'location', 'timezone', 'profilePicture', 'portfolio', 'socialLinks'
+      'location', 'timezone', 'portfolio', 'socialLinks', 'phone'
     ];
     
     allowedUpdates.forEach(field => {
       if (req.body[field] !== undefined) {
-        user[field] = req.body[field];
+        if (field === 'socialLinks' && typeof req.body[field] === 'object') {
+          user[field] = { ...user[field], ...req.body[field] };
+        } else {
+          user[field] = req.body[field];
+        }
       }
     });
+
+    if (req.file) {
+      user.profilePicture = req.file.path || req.file.secure_url || `/uploads/${req.file.filename}`;
+    }
     
     await user.save();
     

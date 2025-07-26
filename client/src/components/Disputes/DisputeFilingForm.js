@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import FileUpload from '../common/FileUpload';
 import './DisputeFilingForm.css';
 
 const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
@@ -9,6 +10,7 @@ const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
     description: '',
     evidence: []
   });
+  const [selectedEvidence, setSelectedEvidence] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const reasons = [
@@ -59,14 +61,19 @@ const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
         : 'http://localhost:10000';
       
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE_URL}/api/disputes`, {
-        jobId,
-        reason: disputeData.reason,
-        description: disputeData.description,
-        evidence: disputeData.evidence
-      }, {
+      const formData = new FormData();
+      formData.append('jobId', jobId);
+      formData.append('reason', disputeData.reason);
+      formData.append('description', disputeData.description);
+      
+      selectedEvidence.forEach(file => {
+        formData.append('evidence', file);
+      });
+
+      const response = await axios.post(`${API_BASE_URL}/api/disputes`, formData, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       });
 
@@ -139,6 +146,17 @@ const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
                 {disputeData.description.length < 50 && (
                   <span className="char-warning"> (minimum 50 required)</span>
                 )}
+              </div>
+
+              <div className="form-group">
+                <label>Evidence (Optional)</label>
+                <FileUpload
+                  onFileSelect={setSelectedEvidence}
+                  accept=".pdf,.doc,.docx,.txt,image/*"
+                  maxSize={10 * 1024 * 1024}
+                  multiple={true}
+                  label="Upload Supporting Documents"
+                />
               </div>
             </div>
           )}

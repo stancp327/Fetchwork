@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import FileUpload from '../common/FileUpload';
 import './Profile.css';
 
 const getApiBaseUrl = () => {
@@ -33,6 +34,7 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [newSkill, setNewSkill] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const apiBaseUrl = getApiBaseUrl();
 
@@ -113,12 +115,34 @@ const Profile = () => {
       setSuccess('');
 
       const token = localStorage.getItem('token');
-      const response = await axios.put(`${apiBaseUrl}/api/users/profile`, profileData, {
-        headers: { Authorization: `Bearer ${token}` }
+      const formData = new FormData();
+      
+      Object.keys(profileData).forEach(key => {
+        if (key === 'socialLinks') {
+          Object.keys(profileData.socialLinks).forEach(socialKey => {
+            formData.append(`socialLinks.${socialKey}`, profileData.socialLinks[socialKey]);
+          });
+        } else if (Array.isArray(profileData[key])) {
+          profileData[key].forEach(item => formData.append(`${key}[]`, item));
+        } else {
+          formData.append(key, profileData[key]);
+        }
+      });
+
+      if (selectedFile) {
+        formData.append('profilePicture', selectedFile);
+      }
+
+      const response = await axios.put(`${apiBaseUrl}/api/users/profile`, formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       updateUser(response.data.user);
       setSuccess('Profile updated successfully!');
+      setSelectedFile(null);
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -146,6 +170,18 @@ const Profile = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="profile-form">
+        <div className="profile-section">
+          <h2>Profile Picture</h2>
+          <FileUpload
+            onFileSelect={setSelectedFile}
+            accept="image/*"
+            maxSize={5 * 1024 * 1024}
+            label="Upload Profile Picture"
+            preview={true}
+            currentFile={profileData.profilePicture}
+          />
+        </div>
+
         <div className="profile-section">
           <h2>Basic Information</h2>
           <div className="form-row">

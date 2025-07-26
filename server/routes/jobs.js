@@ -4,6 +4,7 @@ const Job = require('../models/Job');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { validateJobPost, validateProposal, validateQueryParams, validateMongoId } = require('../middleware/validation');
+const { uploadJobAttachments } = require('../middleware/upload');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -211,9 +212,9 @@ router.delete('/:id', authenticateToken, validateMongoId, async (req, res) => {
   }
 });
 
-router.post('/:id/proposals', authenticateToken, validateMongoId, validateProposal, async (req, res) => {
+router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateMongoId, validateProposal, async (req, res) => {
   try {
-    const { coverLetter, proposedBudget, proposedDuration, attachments } = req.body;
+    const { coverLetter, proposedBudget, proposedDuration } = req.body;
     
     const job = await Job.findById(req.params.id);
     
@@ -232,13 +233,19 @@ router.post('/:id/proposals', authenticateToken, validateMongoId, validatePropos
     if (existingProposal) {
       return res.status(400).json({ error: 'You have already submitted a proposal for this job' });
     }
+
+    const attachments = req.files ? req.files.map(file => ({
+      filename: file.originalname,
+      url: `/uploads/${file.filename}`,
+      size: file.size
+    })) : [];
     
     const proposal = {
       freelancer: req.user._id,
       coverLetter,
       proposedBudget: parseFloat(proposedBudget),
       proposedDuration,
-      attachments: attachments || []
+      attachments
     };
     
     await job.addProposal(proposal);

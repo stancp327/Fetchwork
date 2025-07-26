@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatBudget } from '../../utils/formatters';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
+import FileUpload from '../common/FileUpload';
 import '../UserComponents.css';
 
 const JobDetails = () => {
@@ -20,6 +21,7 @@ const JobDetails = () => {
     proposedDuration: '',
     attachments: []
   });
+  const [selectedAttachments, setSelectedAttachments] = useState([]);
 
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
     ? 'https://fetchwork-1.onrender.com' 
@@ -67,13 +69,22 @@ const JobDetails = () => {
       setError('');
       
       const token = localStorage.getItem('token');
+      const formData = new FormData();
+      
+      formData.append('coverLetter', proposal.coverLetter);
+      formData.append('proposedBudget', proposal.proposedBudget);
+      formData.append('proposedDuration', proposal.proposedDuration);
+      
+      selectedAttachments.forEach(file => {
+        formData.append('attachments', file);
+      });
+
       const response = await fetch(`${API_BASE_URL}/api/jobs/${id}/proposals`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(proposal)
+        body: formData
       });
 
       if (!response.ok) {
@@ -307,6 +318,17 @@ const JobDetails = () => {
                             <option value="3+ months">3+ months</option>
                           </select>
                         </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Attachments (Optional)</label>
+                        <FileUpload
+                          onFileSelect={setSelectedAttachments}
+                          accept=".pdf,.doc,.docx,.txt,image/*"
+                          maxSize={10 * 1024 * 1024}
+                          multiple={true}
+                          label="Upload Portfolio or Documents"
+                        />
                       </div>
 
                       {error && (
