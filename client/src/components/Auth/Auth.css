@@ -365,3 +365,40 @@
     animation: none;
   }
 }
+
+.account-type-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radio-option:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-secondary);
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+}
+
+.radio-option input[type="radio"]:checked + span {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.radio-option:has(input[type="radio"]:checked) {
+  border-color: var(--color-primary);
+  background-color: rgba(102, 126, 234, 0.1);
+}

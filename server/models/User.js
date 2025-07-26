@@ -141,7 +141,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['local', 'google', 'facebook'],
     default: 'local'
-  }]
+  }],
+  isAdminPromoted: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });

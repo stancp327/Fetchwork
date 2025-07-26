@@ -634,4 +634,58 @@ router.get('/monitoring', authenticateAdmin, async (req, res) => {
   }
 });
 
+router.put('/users/:userId/promote', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : ['stancp327@gmail.com'];
+    if (ADMIN_EMAILS.includes(user.email)) {
+      return res.status(400).json({ error: 'User is already an admin' });
+    }
+    
+    user.isAdminPromoted = true;
+    await user.save();
+    
+    res.json({
+      message: 'User promoted to admin successfully',
+      user: user.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Admin promote user error:', error);
+    res.status(500).json({ error: 'Failed to promote user' });
+  }
+});
+
+router.put('/users/:userId/demote', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : ['stancp327@gmail.com'];
+    if (ADMIN_EMAILS.includes(user.email)) {
+      return res.status(400).json({ error: 'Cannot demote hardcoded admin user' });
+    }
+    
+    user.isAdminPromoted = false;
+    await user.save();
+    
+    res.json({
+      message: 'User demoted from admin successfully',
+      user: user.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Admin demote user error:', error);
+    res.status(500).json({ error: 'Failed to demote user' });
+  }
+});
+
 module.exports = router;

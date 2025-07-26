@@ -9,7 +9,8 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    accountType: 'both'
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -176,6 +177,42 @@ const Register = () => {
               >
                 {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
               </button>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">I want to:</label>
+            <div className="account-type-selection">
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="freelancer"
+                  checked={formData.accountType === 'freelancer'}
+                  onChange={handleChange}
+                />
+                <span>Work as a freelancer</span>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="client"
+                  checked={formData.accountType === 'client'}
+                  onChange={handleChange}
+                />
+                <span>Hire freelancers</span>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="both"
+                  checked={formData.accountType === 'both'}
+                  onChange={handleChange}
+                />
+                <span>Both</span>
+              </label>
             </div>
           </div>
 

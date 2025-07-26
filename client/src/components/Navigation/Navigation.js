@@ -38,7 +38,7 @@ const Navigation = () => {
         </Link>
       </div>
       
-      {isAuthenticated && user?.role === 'freelancer' && (
+      {isAuthenticated && (user?.accountType === 'freelancer' || user?.accountType === 'both') && (
         <div className="role-switcher">
           <span className="role-label">Viewing as:</span>
           <div className="role-toggle">
@@ -48,12 +48,14 @@ const Navigation = () => {
             >
               Freelancer
             </button>
-            <button 
-              className={`role-btn ${currentRole === 'client' ? 'active' : ''}`}
-              onClick={() => handleRoleSwitch('client')}
-            >
-              Client
-            </button>
+            {(user?.accountType === 'both' || user?.accountType === 'client') && (
+              <button 
+                className={`role-btn ${currentRole === 'client' ? 'active' : ''}`}
+                onClick={() => handleRoleSwitch('client')}
+              >
+                Client
+              </button>
+            )}
           </div>
         </div>
       )}
