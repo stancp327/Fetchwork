@@ -711,6 +711,31 @@
   color: #6c757d;
 }
 
+.freelancer-bio {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin: var(--space-px-8) 0;
+  line-height: 1.4;
+}
+
+.freelancer-links {
+  margin-top: var(--space-px-10);
+}
+
+.portfolio-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px-4);
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.portfolio-link:hover {
+  text-decoration: underline;
+}
+
 .package-selector {
   display: flex;
   background: #f8f9fa;

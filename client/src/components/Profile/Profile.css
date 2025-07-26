@@ -1,0 +1,217 @@
+.profile-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-px-20);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: var(--space-px-40);
+}
+
+.profile-header h1 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-px-10);
+  font-size: var(--font-size-3xl);
+  font-weight: 600;
+}
+
+.profile-header p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+}
+
+.profile-form {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.profile-section {
+  padding: var(--space-px-30);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profile-section:last-child {
+  border-bottom: none;
+}
+
+.profile-section h2 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-px-20);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-px-20);
+}
+
+.form-group {
+  margin-bottom: var(--space-px-20);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-px-8);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: var(--space-px-12);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.form-group small {
+  display: block;
+  margin-top: var(--space-px-4);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.skills-input {
+  display: flex;
+  gap: var(--space-px-10);
+  margin-bottom: var(--space-px-15);
+}
+
+.skills-input input {
+  flex: 1;
+}
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-px-8);
+}
+
+.skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-px-6);
+  background: var(--primary-light);
+  color: var(--primary-color);
+  padding: var(--space-px-6) var(--space-px-12);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.remove-skill {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  padding: 0;
+  margin-left: var(--space-px-4);
+}
+
+.remove-skill:hover {
+  color: var(--error-color);
+}
+
+.form-actions {
+  padding: var(--space-px-30);
+  background: var(--background-light);
+  text-align: center;
+}
+
+.error-message {
+  background: var(--error-light);
+  color: var(--error-color);
+  padding: var(--space-px-12);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-px-20);
+  border: 1px solid var(--error-color);
+}
+
+.success-message {
+  background: var(--success-light);
+  color: var(--success-color);
+  padding: var(--space-px-12);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-px-20);
+  border: 1px solid var(--success-color);
+}
+
+.btn {
+  padding: var(--space-px-12) var(--space-px-24);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.btn-primary:disabled {
+  background: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--background-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--border-color);
+}
+
+.loading {
+  text-align: center;
+  padding: var(--space-px-40);
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    padding: var(--space-px-15);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-px-15);
+  }
+
+  .profile-section {
+    padding: var(--space-px-20);
+  }
+
+  .skills-input {
+    flex-direction: column;
+  }
+
+  .skills-input input {
+    margin-bottom: var(--space-px-10);
+  }
+}
