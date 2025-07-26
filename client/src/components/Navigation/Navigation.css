@@ -35,7 +35,7 @@
 }
 
 .brand-text {
-  font-size: 1.5rem;
+  font-size: var(--font-size-2xl);
   font-weight: bold;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
@@ -50,15 +50,15 @@
 }
 
 .role-label {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
 .role-toggle {
   display: flex;
   background: #f5f5f5;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 4px;
   gap: 4px;
 }
@@ -68,11 +68,11 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #666;
+  color: var(--color-text-secondary);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.9rem;
+  font-size: var(--font-size-base);
 }
 
 .role-btn:hover {
@@ -94,10 +94,10 @@
 
 .nav-links a {
   text-decoration: none;
-  color: #333;
+  color: var(--color-text-primary);
   font-weight: 500;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   transition: all 0.3s ease;
   position: relative;
 }
@@ -112,7 +112,7 @@
   color: white;
   border: none;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;

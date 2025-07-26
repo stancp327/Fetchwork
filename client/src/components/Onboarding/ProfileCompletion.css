@@ -1,7 +1,7 @@
 /* Profile Completion Progress Bar Styles */
 .completion-progress-wrapper {
   background: white;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -49,13 +49,13 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .user-role {
   margin: 0.25rem 0 0 0;
-  font-size: 0.9rem;
-  color: #666;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
 }
 
 .completion-progress {
@@ -70,9 +70,9 @@
 }
 
 .progress-label {
-  font-size: 0.9rem;
+  font-size: var(--font-size-base);
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .completion-bar {
@@ -133,8 +133,8 @@
 }
 
 .step-label {
-  font-size: 0.9rem;
-  color: #333;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
 }
 
 .completion-step.completed .step-label {
@@ -152,7 +152,7 @@
   color: white;
   text-decoration: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-weight: 500;
   transition: all 0.3s ease;
   border: none;

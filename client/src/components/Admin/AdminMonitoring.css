@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: var(--font-size-base);
 }
 
 .monitoring-sections {
@@ -29,7 +29,7 @@
 .system-health-section {
   background: #f8f9fa;
   padding: 1.5rem;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   border: 1px solid #e9ecef;
 }
 
@@ -52,12 +52,12 @@
 
 .user-info .user-name {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .user-info .user-email {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .connection-indicator {
@@ -86,9 +86,9 @@
 
 .metric-label {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .metric-value {
-  color: #666;
+  color: var(--color-text-secondary);
 }
