@@ -305,31 +305,22 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
 app.post('/api/auth/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(`🔐 Login attempt for: ${email}`);
-    
     const user = await User.findOne({ email });
+    
     if (!user) {
-      console.log(`❌ User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    console.log(`👤 User found: ${email}, created: ${user.createdAt}, isVerified: ${user.isVerified}`);
-    
     const isValidPassword = await user.comparePassword(password);
-    console.log(`🔑 Password validation result for ${email}: ${isValidPassword}`);
     
     if (!isValidPassword) {
-      console.log(`❌ Invalid password for: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
     const authEnhancementDate = new Date('2025-07-26T10:00:00Z'); // Updated deployment time to allow existing admin account
     const requiresVerification = user.createdAt > authEnhancementDate && !user.isVerified;
     
-    console.log(`🔍 Auth check - Created: ${user.createdAt}, Enhancement date: ${authEnhancementDate}, Requires verification: ${requiresVerification}`);
-    
     if (requiresVerification) {
-      console.log(`❌ Email verification required for: ${email}`);
       return res.status(401).json({ 
         error: 'Please verify your email address before logging in.',
         requiresVerification: true 
@@ -337,14 +328,23 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
     }
     
     const isAdmin = ADMIN_EMAILS.includes(user.email);
-    const token = jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    
-    console.log(`✅ Login successful for: ${email}`);
+    const token = await new Promise((resolve, reject) => {
+      jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+        if (err) reject(err);
+        else resolve(token);
+      });
+    });
     
     res.json({
       message: 'Login successful',
       token,
-      user: { id: user._id, email: user.email, isAdmin }
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin 
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
