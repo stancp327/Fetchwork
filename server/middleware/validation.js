@@ -36,6 +36,10 @@ const validateRegister = [
     .trim()
     .isLength({ min: 1, max: 50 })
     .withMessage('Last name is required and cannot exceed 50 characters'),
+  body('accountType')
+    .optional()
+    .isIn(['client', 'freelancer', 'both'])
+    .withMessage('Account type must be client, freelancer, or both'),
   handleValidationErrors
 ];
 

@@ -416,6 +416,30 @@
   background: #218838;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-btn.promote {
+  background-color: #28a745;
+  color: white;
+}
+
+.action-btn.promote:hover {
+  background-color: #218838;
+}
+
+.action-btn.demote {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.action-btn.demote:hover {
+  background-color: #e0a800;
+}
+
 .action-btn.cancel {
   background: #dc3545;
   color: white;

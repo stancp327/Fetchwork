@@ -189,6 +189,32 @@ const AdminDashboard = () => {
     }
   };
 
+  const promoteUser = async (userId) => {
+    try {
+      const response = await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/promote`);
+      if (response.data) {
+        alert('User promoted to admin successfully');
+        fetchUsersData();
+      }
+    } catch (error) {
+      console.error('Error promoting user:', error);
+      alert('Failed to promote user: ' + (error.response?.data?.error || 'Unknown error'));
+    }
+  };
+
+  const demoteUser = async (userId) => {
+    try {
+      const response = await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/demote`);
+      if (response.data) {
+        alert('User demoted from admin successfully');
+        fetchUsersData();
+      }
+    } catch (error) {
+      console.error('Error demoting user:', error);
+      alert('Failed to demote user: ' + (error.response?.data?.error || 'Unknown error'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-dashboard">
@@ -392,24 +418,41 @@ const AdminDashboard = () => {
                           </td>
                           <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                           <td>
-                            {user.isSuspended ? (
-                              <button
-                                className="action-btn unsuspend"
-                                onClick={() => unsuspendUser(user._id)}
-                              >
-                                Unsuspend
-                              </button>
-                            ) : (
-                              <button
-                                className="action-btn suspend"
-                                onClick={() => {
-                                  const reason = prompt('Reason for suspension:');
-                                  if (reason) suspendUser(user._id, reason);
-                                }}
-                              >
-                                Suspend
-                              </button>
-                            )}
+                            <div className="action-buttons">
+                              {user.isSuspended ? (
+                                <button
+                                  className="action-btn unsuspend"
+                                  onClick={() => unsuspendUser(user._id)}
+                                >
+                                  Unsuspend
+                                </button>
+                              ) : (
+                                <button
+                                  className="action-btn suspend"
+                                  onClick={() => {
+                                    const reason = prompt('Reason for suspension:');
+                                    if (reason) suspendUser(user._id, reason);
+                                  }}
+                                >
+                                  Suspend
+                                </button>
+                              )}
+                              {user.isAdminPromoted ? (
+                                <button
+                                  className="action-btn demote"
+                                  onClick={() => demoteUser(user._id)}
+                                >
+                                  Remove Admin
+                                </button>
+                              ) : (
+                                <button
+                                  className="action-btn promote"
+                                  onClick={() => promoteUser(user._id)}
+                                >
+                                  Make Admin
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

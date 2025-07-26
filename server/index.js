@@ -267,7 +267,7 @@ const authenticateToken = (req, res, next) => {
 
 app.post('/api/auth/register', validateRegister, async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, accountType } = req.body;
     
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -278,7 +278,8 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
       email, 
       password, 
       firstName, 
-      lastName, 
+      lastName,
+      accountType: accountType || 'both',
       isVerified: false,
       emailVerificationToken: crypto.randomBytes(32).toString('hex'),
       emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
@@ -327,7 +328,7 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
       });
     }
     
-    const isAdmin = ADMIN_EMAILS.includes(user.email);
+    const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted;
     const token = await new Promise((resolve, reject) => {
       jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
         if (err) reject(err);
@@ -359,7 +360,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    const isAdmin = ADMIN_EMAILS.includes(user.email);
+    const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted;
     res.json({
       user: { 
         id: user._id, 
@@ -465,7 +466,7 @@ app.get('/api/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/login' }),
   async (req, res) => {
     try {
-      const isAdmin = ADMIN_EMAILS.includes(req.user.email);
+      const isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted;
       const token = jwt.sign({ userId: req.user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
       
       res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
@@ -489,7 +490,7 @@ app.get('/api/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
   async (req, res) => {
     try {
-      const isAdmin = ADMIN_EMAILS.includes(req.user.email);
+      const isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted;
       const token = jwt.sign({ userId: req.user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
       
       res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
