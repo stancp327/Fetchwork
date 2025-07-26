@@ -19,6 +19,31 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
 
+const requiredEnvVars = {
+  MONGO_URI: process.env.MONGO_URI,
+  JWT_SECRET: process.env.JWT_SECRET,
+  RESEND_API_KEY: process.env.RESEND_API_KEY
+};
+
+const missingVars = Object.entries(requiredEnvVars)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key);
+
+if (missingVars.length > 0) {
+  console.error('❌ DEPLOYMENT FAILURE: Missing critical environment variables:');
+  missingVars.forEach(varName => {
+    console.error(`   - ${varName}: Required for server startup`);
+  });
+  console.error('');
+  console.error('Please configure these environment variables in your Render dashboard:');
+  console.error('- MONGO_URI: MongoDB Atlas connection string');
+  console.error('- JWT_SECRET: Secure secret key (minimum 32 characters)');
+  console.error('- RESEND_API_KEY: Email service API key (starts with "re_")');
+  process.exit(1);
+}
+
+console.log('✅ All critical environment variables present');
+
 const io = new Server(server, {
   cors: {
     origin: ['http://localhost:3000', 'https://fetchwork.vercel.app'],
@@ -67,6 +92,33 @@ app.get('/test-db', (req, res) => {
   } else {
     res.status(500).send('❌ MongoDB Not Connected');
   }
+});
+
+app.get('/health', (req, res) => {
+  const healthStatus = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: {
+      nodeVersion: process.version,
+      nodeEnv: process.env.NODE_ENV || 'development',
+      port: PORT
+    },
+    services: {
+      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      server: 'running'
+    },
+    environmentVariables: {
+      MONGO_URI: process.env.MONGO_URI ? 'configured' : 'missing',
+      JWT_SECRET: process.env.JWT_SECRET ? 'configured' : 'missing',
+      RESEND_API_KEY: process.env.RESEND_API_KEY ? 'configured' : 'missing',
+      NODE_ENV: process.env.NODE_ENV ? 'configured' : 'missing'
+    }
+  };
+
+  const hasErrors = Object.values(healthStatus.environmentVariables).includes('missing') ||
+                   healthStatus.services.database !== 'connected';
+
+  res.status(hasErrors ? 503 : 200).json(healthStatus);
 });
 
 const authenticateToken = (req, res, next) => {
