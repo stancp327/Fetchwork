@@ -1,13 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import SEO from '../common/SEO';
+import { createOrganizationSchema, createWebsiteSchema } from '../../utils/structuredData';
 import './Home.css';
 
 const Home = () => {
   const { isAuthenticated } = useAuth();
+  
+  const structuredData = [
+    createOrganizationSchema(),
+    createWebsiteSchema()
+  ];
 
   return (
-    <div className="home">
+    <>
+      <SEO 
+        title="Professional Freelance Marketplace"
+        description="Connect with top freelancers and find quality projects. Post jobs, browse services, and build your freelance career on FetchWork."
+        keywords="freelance, jobs, marketplace, remote work, freelancers, projects"
+        structuredData={structuredData}
+      />
+      <div className="home">
       <section className="hero">
         <div className="hero-content">
           <div className="hero-logo">
@@ -92,6 +106,7 @@ const Home = () => {
         </div>
       </section>
     </div>
+    </>
   );
 };
 
