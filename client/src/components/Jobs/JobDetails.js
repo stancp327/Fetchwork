@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatBudget } from '../../utils/formatters';
+import SEO from '../common/SEO';
+import { createJobPostingSchema } from '../../utils/structuredData';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
 import FileUpload from '../common/FileUpload';
 import '../UserComponents.css';
@@ -169,9 +171,18 @@ const JobDetails = () => {
 
   const isOwnJob = user && job.client && job.client._id === user._id;
   const hasApplied = job.proposals && job.proposals.some(p => p.freelancer._id === user._id);
+  const jobStructuredData = job && job.client ? createJobPostingSchema(job, job.client) : null;
 
   return (
-    <div className="user-container">
+    <>
+      <SEO 
+        title={job.title}
+        description={job.description.substring(0, 160)}
+        keywords={job.skills?.join(', ')}
+        type="article"
+        structuredData={jobStructuredData}
+      />
+      <div className="user-container">
       <div className="job-details">
         <div className="job-header">
           <button onClick={() => navigate('/browse-jobs')} className="back-button">
@@ -407,6 +418,7 @@ const JobDetails = () => {
         />
       )}
     </div>
+    </>
   );
 };
 

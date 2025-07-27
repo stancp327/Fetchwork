@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import SEO from '../common/SEO';
 import JobCard from './JobCard';
 import FilterPanel from './FilterPanel';
 import Pagination from '../common/Pagination';
@@ -97,8 +98,14 @@ const BrowseJobs = () => {
   }
 
   return (
-    <div className="user-container">
-      <div className="user-header">
+    <>
+      <SEO 
+        title="Browse Freelance Jobs"
+        description="Find your next freelance project. Browse thousands of remote and local jobs across web development, design, writing, and more."
+        keywords="freelance jobs, remote work, web development jobs, design jobs, writing jobs"
+      />
+      <div className="user-container">
+        <div className="user-header">
         <h1>Browse Jobs</h1>
         <p>Find your next freelance opportunity</p>
       </div>
@@ -128,6 +135,7 @@ const BrowseJobs = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

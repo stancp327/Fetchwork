@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import SEO from '../common/SEO';
 import FreelancerCard from './FreelancerCard';
 import FreelancerFilterPanel from './FreelancerFilterPanel';
 import Pagination from '../common/Pagination';
@@ -81,8 +82,14 @@ const FreelancerDiscovery = () => {
   }
 
   return (
-    <div className="user-container">
-      <div className="user-header">
+    <>
+      <SEO 
+        title="Discover Freelancers"
+        description="Find skilled freelancers for your projects. Browse profiles, portfolios, and reviews to hire the perfect professional."
+        keywords="hire freelancers, skilled professionals, remote workers, freelance talent"
+      />
+      <div className="user-container">
+        <div className="user-header">
         <h1>Discover Freelancers</h1>
         <p>Find skilled professionals for your projects</p>
       </div>
@@ -114,6 +121,7 @@ const FreelancerDiscovery = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
