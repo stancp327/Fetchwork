@@ -290,7 +290,9 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
     
     try {
       const emailService = require('./services/emailService');
+      const emailWorkflowService = require('./services/emailWorkflowService');
       await emailService.sendEmailVerification(user, user.emailVerificationToken);
+      setTimeout(() => emailWorkflowService.sendOnboardingSequence(user._id), 60000);
     } catch (emailError) {
       console.warn('Warning: Could not send verification email:', emailError.message);
     }
@@ -517,6 +519,7 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/email', require('./routes/email'));
+app.use('/api/preferences', require('./routes/preferences'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/freelancers', require('./routes/freelancers'));
 app.use('/api/search', require('./routes/search'));

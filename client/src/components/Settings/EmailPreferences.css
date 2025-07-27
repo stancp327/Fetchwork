@@ -1,0 +1,66 @@
+.email-preferences {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.email-preferences h2 {
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.preference-section {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.preference-section h3 {
+  color: #333;
+  margin: 0 0 15px 0;
+  font-size: 18px;
+}
+
+.preference-item {
+  margin-bottom: 12px;
+}
+
+.preference-item label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.preference-item input[type="checkbox"] {
+  margin-right: 10px;
+  transform: scale(1.2);
+}
+
+.preference-label {
+  color: #555;
+}
+
+.preference-section select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.preference-item input:disabled,
+.preference-section select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
