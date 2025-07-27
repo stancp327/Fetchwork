@@ -32,7 +32,6 @@ const Messages = () => {
     onEvent: (event, data) => {
       switch (event) {
         case 'message:receive':
-          console.log('[UI] Received new message:', data.message);
           setMessages(prev => {
             const messageExists = prev.some(msg => msg._id === data.message._id);
             if (messageExists) return prev;
@@ -42,8 +41,7 @@ const Messages = () => {
           break;
         
         case 'message:read':
-          console.log('[UI] Messages marked as read:', data);
-          setMessages(prev => prev.map(msg => 
+          setMessages(prev => prev.map(msg =>
             data.messageIds.includes(msg._id) 
               ? { ...msg, isRead: true, readAt: data.readAt }
               : msg
@@ -51,19 +49,16 @@ const Messages = () => {
           break;
         
         case 'conversation:update':
-          console.log('[UI] Conversation updated:', data.conversation);
           fetchConversations();
           break;
         
         case 'typing:start':
-          console.log('[UI] User started typing:', data);
           if (data.conversationId === selectedConversation?._id) {
             setTypingUsers(prev => new Set([...prev, data.userId]));
           }
           break;
         
         case 'typing:stop':
-          console.log('[UI] User stopped typing:', data);
           if (data.conversationId === selectedConversation?._id) {
             setTypingUsers(prev => {
               const newSet = new Set(prev);
@@ -74,20 +69,16 @@ const Messages = () => {
           break;
         
         case 'user:online':
-          console.log('[UI] User came online:', data);
           break;
         
         case 'user:offline':
-          console.log('[UI] User went offline:', data);
           break;
         
         case 'message:delivered':
-          console.log('[UI] Message delivered:', data);
           setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
           break;
         
         case 'user:online_status':
-          console.log('[UI] Online status update:', data);
           break;
         
         default:
@@ -131,7 +122,6 @@ const Messages = () => {
       );
       
       if (unreadMessages.length > 0 && socketRef.current) {
-        console.log('[UI] Marking messages as read via socket:', unreadMessages.map(m => m._id));
         socketRef.current.emit('message:read', {
           conversationId,
           messageIds: unreadMessages.map(m => m._id)
@@ -176,19 +166,12 @@ const Messages = () => {
     
     try {
       if (socketRef.current) {
-        console.log('[UI] Sending message via socket:', {
-          recipientId: getOtherParticipant(selectedConversation)?._id,
-          content: messageContent,
-          messageType: 'text'
-        });
-        
         socketRef.current.emit('message:send', {
           recipientId: getOtherParticipant(selectedConversation)?._id,
           content: messageContent,
           messageType: 'text'
         });
       } else {
-        console.log('[UI] Socket not available, falling back to REST API');
         const response = await axios.post(
           `${apiBaseUrl}/api/messages/conversations/${selectedConversation._id}/messages`,
           { content: messageContent },

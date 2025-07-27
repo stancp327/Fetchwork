@@ -301,7 +301,7 @@
   color: var(--color-text-secondary);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .modal-dispute-overlay {
     padding: 0.5rem;
   }

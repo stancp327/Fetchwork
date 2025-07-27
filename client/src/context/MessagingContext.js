@@ -27,7 +27,6 @@ export const MessagingProvider = ({ children }) => {
 
   const fetchConversations = async () => {
     try {
-      console.log('Fetching conversations...');
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
     }
@@ -35,7 +34,6 @@ export const MessagingProvider = ({ children }) => {
 
   const sendMessage = async (conversationId, content) => {
     try {
-      console.log('Sending message:', { conversationId, content });
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -43,7 +41,6 @@ export const MessagingProvider = ({ children }) => {
 
   const markAsRead = async (conversationId) => {
     try {
-      console.log('Marking as read:', conversationId);
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }

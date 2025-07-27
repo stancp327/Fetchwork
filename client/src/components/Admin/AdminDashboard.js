@@ -35,7 +35,6 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
-      console.log('Admin not authenticated - user does not have admin privileges');
     }
   }, [isAdminAuthenticated]);
 
