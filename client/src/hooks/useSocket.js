@@ -15,11 +15,8 @@ export const useSocket = () => {
     const token = localStorage.getItem('token');
     
     if (!token) {
-      console.log('No token found, skipping socket connection');
       return;
     }
-
-    console.log('Initializing socket connection...');
     
     const newSocket = io(SOCKET_URL, {
       auth: { token },
@@ -31,13 +28,11 @@ export const useSocket = () => {
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id);
       setIsConnected(true);
       setConnectionError(null);
     });
 
     newSocket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason);
       setIsConnected(false);
     });
 
@@ -56,7 +51,6 @@ export const useSocket = () => {
     setSocket(newSocket);
 
     return () => {
-      console.log('Cleaning up socket connection');
       newSocket.disconnect();
       socketRef.current = null;
       setSocket(null);

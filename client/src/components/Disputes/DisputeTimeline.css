@@ -132,7 +132,7 @@
   margin-right: 0.5rem;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .dispute-timeline {
     margin: 0 1rem 1.5rem 1rem;
     padding: 1rem;

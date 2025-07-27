@@ -167,7 +167,7 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .completion-progress-wrapper {
     margin: 0 1rem 1.5rem 1rem;
     padding: 1rem;
@@ -200,7 +200,7 @@
   grid-column: span 2;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1024px) {
   .dashboard-profile-completion {
     grid-column: span 1;
   }

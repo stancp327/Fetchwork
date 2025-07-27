@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 const ChatBot = () => {
   useEffect(() => {
     const chatbaseId = process.env.REACT_APP_CHATBASE_ID;
-    console.log('ChatBot - REACT_APP_CHATBASE_ID:', chatbaseId);
     
     if (!chatbaseId || chatbaseId === 'your-chatbot-id') {
       console.warn('ChatBot - No valid Chatbase ID configured');

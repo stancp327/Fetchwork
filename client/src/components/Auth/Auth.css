@@ -72,7 +72,7 @@
 .form-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 .form-input::placeholder {
@@ -147,6 +147,7 @@
   font-size: var(--font-size-sm);
   border: 1px solid rgba(220, 53, 69, 0.2);
   line-height: 1.4;
+  animation: slideInDown var(--transition-normal);
 }
 
 .success-message {
@@ -157,6 +158,18 @@
   font-size: var(--font-size-sm);
   border: 1px solid rgba(40, 167, 69, 0.2);
   line-height: 1.4;
+  animation: slideInDown var(--transition-normal);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .btn-primary {
@@ -241,24 +254,29 @@
 }
 
 .google-button {
-  color: #757575;
-  border-color: #dadce0;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  transition: all 0.3s ease;
 }
 
 .google-button:hover {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-  border-color: #dadce0;
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-border);
+  transform: translateY(-1px);
 }
 
 .facebook-button {
-  background: #1877f2;
+  background: var(--color-info);
   color: white;
-  border-color: #1877f2;
+  border-color: var(--color-info);
+  transition: all 0.3s ease;
 }
 
 .facebook-button:hover {
-  background: #166fe5;
-  border-color: #166fe5;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .auth-footer {
@@ -401,4 +419,6 @@
 .radio-option:has(input[type="radio"]:checked) {
   border-color: var(--color-primary);
   background-color: rgba(102, 126, 234, 0.1);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-focus);
 }

@@ -6,10 +6,11 @@
   right: 0;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--color-border-light);
   z-index: 1000;
   padding: 0 2rem;
   height: 70px;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -37,7 +38,7 @@
 .brand-text {
   font-size: var(--font-size-2xl);
   font-weight: bold;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -57,10 +58,11 @@
 
 .role-toggle {
   display: flex;
-  background: #f5f5f5;
+  background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   padding: 4px;
   gap: 4px;
+  transition: all 0.3s ease;
 }
 
 .role-btn {
@@ -77,13 +79,15 @@
 
 .role-btn:hover {
   background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .role-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .nav-links {
@@ -104,11 +108,12 @@
 
 .nav-links a:hover {
   background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .nav-logout-btn {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  background: linear-gradient(135deg, var(--color-danger) 0%, #ee5a52 100%);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -119,8 +124,9 @@
 }
 
 .nav-logout-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, #c82333 0%, var(--color-danger) 100%);
 }
 
 /* Notification Badge Styles */
@@ -133,7 +139,7 @@
   position: absolute;
   top: -8px;
   right: -10px;
-  background-color: #E63946;
+  background-color: var(--color-danger);
   color: white;
   font-size: 12px;
   font-weight: bold;
@@ -143,19 +149,26 @@
   min-width: 20px;
   text-align: center;
   line-height: 1.2;
-  box-shadow: 0 2px 4px rgba(230, 57, 70, 0.3);
+  box-shadow: var(--shadow-sm);
+  animation: pulse 2s infinite;
 }
 
 .nav-badge.badge-message {
-  background-color: #E63946;
+  background-color: var(--color-danger);
 }
 
 .nav-badge.badge-proposal {
-  background-color: #FAAD14;
+  background-color: var(--color-warning);
 }
 
 .nav-badge.badge-alert {
-  background-color: #1890FF;
+  background-color: var(--color-info);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 /* Mobile Hamburger Menu */
@@ -172,13 +185,13 @@
 .hamburger-line {
   width: 24px;
   height: 3px;
-  background: #333;
+  background: var(--color-text-primary);
   border-radius: 2px;
   transition: all 0.3s ease;
 }
 
 /* Mobile Styles */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .navigation {
     padding: 0 1rem;
     height: 60px;
@@ -214,7 +227,7 @@
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--color-border-light);
   }
 
   .nav-links.mobile-open {
@@ -250,7 +263,7 @@
 }
 
 /* Tablet Styles */
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 769px) and (max-width: 1024px) {
   .navigation {
     padding: 0 1.5rem;
   }
@@ -285,6 +298,6 @@
 .nav-links a:focus,
 .nav-logout-btn:focus,
 .mobile-menu-toggle:focus {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

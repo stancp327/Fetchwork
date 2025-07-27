@@ -28,22 +28,17 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = useCallback(async () => {
     try {
-      console.log('🔍 AuthContext - fetchUser called');
       const currentToken = localStorage.getItem('token');
-      console.log('🔍 AuthContext - token from localStorage:', currentToken ? 'present' : 'missing');
       
       if (!currentToken) {
-        console.log('🔍 AuthContext - no token found, setting loading to false');
         setLoading(false);
         return;
       }
 
       try {
         const decoded = jwtDecode(currentToken);
-        console.log('🔍 AuthContext - decoded token:', decoded);
         
         if (decoded.exp * 1000 < Date.now()) {
-          console.log('🔍 AuthContext - token expired, logging out');
           logout();
           return;
         }
@@ -59,18 +54,15 @@ export const AuthProvider = ({ children }) => {
       const decoded = jwtDecode(currentToken);
       const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
       setUser(userWithAdmin);
-      console.log('🔍 AuthContext - user set with admin flag:', userWithAdmin);
     } catch (error) {
       console.error('❌ AuthContext - fetchUser error:', error);
       if (error.response?.status === 401 || error.response?.status === 403) {
         logout();
       } else {
-        console.log('🔍 AuthContext - network error, keeping user logged in');
         setLoading(false);
       }
     } finally {
       setLoading(false);
-      console.log('🔍 AuthContext - loading set to false');
     }
   }, [apiBaseUrl]);
 

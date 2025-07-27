@@ -288,7 +288,7 @@
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .modal-proposal-overlay {
     padding: 0.5rem;
   }

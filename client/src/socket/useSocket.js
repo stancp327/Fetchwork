@@ -12,7 +12,6 @@ export const useSocket = ({ token, onEvent }) => {
   useEffect(() => {
     if (!token) return;
 
-    console.log('[SOCKET] Initializing connection to:', SOCKET_URL);
     
     const socket = io(SOCKET_URL, {
       auth: { token },
@@ -25,7 +24,6 @@ export const useSocket = ({ token, onEvent }) => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('[SOCKET] Connected:', socket.id);
     });
 
     socket.on('disconnect', (reason) => {
@@ -53,13 +51,11 @@ export const useSocket = ({ token, onEvent }) => {
     ];
     eventList.forEach((event) => {
       socket.on(event, (data) => {
-        console.log(`[SOCKET] Received ${event}:`, data);
         onEvent(event, data);
       });
     });
 
     return () => {
-      console.log('[SOCKET] Cleaning up connection');
       eventList.forEach((event) => socket.off(event));
       socket.disconnect();
       socketRef.current = null;

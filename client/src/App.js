@@ -76,10 +76,7 @@ class AuthErrorBoundary extends React.Component {
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
-  console.log('🔍 ProtectedRoute - user:', user, 'loading:', loading, 'token:', localStorage.getItem('token') ? 'present' : 'missing');
-  
   if (loading) {
-    console.log('🔍 ProtectedRoute - showing loading state');
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
@@ -89,12 +86,10 @@ const ProtectedRoute = ({ children }) => {
   }
   
   if (!user) {
-    console.log('🔍 ProtectedRoute - no user, redirecting to login');
     localStorage.removeItem('token');
     return <Navigate to="/login" replace />;
   }
   
-  console.log('🔍 ProtectedRoute - user authenticated, rendering protected content');
   return children;
 };
 
@@ -116,10 +111,7 @@ const PublicRoute = ({ children }) => {
 const AdminRoute = () => {
   const { user } = useAuth();
   
-  console.log('AdminRoute - user:', user, 'isAdmin:', user?.isAdmin);
-  
   if (!user?.isAdmin) {
-    console.log('AdminRoute - user not admin, redirecting to dashboard');
     return <Navigate to="/dashboard" />;
   }
   

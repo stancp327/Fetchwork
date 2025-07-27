@@ -75,4 +75,18 @@
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1200px;
+  
+  /* Additional design tokens for enhanced polish */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* Enhanced shadows for depth */
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  
+  /* Gradient tokens */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  --gradient-success: linear-gradient(135deg, var(--color-success) 0%, #1e7e34 100%);
+  --gradient-danger: linear-gradient(135deg, var(--color-danger) 0%, #c82333 100%);
 }
