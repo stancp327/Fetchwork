@@ -6,6 +6,7 @@ import AdminEmailPanel from './AdminEmailPanel';
 import ActivitySection from './ActivitySection';
 import StatCard from '../common/StatCard';
 import TabButton from '../common/TabButton';
+import AnalyticsTab from './AnalyticsTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -298,6 +299,12 @@ const AdminDashboard = () => {
           id="monitoring"
           label="Monitoring"
           active={activeTab === 'monitoring'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="analytics"
+          label="Analytics"
+          active={activeTab === 'analytics'}
           onClick={setActiveTab}
         />
       </div>
@@ -827,6 +834,10 @@ const AdminDashboard = () => {
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <AnalyticsTab />
         )}
       </div>
     </div>
