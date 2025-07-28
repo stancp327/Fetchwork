@@ -82,7 +82,7 @@ const Messages = () => {
           break;
         
         default:
-          console.warn('[UI] Unhandled socket event:', event);
+          break;
       }
     }
   });
