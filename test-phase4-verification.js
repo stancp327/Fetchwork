@@ -1,8 +1,7 @@
-const io = require('socket.io-client');
+const { createSocketConnectionAsync, testUsers } = require('./test-utils/common');
 const axios = require('axios');
 
 const API_BASE = 'http://localhost:10000';
-const SOCKET_URL = 'http://localhost:10000';
 
 const user1 = { email: 'john@test.com', password: 'password123' };
 const user2 = { email: 'jane@test.com', password: 'password123' };
@@ -25,30 +24,6 @@ async function loginUser(user) {
   }
 }
 
-function createSocketConnection(token, userId) {
-  return new Promise((resolve, reject) => {
-    const socket = io(SOCKET_URL, {
-      auth: { token },
-      transports: ['websocket'],
-      reconnectionAttempts: 3,
-      timeout: 10000
-    });
-
-    socket.on('connect', () => {
-      console.log(`✅ Socket connected for ${userId}:`, socket.id);
-      resolve(socket);
-    });
-
-    socket.on('connect_error', (error) => {
-      console.log(`❌ Socket connection failed for ${userId}:`, error.message);
-      reject(error);
-    });
-
-    socket.on('disconnect', (reason) => {
-      console.log(`🔌 Socket disconnected for ${userId}:`, reason);
-    });
-  });
-}
 
 async function testPhase4Features() {
   try {
@@ -62,8 +37,8 @@ async function testPhase4Features() {
     }
 
     console.log('\n📋 Step 2: Socket Connections');
-    user1Socket = await createSocketConnection(user1Token, 'User1');
-    user2Socket = await createSocketConnection(user2Token, 'User2');
+    user1Socket = await createSocketConnectionAsync(user1Token, 'User1');
+    user2Socket = await createSocketConnectionAsync(user2Token, 'User2');
 
     console.log('\n📋 Step 3: Online/Offline Presence Detection');
     
@@ -118,7 +93,7 @@ async function testPhase4Features() {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     console.log('🔄 Reconnecting User2 to test sync logic...');
-    user2Socket = await createSocketConnection(user2Token, 'User2-Reconnected');
+    user2Socket = await createSocketConnectionAsync(user2Token, 'User2-Reconnected');
     
     presenceEvents.forEach(event => {
       user2Socket.on(event, (data) => {
@@ -138,7 +113,7 @@ async function testPhase4Features() {
     console.log('\n📋 Step 6: Multi-Device Support');
     
     console.log('📱 Creating second socket for User1 (multi-device)...');
-    const user1Socket2 = await createSocketConnection(user1Token, 'User1-Device2');
+    const user1Socket2 = await createSocketConnectionAsync(user1Token, 'User1-Device2');
     
     user1Socket2.on('message:receive', (data) => {
       console.log(`📱 User1-Device2 received message:`, JSON.stringify(data.message.content));

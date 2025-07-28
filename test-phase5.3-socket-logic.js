@@ -1,8 +1,5 @@
+const { generateTestToken, testUsers, testRoomIds, SOCKET_URL } = require('./test-utils/common');
 const io = require('socket.io-client');
-const jwt = require('jsonwebtoken');
-
-const SOCKET_URL = 'http://localhost:10000';
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here_replace_in_production';
 
 const testUser1 = { userId: '6880b8a532a788ddd046dd1e' };
 const testUser2 = { userId: '507f1f77bcf86cd799439012' };
