@@ -10,5 +10,18 @@
         { "key": "Content-Type", "value": "application/manifest+json" }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "fetchwork.net"
+        }
+      ],
+      "destination": "https://www.fetchwork.net/$1",
+      "permanent": true
+    }
   ]
 }
