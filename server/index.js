@@ -52,16 +52,13 @@ if (missingVars.length > 0) {
   console.error('- CLIENT_URL: Frontend URL for email links and OAuth redirects');
   
   if (missingVars.includes('FROM_EMAIL') || missingVars.includes('RESEND_API_KEY')) {
-    console.warn('⚠️  Email service may not function properly without proper configuration');
   }
   if (missingVars.includes('CLIENT_URL')) {
-    console.warn('⚠️  OAuth and email links may not work without CLIENT_URL configuration');
   }
   
   process.exit(1);
 }
 
-console.log('✅ All critical environment variables present');
 
 const io = new Server(server, {
   cors: {
@@ -129,7 +126,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     }
   }));
 } else {
-  console.warn('⚠️ Google OAuth not configured - missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
 }
 
 if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
@@ -172,7 +168,6 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
     }
   }));
 } else {
-  console.warn('⚠️ Facebook OAuth not configured - missing FACEBOOK_APP_ID or FACEBOOK_APP_SECRET');
 }
 
 passport.serializeUser((user, done) => {
@@ -279,7 +274,6 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
       const emailService = require('./services/emailService');
       await emailService.sendEmailVerification(user, user.emailVerificationToken);
     } catch (emailError) {
-      console.warn('Warning: Could not send verification email:', emailError.message);
     }
     
     res.status(201).json({
@@ -391,28 +385,20 @@ app.get('/api/auth/verify-email', async (req, res) => {
 app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    console.log(`🔄 Password reset request for: ${email}`);
-    
     const user = await User.findOne({ email });
     
     if (!user) {
-      console.log(`❌ User not found for password reset: ${email}`);
       return res.json({ message: 'If an account exists, a reset email has been sent.' });
     }
-    
-    console.log(`👤 User found for password reset: ${email}`);
     
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
     await user.save();
     
-    console.log(`🔑 Reset token generated for: ${email}`);
-    
     try {
       const emailService = require('./services/emailService');
       await emailService.sendPasswordResetEmail(user, resetToken);
-      console.log(`📧 Password reset email sent successfully to: ${email}`);
     } catch (emailError) {
       console.error(`❌ Failed to send password reset email to ${email}:`, emailError);
     }
@@ -532,5 +518,4 @@ app.use('*', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
 });

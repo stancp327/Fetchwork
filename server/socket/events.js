@@ -7,17 +7,13 @@ const socketToUser = new Map(); // socketId -> userId
 module.exports = (io) => {
   io.on('connection', (socket) => {
     const senderId = socket.user.userId;
-    console.log(`🔌 User connected: ${senderId}`);
-    
     socket.join(senderId);
-    console.log(`🏠 User ${senderId} joined room: ${senderId}`);
     
     socketToUser.set(socket.id, senderId);
     
     if (!activeUsers.has(senderId)) {
       activeUsers.set(senderId, new Set());
       socket.broadcast.emit('user:online', { userId: senderId });
-      console.log(`👁️ User ${senderId} is now online`);
     }
     activeUsers.get(senderId).add(socket.id);
     
@@ -39,7 +35,6 @@ module.exports = (io) => {
             return;
           }
 
-          console.log(`📝 Creating group message in room ${roomId}`);
           const newMessage = await Message.create({
             roomId,
             sender: senderId,
@@ -67,7 +62,6 @@ module.exports = (io) => {
             roomId: newMessage.roomId.toString()
           };
 
-          console.log(`📤 Broadcasting group message to room ${roomId}`);
           socket.to(roomId).emit('message:receive', { message: messageWithId });
 
           if (onlineMembers.length > 0) {
@@ -77,8 +71,6 @@ module.exports = (io) => {
               deliveredAt: new Date()
             });
           }
-
-          console.log(`📨 Group message sent in room ${roomId} to ${onlineMembers.length} online members`);
 
         } else {
           if (!recipientId || !content) {
@@ -91,21 +83,16 @@ module.exports = (io) => {
             return;
           }
 
-          console.log(`🔍 Looking for conversation between ${senderId} and ${recipientId}`);
           let conversation = await Conversation.findByParticipants(senderId, recipientId);
-          console.log(`🔍 Found existing conversation:`, conversation?._id);
           
           if (!conversation) {
-            console.log(`🆕 Creating new conversation between ${senderId} and ${recipientId}`);
             conversation = new Conversation({
               participants: [senderId, recipientId],
               job: jobId || null
             });
             await conversation.save();
-            console.log(`✅ Created conversation:`, conversation._id);
           }
 
-          console.log(`📝 Creating message with conversation ID: ${conversation._id}`);
           const newMessage = await Message.create({
             conversation: conversation._id,
             sender: senderId,
@@ -115,7 +102,6 @@ module.exports = (io) => {
             attachments,
             isRead: false
           });
-          console.log(`✅ Created message:`, newMessage._id);
 
           conversation.lastMessage = newMessage._id;
           await conversation.updateLastActivity();
@@ -141,7 +127,6 @@ module.exports = (io) => {
               deliveredAt: newMessage.deliveredAt
             });
             
-            console.log(`📦 Message ${newMessage._id} delivered to online recipient`);
           }
 
           const messageWithId = {
