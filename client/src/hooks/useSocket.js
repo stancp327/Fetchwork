@@ -61,8 +61,6 @@ export const useSocket = () => {
   const emit = (event, data) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit(event, data);
-    } else {
-      console.warn('Socket not connected, cannot emit event:', event);
     }
   };
 

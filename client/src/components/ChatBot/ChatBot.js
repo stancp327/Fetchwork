@@ -5,7 +5,6 @@ const ChatBot = () => {
     const chatbaseId = process.env.REACT_APP_CHATBASE_ID;
     
     if (!chatbaseId || chatbaseId === 'your-chatbot-id') {
-      console.warn('ChatBot - No valid Chatbase ID configured');
       return;
     }
     
