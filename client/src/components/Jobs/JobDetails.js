@@ -109,6 +109,66 @@ const JobDetails = () => {
     alert('Dispute filed successfully. An admin will review your case.');
   };
 
+  const handleFundEscrow = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/payments/fund-escrow`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          jobId: id,
+          amount: job.budget.amount
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fund escrow');
+      }
+
+      const data = await response.json();
+      if (data.paymentIntent) {
+        window.location.href = `/payments/checkout?payment_intent=${data.paymentIntent.id}`;
+      }
+    } catch (error) {
+      console.error('Error funding escrow:', error);
+      alert('Failed to fund escrow. Please try again.');
+    }
+  };
+
+  const handleReleaseEscrow = async () => {
+    if (!window.confirm('Are you sure you want to release the escrow payment to the freelancer?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/payments/release-escrow`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          jobId: id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to release escrow');
+      }
+
+      const data = await response.json();
+      alert('Payment released successfully!');
+      fetchJobDetails();
+    } catch (error) {
+      console.error('Error releasing escrow:', error);
+      alert('Failed to release payment. Please try again.');
+    }
+  };
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -392,6 +452,24 @@ const JobDetails = () => {
                 >
                   View Proposals ({job.proposals?.length || 0})
                 </button>
+                
+                {job.status === 'in_progress' && job.escrowAmount === 0 && (
+                  <button 
+                    className="btn btn-primary btn-full"
+                    onClick={() => handleFundEscrow()}
+                  >
+                    Fund Escrow (${job.budget.amount})
+                  </button>
+                )}
+                
+                {job.status === 'completed' && job.escrowAmount > 0 && (
+                  <button 
+                    className="btn btn-success btn-full"
+                    onClick={() => handleReleaseEscrow()}
+                  >
+                    Release Payment (${job.escrowAmount})
+                  </button>
+                )}
               </div>
             )}
 
