@@ -41,7 +41,12 @@ const AdminDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
+      setError('');
       const token = localStorage.getItem('token');
+      
+      console.log('Fetching admin dashboard data...');
+      console.log('API Base URL:', apiBaseUrl);
+      console.log('Token:', token ? 'Present' : 'Missing');
       
       if (!token) {
         throw new Error('No authentication token found');
@@ -52,10 +57,16 @@ const AdminDashboard = () => {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      console.log('Admin dashboard API response:', response.data);
+      console.log('Stats data:', response.data.stats);
+      console.log('Recent activity data:', response.data.recentActivity);
+      
       setDashboardData(response.data);
       setError(null);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+      console.error('Error response:', error.response?.data);
       if (error.response?.status === 401) {
         setError('Authentication failed - please log in again');
       } else {
@@ -314,26 +325,26 @@ const AdminDashboard = () => {
             <div className="stats-grid">
               <StatCard
                 title="Total Users"
-                value={dashboardData.users?.total || 0}
-                subtitle={`${dashboardData.users?.active || 0} active`}
+                value={dashboardData.stats?.users?.total || 0}
+                subtitle={`${dashboardData.stats?.users?.active || 0} active`}
                 className="users-stat"
               />
               <StatCard
                 title="Total Jobs"
-                value={dashboardData.jobs?.total || 0}
-                subtitle={`${dashboardData.jobs?.active || 0} active`}
+                value={dashboardData.stats?.jobs?.total || 0}
+                subtitle={`${dashboardData.stats?.jobs?.active || 0} active`}
                 className="jobs-stat"
               />
               <StatCard
                 title="Payment Volume"
-                value={`$${(dashboardData.payments?.volume || 0).toLocaleString()}`}
-                subtitle={`${dashboardData.payments?.total || 0} payments`}
+                value={`$${(dashboardData.stats?.payments?.totalVolume || 0).toLocaleString()}`}
+                subtitle={`${dashboardData.stats?.payments?.thisMonth || 0} this month`}
                 className="payments-stat"
               />
               <StatCard
                 title="Average Rating"
-                value={(dashboardData.reviews?.average || 0).toFixed(1)}
-                subtitle={`${dashboardData.reviews?.total || 0} total reviews`}
+                value={(dashboardData.stats?.reviews?.averageRating || 0).toFixed(1)}
+                subtitle={`${dashboardData.stats?.reviews?.total || 0} total reviews`}
                 className="reviews-stat"
               />
             </div>
@@ -343,7 +354,7 @@ const AdminDashboard = () => {
               <div className="activity-grid">
                 <ActivitySection
                   title="New Users"
-                  items={dashboardData.recent?.users}
+                  items={dashboardData.recentActivity?.newUsers}
                   renderItem={(user) => (
                     <>
                       <div>
@@ -361,7 +372,7 @@ const AdminDashboard = () => {
 
                 <ActivitySection
                   title="Recent Jobs"
-                  items={dashboardData.recent?.jobs}
+                  items={dashboardData.recentActivity?.recentJobs}
                   renderItem={(job) => (
                     <>
                       <div>
