@@ -32,7 +32,12 @@ const JobDetails = () => {
   const fetchJobDetails = useCallback(async () => {
     try {
       setLoading(true);
+      setError('');
       const token = localStorage.getItem('token');
+      
+      console.log('Fetching job details for ID:', id);
+      console.log('API_BASE_URL:', API_BASE_URL);
+      console.log('Token:', token ? 'Present' : 'Missing');
       const response = await fetch(`${API_BASE_URL}/api/jobs/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -40,15 +45,26 @@ const JobDetails = () => {
         }
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch job details');
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Failed to fetch job details: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('API Response:', data);
+      console.log('Job data extracted:', data.job);
+      
+      if (!data.job) {
+        throw new Error('Job data not found in response');
+      }
+      
       setJob(data.job);
     } catch (error) {
       console.error('Error fetching job details:', error);
-      setError('Failed to load job details');
+      setError(error.message || 'Failed to load job details');
     } finally {
       setLoading(false);
     }
@@ -160,7 +176,7 @@ const JobDetails = () => {
         throw new Error('Failed to release escrow');
       }
 
-      const data = await response.json();
+      await response.json();
       alert('Payment released successfully!');
       fetchJobDetails();
     } catch (error) {
