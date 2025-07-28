@@ -1,31 +1,22 @@
-const { io } = require('socket.io-client');
-const jwt = require('jsonwebtoken');
+const { generateTestToken, createSocketConnectionAsync, testUsers, testRoomIds } = require('../test-utils/common');
 
 console.log('🧪 Testing Phase 2 - Real-time Messaging Events...');
 
-const JWT_SECRET = 'your_jwt_secret_key_here_replace_in_production';
-const user1Id = '507f1f77bcf86cd799439011';
-const user2Id = '507f1f77bcf86cd799439012';
-const user1Token = jwt.sign({ userId: user1Id }, JWT_SECRET, { expiresIn: '1h' });
-const user2Token = jwt.sign({ userId: user2Id }, JWT_SECRET, { expiresIn: '1h' });
+const user1Token = generateTestToken(testUsers.user1.userId, { email: testUsers.user1.email });
+const user2Token = generateTestToken(testUsers.user2.userId, { email: testUsers.user2.email });
 
-const testConversationId = '507f1f77bcf86cd799439011'; // Valid ObjectId format
+const testConversationId = testRoomIds.conversation;// Valid ObjectId format
 
 let user1Socket, user2Socket;
 let messagesReceived = [];
 
 console.log('\n1. Connecting User 1...');
-user1Socket = io('http://localhost:10000', {
-  auth: { token: user1Token }
-});
-
-user1Socket.on('connect', () => {
-  console.log('✅ User 1 connected:', user1Socket.id);
-  
+createSocketConnectionAsync(user1Token, 'User1').then(socket => {
+  user1Socket = socket;
   console.log('\n2. Connecting User 2...');
-  user2Socket = io('http://localhost:10000', {
-    auth: { token: user2Token }
-  });
+  return createSocketConnectionAsync(user2Token, 'User2');
+}).then(socket => {
+  user2Socket = socket;
   
   user2Socket.on('connect', () => {
     console.log('✅ User 2 connected:', user2Socket.id);
@@ -59,7 +50,7 @@ user1Socket.on('connect', () => {
     setTimeout(() => {
       console.log('\n3. User 1 sending message to User 2...');
       user1Socket.emit('message:send', {
-        recipientId: user2Id,
+        recipientId: testUsers.user2.userId,
         content: 'Hello from User 1! Testing real-time messaging.',
         messageType: 'text'
       });
@@ -67,7 +58,7 @@ user1Socket.on('connect', () => {
       setTimeout(() => {
         console.log('\n4. User 2 sending reply to User 1...');
         user2Socket.emit('message:send', {
-          recipientId: user1Id,
+          recipientId: testUsers.user1.userId,
           content: 'Hello back from User 2! Real-time messaging works!',
           messageType: 'text'
         });
@@ -91,16 +82,24 @@ user1Socket.on('connect', () => {
         }, 2000);
       }, 1000);
     }, 500);
+  
+  user1Socket.on('conversation:update', (data) => {
+    console.log('🔄 User 1 conversation updated:', data.conversation._id);
   });
   
-  user2Socket.on('connect_error', (error) => {
-    console.log('❌ User 2 connection error:', error.message);
-    process.exit(1);
+  user2Socket.on('conversation:update', (data) => {
+    console.log('🔄 User 2 conversation updated:', data.conversation._id);
   });
-});
-
-user1Socket.on('connect_error', (error) => {
-  console.log('❌ User 1 connection error:', error.message);
+  
+  user1Socket.on('error', (error) => {
+    console.log('❌ User 1 error:', error.message);
+  });
+  
+  user2Socket.on('error', (error) => {
+    console.log('❌ User 2 error:', error.message);
+  });
+}).catch(error => {
+  console.log('❌ Connection error:', error.message);
   process.exit(1);
 });
 

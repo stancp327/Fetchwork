@@ -1,15 +1,12 @@
+const { generateTestToken, testUsers, testRoomIds, SOCKET_URL } = require('./test-utils/common');
 const io = require('socket.io-client');
-const jwt = require('jsonwebtoken');
 
-const SOCKET_URL = 'http://localhost:10000';
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here_replace_in_production';
-
-const testUser1 = { userId: '6880b8a532a788ddd046dd1e' };
-const testUser2 = { userId: '507f1f77bcf86cd799439012' };
-const testUser3 = { userId: '507f1f77bcf86cd799439013' };
+const testUser1 = { userId: testUsers.admin.userId };
+const testUser2 = { userId: testUsers.user2.userId };
+const testUser3 = { userId: testUsers.user3.userId };
 
 function generateToken(user) {
-  return jwt.sign(user, JWT_SECRET, { expiresIn: '7d' });
+  return generateTestToken(user.userId, { email: `${user.userId}@test.com` });
 }
 
 async function testGroupMessagingSocket() {
@@ -23,7 +20,7 @@ async function testGroupMessagingSocket() {
   const socket2 = io(SOCKET_URL, { auth: { token: token2 } });
   const socket3 = io(SOCKET_URL, { auth: { token: token3 } });
   
-  const testRoomId = '6880bb44ee2b076704294fe6'; // From previous REST test
+  const testRoomId = testRoomIds.groupChat; // From previous REST test
   
   return new Promise((resolve) => {
     let testsCompleted = 0;
