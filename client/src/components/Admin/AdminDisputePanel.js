@@ -24,7 +24,9 @@ const AdminDisputePanel = () => {
       const token = localStorage.getItem('token');
       
       if (!token) {
-        throw new Error('No authentication token found');
+        setError('Authentication token not found. Please log in again.');
+        setLoading(false);
+        return;
       }
       
       const response = await axios.get(`${apiBaseUrl}/api/disputes/admin`, {
