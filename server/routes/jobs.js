@@ -425,4 +425,65 @@ router.get('/:id/proposals', authenticateToken, validateMongoId, async (req, res
   }
 });
 
+router.post('/:id/proposals/:proposalId/accept', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    if (job.client.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the client can accept proposals' });
+    }
+    
+    if (job.status !== 'open') {
+      return res.status(400).json({ error: 'Job is not open for proposals' });
+    }
+    
+    const proposal = job.proposals.id(req.params.proposalId);
+    if (!proposal) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    await job.acceptProposal(req.params.proposalId, proposal.freelancer);
+    
+    res.json({
+      message: 'Proposal accepted successfully',
+      job: await Job.findById(job._id).populate('freelancer', 'firstName lastName')
+    });
+  } catch (error) {
+    console.error('Error accepting proposal:', error);
+    res.status(500).json({ error: 'Failed to accept proposal' });
+  }
+});
+
+router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+    
+    if (job.freelancer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the assigned freelancer can complete this job' });
+    }
+    
+    if (job.status !== 'in_progress') {
+      return res.status(400).json({ error: 'Job must be in progress to complete' });
+    }
+    
+    await job.completeJob();
+    
+    res.json({
+      message: 'Job completed successfully',
+      job: await Job.findById(job._id)
+    });
+  } catch (error) {
+    console.error('Error completing job:', error);
+    res.status(500).json({ error: 'Failed to complete job' });
+  }
+});
+
 module.exports = router;

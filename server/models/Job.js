@@ -287,6 +287,11 @@ jobSchema.methods.acceptProposal = async function(proposalId, freelancerId) {
     await emailService.sendJobNotification(freelancer, this, 'job_accepted');
   }
   
+  const client = await User.findById(this.client);
+  if (client) {
+    await emailService.sendJobNotification(client, this, 'escrow_funding_required');
+  }
+  
   return this.save();
 };
 
