@@ -35,6 +35,8 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
+      setError('Admin access required. Please contact support if you believe this is an error.');
+      setLoading(false);
     }
   }, [isAdminAuthenticated]);
 
@@ -44,12 +46,10 @@ const AdminDashboard = () => {
       setError('');
       const token = localStorage.getItem('token');
       
-      console.log('Fetching admin dashboard data...');
-      console.log('API Base URL:', apiBaseUrl);
-      console.log('Token:', token ? 'Present' : 'Missing');
-      
       if (!token) {
-        throw new Error('No authentication token found');
+        setError('Authentication token not found. Please log in again.');
+        setLoading(false);
+        return;
       }
       
       const response = await axios.get(`${apiBaseUrl}/api/admin/dashboard`, {
@@ -58,19 +58,14 @@ const AdminDashboard = () => {
         }
       });
       
-      console.log('Admin dashboard API response:', response.data);
-      console.log('Stats data:', response.data.stats);
-      console.log('Recent activity data:', response.data.recentActivity);
-      
       setDashboardData(response.data);
       setError(null);
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      console.error('Error response:', error.response?.data);
+      console.error('AdminDashboard fetch error:', error);
       if (error.response?.status === 401) {
         setError('Authentication failed - please log in again');
       } else {
-        setError(error.response?.data?.error || 'Failed to load dashboard data');
+        setError('Unable to load dashboard data. Please try again later.');
       }
     } finally {
       setLoading(false);
@@ -153,28 +148,44 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (isAdminAuthenticated) {
-      fetchDashboardData();
+      fetchDashboardData().catch(error => {
+        console.error('Failed to fetch dashboard data on mount:', error);
+      });
     }
   }, [isAdminAuthenticated, fetchDashboardData]);
 
   useEffect(() => {
     if (activeTab === 'users' && isAdminAuthenticated) {
-      fetchUsersData();
+      fetchUsersData().catch(error => {
+        console.error('Failed to fetch users data:', error);
+      });
     } else if (activeTab === 'jobs' && isAdminAuthenticated) {
-      fetchJobsData();
+      fetchJobsData().catch(error => {
+        console.error('Failed to fetch jobs data:', error);
+      });
     } else if (activeTab === 'payments' && isAdminAuthenticated) {
-      fetchPaymentsData();
+      fetchPaymentsData().catch(error => {
+        console.error('Failed to fetch payments data:', error);
+      });
     } else if (activeTab === 'reviews' && isAdminAuthenticated) {
-      fetchReviewsData();
+      fetchReviewsData().catch(error => {
+        console.error('Failed to fetch reviews data:', error);
+      });
     } else if (activeTab === 'monitoring' && isAdminAuthenticated) {
-      fetchMonitoringData();
+      fetchMonitoringData().catch(error => {
+        console.error('Failed to fetch monitoring data:', error);
+      });
     }
   }, [activeTab, isAdminAuthenticated, fetchUsersData, fetchJobsData, fetchPaymentsData, fetchReviewsData, fetchMonitoringData]);
 
   useEffect(() => {
     let interval;
     if (activeTab === 'monitoring' && autoRefresh && isAdminAuthenticated) {
-      interval = setInterval(fetchMonitoringData, 30000);
+      interval = setInterval(() => {
+        fetchMonitoringData().catch(error => {
+          console.error('Failed to fetch monitoring data on interval:', error);
+        });
+      }, 30000);
     }
     return () => {
       if (interval) clearInterval(interval);
