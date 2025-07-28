@@ -3,12 +3,12 @@ const { generateTestToken, testUsers } = require('./test-utils/common');
 
 const BASE_URL = 'http://localhost:10000';
 
-const testUser1 = { userId: '6880b8a532a788ddd046dd1e' };
-const testUser2 = { userId: '507f1f77bcf86cd799439012' };
-const testUser3 = { userId: '507f1f77bcf86cd799439013' };
+const testUser1 = { userId: testUsers.admin.userId };
+const testUser2 = { userId: testUsers.user2.userId };
+const testUser3 = { userId: testUsers.user3.userId };
 
 function generateToken(user) {
-  return jwt.sign(user, JWT_SECRET, { expiresIn: '7d' });
+  return generateTestToken(user.userId, { email: `${user.userId}@test.com` });
 }
 
 async function testChatroomEndpoints() {
