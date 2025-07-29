@@ -688,4 +688,30 @@ router.put('/users/:userId/demote', authenticateAdmin, requirePermission('user_m
   }
 });
 
+router.delete('/users/:userId', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.isActive) {
+      return res.status(400).json({ error: 'User is already deleted' });
+    }
+
+    await user.deleteUser(reason || 'Account deleted by admin');
+
+    res.json({
+      message: 'User deleted successfully',
+      user: user.getPublicProfile()
+    });
+  } catch (error) {
+    console.error('Admin delete user error:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
 module.exports = router;
