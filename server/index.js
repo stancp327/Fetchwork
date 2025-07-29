@@ -297,17 +297,25 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
 app.post('/api/auth/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(`🔐 Login attempt for: ${email}`);
+    
     const user = await User.findOne({ email });
     
     if (!user) {
+      console.log(`❌ User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    
+    console.log(`👤 User found: ${email}, created: ${user.createdAt}, verified: ${user.isVerified}`);
     
     const isValidPassword = await user.comparePassword(password);
     
     if (!isValidPassword) {
+      console.log(`❌ Password mismatch for: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    
+    console.log(`✅ Password valid for: ${email}`);
     
     const authEnhancementDate = new Date('2025-07-26T10:00:00Z'); // Updated deployment time to allow existing admin account
     const requiresVerification = user.createdAt > authEnhancementDate && !user.isVerified;
