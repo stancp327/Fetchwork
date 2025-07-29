@@ -242,6 +242,8 @@ app.get('/health', (req, res) => {
       MONGO_URI: process.env.MONGO_URI ? 'configured' : 'missing',
       JWT_SECRET: process.env.JWT_SECRET ? 'configured' : 'missing',
       RESEND_API_KEY: process.env.RESEND_API_KEY ? 'configured' : 'missing',
+      FROM_EMAIL: process.env.FROM_EMAIL ? 'configured' : 'missing',
+      CLIENT_URL: process.env.CLIENT_URL ? 'configured' : 'missing',
       NODE_ENV: process.env.NODE_ENV ? 'configured' : 'missing'
     }
   };
