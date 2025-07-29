@@ -193,9 +193,11 @@ FetchWork/
 #### Email Service (Resend)
 1. **Create Account**: Go to [resend.com](https://resend.com)
 2. **Generate API Key**: Dashboard → API Keys → Create
-3. **Add to Environment**: Copy key to `RESEND_API_KEY` in `server/.env.local`
-4. **Configure FROM_EMAIL**: Set sender email address in `server/.env.local`
-5. **Verify Setup**: Check admin panel email tab - status should show "configured: true"
+3. **Add Domain**: Add your domain (e.g., fetchwork.net) in Resend dashboard
+4. **Configure DNS**: Add provided DNS records (MX, TXT, DKIM) to your domain provider
+5. **Add to Environment**: Copy key to `RESEND_API_KEY` in `server/.env.local`
+6. **Configure FROM_EMAIL**: Set to `noreply@yourdomain.com` in `server/.env.local`
+7. **Verify Setup**: Check admin panel email tab - status should show "configured: true"
 
 #### Chatbot Integration (Chatbase)
 1. **Create Chatbot**: Go to [chatbase.co](https://chatbase.co)
