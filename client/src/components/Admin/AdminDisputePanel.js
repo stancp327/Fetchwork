@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { formatBudget } from '../../utils/formatters';
 import './AdminDisputePanel.css';
 
 const getApiBaseUrl = () => {
@@ -148,7 +149,7 @@ const AdminDisputePanel = () => {
                 <td>
                   <div className="job-info">
                     <div className="job-title">{dispute.job?.title || 'N/A'}</div>
-                    <div className="job-budget">${dispute.job?.budget || 0}</div>
+                    <div className="job-budget">{formatBudget(dispute.job?.budget || 0)}</div>
                   </div>
                 </td>
                 <td>

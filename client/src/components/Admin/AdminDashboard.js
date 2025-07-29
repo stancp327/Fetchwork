@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { formatBudget } from '../../utils/formatters';
 import AdminDisputePanel from './AdminDisputePanel';
 import AdminEmailPanel from './AdminEmailPanel';
 import ActivitySection from './ActivitySection';
@@ -389,7 +390,7 @@ const AdminDashboard = () => {
                     <>
                       <div>
                         <div className="job-title">{job.title}</div>
-                        <div className="job-budget">${job.budget}</div>
+                        <div className="job-budget">{formatBudget(job.budget)}</div>
                       </div>
                       <div className="activity-date">
                         {new Date(job.createdAt).toLocaleDateString()}
@@ -543,7 +544,7 @@ const AdminDashboard = () => {
                           <tr key={job._id}>
                             <td>{job.title}</td>
                             <td>{job.client ? `${job.client.firstName} ${job.client.lastName}` : 'N/A'}</td>
-                            <td>${job.budget}</td>
+                            <td>{formatBudget(job.budget)}</td>
                             <td>
                               <span className={`status ${job.status}`}>
                                 {job.status}
