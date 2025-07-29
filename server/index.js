@@ -273,7 +273,16 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
       emailVerificationToken: crypto.randomBytes(32).toString('hex'),
       emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
     });
-    await user.save();
+    
+    try {
+      await user.save();
+    } catch (error) {
+      if (error.code === 11000) {
+        console.log(`⚠️  Duplicate key error for email: ${email}`);
+        return res.status(400).json({ error: 'User already exists' });
+      }
+      throw error;
+    }
     
     try {
       const emailService = require('./services/emailService');
