@@ -1,10 +1,10 @@
 export const getApiBaseUrl = () => {
-  const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   
-  if (isProduction) {
-    return 'https://fetchwork-backend.onrender.com';
-  } else {
+  if (isLocalhost) {
     return 'http://localhost:10000';
+  } else {
+    return 'https://fetchwork-backend.onrender.com';
   }
 };
 
