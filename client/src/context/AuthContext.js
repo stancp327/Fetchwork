@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { getApiBaseUrl } from '../utils/api';
+import { unauthenticatedAxios } from '../utils/unauthenticatedAxios';
 
 const AuthContext = createContext();
 
@@ -101,7 +102,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post(`${apiBaseUrl}/api/auth/register`, userData);
+      const response = await unauthenticatedAxios.post('/api/auth/register', userData);
 
       if (response.data.requiresVerification) {
         return { 
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }) => {
 
   const requestPasswordReset = async (email) => {
     try {
-      await axios.post(`${apiBaseUrl}/api/auth/forgot-password`, { email });
+      await unauthenticatedAxios.post('/api/auth/forgot-password', { email });
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Password reset request failed' };
@@ -156,7 +157,7 @@ export const AuthProvider = ({ children }) => {
 
   const resetPassword = async (token, password) => {
     try {
-      await axios.post(`${apiBaseUrl}/api/auth/reset-password`, { token, password });
+      await unauthenticatedAxios.post('/api/auth/reset-password', { token, password });
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Password reset failed' };
@@ -165,7 +166,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyEmail = async (token) => {
     try {
-      await axios.get(`${apiBaseUrl}/api/auth/verify-email?token=${token}`);
+      await unauthenticatedAxios.get(`/api/auth/verify-email?token=${token}`);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Email verification failed' };

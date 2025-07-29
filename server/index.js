@@ -297,15 +297,23 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
 app.post('/api/auth/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(`🔐 Login attempt for: ${email}`);
+    
     const user = await User.findOne({ email });
     
     if (!user) {
+      console.log(`❌ User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
+    console.log(`👤 User found: ${email}, ID: ${user._id}`);
+    console.log(`🔑 Password hash exists: ${!!user.password}`);
+    
     const isValidPassword = await user.comparePassword(password);
+    console.log(`🔐 Password validation: isValidPassword: ${isValidPassword}`);
     
     if (!isValidPassword) {
+      console.log(`❌ Invalid password for: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
@@ -320,12 +328,21 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
     }
     
     const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted;
+    console.log(`👑 Admin check for ${email}:`, {
+      inAdminEmails: ADMIN_EMAILS.includes(user.email),
+      isAdminPromoted: user.isAdminPromoted,
+      finalIsAdmin: isAdmin,
+      adminEmailsArray: ADMIN_EMAILS
+    });
+    
     const token = await new Promise((resolve, reject) => {
       jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
         if (err) reject(err);
         else resolve(token);
       });
     });
+    
+    console.log(`✅ Login successful for: ${email}, isAdmin: ${isAdmin}`);
     
     res.json({
       message: 'Login successful',
@@ -394,6 +411,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     console.log(`🔄 Password reset request for: ${email}`);
+    console.log(`📋 Request headers:`, JSON.stringify(req.headers, null, 2));
+    console.log(`🔐 Authorization header present:`, !!req.headers.authorization);
     
     const user = await User.findOne({ email });
     
