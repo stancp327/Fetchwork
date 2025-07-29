@@ -103,6 +103,9 @@ const Home = () => {
               </div>
             )}
           </div>
+          <div className="chatbot-highlight">
+            <p>💬 Need help getting started? Our AI assistant is here to guide you!</p>
+          </div>
         </div>
       </section>
     </div>

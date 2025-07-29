@@ -507,6 +507,7 @@ app.use('/api/email', require('./routes/email'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/freelancers', require('./routes/freelancers'));
 app.use('/api/search', require('./routes/search'));
+app.use('/api/contact', require('./routes/contact'));
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;

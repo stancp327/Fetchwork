@@ -207,6 +207,31 @@ const AdminDashboard = () => {
     }
   };
 
+  const deleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+
+    const reason = window.prompt('Please provide a reason for deleting this user:');
+    if (!reason) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ reason })
+      });
+      if (response) {
+        alert('User deleted successfully');
+        fetchUsersData();
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user: ' + (error.response?.data?.error || 'Unknown error'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-dashboard">
@@ -451,6 +476,13 @@ const AdminDashboard = () => {
                                     Make Admin
                                   </button>
                                 )}
+                                <button
+                                  className="action-btn delete"
+                                  onClick={() => deleteUser(user._id)}
+                                  disabled={!user.isActive}
+                                >
+                                  Delete User
+                                </button>
                               </div>
                             </td>
                           </tr>

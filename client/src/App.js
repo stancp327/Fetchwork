@@ -31,6 +31,8 @@ const UniversalSearch = React.lazy(() => import('./components/Search/UniversalSe
 const AdminDashboard = React.lazy(() => import('./components/Admin/AdminDashboard'));
 const ProjectManagement = React.lazy(() => import('./components/Projects/ProjectManagement'));
 const Security = React.lazy(() => import('./components/Security/Security'));
+const ContactUs = React.lazy(() => import('./components/common/ContactUs'));
+const Support = React.lazy(() => import('./components/common/Support'));
 
 class AuthErrorBoundary extends React.Component {
   constructor(props) {
@@ -237,6 +239,8 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/freelancers" element={<FreelancerDiscovery />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/support" element={<Support />} />
           <Route path="/" element={<Home />} />
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>

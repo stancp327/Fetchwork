@@ -225,6 +225,13 @@ userSchema.methods.unsuspend = function() {
   return this.save();
 };
 
+userSchema.methods.deleteUser = function(reason) {
+  this.isActive = false;
+  this.suspensionReason = reason || 'Account deleted by admin';
+  this.isSuspended = true;
+  return this.save();
+};
+
 userSchema.statics.findActiveUsers = function() {
   return this.find({ isActive: true, isSuspended: false });
 };

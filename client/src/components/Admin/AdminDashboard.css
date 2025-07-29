@@ -440,6 +440,20 @@
   background-color: #e0a800;
 }
 
+.action-btn.delete {
+  background: #dc3545;
+  color: white;
+}
+
+.action-btn.delete:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.action-btn.delete:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
 .action-btn.cancel {
   background: #dc3545;
   color: white;
