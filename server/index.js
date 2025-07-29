@@ -256,6 +256,32 @@ app.get('/health', (req, res) => {
 
 const { authenticateToken } = require('./middleware/auth');
 
+app.use((req, res, next) => {
+  if (req.path === '/api/auth/forgot-password') {
+    console.log(`🌐 [${req.method}] ${req.path}`, {
+      origin: req.headers.origin,
+      userAgent: req.headers['user-agent'],
+      contentType: req.headers['content-type'],
+      authorization: !!req.headers.authorization,
+      bodyKeys: Object.keys(req.body || {}),
+      body: req.body,
+    });
+  }
+  next();
+});
+
+app.get('/api/debug', (req, res) => {
+  res.json({
+    deployedAt: new Date().toISOString(),
+    env: {
+      fromEmail: process.env.FROM_EMAIL,
+      resendKeySet: !!process.env.RESEND_API_KEY,
+      clientUrl: process.env.CLIENT_URL,
+    },
+    headers: req.headers,
+  });
+});
+
 app.post('/api/auth/register', validateRegister, async (req, res) => {
   try {
     const { email, password, firstName, lastName, accountType } = req.body;
@@ -413,6 +439,15 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     console.log(`🔄 Password reset request for: ${email}`);
     console.log(`📋 Request headers:`, JSON.stringify(req.headers, null, 2));
     console.log(`🔐 Authorization header present:`, !!req.headers.authorization);
+    console.log(`📦 Request body:`, JSON.stringify(req.body, null, 2));
+    console.log(`🌐 Content-Type:`, req.headers['content-type']);
+    console.log(`🔍 Email in body:`, req.body?.email);
+    
+    console.log("🔧 ENV CHECK", {
+      fromEmail: process.env.FROM_EMAIL,
+      resendKeySet: !!process.env.RESEND_API_KEY,
+      emailInBody: req.body?.email,
+    });
     
     const user = await User.findOne({ email });
     
@@ -432,7 +467,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     
     try {
       const emailService = require('./services/emailService');
-      await emailService.sendPasswordResetEmail(user, resetToken);
+      const emailResult = await emailService.sendPasswordResetEmail(user, resetToken);
+      console.log(`📧 Email service result:`, emailResult);
       console.log(`📧 Password reset email sent successfully to: ${email}`);
     } catch (emailError) {
       console.error(`❌ Failed to send password reset email to ${email}:`, emailError);

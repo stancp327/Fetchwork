@@ -148,9 +148,12 @@ export const AuthProvider = ({ children }) => {
 
   const requestPasswordReset = async (email) => {
     try {
+      console.log("🔧 UNAUTH AXIOS CALLED for password reset:", email);
+      console.log("🔧 Using unauthenticated axios instance");
       await unauthenticatedAxios.post('/api/auth/forgot-password', { email });
       return { success: true };
     } catch (error) {
+      console.error("🔧 Password reset error:", error);
       return { success: false, error: error.response?.data?.error || 'Password reset request failed' };
     }
   };
