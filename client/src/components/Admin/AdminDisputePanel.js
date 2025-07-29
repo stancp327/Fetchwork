@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { apiRequest } from '../../utils/api';
 import { formatBudget } from '../../utils/formatters';
 import './AdminDisputePanel.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const AdminDisputePanel = () => {
   const { user } = useAuth();
@@ -17,26 +10,14 @@ const AdminDisputePanel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const apiBaseUrl = getApiBaseUrl();
-
   const fetchDisputesData = useCallback(async (page = 1, status = 'all') => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       
-      if (!token) {
-        setError('Authentication token not found. Please log in again.');
-        setLoading(false);
-        return;
-      }
-      
-      const response = await axios.get(`${apiBaseUrl}/api/disputes/admin`, {
-        params: { page, status },
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiRequest('/api/disputes/admin', {
+        params: { page, status }
       });
-      setDisputesData(response.data);
+      setDisputesData(response);
       setError(null);
     } catch (error) {
       console.error('Failed to fetch disputes data:', error);
@@ -48,7 +29,7 @@ const AdminDisputePanel = () => {
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -58,16 +39,14 @@ const AdminDisputePanel = () => {
 
   const updateDisputeStatus = async (disputeId, status, resolution = null, resolutionAmount = 0, adminNotes = '') => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${apiBaseUrl}/api/disputes/${disputeId}/status`, {
-        status,
-        resolution,
-        resolutionAmount,
-        adminNotes
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      await apiRequest(`/api/disputes/${disputeId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status,
+          resolution,
+          resolutionAmount,
+          adminNotes
+        })
       });
       fetchDisputesData();
     } catch (error) {

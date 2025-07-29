@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { getApiBaseUrl } from '../../utils/api';
 import '../UserComponents.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const CreateService = () => {
   const navigate = useNavigate();
@@ -29,8 +23,6 @@ const CreateService = () => {
     basicRevisions: 1
   });
   const [errors, setErrors] = useState({});
-
-  const apiBaseUrl = getApiBaseUrl();
 
   const validateForm = () => {
     const newErrors = {};
@@ -118,7 +110,7 @@ const CreateService = () => {
       };
 
       const token = localStorage.getItem('token');
-      await axios.post(`${apiBaseUrl}/api/services`, serviceData, {
+      await axios.post(`${getApiBaseUrl()}/api/services`, serviceData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -1,17 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { getApiBaseUrl } from '../../utils/api';
 import SEO from '../common/SEO';
 import JobCard from './JobCard';
 import FilterPanel from './FilterPanel';
 import Pagination from '../common/Pagination';
 import '../UserComponents.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const BrowseJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -39,7 +33,6 @@ const BrowseJobs = () => {
     pages: 0
   });
 
-  const apiBaseUrl = getApiBaseUrl();
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -63,7 +56,7 @@ const BrowseJobs = () => {
       if (filters.urgentOnly) params.append('urgentOnly', 'true');
       if (filters.featuredOnly) params.append('featuredOnly', 'true');
 
-      const response = await axios.get(`${apiBaseUrl}/api/jobs?${params}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/jobs?${params}`);
       setJobs(response.data.jobs);
       setPagination(response.data.pagination);
       setError(null);
@@ -73,7 +66,7 @@ const BrowseJobs = () => {
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl, filters, pagination.page, pagination.limit]);
+  }, [filters, pagination.page, pagination.limit]);
 
   useEffect(() => {
     fetchJobs();

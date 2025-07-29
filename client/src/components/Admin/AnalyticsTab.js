@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import LineChart from '../Charts/LineChart';
 import PieChart from '../Charts/PieChart';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
+import { apiRequest } from '../../utils/api';
 
 const AnalyticsTab = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -16,21 +9,15 @@ const AnalyticsTab = () => {
   const [error, setError] = useState(null);
   const [period, setPeriod] = useState('30d');
 
-  const apiBaseUrl = getApiBaseUrl();
-
   const fetchAnalyticsData = async (selectedPeriod = period) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       
-      const response = await axios.get(`${apiBaseUrl}/api/admin/analytics`, {
-        params: { period: selectedPeriod },
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiRequest('/api/admin/analytics', {
+        params: { period: selectedPeriod }
       });
       
-      setAnalyticsData(response.data.analytics);
+      setAnalyticsData(response.analytics);
       setError(null);
     } catch (error) {
       console.error('Failed to fetch analytics data:', error);

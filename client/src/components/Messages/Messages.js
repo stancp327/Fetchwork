@@ -2,14 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
+import { getApiBaseUrl } from '../../utils/api';
 import '../UserComponents.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const Messages = () => {
   const { user } = useAuth();
