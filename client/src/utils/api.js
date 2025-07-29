@@ -1,6 +1,6 @@
 export const getApiBaseUrl = () => {
   return process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-1.onrender.com' 
+    ? 'https://fetchwork-backend.onrender.com' 
     : 'http://localhost:10000';
 };
 
