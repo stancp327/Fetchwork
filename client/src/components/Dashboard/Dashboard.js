@@ -1,18 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
+import { apiRequest } from '../../utils/api';
 import { Link } from 'react-router-dom';
 import ProfileCompletion from '../Onboarding/ProfileCompletion';
 import OnboardingMilestone from '../Onboarding/OnboardingMilestone';
 import '../UserComponents.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -21,18 +14,11 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const apiBaseUrl = getApiBaseUrl();
-
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/users/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      setDashboardData(response.data);
+      const response = await apiRequest('/api/users/dashboard');
+      setDashboardData(response);
       setError(null);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -40,7 +26,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   useEffect(() => {
     if (user) {

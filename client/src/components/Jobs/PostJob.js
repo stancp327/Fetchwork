@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { getApiBaseUrl } from '../../utils/api';
 import '../UserComponents.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -31,8 +25,6 @@ const PostJob = () => {
     isUrgent: false
   });
   const [errors, setErrors] = useState({});
-
-  const apiBaseUrl = getApiBaseUrl();
 
   const validateForm = () => {
     const newErrors = {};
@@ -116,7 +108,7 @@ const PostJob = () => {
       };
 
       const token = localStorage.getItem('token');
-      await axios.post(`${apiBaseUrl}/api/jobs`, jobData, {
+      await axios.post(`${getApiBaseUrl()}/api/jobs`, jobData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

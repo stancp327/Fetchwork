@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { getApiBaseUrl } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -12,12 +13,6 @@ export const useAuth = () => {
   return context;
 };
 
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

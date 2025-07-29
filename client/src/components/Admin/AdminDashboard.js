@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { apiRequest } from '../../utils/api';
 import AdminDisputePanel from './AdminDisputePanel';
 import AdminEmailPanel from './AdminEmailPanel';
 import ActivitySection from './ActivitySection';
@@ -9,13 +9,6 @@ import TabButton from '../common/TabButton';
 import AnalyticsTab from './AnalyticsTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -30,35 +23,22 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  const apiBaseUrl = getApiBaseUrl();
   const isAdminAuthenticated = user?.isAdmin;
 
   useEffect(() => {
     if (!isAdminAuthenticated) {
       setError('Admin access required. Please contact support if you believe this is an error.');
-      setLoading(false);
     }
-  }, [isAdminAuthenticated]);
+  }, [isAdminAuthenticated, setError]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('token');
       
-      if (!token) {
-        setError('Authentication token not found. Please log in again.');
-        setLoading(false);
-        return;
-      }
+      const response = await apiRequest('/api/admin/dashboard');
       
-      const response = await axios.get(`${apiBaseUrl}/api/admin/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      setDashboardData(response.data);
+      setDashboardData(response);
       setError(null);
     } catch (error) {
       console.error('AdminDashboard fetch error:', error);
@@ -70,81 +50,60 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   const fetchUsersData = useCallback(async (page = 1, search = '', status = 'all') => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/admin/users`, {
-        params: { page, search, status, limit: 10 },
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiRequest('/api/admin/users', {
+        params: { page, search, status, limit: 10 }
       });
-      setUsersData(response.data);
+      setUsersData(response);
     } catch (error) {
       console.error('Failed to fetch users data:', error);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   const fetchJobsData = useCallback(async (page = 1, status = 'all') => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/admin/jobs`, {
-        params: { page, status, limit: 10 },
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiRequest('/api/admin/jobs', {
+        params: { page, status, limit: 10 }
       });
-      setJobsData(response.data);
+      setJobsData(response);
     } catch (error) {
       console.error('Failed to fetch jobs data:', error);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   const fetchPaymentsData = useCallback(async (page = 1, status = 'all') => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/admin/payments`, {
-        params: { page, status, limit: 10 },
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiRequest('/api/admin/payments', {
+        params: { page, status, limit: 10 }
       });
-      setPaymentsData(response.data);
+      setPaymentsData(response);
     } catch (error) {
       console.error('Failed to fetch payments data:', error);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   const fetchReviewsData = useCallback(async (page = 1, status = 'all') => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/admin/reviews`, {
-        params: { page, status, limit: 10 },
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiRequest('/api/admin/reviews', {
+        params: { page, status, limit: 10 }
       });
-      setReviewsData(response.data);
+      setReviewsData(response);
     } catch (error) {
       console.error('Failed to fetch reviews data:', error);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   const fetchMonitoringData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/admin/monitoring`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      setMonitoringData(response.data);
+      const response = await apiRequest('/api/admin/monitoring');
+      setMonitoringData(response);
     } catch (error) {
       console.error('Failed to fetch monitoring data:', error);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   useEffect(() => {
     if (isAdminAuthenticated) {
@@ -195,7 +154,10 @@ const AdminDashboard = () => {
 
   const suspendUser = async (userId, reason) => {
     try {
-      await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/suspend`, { reason });
+      await apiRequest(`/api/admin/users/${userId}/suspend`, {
+        method: 'PUT',
+        body: JSON.stringify({ reason })
+      });
       fetchUsersData();
     } catch (error) {
       console.error('Failed to suspend user:', error);
@@ -204,7 +166,9 @@ const AdminDashboard = () => {
 
   const unsuspendUser = async (userId) => {
     try {
-      await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/unsuspend`);
+      await apiRequest(`/api/admin/users/${userId}/unsuspend`, {
+        method: 'PUT'
+      });
       fetchUsersData();
     } catch (error) {
       console.error('Failed to unsuspend user:', error);
@@ -213,8 +177,10 @@ const AdminDashboard = () => {
 
   const promoteUser = async (userId) => {
     try {
-      const response = await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/promote`);
-      if (response.data) {
+      const response = await apiRequest(`/api/admin/users/${userId}/promote`, {
+        method: 'PUT'
+      });
+      if (response) {
         alert('User promoted to admin successfully');
         fetchUsersData();
       }
@@ -226,8 +192,10 @@ const AdminDashboard = () => {
 
   const demoteUser = async (userId) => {
     try {
-      const response = await axios.put(`${apiBaseUrl}/api/admin/users/${userId}/demote`);
-      if (response.data) {
+      const response = await apiRequest(`/api/admin/users/${userId}/demote`, {
+        method: 'PUT'
+      });
+      if (response) {
         alert('User demoted from admin successfully');
         fetchUsersData();
       }
@@ -545,12 +513,18 @@ const AdminDashboard = () => {
                           <td>
                             <button
                               className="action-btn cancel"
-                              onClick={() => {
+                              onClick={async () => {
                                 const reason = prompt('Reason for cancellation:');
                                 if (reason) {
-                                  axios.put(`${apiBaseUrl}/api/admin/jobs/${job._id}/cancel`, { reason })
-                                    .then(() => fetchJobsData())
-                                    .catch(err => console.error('Failed to cancel job:', err));
+                                  try {
+                                    await apiRequest(`/api/admin/jobs/${job._id}/cancel`, {
+                                      method: 'PUT',
+                                      body: JSON.stringify({ reason })
+                                    });
+                                    fetchJobsData();
+                                  } catch (err) {
+                                    console.error('Failed to cancel job:', err);
+                                  }
                                 }
                               }}
                             >
@@ -700,22 +674,33 @@ const AdminDashboard = () => {
                             <div className="review-actions">
                               <button
                                 className="action-btn approve"
-                                onClick={() => {
-                                  axios.put(`${apiBaseUrl}/api/admin/reviews/${review._id}/moderate`, {
-                                    status: 'approved'
-                                  }).then(() => fetchReviewsData()).catch(err => console.error('Failed to approve review:', err));
+                                onClick={async () => {
+                                  try {
+                                    await apiRequest(`/api/admin/reviews/${review._id}/moderate`, {
+                                      method: 'PUT',
+                                      body: JSON.stringify({ status: 'approved' })
+                                    });
+                                    fetchReviewsData();
+                                  } catch (err) {
+                                    console.error('Failed to approve review:', err);
+                                  }
                                 }}
                               >
                                 Approve
                               </button>
                               <button
                                 className="action-btn reject"
-                                onClick={() => {
+                                onClick={async () => {
                                   const notes = prompt('Reason for rejection:');
-                                  axios.put(`${apiBaseUrl}/api/admin/reviews/${review._id}/moderate`, {
-                                    status: 'rejected',
-                                    notes
-                                  }).then(() => fetchReviewsData()).catch(err => console.error('Failed to reject review:', err));
+                                  try {
+                                    await apiRequest(`/api/admin/reviews/${review._id}/moderate`, {
+                                      method: 'PUT',
+                                      body: JSON.stringify({ status: 'rejected', notes })
+                                    });
+                                    fetchReviewsData();
+                                  } catch (err) {
+                                    console.error('Failed to reject review:', err);
+                                  }
                                 }}
                               >
                                 Reject

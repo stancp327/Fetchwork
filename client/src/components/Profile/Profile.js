@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
+import { apiRequest } from '../../utils/api';
 import FileUpload from '../common/FileUpload';
 import './Profile.css';
-
-const getApiBaseUrl = () => {
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:10000';
-  }
-  return 'https://fetchwork-1.onrender.com';
-};
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -36,17 +29,13 @@ const Profile = () => {
   const [newSkill, setNewSkill] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const apiBaseUrl = getApiBaseUrl();
 
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/users/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await apiRequest('/api/users/profile');
       
-      const userData = response.data.user;
+      const userData = response.user;
       setProfileData({
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
@@ -69,7 +58,7 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl]);
+  }, []);
 
   useEffect(() => {
     fetchProfile();
@@ -114,7 +103,6 @@ const Profile = () => {
       setError('');
       setSuccess('');
 
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       
       Object.keys(profileData).forEach(key => {
@@ -133,14 +121,12 @@ const Profile = () => {
         formData.append('profilePicture', selectedFile);
       }
 
-      const response = await axios.put(`${apiBaseUrl}/api/users/profile`, formData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+      const response = await apiRequest('/api/users/profile', {
+        method: 'PUT',
+        body: formData
       });
 
-      updateUser(response.data.user);
+      updateUser(response.user);
       setSuccess('Profile updated successfully!');
       setSelectedFile(null);
       setTimeout(() => setSuccess(''), 3000);
