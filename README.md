@@ -193,8 +193,9 @@ FetchWork/
 #### Email Service (Resend)
 1. **Create Account**: Go to [resend.com](https://resend.com)
 2. **Generate API Key**: Dashboard → API Keys → Create
-3. **Add to Environment**: Copy key to `RESEND_API_KEY`
-4. **Verify Setup**: Check admin panel email tab
+3. **Add to Environment**: Copy key to `RESEND_API_KEY` in `server/.env.local`
+4. **Configure FROM_EMAIL**: Set sender email address in `server/.env.local`
+5. **Verify Setup**: Check admin panel email tab - status should show "configured: true"
 
 #### Chatbot Integration (Chatbase)
 1. **Create Chatbot**: Go to [chatbase.co](https://chatbase.co)
