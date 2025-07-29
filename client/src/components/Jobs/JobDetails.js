@@ -470,11 +470,11 @@ const JobDetails = () => {
                 </button>
                 
                 {job.status === 'in_progress' && job.escrowAmount === 0 && (
-                  <button 
+                  <button
                     className="btn btn-primary btn-full"
                     onClick={() => handleFundEscrow()}
                   >
-                    Fund Escrow (${job.budget.amount})
+                    Fund Escrow ({formatBudget(job.budget)})
                   </button>
                 )}
                 
