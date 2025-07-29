@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 
 async function analyzeDuplicates() {
   const uri = process.env.MONGO_URI;
@@ -7,7 +7,13 @@ async function analyzeDuplicates() {
     process.exit(1);
   }
 
-  const client = new MongoClient(uri);
+  const client = new MongoClient(uri, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
   
   try {
     await client.connect();
