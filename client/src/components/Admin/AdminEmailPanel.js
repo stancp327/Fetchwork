@@ -26,6 +26,10 @@ const AdminEmailPanel = () => {
       setEmailStatus(response);
     } catch (error) {
       console.error('Error fetching email status:', error);
+      setEmailStatus({ 
+        configured: false, 
+        error: error.message.includes('HTML') ? 'API configuration error - receiving HTML instead of JSON' : error.message 
+      });
     }
   };
 
@@ -42,8 +46,8 @@ const AdminEmailPanel = () => {
       setMessage(`Broadcast sent successfully! Sent: ${response.sent}, Failed: ${response.failed}`);
       setBroadcastForm({ subject: '', message: '', userType: 'all' });
     } catch (error) {
-      setMessage(`Error: ${error.response?.data?.error || 'Failed to send broadcast'}`);
-    }finally {
+      setMessage(`Error: ${error.message || 'Failed to send broadcast'}`);
+    } finally {
       setLoading(false);
     }
   };
@@ -61,8 +65,8 @@ const AdminEmailPanel = () => {
       setMessage('Test email sent successfully!');
       setTestForm({ email: '', type: 'welcome' });
     } catch (error) {
-      setMessage(`Error: ${error.response?.data?.error || 'Failed to send test email'}`);
-    }finally {
+      setMessage(`Error: ${error.message || 'Failed to send test email'}`);
+    } finally {
       setLoading(false);
     }
   };

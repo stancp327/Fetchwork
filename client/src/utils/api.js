@@ -1,12 +1,25 @@
 export const getApiBaseUrl = () => {
-  return process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-backend.onrender.com' 
-    : 'http://localhost:10000';
+  const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost';
+  
+  if (isProduction) {
+    return 'https://fetchwork-backend.onrender.com';
+  } else {
+    return 'http://localhost:10000';
+  }
 };
 
 export const apiRequest = async (endpoint, options = {}) => {
   const baseUrl = getApiBaseUrl();
   const token = localStorage.getItem('token');
+  
+  console.log('🔧 API Request Debug:', {
+    baseUrl,
+    endpoint,
+    fullUrl: `${baseUrl}${endpoint}`,
+    hasToken: !!token,
+    nodeEnv: process.env.NODE_ENV,
+    hostname: window.location.hostname
+  });
   
   const defaultOptions = {
     headers: {
@@ -21,9 +34,26 @@ export const apiRequest = async (endpoint, options = {}) => {
     ...options
   });
 
+  console.log('🔧 API Response Debug:', {
+    status: response.status,
+    statusText: response.statusText,
+    url: response.url,
+    contentType: response.headers.get('content-type')
+  });
+
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('🔧 API Error Response:', errorText.substring(0, 200));
     throw new Error(`API request failed: ${response.statusText}`);
   }
 
-  return response.json();
+  const responseText = await response.text();
+  console.log('🔧 API Response Preview:', responseText.substring(0, 200));
+  
+  try {
+    return JSON.parse(responseText);
+  } catch (parseError) {
+    console.error('🔧 JSON Parse Error - Response was HTML:', responseText.substring(0, 500));
+    throw new Error('API response is not valid JSON - received HTML instead');
+  }
 };
