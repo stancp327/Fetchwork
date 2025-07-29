@@ -5,6 +5,7 @@ import { useRole } from '../../context/RoleContext';
 import { Link } from 'react-router-dom';
 import ProfileCompletion from '../Onboarding/ProfileCompletion';
 import OnboardingMilestone from '../Onboarding/OnboardingMilestone';
+import { formatBudget } from '../../utils/formatters';
 import '../UserComponents.css';
 
 const getApiBaseUrl = () => {
@@ -194,7 +195,7 @@ const Dashboard = () => {
                       <h4 className="card-title">{job.title}</h4>
                       <div className="card-meta">
                         Posted {new Date(job.createdAt).toLocaleDateString()} • 
-                        ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                        {formatBudget(job.budget)}
                       </div>
                     </div>
                     <span className={getStatusTag(job.status)}>
@@ -224,7 +225,7 @@ const Dashboard = () => {
                       <h4 className="card-title">{job.title}</h4>
                       <div className="card-meta">
                         Client: {job.client.firstName} {job.client.lastName} • 
-                        ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                        {formatBudget(job.budget)}
                       </div>
                     </div>
                     <span className={getStatusTag(job.status)}>
@@ -283,7 +284,7 @@ const Dashboard = () => {
                   </div>
                   <div className="card-footer">
                     <div className="card-meta">
-                      Total proposals: {job.proposalCount} • Job budget: ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                      Total proposals: {job.proposalCount} • Job budget: {formatBudget(job.budget)}
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Link to={`/jobs/${job._id}/proposals`} className="btn btn-primary">
@@ -316,7 +317,7 @@ const Dashboard = () => {
                   </div>
                   <div className="card-footer">
                     <div className="card-meta">
-                      Budget: ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                      Budget: {formatBudget(job.budget)}
                     </div>
                     <Link to={`/jobs/${job._id}`} className="btn btn-outline">
                       View Job
