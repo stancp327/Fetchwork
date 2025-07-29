@@ -5,6 +5,7 @@ import { useRole } from '../../context/RoleContext';
 import { Link } from 'react-router-dom';
 import ProfileCompletion from '../Onboarding/ProfileCompletion';
 import OnboardingMilestone from '../Onboarding/OnboardingMilestone';
+import { formatBudget } from '../../utils/formatters';
 import '../UserComponents.css';
 
 const getApiBaseUrl = () => {
@@ -194,7 +195,7 @@ const Dashboard = () => {
                       <h4 className="card-title">{job.title}</h4>
                       <div className="card-meta">
                         Posted {new Date(job.createdAt).toLocaleDateString()} • 
-                        ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                        {formatBudget(job.budget)}
                       </div>
                     </div>
                     <span className={getStatusTag(job.status)}>
@@ -224,7 +225,7 @@ const Dashboard = () => {
                       <h4 className="card-title">{job.title}</h4>
                       <div className="card-meta">
                         Client: {job.client.firstName} {job.client.lastName} • 
-                        ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                        {formatBudget(job.budget)}
                       </div>
                     </div>
                     <span className={getStatusTag(job.status)}>
@@ -270,7 +271,7 @@ const Dashboard = () => {
                       </h4>
                       <div className="card-meta">
                         <strong>New proposal from:</strong> {job.proposals[0].freelancer.firstName} {job.proposals[0].freelancer.lastName} • 
-                        <strong>Bid:</strong> ${job.proposals[0].proposedBudget} • 
+                        <strong>Bid:</strong> {formatBudget(job.proposals[0].proposedBudget)} • 
                         <strong>Timeline:</strong> {job.proposals[0].proposedDuration}
                       </div>
                       <div className="card-meta" style={{ marginTop: '5px', fontSize: '0.85rem' }}>
@@ -283,7 +284,7 @@ const Dashboard = () => {
                   </div>
                   <div className="card-footer">
                     <div className="card-meta">
-                      Total proposals: {job.proposalCount} • Job budget: ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                      Total proposals: {job.proposalCount} • Job budget: {formatBudget(job.budget)}
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <Link to={`/jobs/${job._id}/proposals`} className="btn btn-primary">
@@ -309,14 +310,14 @@ const Dashboard = () => {
                       <h4 className="card-title">{job.title}</h4>
                       <div className="card-meta">
                         Applied {new Date(job.proposals[0].submittedAt).toLocaleDateString()} • 
-                        Your bid: ${job.proposals[0].proposedBudget}
+                        Your bid: {formatBudget(job.proposals[0].proposedBudget)}
                       </div>
                     </div>
                     <span className="tag warning">Pending</span>
                   </div>
                   <div className="card-footer">
                     <div className="card-meta">
-                      Budget: ${job.budget.amount} {job.budget.type === 'hourly' ? '/hr' : 'fixed'}
+                      Budget: {formatBudget(job.budget)}
                     </div>
                     <Link to={`/jobs/${job._id}`} className="btn btn-outline">
                       View Job

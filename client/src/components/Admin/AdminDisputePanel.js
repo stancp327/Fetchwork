@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { formatBudget } from '../../utils/formatters';
 import './AdminDisputePanel.css';
 
 const getApiBaseUrl = () => {
@@ -24,7 +25,9 @@ const AdminDisputePanel = () => {
       const token = localStorage.getItem('token');
       
       if (!token) {
-        throw new Error('No authentication token found');
+        setError('Authentication token not found. Please log in again.');
+        setLoading(false);
+        return;
       }
       
       const response = await axios.get(`${apiBaseUrl}/api/disputes/admin`, {
@@ -146,7 +149,7 @@ const AdminDisputePanel = () => {
                 <td>
                   <div className="job-info">
                     <div className="job-title">{dispute.job?.title || 'N/A'}</div>
-                    <div className="job-budget">${dispute.job?.budget || 0}</div>
+                    <div className="job-budget">{formatBudget(dispute.job?.budget || 0)}</div>
                   </div>
                 </td>
                 <td>
