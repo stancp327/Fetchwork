@@ -280,10 +280,11 @@ jobSchema.methods.acceptProposal = async function(proposalId, freelancerId) {
   });
   
   const emailService = require('../services/emailService');
+  const emailWorkflowService = require('../services/emailWorkflowService');
   const User = require('./User');
   const freelancer = await User.findById(freelancerId);
   
-  if (freelancer) {
+  if (freelancer && await emailWorkflowService.canSendEmail(freelancerId, 'job_lifecycle', 'job_accepted')) {
     await emailService.sendJobNotification(freelancer, this, 'job_accepted');
   }
   
@@ -301,12 +302,17 @@ jobSchema.methods.completeJob = async function() {
   this.endDate = new Date();
   
   const emailService = require('../services/emailService');
+  const emailWorkflowService = require('../services/emailWorkflowService');
   const User = require('./User');
   const client = await User.findById(this.client);
   const freelancer = await User.findById(this.freelancer);
   
-  if (client) await emailService.sendJobNotification(client, this, 'job_completed');
-  if (freelancer) await emailService.sendJobNotification(freelancer, this, 'job_completed');
+  if (client && await emailWorkflowService.canSendEmail(this.client, 'job_lifecycle', 'job_completed')) {
+    await emailService.sendJobNotification(client, this, 'job_completed');
+  }
+  if (freelancer && await emailWorkflowService.canSendEmail(this.freelancer, 'job_lifecycle', 'job_completed')) {
+    await emailService.sendJobNotification(freelancer, this, 'job_completed');
+  }
   
   return this.save();
 };

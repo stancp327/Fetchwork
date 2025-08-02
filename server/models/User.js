@@ -105,17 +105,19 @@ const userSchema = new mongoose.Schema({
   },
   preferences: {
     emailNotifications: {
-      type: Boolean,
-      default: true
+      jobAlerts: { type: Boolean, default: true },
+      proposalUpdates: { type: Boolean, default: true },
+      paymentNotifications: { type: Boolean, default: true },
+      systemUpdates: { type: Boolean, default: true },
+      marketingEmails: { type: Boolean, default: false },
+      weeklyDigest: { type: Boolean, default: true }
     },
-    smsNotifications: {
-      type: Boolean,
-      default: false
+    notificationFrequency: {
+      type: String,
+      enum: ['immediate', 'daily', 'weekly'],
+      default: 'immediate'
     },
-    jobAlerts: {
-      type: Boolean,
-      default: true
-    }
+    smsNotifications: { type: Boolean, default: false }
   },
   socialLinks: {
     linkedin: String,

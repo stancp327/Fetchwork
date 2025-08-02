@@ -388,9 +388,10 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
       .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
     
     const emailService = require('../services/emailService');
+    const emailWorkflowService = require('../services/emailWorkflowService');
     const User = require('../models/User');
     const client = await User.findById(job.client);
-    if (client) {
+    if (client && await emailWorkflowService.canSendEmail(client._id, 'job_lifecycle', 'new_proposal')) {
       await emailService.sendJobNotification(client, job, 'new_proposal');
     }
 

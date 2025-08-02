@@ -76,11 +76,14 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
       const client = await User.findById(req.user.userId);
       
       if (job && job.freelancer && client) {
-        await emailService.sendPaymentNotification(job.freelancer, {
-          type: 'escrow_funded',
-          amount: amount,
-          job: job
-        });
+        const emailWorkflowService = require('../services/emailWorkflowService');
+        if (await emailWorkflowService.canSendEmail(job.freelancer._id, 'payment', 'escrow_funded')) {
+          await emailService.sendPaymentNotification(job.freelancer, {
+            type: 'escrow_funded',
+            amount: amount,
+            job: job
+          });
+        }
       }
       
       res.json({
@@ -113,11 +116,14 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
       const job = await Job.findById(jobId).populate('freelancer');
       
       if (job && job.freelancer) {
-        await emailService.sendPaymentNotification(job.freelancer, {
-          type: 'payment_released',
-          amount: result.transfer.amount / 100,
-          job: job
-        });
+        const emailWorkflowService = require('../services/emailWorkflowService');
+        if (await emailWorkflowService.canSendEmail(job.freelancer._id, 'payment', 'payment_released')) {
+          await emailService.sendPaymentNotification(job.freelancer, {
+            type: 'payment_released',
+            amount: result.transfer.amount / 100,
+            job: job
+          });
+        }
       }
       
       res.json({
