@@ -49,7 +49,6 @@ class EmailService {
         return { success: false, error };
       }
 
-      console.log('Welcome email sent successfully:', data);
       return { success: true, data };
     } catch (error) {
       console.error('Error sending welcome email:', error);

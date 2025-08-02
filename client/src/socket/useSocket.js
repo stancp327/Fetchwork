@@ -27,7 +27,6 @@ export const useSocket = ({ token, onEvent }) => {
     });
 
     socket.on('disconnect', (reason) => {
-      console.warn('[SOCKET] Disconnected:', reason);
     });
 
     socket.on('connect_error', (error) => {
