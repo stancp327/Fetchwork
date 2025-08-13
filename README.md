@@ -955,6 +955,10 @@ Future work: migrate admin checks fully to role and deprecate ADMIN_EMAILS/isAdm
 - Deployment examples:
   - Server (Render): set CLIENT_URL=https://fetchwork-temp.vercel.app and SOCKET_CORS_ORIGIN=https://fetchwork-temp.vercel.app
   - Client (Vercel): set REACT_APP_API_URL=https://fetchwork-1.onrender.com and optionally REACT_APP_SOCKET_URL=https://fetchwork-1.onrender.com until this change is deployed everywhere
+Canonical Vercel projects:
+- Production: fetchwork (custom domain + fetchwork.vercel.app)
+- Staging: fetchwork-temp
+Archive/rename duplicates (e.g., fetchworkfetchwork-production). If fetchwork-wkmt is not a separate marketing site, consolidate it into the above two.
 
 
 **Last Updated**: January 22, 2025  

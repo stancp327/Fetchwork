@@ -48,7 +48,9 @@ export const useSocket = ({ token, onEvent }) => {
     ];
     eventList.forEach((event) => {
       socket.on(event, (data) => {
-        onEvent(event, data);
+        if (typeof onEvent === 'function') {
+          onEvent(event, data);
+        }
       });
     });
 
