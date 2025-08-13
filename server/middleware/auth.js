@@ -23,6 +23,9 @@ const authenticateToken = async (req, res, next) => {
     }
     
     req.user = user;
+    if (!req.user.userId) {
+      req.user.userId = user._id.toString();
+    }
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -47,7 +50,7 @@ const authenticateAdmin = async (req, res, next) => {
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    if (!decoded.isAdmin) {
+    if (!(decoded.isAdmin || decoded.role === 'admin')) {
       return res.status(401).json({ error: 'Admin access required' });
     }
     
@@ -121,6 +124,9 @@ const optionalAuth = async (req, res, next) => {
     
     if (user && !user.isSuspended) {
       req.user = user;
+      if (!req.user.userId) {
+        req.user.userId = user._id.toString();
+      }
     } else {
       req.user = null;
     }
