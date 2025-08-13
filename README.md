@@ -938,6 +938,17 @@ For issues or questions:
 
 ---
 
+## Authentication updates (2025-08-13)
+- Standardized on req.user._id in backend; added a temporary compatibility shim that also sets req.user.userId.
+- OAuth start URLs on the client now use getApiBaseUrl() for environment consistency.
+- Prevent duplicate entries in the providers array when linking Google/Facebook.
+- Increased bcrypt salt rounds from 12 to 14 for stronger password hashing.
+- Introduced a role field on User ('user' | 'admin'), with hybrid admin detection:
+  - Admins are recognized if role === 'admin', email is in ADMIN_EMAILS, or isAdminPromoted is true.
+  - JWT now includes role alongside isAdmin for compatibility.
+Future work: migrate admin checks fully to role and deprecate ADMIN_EMAILS/isAdminPromoted after backfill.
+
+
 **Last Updated**: January 22, 2025  
 **Version**: 2.0.0 (AdminDashboard Restoration Complete)  
 **Maintainer**: Chaz (@stancp327)  

@@ -108,7 +108,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       user = await User.findOne({ email: profile.emails[0].value });
       if (user) {
         user.googleId = profile.id;
-        user.providers.push('google');
+        if (!Array.isArray(user.providers)) user.providers = [];
+        if (!user.providers.includes('google')) user.providers.push('google');
         await user.save();
         return done(null, user);
       }
@@ -150,7 +151,8 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
         user = await User.findOne({ email: profile.emails[0].value });
         if (user) {
           user.facebookId = profile.id;
-          user.providers.push('facebook');
+          if (!Array.isArray(user.providers)) user.providers = [];
+          if (!user.providers.includes('facebook')) user.providers.push('facebook');
           await user.save();
           return done(null, user);
         }
@@ -348,9 +350,13 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
       });
     }
     
-    const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted;
+    let isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted || user.role === 'admin';
+    if (isAdmin && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
     const token = await new Promise((resolve, reject) => {
-      jwt.sign({ userId: user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+      jwt.sign({ userId: user._id, isAdmin, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
         if (err) reject(err);
         else resolve(token);
       });
@@ -375,12 +381,12 @@ app.post('/api/auth/login', validateLogin, async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted;
+    const isAdmin = user.role === 'admin' || ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted;
     res.json({
       user: { 
         id: user._id, 
@@ -517,8 +523,12 @@ app.get('/api/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/login' }),
   async (req, res) => {
     try {
-      const isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted;
-      const token = jwt.sign({ userId: req.user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      let isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted || req.user.role === 'admin';
+      if (isAdmin && req.user.role !== 'admin') {
+        req.user.role = 'admin';
+        await req.user.save();
+      }
+      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
       
       res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
         id: req.user._id,
@@ -541,8 +551,12 @@ app.get('/api/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
   async (req, res) => {
     try {
-      const isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted;
-      const token = jwt.sign({ userId: req.user._id, isAdmin }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      let isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted || req.user.role === 'admin';
+      if (isAdmin && req.user.role !== 'admin') {
+        req.user.role = 'admin';
+        await req.user.save();
+      }
+      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
       
       res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
         id: req.user._id,

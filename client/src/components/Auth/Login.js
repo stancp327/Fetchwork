@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
+import { getApiBaseUrl } from '../../utils/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -41,11 +42,11 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
+    window.location.href = `${getApiBaseUrl()}/api/auth/google`;
   };
 
   const handleFacebookLogin = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/facebook`;
+    window.location.href = `${getApiBaseUrl()}/api/auth/facebook`;
   };
 
   return (
