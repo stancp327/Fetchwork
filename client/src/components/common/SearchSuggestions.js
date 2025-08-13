@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { getApiBaseUrl } from '../utils/api';
+import { getApiBaseUrl } from '../../utils/api';
 
 const SearchSuggestions = ({ value, onSelect, placeholder = "Search..." }) => {
   const [suggestions, setSuggestions] = useState([]);
