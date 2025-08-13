@@ -948,6 +948,14 @@ For issues or questions:
   - JWT now includes role alongside isAdmin for compatibility.
 Future work: migrate admin checks fully to role and deprecate ADMIN_EMAILS/isAdminPromoted after backfill.
 
+## Messaging updates (2025-08-13)
+- Client sockets now derive their base URL from getApiBaseUrl() with an optional REACT_APP_SOCKET_URL override.
+- Server Socket.io CORS origin is now driven by SOCKET_CORS_ORIGIN (supports comma-separated values). Falls back to CLIENT_URL or http://localhost:3000 when not set.
+- Added a payload safety check for message:send to ignore whitespace-only messages.
+- Deployment examples:
+  - Server (Render): set CLIENT_URL=https://fetchwork-temp.vercel.app and SOCKET_CORS_ORIGIN=https://fetchwork-temp.vercel.app
+  - Client (Vercel): set REACT_APP_API_URL=https://fetchwork-1.onrender.com and optionally REACT_APP_SOCKET_URL=https://fetchwork-1.onrender.com until this change is deployed everywhere
+
 
 **Last Updated**: January 22, 2025  
 **Version**: 2.0.0 (AdminDashboard Restoration Complete)  

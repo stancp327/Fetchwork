@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { getApiBaseUrl } from '../utils/api';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-1.onrender.com' 
-    : 'http://localhost:10000');
+const getSocketBaseUrl = () => {
+  if (process.env.REACT_APP_SOCKET_URL) return process.env.REACT_APP_SOCKET_URL;
+  return getApiBaseUrl();
+};
 
 export const useSocket = ({ token, onEvent }) => {
   const socketRef = useRef(null);
@@ -12,8 +13,7 @@ export const useSocket = ({ token, onEvent }) => {
   useEffect(() => {
     if (!token) return;
 
-    
-    const socket = io(SOCKET_URL, {
+    const socket = io(getSocketBaseUrl(), {
       auth: { token },
       transports: ['websocket'],
       reconnectionAttempts: 5,
@@ -22,9 +22,6 @@ export const useSocket = ({ token, onEvent }) => {
     });
 
     socketRef.current = socket;
-
-    socket.on('connect', () => {
-    });
 
     socket.on('disconnect', (reason) => {
       console.warn('[SOCKET] Disconnected:', reason);
@@ -39,13 +36,13 @@ export const useSocket = ({ token, onEvent }) => {
     });
 
     const eventList = [
-      'message:receive', 
-      'message:read', 
-      'conversation:update', 
-      'typing:start', 
+      'message:receive',
+      'message:read',
+      'conversation:update',
+      'typing:start',
       'typing:stop',
       'user:online',
-      'user:offline', 
+      'user:offline',
       'message:delivered',
       'user:online_status'
     ];

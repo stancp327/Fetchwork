@@ -63,9 +63,16 @@ if (missingVars.length > 0) {
 
 console.log('✅ All critical environment variables present');
 
+const allowedSocketOrigins = (() => {
+  const fromEnv = process.env.SOCKET_CORS_ORIGIN || process.env.CLIENT_URL || '';
+  const split = fromEnv.split(',').map(s => s.trim()).filter(Boolean);
+  const defaults = ['http://localhost:3000'];
+  return split.length > 0 ? split : defaults;
+})();
+
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://fetchwork.vercel.app'],
+    origin: allowedSocketOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   }

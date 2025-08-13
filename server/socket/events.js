@@ -24,7 +24,11 @@ module.exports = (io) => {
     rejoinUserRooms(socket, senderId);
 
     socket.on('message:send', async (data) => {
-      const { recipientId, roomId, content, messageType = 'text', attachments = [], jobId, mentions = [] } = data;
+      const { recipientId, roomId, content, messageType = 'text', attachments = [], jobId, mentions = [] } = data || {};
+      if (typeof content !== 'string' || !content.trim()) {
+        socket.emit('error', { message: 'Message content is required' });
+        return;
+      }
 
       try {
         if (roomId) {
