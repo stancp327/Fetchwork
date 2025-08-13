@@ -7,14 +7,16 @@ const getSocketBaseUrl = () => {
   return getApiBaseUrl();
 };
 
-export const useSocket = ({ token, onEvent }) => {
+export const useSocket = (options) => {
+  const { token: providedToken, onEvent } = options || {};
   const socketRef = useRef(null);
 
   useEffect(() => {
-    if (!token) return;
+    const resolvedToken = providedToken || localStorage.getItem('token');
+    if (!resolvedToken) return;
 
     const socket = io(getSocketBaseUrl(), {
-      auth: { token },
+      auth: { token: resolvedToken },
       transports: ['websocket'],
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
@@ -59,7 +61,7 @@ export const useSocket = ({ token, onEvent }) => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token, onEvent]);
+  }, [providedToken, onEvent]);
 
   return socketRef;
 };
