@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/api';
 
 const SearchSuggestions = ({ value, onSelect, placeholder = "Search..." }) => {
   const [suggestions, setSuggestions] = useState([]);
@@ -8,9 +9,7 @@ const SearchSuggestions = ({ value, onSelect, placeholder = "Search..." }) => {
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
 
-  const apiBaseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-1.onrender.com' 
-    : 'http://localhost:10000';
+  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     const fetchSuggestions = async () => {
