@@ -308,16 +308,34 @@ app.post('/api/auth/register', validateRegister, async (req, res) => {
 app.post('/api/auth/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(`🔐 Login attempt for: ${email}`);
+    
     const user = await User.findOne({ email });
     
     if (!user) {
+      console.log(`❌ User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    
+    console.log(`👤 User found: ${email}, created: ${user.createdAt}, verified: ${user.isVerified}`);
     
     const isValidPassword = await user.comparePassword(password);
     
     if (!isValidPassword) {
+      console.log(`❌ Password mismatch for: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    console.log(`✅ Password valid for: ${email}`);
+    
+    if (user.isSuspended) {
+      console.log(`❌ User suspended: ${email}`);
+      return res.status(403).json({ error: 'Account suspended' });
+    }
+    
+    if (!user.isActive) {
+      console.log(`❌ User inactive: ${email}`);
+      return res.status(403).json({ error: 'Account deactivated' });
     }
     
     const authEnhancementDate = new Date('2025-07-26T10:00:00Z'); // Updated deployment time to allow existing admin account
@@ -457,6 +475,37 @@ app.post('/api/auth/reset-password', async (req, res) => {
     res.json({ message: 'Password reset successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Password reset failed' });
+  }
+});
+
+app.post('/api/auth/recover-admin', async (req, res) => {
+  try {
+    const { email, recoveryKey } = req.body;
+    
+    if (recoveryKey !== process.env.ADMIN_RECOVERY_KEY) {
+      return res.status(401).json({ error: 'Invalid recovery key' });
+    }
+    
+    if (!ADMIN_EMAILS.includes(email)) {
+      return res.status(400).json({ error: 'Not an admin email' });
+    }
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+    
+    // Reactivate admin account
+    user.isActive = true;
+    user.isSuspended = false;
+    user.suspensionReason = '';
+    await user.save();
+    
+    console.log(`🔧 Admin account recovered: ${email}`);
+    res.json({ message: 'Admin account recovered successfully' });
+  } catch (error) {
+    console.error('Admin recovery error:', error);
+    res.status(500).json({ error: 'Recovery failed' });
   }
 });
 
