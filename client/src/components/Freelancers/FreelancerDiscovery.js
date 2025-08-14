@@ -5,6 +5,7 @@ import FreelancerCard from './FreelancerCard';
 import FreelancerFilterPanel from './FreelancerFilterPanel';
 import Pagination from '../common/Pagination';
 import '../UserComponents.css';
+import { getApiBaseUrl } from '../../utils/api';
 
 const FreelancerDiscovery = () => {
   const [freelancers, setFreelancers] = useState([]);
@@ -27,9 +28,7 @@ const FreelancerDiscovery = () => {
     pages: 0
   });
 
-  const apiBaseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-1.onrender.com' 
-    : 'http://localhost:10000';
+  const apiBaseUrl = getApiBaseUrl();
 
   const fetchFreelancers = useCallback(async () => {
     try {

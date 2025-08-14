@@ -1,20 +1,22 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { getApiBaseUrl } from '../utils/api';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-1.onrender.com' 
-    : 'http://localhost:10000');
+const getSocketBaseUrl = () => {
+  if (process.env.REACT_APP_SOCKET_URL) return process.env.REACT_APP_SOCKET_URL;
+  return getApiBaseUrl();
+};
 
-export const useSocket = ({ token, onEvent }) => {
+export const useSocket = (options) => {
+  const { token: providedToken, onEvent } = options || {};
   const socketRef = useRef(null);
 
   useEffect(() => {
-    if (!token) return;
+    const resolvedToken = providedToken || localStorage.getItem('token');
+    if (!resolvedToken) return;
 
-    
-    const socket = io(SOCKET_URL, {
-      auth: { token },
+    const socket = io(getSocketBaseUrl(), {
+      auth: { token: resolvedToken },
       transports: ['websocket'],
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
@@ -22,9 +24,6 @@ export const useSocket = ({ token, onEvent }) => {
     });
 
     socketRef.current = socket;
-
-    socket.on('connect', () => {
-    });
 
     socket.on('disconnect', (reason) => {
       console.warn('[SOCKET] Disconnected:', reason);
@@ -39,19 +38,21 @@ export const useSocket = ({ token, onEvent }) => {
     });
 
     const eventList = [
-      'message:receive', 
-      'message:read', 
-      'conversation:update', 
-      'typing:start', 
+      'message:receive',
+      'message:read',
+      'conversation:update',
+      'typing:start',
       'typing:stop',
       'user:online',
-      'user:offline', 
+      'user:offline',
       'message:delivered',
       'user:online_status'
     ];
     eventList.forEach((event) => {
       socket.on(event, (data) => {
-        onEvent(event, data);
+        if (typeof onEvent === 'function') {
+          onEvent(event, data);
+        }
       });
     });
 
@@ -60,7 +61,7 @@ export const useSocket = ({ token, onEvent }) => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token, onEvent]);
+  }, [providedToken, onEvent]);
 
   return socketRef;
 };

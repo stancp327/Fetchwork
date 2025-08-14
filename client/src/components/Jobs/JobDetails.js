@@ -7,6 +7,7 @@ import { createJobPostingSchema } from '../../utils/structuredData';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
 import FileUpload from '../common/FileUpload';
 import '../UserComponents.css';
+import { getApiBaseUrl } from '../../utils/api';
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -25,9 +26,7 @@ const JobDetails = () => {
   });
   const [selectedAttachments, setSelectedAttachments] = useState([]);
 
-  const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-1.onrender.com' 
-    : 'http://localhost:10000';
+  const API_BASE_URL = getApiBaseUrl();
 
   const fetchJobDetails = useCallback(async () => {
     try {

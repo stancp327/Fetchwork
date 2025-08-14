@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './EmailPreferences.css';
+import { getApiBaseUrl } from '../../utils/api';
 
 const EmailPreferences = () => {
   const [preferences, setPreferences] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const apiBaseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://fetchwork-1.onrender.com' 
-    : 'http://localhost:10000';
+  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     fetchPreferences();

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import FileUpload from '../common/FileUpload';
 import './DisputeFilingForm.css';
+import { getApiBaseUrl } from '../../utils/api';
 
 const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -56,9 +57,7 @@ const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
     
     setLoading(true);
     try {
-      const API_BASE_URL = process.env.NODE_ENV === 'production' 
-        ? 'https://fetchwork-1.onrender.com' 
-        : 'http://localhost:10000';
+      const API_BASE_URL = getApiBaseUrl();
       
       const token = localStorage.getItem('token');
       const formData = new FormData();
