@@ -975,6 +975,10 @@ Archive/rename duplicates (e.g., fetchworkfetchwork-production). If fetchwork-wk
 
 **Last Updated**: January 22, 2025  
 **Version**: 2.0.0 (AdminDashboard Restoration Complete)  
+### Example env files
+- Server (Render): see server/.env.production.example and server/.env.staging.example
+- Client (Vercel): see client/.env.example
+
 **Maintainer**: Chaz (@stancp327)  
 **Link to Devin run**: https://app.devin.ai/sessions/9375e0bf42cd410d9fdf014edb91af44
 
