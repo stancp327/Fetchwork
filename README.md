@@ -935,6 +935,14 @@ For issues or questions:
 - Create GitHub issue with detailed description
 - Check deployment logs on Render/Vercel dashboards
 - Review MongoDB Atlas connection status and logs
+### Resend email verification
+POST /api/auth/resend-verification
+Body: { "email": "user@example.com" }
+Notes:
+- Returns a generic 200 response to prevent account enumeration.
+- Strictly rate limited per IP and per email (default 5 requests per 24 hours).
+- The verification link uses CLIENT_URL, e.g. https://fetchwork.net/verify-email?token=... in production.
+
 - Verify environment variables in production
 
 ## ⚙️ Environment configuration for URLs and Socket.io
