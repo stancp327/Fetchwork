@@ -430,6 +430,78 @@ app.get('/api/auth/verify-email', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Email verification failed' });
   }
+app.post('/api/auth/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Valid email is required' });
+    }
+    const normalized = email.trim().toLowerCase();
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    if (!app.locals._resendIp) app.locals._resendIp = new Map();
+    if (!app.locals._resendEmail) app.locals._resendEmail = new Map();
+    const now = Date.now();
+    const windowMs = 24 * 60 * 60 * 1000;
+    const limit = 5;
+
+    const ipKey = String(ip);
+    const emailKey = normalized;
+
+    const prune = (arr) => arr.filter(ts => now - ts < windowMs);
+
+    let ipArr = app.locals._resendIp.get(ipKey) || [];
+    ipArr = prune(ipArr);
+    if (ipArr.length >= limit) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+
+    let emailArr = app.locals._resendEmail.get(emailKey) || [];
+    emailArr = prune(emailArr);
+    if (emailArr.length >= limit) {
+      return res.status(429).json({ error: 'Too many requests for this email. Please try again later.' });
+    }
+
+    const user = await User.findOne({ email: normalized });
+
+    const generic = { message: 'If an account exists, a verification email has been sent.' };
+
+    if (!user) {
+      ipArr.push(now);
+      app.locals._resendIp.set(ipKey, ipArr);
+      emailArr.push(now);
+      app.locals._resendEmail.set(emailKey, emailArr);
+      return res.json(generic);
+    }
+
+    if (user.isVerified) {
+      ipArr.push(now);
+      app.locals._resendIp.set(ipKey, ipArr);
+      emailArr.push(now);
+      app.locals._resendEmail.set(emailKey, emailArr);
+      return res.json(generic);
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.emailVerificationToken = token;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+    await user.save();
+
+    try {
+      const emailService = require('./services/emailService');
+      await emailService.sendEmailVerification(user, token);
+    } catch (e) {}
+
+    ipArr.push(now);
+    app.locals._resendIp.set(ipKey, ipArr);
+    emailArr.push(now);
+    app.locals._resendEmail.set(emailKey, emailArr);
+
+    return res.json(generic);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to send verification email' });
+  }
+});
+
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
