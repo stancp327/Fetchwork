@@ -18,29 +18,41 @@ router.post('/upload', authenticateToken, uploadPortfolio, async (req, res) => {
     const outUrls = [];
 
     for (const f of files) {
-      const ext = path.extname(f.filename).toLowerCase();
-      const isImage = ['.jpg','.jpeg','.png','.gif'].includes(ext);
-      const userDir = path.join('uploads', String(userId));
-      ensureDir(userDir);
+      try {
+        const ext = path.extname(f.filename).toLowerCase();
+        const isImage = ['.jpg','.jpeg','.png','.gif'].includes(ext);
+        const userDir = path.join('uploads', String(userId));
+        ensureDir(userDir);
 
-      const inputPath = f.path;
-      let finalPath = inputPath;
-      if (watermark && isImage) {
-        const outPath = path.join(userDir, `wm-${Date.now()}-${f.filename}`);
-        await tileWatermark(inputPath, outPath, 'FetchWork', 0.3);
-        try { fs.unlinkSync(inputPath); } catch {}
-        finalPath = outPath;
-      } else {
-        const moved = path.join(userDir, f.filename);
-        fs.renameSync(inputPath, moved);
-        finalPath = moved;
+        const inputPath = f.path;
+        let finalPath = inputPath;
+        if (watermark && isImage) {
+          const outPath = path.join(userDir, `wm-${Date.now()}-${f.filename}`);
+          try {
+            await tileWatermark(inputPath, outPath, 'FetchWork', 0.3);
+            try { fs.unlinkSync(inputPath); } catch {}
+            finalPath = outPath;
+          } catch (wmErr) {
+            console.error('Watermark failed, falling back to plain save:', wmErr && wmErr.message ? wmErr.message : wmErr);
+            const moved = path.join(userDir, f.filename);
+            fs.renameSync(inputPath, moved);
+            finalPath = moved;
+          }
+        } else {
+          const moved = path.join(userDir, f.filename);
+          fs.renameSync(inputPath, moved);
+          finalPath = moved;
+        }
+        outUrls.push('/' + finalPath.replace(/\\/g,'/'));
+      } catch (perFileErr) {
+        console.error('Per-file upload processing error:', perFileErr && perFileErr.message ? perFileErr.message : perFileErr);
       }
-      outUrls.push('/' + finalPath.replace(/\\/g,'/'));
     }
 
     res.json({ files: outUrls });
   } catch (e) {
-    res.status(500).json({ error: 'Upload failed' });
+    console.error('Portfolio upload failed:', e && e.message ? e.message : e);
+    res.status(500).json({ error: 'Upload failed: server error' });
   }
 });
 
