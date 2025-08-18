@@ -1,0 +1,17 @@
+.wizard-container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.wizard-header h1 { margin-bottom: 8px; }
+.progress-bar { width: 100%; height: 6px; background: #eee; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+.progress { height: 100%; background: #4f46e5; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 16px; font-size: 12px; }
+.step { background: #f7f7f7; padding: 6px; border-radius: 4px; text-align: center; }
+.step.active { background: #e0e7ff; color: #1f2937; font-weight: 600; }
+.section { background: #fff; border: 1px solid #eee; padding: 16px; border-radius: 8px; }
+.row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.skills-input { display: flex; gap: 8px; }
+.skills-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.skill-tag { background: #eef2ff; color: #3730a3; padding: 6px 10px; border-radius: 16px; display: inline-flex; align-items: center; gap: 6px; }
+.wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+.info { color: #2563eb; }
+@media (max-width: 768px) {
+  .steps { grid-template-columns: repeat(2, 1fr); }
+}

@@ -152,7 +152,54 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
-  }
+  },
+  username: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true,
+    lowercase: true,
+    trim: true
+  },
+  headline: { type: String, default: '' },
+  tagline: { type: String, default: '' },
+  languages: [{ name: String, level: String }],
+  experience: [{ company: String, role: String, startDate: Date, endDate: Date, description: String }],
+  education: [{ school: String, degree: String, startDate: Date, endDate: Date }],
+  certifications: [{ name: String, issuer: String, date: Date, credentialUrl: String }],
+  portfolio: [{
+    title: String,
+    description: String,
+    mediaUrls: [String],
+    mediaType: { type: String, enum: ['image', 'video', 'pdf', 'other'], default: 'image' },
+    links: [String],
+    watermarked: { type: Boolean, default: false }
+  }],
+  preferencesExtended: {
+    availabilityHours: Number,
+    availabilityDays: [String],
+    remote: { type: Boolean, default: true },
+    local: { type: Boolean, default: false },
+    rateType: { type: String, enum: ['hourly', 'fixed'], default: 'hourly' },
+    minProject: Number
+  },
+  socialLinksExtended: {
+    behance: String,
+    dribbble: String
+  },
+  bannerUrl: { type: String, default: '' },
+  visibility: {
+    showEmail: { type: Boolean, default: false },
+    showPhone: { type: Boolean, default: false },
+    sharePortfolioOnlyViaInvite: { type: Boolean, default: false }
+  },
+  modes: {
+    freelancer: { type: Boolean, default: true },
+    client: { type: Boolean, default: false }
+  },
+  profileCompletion: { type: Number, default: 0 },
+  badges: { type: [String], default: [] }
+
 }, {
   timestamps: true
 });
@@ -163,6 +210,8 @@ userSchema.index({ skills: 1 });
 userSchema.index({ location: 1 });
 userSchema.index({ rating: -1 });
 userSchema.index({ isActive: 1, isSuspended: 1 });
+userSchema.index({ username: 1 }, { unique: true, sparse: true });
+
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
