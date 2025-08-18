@@ -153,9 +153,14 @@ const Profile = () => {
       <div className="profile-header">
         <h1>Edit Profile</h1>
         <p>Manage your profile information and settings</p>
+        <div className="profile-header-actions">
+          <button form="edit-profile-form" type="submit" disabled={saving} className="btn btn-primary">
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="profile-form">
+      <form id="edit-profile-form" onSubmit={handleSubmit} className="profile-form">
         <div className="profile-section">
           <h2>Profile Picture</h2>
           <FileUpload
