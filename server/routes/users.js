@@ -222,6 +222,55 @@ router.put('/profile', authenticateToken, uploadProfilePicture, validateProfileP
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    const clip = (v, n) => String(v || '').trim().slice(0, n);
+    const sanitizeArray = (arr, mapFn) => Array.isArray(arr) ? arr.slice(0, 50).map(mapFn) : undefined;
+
+    if (req.body.experience) {
+      req.body.experience = sanitizeArray(req.body.experience, it => ({
+        company: clip(it.company, 120),
+        role: clip(it.role, 120),
+        startDate: clip(it.startDate, 24),
+        endDate: clip(it.endDate, 24),
+        description: clip(it.description, 2000)
+      }));
+    }
+    if (req.body.education) {
+      req.body.education = sanitizeArray(req.body.education, it => ({
+        school: clip(it.school, 160),
+        degree: clip(it.degree, 160),
+        startDate: clip(it.startDate, 24),
+        endDate: clip(it.endDate, 24)
+      }));
+    }
+    if (req.body.certifications) {
+      req.body.certifications = sanitizeArray(req.body.certifications, it => ({
+        name: clip(it.name, 200),
+        issuer: clip(it.issuer, 160),
+        date: clip(it.date, 24),
+        credentialUrl: clip(it.credentialUrl, 400)
+      }));
+    }
+    if (req.body.languages) {
+      const allowed = new Set(['Beginner','Intermediate','Advanced','Native']);
+      req.body.languages = sanitizeArray(req.body.languages, it => ({
+        name: clip(it.name, 80),
+        level: allowed.has(String(it.level || '').trim()) ? it.level : 'Intermediate'
+      }));
+    }
+    if (req.body.skills) {
+      req.body.skills = sanitizeArray(req.body.skills, it => clip(it, 60));
+    }
+    if (req.body.portfolio) {
+      req.body.portfolio = sanitizeArray(req.body.portfolio, it => ({
+        title: clip(it.title, 160),
+        description: clip(it.description, 2000),
+        mediaUrls: Array.isArray(it.mediaUrls) ? it.mediaUrls.slice(0, 10).map(u => clip(u, 400)) : [],
+        mediaType: clip(it.mediaType, 40),
+        links: Array.isArray(it.links) ? it.links.slice(0, 10).map(u => clip(u, 400)) : [],
+        watermarked: !!it.watermarked
+      }));
+    }
     
     const allowedUpdates = [
       'firstName', 'lastName', 'bio', 'skills', 'hourlyRate',

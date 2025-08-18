@@ -393,6 +393,25 @@ cat server/.env.local
 - **Real-time Updates**: Dynamic dashboard data
 - **Modern UI**: Clean, professional design with CSS animations
 
+### Profile & Onboarding (Phase 2)
+
+- Public profile route: GET /api/public-profiles/:username
+- Username management:
+  - GET /api/users/username-availability?username=foo
+  - PUT /api/users/me/username { "username": "foo" }
+- Profile updates: PUT /api/users/profile accepts:
+  - Basic: firstName, lastName, headline, tagline, bio, skills, hourlyRate, location, timezone, phone
+  - Experience: experience[], education[], certifications[], languages[]
+  - Portfolio: portfolio[] (title, description, mediaUrls[], mediaType, links[], watermarked), bannerUrl
+  - Preferences/Branding: preferencesExtended, visibility, modes, socialLinks, socialLinksExtended
+- Portfolio uploads: POST /api/portfolio/upload
+  - Multipart form field: files (up to 10 files)
+  - Max file size: 20MB each
+  - Allowed: images, pdf/doc/docx, txt, mp4, mov
+  - Query: watermark=true|false
+- Public URL pattern for profiles: https://fetchwork.net/freelancer/:username
+
+
 ## 📡 API Endpoints
 
 ### Authentication Routes
