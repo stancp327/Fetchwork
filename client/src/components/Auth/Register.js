@@ -19,6 +19,9 @@ const Register = () => {
   const [passwordStrength, setPasswordStrength] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+  const [resendCooldownUntil, setResendCooldownUntil] = useState(0);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -65,6 +68,39 @@ const Register = () => {
     }
     
     setLoading(false);
+  const handleResend = async () => {
+    if (!formData.email) {
+      setResendMsg('Enter your email above, then click Resend.');
+      return;
+    }
+    try {
+      setResendLoading(true);
+      setResendMsg('');
+      const resp = await fetch(`${getApiBaseUrl()}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+      if (resp.ok) {
+        setResendMsg('If an account exists, a verification email has been sent.');
+      } else if (resp.status === 429) {
+        setResendMsg('Too many requests. Please try again later.');
+      } else {
+        setResendMsg('Unable to resend right now. Please try again later.');
+      }
+    } catch (e) {
+      setResendMsg('Unable to resend right now. Please try again later.');
+      if (resp.ok) {
+        setResendMsg('If an account exists, a verification email has been sent.');
+        setResendCooldownUntil(Date.now() + cooldownMs);
+      } else if (resp.status === 429) {
+
+    } finally {
+      setResendLoading(false);
+    }
+  };
+  const cooldownMs = 15000;
+  const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
   };
 
   const handleGoogleLogin = () => {
@@ -223,6 +259,18 @@ const Register = () => {
           <button type="submit" disabled={loading} className="btn-primary btn-mobile-friendly">
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
+        <div className="form-actions" style={{ marginTop: '8px' }}>
+          <button type="button" className="link-button" onClick={handleResend} disabled={resendLoading}>
+          <button type="button" className="link-button" onClick={handleResend} disabled={!canResend}>
+            {resendLoading ? 'Resending…' : 'Resend verification email'}
+          </button>
+
+            {resendLoading ? 'Resending…' : 'Resend verification email'}
+          </button>
+        </div>
+        {resendMsg && <div className="info-message">{resendMsg}</div>}
+        {!canResend && <div className="info-message">Please wait a moment before requesting again.</div>}
+
         </form>
 
         <div className="auth-divider">

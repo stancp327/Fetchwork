@@ -955,7 +955,22 @@ Notes:
   - Production: CLIENT_URL=https://fetchwork.net
     - SOCKET_CORS_ORIGIN=https://fetchwork.net[,https://www.fetchwork.net]
 - Cutover policy: if you must support two frontends temporarily, set SOCKET_CORS_ORIGIN with a comma-separated list for both origins, validate, then remove the legacy origin immediately after cutover.
-## Vercel project consolidation checklist\n\n- Keep exactly two Vercel projects:\n  - Production: fetchwork (custom domain + fetchwork.vercel.app)\n  - Staging: fetchwork-temp (fetchwork-temp.vercel.app)\n- Before deleting any duplicates (e.g., fetchwork-wkmt, fetchworkfetchwork-production):\n  - Export environment variables from the duplicate projects\n  - Compare and merge any unique env values into the canonical projects above\n  - Verify that the production custom domain (fetchwork.net and www.fetchwork.net if used) is attached to the fetchwork project\n  - Confirm the staging project is accessed via fetchwork-temp.vercel.app only\n- Validate after consolidation:\n  - Client env on both Vercel projects includes REACT_APP_API_URL=https://fetchwork-1.onrender.com\n  - Optional: REACT_APP_SOCKET_URL=https://fetchwork-1.onrender.com during cutovers only, then remove\n  - Backend (Render) staging: SOCKET_CORS_ORIGIN=https://fetchwork-temp.vercel.app\n  - Backend (Render) production: SOCKET_CORS_ORIGIN=https://fetchwork.net[,https://www.fetchwork.net]\n- Once validated, safely delete the duplicate Vercel projects.
+## Vercel project consolidation checklist
+
+- Keep exactly two Vercel projects:
+  - Production: fetchwork (custom domain + fetchwork.vercel.app)
+  - Staging: fetchwork-temp (fetchwork-temp.vercel.app)
+- Before deleting any duplicate projects:
+  - Export environment variables from the duplicate projects
+  - Compare and merge any unique env values into the canonical projects above
+  - Verify that the production custom domain (fetchwork.net and www.fetchwork.net if used) is attached to the fetchwork project
+  - Confirm the staging project is accessed via fetchwork-temp.vercel.app only
+- Validate after consolidation:
+  - Client env on both Vercel projects includes REACT_APP_API_URL=https://fetchwork-1.onrender.com
+  - Optional: REACT_APP_SOCKET_URL=https://fetchwork-1.onrender.com during cutovers only, then remove
+  - Backend (Render) staging: SOCKET_CORS_ORIGIN=https://fetchwork-temp.vercel.app
+  - Backend (Render) production: SOCKET_CORS_ORIGIN=https://fetchwork.net[,https://www.fetchwork.net]
+- Once validated, safely delete duplicate Vercel projects.
 ---
 
 ## Authentication updates (2025-08-13)
@@ -978,7 +993,7 @@ Future work: migrate admin checks fully to role and deprecate ADMIN_EMAILS/isAdm
 Canonical Vercel projects:
 - Production: fetchwork (custom domain + fetchwork.vercel.app)
 - Staging: fetchwork-temp
-Archive/rename duplicates (e.g., fetchworkfetchwork-production). If fetchwork-wkmt is not a separate marketing site, consolidate it into the above two.
+Archive or rename any duplicate projects. Consolidate everything into the two canonical projects listed above.
 
 
 **Last Updated**: January 22, 2025  
