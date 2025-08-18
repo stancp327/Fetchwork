@@ -44,7 +44,7 @@ export const createPersonSchema = (user) => ({
   "name": `${user.firstName} ${user.lastName}`,
   "description": user.bio,
   "image": user.profilePicture,
-  "url": `${window.location.origin}/profile/${user._id}`,
+  "url": `${window.location.origin}/freelancer/${user.username || user._id}`,
   "jobTitle": user.skills?.[0] || "Freelancer",
   "worksFor": {
     "@type": "Organization",

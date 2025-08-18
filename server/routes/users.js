@@ -7,6 +7,11 @@ const { Message } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { uploadProfilePicture } = require('../middleware/upload');
 const { validateProfilePictureUpdate } = require('../middleware/validation');
+const { normalize, isValid } = require('../utils/username');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
 
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
@@ -148,6 +153,44 @@ router.get('/profile', authenticateToken, async (req, res) => {
     console.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
+router.get('/username-availability', authenticateToken, async (req, res) => {
+  try {
+    const raw = req.query.username || '';
+    const username = normalize(raw);
+    if (!isValid(username)) {
+      return res.json({ available: false, reason: 'invalid' });
+    }
+    const exists = await User.findOne({ username }).select('_id').lean();
+    if (exists) {
+      return res.json({ available: false, reason: 'taken' });
+    }
+    return res.json({ available: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to check availability' });
+  }
+});
+
+router.put('/me/username', authenticateToken, async (req, res) => {
+  try {
+    const raw = req.body.username || '';
+    const username = normalize(raw);
+    if (!isValid(username)) {
+      return res.status(400).json({ error: 'Invalid username' });
+    }
+    const exists = await User.findOne({ username, _id: { $ne: req.user.userId } }).select('_id').lean();
+    if (exists) {
+      return res.status(409).json({ error: 'Username already taken' });
+    }
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    user.username = username;
+    await user.save();
+    return res.json({ username });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to set username' });
+  }
+});
+
 });
 
 router.put('/profile', authenticateToken, uploadProfilePicture, validateProfilePictureUpdate, async (req, res) => {
@@ -160,7 +203,10 @@ router.put('/profile', authenticateToken, uploadProfilePicture, validateProfileP
     
     const allowedUpdates = [
       'firstName', 'lastName', 'bio', 'skills', 'hourlyRate',
-      'location', 'timezone', 'portfolio', 'socialLinks', 'phone'
+      'location', 'timezone', 'portfolio', 'socialLinks', 'phone',
+      'headline', 'tagline', 'languages', 'experience', 'education',
+      'certifications', 'preferencesExtended', 'socialLinksExtended',
+      'bannerUrl', 'visibility', 'modes'
     ];
     
     allowedUpdates.forEach(field => {

@@ -54,6 +54,12 @@ const uploadProfilePicture = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 }).single('profilePicture');
 
+const uploadPortfolio = multer({
+  storage: localStorage,
+  fileFilter,
+  limits: { fileSize: 20 * 1024 * 1024 }
+}).array('files', 10);
+
 const uploadJobAttachments = multer({
   storage: localStorage,
   fileFilter,
@@ -69,5 +75,6 @@ const uploadDisputeEvidence = multer({
 module.exports = {
   uploadProfilePicture,
   uploadJobAttachments,
-  uploadDisputeEvidence
+  uploadDisputeEvidence,
+  uploadPortfolio
 };

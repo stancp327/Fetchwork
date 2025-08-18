@@ -23,6 +23,8 @@ const ServiceDetails = React.lazy(() => import('./components/Services/ServiceDet
 const PostJob = React.lazy(() => import('./components/Jobs/PostJob'));
 const JobDetails = React.lazy(() => import('./components/Jobs/JobDetails'));
 const Profile = React.lazy(() => import('./components/Profile/Profile'));
+const PublicProfile = React.lazy(() => import('./components/Profile/PublicProfile'));
+
 const FreelancerDiscovery = React.lazy(() => import('./components/Freelancers/FreelancerDiscovery'));
 const Messages = React.lazy(() => import('./components/Messages/Messages'));
 const Payments = React.lazy(() => import('./components/Payments/Payments'));
@@ -31,6 +33,8 @@ const UniversalSearch = React.lazy(() => import('./components/Search/UniversalSe
 const AdminDashboard = React.lazy(() => import('./components/Admin/AdminDashboard'));
 const ProjectManagement = React.lazy(() => import('./components/Projects/ProjectManagement'));
 const Security = React.lazy(() => import('./components/Security/Security'));
+const OnboardingWizard = React.lazy(() => import('./components/Onboarding/ProfileWizard/Wizard'));
+
 const ContactUs = React.lazy(() => import('./components/common/ContactUs'));
 const Support = React.lazy(() => import('./components/common/Support'));
 
@@ -176,6 +180,11 @@ function AppContent() {
               <Dashboard />
             </ProtectedRoute>
           } />
+          <Route path="/onboarding/profile" element={
+            <ProtectedRoute>
+              <OnboardingWizard />
+            </ProtectedRoute>
+          } />
           <Route path="/browse-jobs" element={
             <ProtectedRoute>
               <BrowseJobs />
@@ -239,6 +248,7 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/freelancers" element={<FreelancerDiscovery />} />
+          <Route path="/freelancer/:username" element={<PublicProfile />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/support" element={<Support />} />
           <Route path="/" element={<Home />} />

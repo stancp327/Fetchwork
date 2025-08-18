@@ -18,6 +18,9 @@ const adminRoutes = require('./routes/admin');
 // Load .env.local first (for local development), then .env as fallback
 require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
+const publicProfiles = require('./routes/publicProfiles');
+const portfolioRoutes = require('./routes/portfolio');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -83,6 +86,8 @@ app.set('io', io);
 app.set('trust proxy', true);
 
 app.use(helmet());
+app.use('/uploads', express.static('uploads'));
+
 app.use(cors());
 
 app.use(session({
@@ -117,7 +122,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         user.googleId = profile.id;
         if (!Array.isArray(user.providers)) user.providers = [];
         if (!user.providers.includes('google')) user.providers.push('google');
-        await user.save();
+
+        await user.save;
         return done(null, user);
       }
       
@@ -196,6 +202,9 @@ passport.deserializeUser(async (id, done) => {
     done(error, null);
   }
 });
+
+app.use('/api/public-profiles', publicProfiles);
+app.use('/api/portfolio', portfolioRoutes);
 
 const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
