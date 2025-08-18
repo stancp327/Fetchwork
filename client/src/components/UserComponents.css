@@ -1357,6 +1357,25 @@
   color: #111827;
   font-size: 0.85rem;
   line-height: 1;
+/* Discovery filter helper text and budget range layout */
+.filters .helper-text {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.filters .range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filters .range-row input[type="number"] {
+  flex: 1;
+}
+.filters .range-sep {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 }
 
   align-items: center;

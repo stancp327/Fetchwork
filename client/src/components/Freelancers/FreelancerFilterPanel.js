@@ -37,23 +37,23 @@ const FreelancerFilterPanel = ({ filters, onFilterChange }) => {
       </div>
 
       <div className="filter-group">
-        <label>Min Hourly Rate</label>
-        <input
-          type="number"
-          placeholder="$0"
-          value={filters.minRate}
-          onChange={(e) => handleFilterChange('minRate', e.target.value)}
-        />
-      </div>
-
-      <div className="filter-group">
-        <label>Max Hourly Rate</label>
-        <input
-          type="number"
-          placeholder="No limit"
-          value={filters.maxRate}
-          onChange={(e) => handleFilterChange('maxRate', e.target.value)}
-        />
+        <label>Budget range</label>
+        <div className="range-row">
+          <input
+            type="number"
+            placeholder="$0"
+            value={filters.minRate}
+            onChange={(e) => handleFilterChange('minRate', e.target.value)}
+          />
+          <span className="range-sep">to</span>
+          <input
+            type="number"
+            placeholder="No limit"
+            value={filters.maxRate}
+            onChange={(e) => handleFilterChange('maxRate', e.target.value)}
+          />
+        </div>
+        <div className="helper-text">Rates are negotiated per job; these filters are for discovery only.</div>
       </div>
 
       <div className="filter-group">
