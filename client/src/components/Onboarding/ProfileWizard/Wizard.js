@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../../../../utils/api';
+import { apiRequest, getApiBaseUrl } from '../../../utils/api';
 import './Wizard.css';
 
 const steps = [
@@ -21,8 +21,10 @@ const Wizard = () => {
     firstName: '', lastName: '', headline: '', tagline: '',
     skills: [], languages: [], experience: [], education: [],
     certifications: [], hourlyRate: 0, preferencesExtended: { remote: true, local: false, rateType: 'hourly' },
-    bannerUrl: '', visibility: { showEmail: false, showPhone: false }, modes: { freelancer: true, client: false }
+    bannerUrl: '', visibility: { showEmail: false, showPhone: false }, modes: { freelancer: true, client: false },
+    username: '', portfolio: []
   });
+  const [usernameInput, setUsernameInput] = useState('');
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
@@ -39,8 +41,11 @@ const Wizard = () => {
           skills: u.skills || [],
           hourlyRate: u.hourlyRate || 0,
           visibility: u.visibility || prev.visibility,
-          modes: u.modes || prev.modes
+          modes: u.modes || prev.modes,
+          username: u.username || '',
+          portfolio: u.portfolio || []
         }));
+        setUsernameInput(u.username || '');
       } catch {}
     })();
   }, []);
@@ -150,8 +155,87 @@ const Wizard = () => {
           </div>
         )}
 
+        {steps[stepIdx].key === 'portfolio' && (
+          <div className="section">
+            <div className="row">
+              <label>Upload portfolio files</label>
+              <input type="file" multiple onChange={async (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                try {
+                  setSaving(true);
+                  const form = new FormData();
+                  files.forEach(f => form.append('files', f));
+                  const token = localStorage.getItem('token') || '';
+                  const resp = await fetch(`${getApiBaseUrl()}/api/portfolio/upload?watermark=true`, {
+                    method: 'POST',
+                    headers: { Authorization: token ? `Bearer ${token}` : '' },
+                    body: form
+                  });
+                  if (!resp.ok) throw new Error();
+                  const json = await resp.json();
+                  const urls = json.files || [];
+                  setData(d => ({ ...d, portfolio: [...(d.portfolio || []), ...urls.map(u => ({ title: '', description: '', mediaUrls: [u] }))] }));
+                  setMsg('Uploaded');
+                } catch {
+                  setMsg('Upload failed');
+                } finally {
+                  setSaving(false);
+                  setTimeout(() => setMsg(''), 1500);
+                }
+              }} />
+              <small>Images will be watermarked for protection.</small>
+            </div>
+            {!!data.portfolio?.length && (
+              <div className="gallery-grid">
+                {data.portfolio.flatMap((p, idx) =>
+                  (p.mediaUrls || []).map((url, i) => {
+                    const lower = String(url).toLowerCase();
+                    const isVideo = lower.endsWith('.mp4') || lower.endsWith('.mov');
+                    return (
+                      <a key={`${idx}-${i}`} href={url} target="_blank" rel="noreferrer">
+                        {isVideo ? (
+                          <video src={url} controls style={{ width: '100%', height: 'auto' }} />
+                        ) : (
+                          <img src={url} alt="Portfolio" />
+                        )}
+                      </a>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {steps[stepIdx].key === 'branding' && (
           <div className="section">
+            <div className="row">
+              <label>Custom URL</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span>fetchwork.com/freelancer/</span>
+                <input value={usernameInput} onChange={e => setUsernameInput(e.target.value)} placeholder="username" />
+                <button type="button" onClick={async () => {
+                  const u = (usernameInput || '').trim();
+                  if (!u) return;
+                  try {
+                    const avail = await apiRequest(`/api/users/username-availability?username=${encodeURIComponent(u)}`);
+                    if (avail && avail.available) {
+                      const saved = await apiRequest('/api/users/me/username', { method: 'PUT', body: JSON.stringify({ username: u }) });
+                      setData(d => ({ ...d, username: saved.username }));
+                      setMsg('Username set');
+                    } else {
+                      setMsg('Username is taken');
+                    }
+                  } catch {
+                    setMsg('Failed to set username');
+                  } finally {
+                    setTimeout(() => setMsg(''), 1500);
+                  }
+                }}>Set</button>
+              </div>
+              <small>Your public profile will be at /freelancer/username</small>
+            </div>
             <div className="row">
               <label>Show email publicly</label>
               <input type="checkbox" checked={!!data.visibility?.showEmail} onChange={e => setData(d => ({ ...d, visibility: { ...d.visibility, showEmail: e.target.checked } }))} />
@@ -174,7 +258,7 @@ const Wizard = () => {
           </div>
         )}
 
-        {steps[stepIdx].key !== 'basic' && steps[stepIdx].key !== 'skills' && steps[stepIdx].key !== 'branding' && (
+        {steps[stepIdx].key !== 'basic' && steps[stepIdx].key !== 'skills' && steps[stepIdx].key !== 'branding' && steps[stepIdx].key !== 'portfolio' && (
           <div className="section">
             <p>Coming soon in this phase: {steps[stepIdx].title}</p>
           </div>

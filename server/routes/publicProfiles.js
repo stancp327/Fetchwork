@@ -15,8 +15,8 @@ router.get('/:username', async (req, res) => {
       skills: user.skills || [],
       languages: user.languages || [],
       bio: user.bio || '',
-      profilePicture: user.profilePicture || '',
-      bannerUrl: user.bannerUrl || '',
+      profilePicture: user.profilePicture ? `/${String(user.profilePicture).replace(/^\/+/, '')}` : '',
+      bannerUrl: user.bannerUrl ? `/${String(user.bannerUrl).replace(/^\/+/, '')}` : '',
       socialLinks: {
         github: user.socialLinks?.github || '',
         linkedin: user.socialLinks?.linkedin || '',
@@ -28,7 +28,7 @@ router.get('/:username', async (req, res) => {
       portfolio: Array.isArray(user.portfolio) ? user.portfolio.map(p => ({
         title: p.title,
         description: p.description,
-        mediaUrls: p.mediaUrls,
+        mediaUrls: (p.mediaUrls || []).map(u => (String(u).startsWith('/') ? u : `/${u}`)),
         mediaType: p.mediaType,
         links: p.links || [],
         watermarked: !!p.watermarked

@@ -19,13 +19,15 @@ const fileFilter = (req, file, cb) => {
     'application/pdf': ['.pdf'],
     'application/msword': ['.doc'],
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-    'text/plain': ['.txt']
+    'text/plain': ['.txt'],
+    'video/mp4': ['.mp4'],
+    'video/quicktime': ['.mov']
   };
 
   if (allowedTypes[file.mimetype]) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only images, PDFs, and documents are allowed.'), false);
+    cb(new Error('Invalid file type. Only images, PDFs, documents, and select videos (mp4, mov) are allowed.'), false);
   }
 };
 

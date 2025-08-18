@@ -11,6 +11,23 @@ const { normalize, isValid } = require('../utils/username');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+function computeProfileCompletion(user) {
+  let total = 0;
+  let achieved = 0;
+  const checks = [
+    Boolean(user.profilePicture),
+    Boolean(user.headline && user.headline.trim().length >= 3),
+    Array.isArray(user.skills) && user.skills.length >= 5,
+    Array.isArray(user.portfolio) && user.portfolio.length > 0,
+    Number(user.hourlyRate) > 0 || (user.preferencesExtended && (user.preferencesExtended.rateType === 'fixed')),
+    Boolean(user.username && user.username.trim().length > 0),
+    Boolean(user.bio && user.bio.trim().length >= 30)
+  ];
+  total = checks.length;
+  achieved = checks.filter(Boolean).length;
+  const pct = Math.round((achieved / Math.max(total, 1)) * 100);
+  return Math.max(0, Math.min(100, pct));
+}
 
 
 router.get('/dashboard', authenticateToken, async (req, res) => {
@@ -153,6 +170,8 @@ router.get('/profile', authenticateToken, async (req, res) => {
     console.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
+});
+
 router.get('/username-availability', authenticateToken, async (req, res) => {
   try {
     const raw = req.query.username || '';
@@ -184,13 +203,16 @@ router.put('/me/username', authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
     user.username = username;
+    user.profileCompletion = computeProfileCompletion(user);
+    if (user.profileCompletion >= 80) {
+      user.badges = Array.isArray(user.badges) ? user.badges : [];
+      if (!user.badges.includes('Rising Star')) user.badges.push('Rising Star');
+    }
     await user.save();
     return res.json({ username });
   } catch (e) {
     return res.status(500).json({ error: 'Failed to set username' });
   }
-});
-
 });
 
 router.put('/profile', authenticateToken, uploadProfilePicture, validateProfilePictureUpdate, async (req, res) => {
@@ -223,6 +245,11 @@ router.put('/profile', authenticateToken, uploadProfilePicture, validateProfileP
       user.profilePicture = req.file.path || req.file.secure_url || `/uploads/${req.file.filename}`;
     }
     
+    user.profileCompletion = computeProfileCompletion(user);
+    if (user.profileCompletion >= 80) {
+      user.badges = Array.isArray(user.badges) ? user.badges : [];
+      if (!user.badges.includes('Rising Star')) user.badges.push('Rising Star');
+    }
     await user.save();
     
     res.json({

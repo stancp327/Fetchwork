@@ -123,7 +123,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         if (!Array.isArray(user.providers)) user.providers = [];
         if (!user.providers.includes('google')) user.providers.push('google');
 
-        await user.save;
+        await user.save();
         return done(null, user);
       }
       
