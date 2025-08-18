@@ -134,7 +134,6 @@ const Wizard = () => {
       if (Object.keys(body).length) {
         await apiRequest('/api/users/profile', {
           method: 'PUT',
-          headers: {},
           body: JSON.stringify(body)
         });
       }
