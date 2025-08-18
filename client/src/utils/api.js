@@ -11,23 +11,32 @@ export const getApiBaseUrl = () => {
 export const apiRequest = async (endpoint, options = {}) => {
   const baseUrl = getApiBaseUrl();
   const token = localStorage.getItem('token');
-  
-  const defaultOptions = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers
-    }
+
+  const isFormData = options.body instanceof FormData;
+
+  const defaultHeaders = {
+    ...(token && { 'Authorization': `Bearer ${token}` }),
   };
 
+  const headers = isFormData
+    ? { ...defaultHeaders, ...options.headers }
+    : { 'Content-Type': 'application/json', ...defaultHeaders, ...options.headers };
+
   const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...defaultOptions,
-    ...options
+    ...options,
+    headers
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`);
+    let errText = response.statusText;
+    try {
+      const data = await response.json();
+      errText = data?.error || data?.message || errText;
+    } catch (e) {}
+    throw new Error(errText);
   }
+
+  if (response.status === 204) return null;
 
   return response.json();
 };
