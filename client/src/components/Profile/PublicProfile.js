@@ -51,11 +51,19 @@ const PublicProfile = () => {
           <h2>Portfolio</h2>
           <div className="gallery-grid">
             {data.portfolio.flatMap((p, idx) =>
-              (p.mediaUrls || []).map((url, i) => (
-                <a key={`${idx}-${i}`} href={url} target="_blank" rel="noreferrer">
-                  <img src={url} alt={p.title || 'Portfolio'} />
-                </a>
-              ))
+              (p.mediaUrls || []).map((url, i) => {
+                const lower = String(url).toLowerCase();
+                const isVideo = lower.endsWith('.mp4') || lower.endsWith('.mov');
+                return (
+                  <a key={`${idx}-${i}`} href={url} target="_blank" rel="noreferrer">
+                    {isVideo ? (
+                      <video src={url} controls style={{ width: '100%', height: 'auto' }} />
+                    ) : (
+                      <img src={url} alt={p.title || 'Portfolio'} />
+                    )}
+                  </a>
+                );
+              })
             )}
           </div>
         </div>
