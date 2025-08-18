@@ -12,6 +12,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
+  const [resendCooldownUntil, setResendCooldownUntil] = useState(0);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -63,9 +64,16 @@ const Login = () => {
     } catch (e) {
       setResendMsg('Unable to resend right now. Please try again later.');
     } finally {
+      if (resp.ok) {
+        setResendMsg('If an account exists, a verification email has been sent.');
+        setResendCooldownUntil(Date.now() + cooldownMs);
+      } else if (resp.status === 429) {
+
       setResendLoading(false);
     }
   };
+  const cooldownMs = 15000;
+  const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
     setLoading(false);
   };
 
@@ -128,9 +136,15 @@ const Login = () => {
           <div className="form-actions" style={{ marginTop: '8px' }}>
             <button type="button" className="link-button" onClick={handleResend} disabled={resendLoading}>
               {resendLoading ? 'Resending…' : 'Resend verification email'}
+            <button type="button" className="link-button" onClick={handleResend} disabled={!canResend}>
+              {resendLoading ? 'Resending…' : 'Resend verification email'}
+            </button>
+
             </button>
           </div>
           {resendMsg && <div className="info-message">{resendMsg}</div>}
+          {!canResend && <div className="info-message">Please wait a moment before requesting again.</div>}
+
           </div>
 
           {error && <div className="error-message">{error}</div>}
