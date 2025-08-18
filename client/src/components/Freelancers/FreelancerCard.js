@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
 
 const FreelancerCard = ({ freelancer }) => {
+  const profilePath = `/freelancer/${freelancer.username || freelancer._id}`;
   return (
     <div className="freelancer-card">
       <div className="freelancer-header">
@@ -14,11 +15,12 @@ const FreelancerCard = ({ freelancer }) => {
         <div className="freelancer-info">
           <h3>{freelancer.firstName} {freelancer.lastName}</h3>
           <div className="freelancer-rating">
-            <span className="rating">★ {freelancer.rating.toFixed(1)}</span>
-            <span className="reviews">({freelancer.totalReviews} reviews)</span>
+            <span className="rating">★ {Number(freelancer.rating || 0).toFixed(1)}</span>
+            <span className="reviews">({freelancer.totalReviews || 0} reviews)</span>
           </div>
-          <div className="freelancer-rate">
-            {formatCurrency(freelancer.hourlyRate)}/hour
+          <div className="freelancer-card-stats">
+            <span className="stat-badge">⭐ {Number(freelancer.rating || 0).toFixed(1)}</span>
+            <span className="stat-badge">✓ {freelancer.completedJobs || 0} jobs</span>
           </div>
         </div>
       </div>
@@ -28,21 +30,21 @@ const FreelancerCard = ({ freelancer }) => {
       </div>
 
       <div className="freelancer-skills">
-        {freelancer.skills.slice(0, 5).map((skill, index) => (
+        {Array.isArray(freelancer.skills) && freelancer.skills.slice(0, 5).map((skill, index) => (
           <span key={index} className="skill-tag">{skill}</span>
         ))}
-        {freelancer.skills.length > 5 && (
+        {Array.isArray(freelancer.skills) && freelancer.skills.length > 5 && (
           <span className="skill-more">+{freelancer.skills.length - 5} more</span>
         )}
       </div>
 
       <div className="freelancer-stats">
         <div className="stat">
-          <span className="stat-value">{freelancer.completedJobs}</span>
+          <span className="stat-value">{freelancer.completedJobs || 0}</span>
           <span className="stat-label">Jobs Completed</span>
         </div>
         <div className="stat">
-          <span className="stat-value">{formatCurrency(freelancer.totalEarnings)}</span>
+          <span className="stat-value">{formatCurrency(freelancer.totalEarnings || 0)}</span>
           <span className="stat-label">Total Earned</span>
         </div>
       </div>
@@ -52,7 +54,7 @@ const FreelancerCard = ({ freelancer }) => {
       </div>
 
       <div className="freelancer-actions">
-        <Link to={`/freelancer/${freelancer._id}`} className="btn btn-primary">
+        <Link to={profilePath} className="btn btn-primary">
           View Profile
         </Link>
         <Link to={`/messages/new?freelancer=${freelancer._id}`} className="btn btn-secondary">

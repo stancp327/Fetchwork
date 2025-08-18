@@ -1342,6 +1342,23 @@
 
 .freelancer-header {
   display: flex;
+/* Discovery card stat badges */
+.freelancer-card .freelancer-card-stats {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.freelancer-card .stat-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
   align-items: center;
   margin-bottom: var(--space-px-15);
 }
