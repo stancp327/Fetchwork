@@ -23,6 +23,8 @@ const Register = () => {
   const [resendMsg, setResendMsg] = useState('');
   const [resendCooldownUntil, setResendCooldownUntil] = useState(0);
   const { register } = useAuth();
+  const cooldownMs = 15000;
+  const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
   const navigate = useNavigate();
 
   const checkPasswordStrength = (password) => {
@@ -68,6 +70,8 @@ const Register = () => {
     }
     
     setLoading(false);
+  };
+
   const handleResend = async () => {
     if (!formData.email) {
       setResendMsg('Enter your email above, then click Resend.');
@@ -83,6 +87,7 @@ const Register = () => {
       });
       if (resp.ok) {
         setResendMsg('If an account exists, a verification email has been sent.');
+        setResendCooldownUntil(Date.now() + cooldownMs);
       } else if (resp.status === 429) {
         setResendMsg('Too many requests. Please try again later.');
       } else {
@@ -90,17 +95,9 @@ const Register = () => {
       }
     } catch (e) {
       setResendMsg('Unable to resend right now. Please try again later.');
-      if (resp.ok) {
-        setResendMsg('If an account exists, a verification email has been sent.');
-        setResendCooldownUntil(Date.now() + cooldownMs);
-      } else if (resp.status === 429) {
-
     } finally {
       setResendLoading(false);
     }
-  };
-  const cooldownMs = 15000;
-  const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
   };
 
   const handleGoogleLogin = () => {
@@ -260,11 +257,7 @@ const Register = () => {
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         <div className="form-actions" style={{ marginTop: '8px' }}>
-          <button type="button" className="link-button" onClick={handleResend} disabled={resendLoading}>
           <button type="button" className="link-button" onClick={handleResend} disabled={!canResend}>
-            {resendLoading ? 'Resending…' : 'Resend verification email'}
-          </button>
-
             {resendLoading ? 'Resending…' : 'Resend verification email'}
           </button>
         </div>

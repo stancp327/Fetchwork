@@ -40,7 +40,9 @@ const Login = () => {
         setError('Please verify your email address before logging in. Check your inbox for a verification link.');
       }
     }
-    
+    setLoading(false);
+  };
+
   const handleResend = async () => {
     if (!email) {
       setResendMsg('Enter your email above, then click Resend.');
@@ -56,6 +58,7 @@ const Login = () => {
       });
       if (resp.ok) {
         setResendMsg('If an account exists, a verification email has been sent.');
+        setResendCooldownUntil(Date.now() + cooldownMs);
       } else if (resp.status === 429) {
         setResendMsg('Too many requests. Please try again later.');
       } else {
@@ -64,18 +67,11 @@ const Login = () => {
     } catch (e) {
       setResendMsg('Unable to resend right now. Please try again later.');
     } finally {
-      if (resp.ok) {
-        setResendMsg('If an account exists, a verification email has been sent.');
-        setResendCooldownUntil(Date.now() + cooldownMs);
-      } else if (resp.status === 429) {
-
       setResendLoading(false);
     }
   };
   const cooldownMs = 15000;
   const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
-    setLoading(false);
-  };
 
   const handleGoogleLogin = () => {
     window.location.href = `${getApiBaseUrl()}/api/auth/google`;
@@ -134,12 +130,8 @@ const Login = () => {
               Forgot your password?
             </Link>
           <div className="form-actions" style={{ marginTop: '8px' }}>
-            <button type="button" className="link-button" onClick={handleResend} disabled={resendLoading}>
-              {resendLoading ? 'Resending…' : 'Resend verification email'}
             <button type="button" className="link-button" onClick={handleResend} disabled={!canResend}>
               {resendLoading ? 'Resending…' : 'Resend verification email'}
-            </button>
-
             </button>
           </div>
           {resendMsg && <div className="info-message">{resendMsg}</div>}
