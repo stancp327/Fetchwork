@@ -214,8 +214,20 @@ router.put('/me/username', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Failed to set username' });
   }
 });
+const maybeUploadProfilePicture = (req, res, next) => {
+  try {
+    const ct = req.headers['content-type'] || '';
+    if (ct.includes('multipart/form-data')) {
+      return uploadProfilePicture(req, res, next);
+    }
+    return next();
+  } catch (e) {
+    return next();
+  }
+};
 
-router.put('/profile', authenticateToken, uploadProfilePicture, validateProfilePictureUpdate, async (req, res) => {
+
+router.put('/profile', authenticateToken, maybeUploadProfilePicture, validateProfilePictureUpdate, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
     
