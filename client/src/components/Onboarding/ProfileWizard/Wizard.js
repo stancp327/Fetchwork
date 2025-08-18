@@ -119,8 +119,8 @@ const Wizard = () => {
             </div>
             <div className="row">
               <label>Headline</label>
-              <input placeholder="e.g., Full‑Stack Web Developer" value={data.headline} onChange={e => setData(d => ({ ...d, headline: e.target.value }))} />
-              <small>Tip: A strong headline: “Certified Web Developer | React & Node.js Expert”</small>
+              <input placeholder="e.g., Full-Stack Web Developer" value={data.headline} onChange={e => setData(d => ({ ...d, headline: e.target.value }))} />
+              <small>Tip: A strong headline: "Certified Web Developer | React &amp; Node.js Expert"</small>
             </div>
             <div className="row">
               <label>Tagline</label>
