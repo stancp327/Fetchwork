@@ -430,6 +430,8 @@ app.get('/api/auth/verify-email', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Email verification failed' });
   }
+});
+
 app.post('/api/auth/resend-verification', async (req, res) => {
   try {
     const { email } = req.body || {};
@@ -500,8 +502,6 @@ app.post('/api/auth/resend-verification', async (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: 'Failed to send verification email' });
   }
-});
-
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
