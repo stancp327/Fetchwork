@@ -2,6 +2,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const path = require('path');
+const fs = require('fs');
 
 if (process.env.CLOUDINARY_URL) {
   cloudinary.config({
@@ -40,9 +41,17 @@ const cloudinaryStorage = new CloudinaryStorage({
   }
 });
 
+function ensureDir(dir) {
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (e) {}
+}
+
 const localStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    const base = 'uploads/';
+    ensureDir(base);
+    cb(null, base);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
