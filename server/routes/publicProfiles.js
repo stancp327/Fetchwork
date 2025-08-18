@@ -15,6 +15,10 @@ router.get('/:username', async (req, res) => {
       skills: user.skills || [],
       languages: user.languages || [],
       bio: user.bio || '',
+      experience: user.experience || [],
+      education: user.education || [],
+      certifications: user.certifications || [],
+      hourlyRate: user.hourlyRate || 0,
       profilePicture: user.profilePicture ? `/${String(user.profilePicture).replace(/^\/+/, '')}` : '',
       bannerUrl: user.bannerUrl ? `/${String(user.bannerUrl).replace(/^\/+/, '')}` : '',
       socialLinks: {
