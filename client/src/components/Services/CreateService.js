@@ -110,6 +110,11 @@ const CreateService = () => {
       };
 
       const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please log in to create a service.');
+        navigate('/login');
+        return;
+      }
       await axios.post(`${getApiBaseUrl()}/api/services`, serviceData, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -123,7 +128,13 @@ const CreateService = () => {
 
     } catch (error) {
       console.error('Failed to create service:', error);
-      setError(error.response?.data?.error || 'Failed to create service');
+      const serverMsg = error.response?.data?.error || error.message;
+      if (error.response?.status === 401) {
+        setError('Your session expired. Please log in again.');
+        navigate('/login');
+      } else {
+        setError(serverMsg || 'Failed to create service');
+      }
     } finally {
       setLoading(false);
     }
@@ -159,6 +170,7 @@ const CreateService = () => {
               onChange={handleInputChange}
               placeholder="e.g. I will create a professional website for your business"
               maxLength={100}
+            required
             />
             {errors.title && <div className="error-text">{errors.title}</div>}
           </div>
@@ -173,6 +185,7 @@ const CreateService = () => {
               placeholder="Describe your service in detail..."
               rows={6}
               maxLength={3000}
+            required
             />
             <div style={{ fontSize: '0.8rem', color: '#6c757d', textAlign: 'right' }}>
               {formData.description.length}/3000 characters
@@ -187,6 +200,7 @@ const CreateService = () => {
               name="category"
               value={formData.category}
               onChange={handleInputChange}
+            required
             >
               <option value="">Select a category</option>
               <option value="web_development">Web Development</option>
@@ -243,6 +257,7 @@ const CreateService = () => {
               value={formData.basicTitle}
               onChange={handleInputChange}
               placeholder="e.g. Basic Website"
+            required
             />
             {errors.basicTitle && <div className="error-text">{errors.basicTitle}</div>}
           </div>
@@ -256,6 +271,7 @@ const CreateService = () => {
               onChange={handleInputChange}
               placeholder="What's included in this package?"
               rows={3}
+            required
             />
             {errors.basicDescription && <div className="error-text">{errors.basicDescription}</div>}
           </div>
@@ -272,6 +288,7 @@ const CreateService = () => {
                 placeholder="25"
                 min="5"
                 step="0.01"
+              required
               />
               {errors.basicPrice && <div className="error-text">{errors.basicPrice}</div>}
             </div>
@@ -286,6 +303,7 @@ const CreateService = () => {
                 onChange={handleInputChange}
                 placeholder="3"
                 min="1"
+              required
               />
               {errors.basicDeliveryTime && <div className="error-text">{errors.basicDeliveryTime}</div>}
             </div>

@@ -1,3 +1,26 @@
+.profile-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.profile-header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 768px) {
+  .profile-form .form-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--color-bg, #fff);
+    padding: 12px 0;
+    z-index: 5;
+    border-top: 1px solid var(--border-color, #e5e7eb);
+  }
+}
+
 .profile-container {
   max-width: 800px;
   margin: 0 auto;

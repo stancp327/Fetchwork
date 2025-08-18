@@ -74,6 +74,7 @@ const Navigation = () => {
         {isAuthenticated ? (
           <>
             <Link to="/dashboard" onClick={closeMobileMenu}>Dashboard</Link>
+            <Link to="/freelancers" onClick={closeMobileMenu}>Discover Freelancers</Link>
             {currentRole === 'freelancer' ? (
               <>
                 <Link to="/browse-jobs" onClick={closeMobileMenu}>Browse Jobs</Link>
@@ -102,6 +103,7 @@ const Navigation = () => {
           </>
         ) : (
           <>
+            <Link to="/freelancers" onClick={closeMobileMenu}>Discover Freelancers</Link>
             <Link to="/browse-jobs" onClick={closeMobileMenu}>Browse Jobs</Link>
             <Link to="/browse-services" onClick={closeMobileMenu}>Browse Services</Link>
             <Link to="/login" onClick={closeMobileMenu}>Login</Link>
