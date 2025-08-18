@@ -193,6 +193,22 @@
   font-size: var(--font-size-lg);
 }
 
+.profile-stats {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stat-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
 @media (max-width: 768px) {
   .profile-container {
     padding: var(--space-px-15);

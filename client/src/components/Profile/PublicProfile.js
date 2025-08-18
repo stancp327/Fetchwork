@@ -38,6 +38,11 @@ const PublicProfile = () => {
           <div className="skills-list">
             {(data.skills || []).map((s, i) => <span key={i} className="skill-tag">{s}</span>)}
           </div>
+          <div className="profile-stats">
+            <span className="stat-badge">⭐ {Number(data.rating || 0).toFixed(1)}</span>
+            <span className="stat-badge">✓ {data.completedJobs || 0} jobs</span>
+          </div>
+
         </div>
       </div>
 

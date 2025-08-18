@@ -1025,3 +1025,30 @@ Archive or rename any duplicate projects. Consolidate everything into the two ca
 **Link to Devin run**: https://app.devin.ai/sessions/9375e0bf42cd410d9fdf014edb91af44
 
 <!-- Deployment trigger: 2025-07-22 10:38 -->
+### Public Profiles Privacy
+
+- Public profiles do not expose hourlyRate. Rates are negotiated per job between client and freelancer.
+- Public profile payload includes non-sensitive fields such as:
+  - firstName, lastName, headline, tagline, skills, languages, bio
+  - experience, education, certifications
+  - profilePicture, bannerUrl, socialLinks (public handles/URLs only)
+  - portfolio items (media URLs and metadata)
+  - rating (overall), totalReviews, completedJobs, badges, username
+
+Example:
+```
+GET /api/public-profiles/:username
+
+{
+  "firstName": "Devin",
+  "lastName": "Manning",
+  "headline": "Full‑stack Developer",
+  "skills": ["React","Node","MongoDB"],
+  "portfolio": [...],
+  "rating": 4.9,
+  "totalReviews": 12,
+  "completedJobs": 27,
+  "badges": ["Rising Star"],
+  "username": "devin-manning"
+}
+```
