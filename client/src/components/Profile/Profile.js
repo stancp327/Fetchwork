@@ -132,7 +132,8 @@ const Profile = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Error updating profile:', error);
-      setError(error.response?.data?.error || 'Failed to update profile');
+      const msg = (error && typeof error.message === 'string' && error.message.trim()) || 'Failed to update profile';
+      setError(msg);
     } finally {
       setSaving(false);
     }
