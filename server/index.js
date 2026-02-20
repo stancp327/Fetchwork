@@ -138,6 +138,7 @@ app.use('/api/search', require('./routes/search'));
 app.use('/api/contact', require('./routes/contact'));
 app.use('/api/public-profiles', require('./routes/publicProfiles'));
 app.use('/api/portfolio', require('./routes/portfolio'));
+app.use('/api/errors', require('./routes/errors'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {
@@ -154,10 +155,15 @@ io.use((socket, next) => {
 const registerSocketEvents = require('./socket/events');
 registerSocketEvents(io);
 
-// ── Error Handling ──────────────────────────────────────────────
+// ── Error Tracking + Handling ────────────────────────────────────
+const { errorTracker, setupProcessErrorHandlers } = require('./middleware/errorTracker');
+setupProcessErrorHandlers();
+
+app.use(errorTracker);
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({ error: statusCode >= 500 ? 'Something went wrong!' : err.message });
 });
 
 app.use('*', (req, res) => {

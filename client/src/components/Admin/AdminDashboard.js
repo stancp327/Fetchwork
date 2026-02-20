@@ -9,6 +9,7 @@ import StatCard from '../common/StatCard';
 import TabButton from '../common/TabButton';
 import AnalyticsTab from './AnalyticsTab';
 import TracingErrorBoundary from '../common/TracingErrorBoundary';
+import ErrorDashboard from './ErrorDashboard';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -321,6 +322,12 @@ const AdminDashboard = () => {
           id="analytics"
           label="Analytics"
           active={activeTab === 'analytics'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="errors"
+          label="Errors"
+          active={activeTab === 'errors'}
           onClick={setActiveTab}
         />
       </div>
@@ -897,6 +904,11 @@ const AdminDashboard = () => {
         {activeTab === 'analytics' && (
           <TracingErrorBoundary componentName="AnalyticsTab">
             <AnalyticsTab />
+          </TracingErrorBoundary>
+        )}
+        {activeTab === 'errors' && (
+          <TracingErrorBoundary componentName="ErrorDashboard">
+            <ErrorDashboard />
           </TracingErrorBoundary>
         )}
       </div>
