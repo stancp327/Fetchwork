@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import DisputeDetail from './DisputeDetail';
 import DisputeTimeline from './DisputeTimeline';
@@ -100,7 +100,7 @@ const DisputeCard = ({ dispute, currentUserId, onClick }) => {
 
 // ── Main DisputeCenter ──────────────────────────────────────────
 const DisputeCenter = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 

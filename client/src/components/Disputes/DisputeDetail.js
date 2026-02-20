@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import DisputeTimeline from './DisputeTimeline';
 import './DisputeDetail.css';
@@ -49,7 +49,7 @@ const MessageBubble = ({ msg, currentUserId }) => {
 
 // ── Main DisputeDetail ──────────────────────────────────────────
 const DisputeDetail = ({ disputeId, onBack, onUpdate }) => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const currentUserId = user?._id || user?.userId;
   const messagesEndRef = useRef(null);
 
