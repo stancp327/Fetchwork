@@ -1,6 +1,8 @@
 import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import AppErrorBoundary from './components/common/AppErrorBoundary';
+import { setupGlobalErrorHandlers } from './utils/errorReporter';
 import { RoleProvider } from './context/RoleContext';
 import { MessagingProvider } from './context/MessagingContext';
 import Home from './components/Home/Home';
@@ -267,18 +269,24 @@ function AppContent() {
 }
 
 function App() {
+  useEffect(() => {
+    setupGlobalErrorHandlers();
+  }, []);
+
   return (
-    <AuthErrorBoundary>
-      <AuthProvider>
-        <RoleProvider>
-          <MessagingProvider>
-            <Router>
-              <AppContent />
-            </Router>
-          </MessagingProvider>
-        </RoleProvider>
-      </AuthProvider>
-    </AuthErrorBoundary>
+    <AppErrorBoundary>
+      <AuthErrorBoundary>
+        <AuthProvider>
+          <RoleProvider>
+            <MessagingProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </MessagingProvider>
+          </RoleProvider>
+        </AuthProvider>
+      </AuthErrorBoundary>
+    </AppErrorBoundary>
   );
 }
 
