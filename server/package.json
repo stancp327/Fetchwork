@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node index.js",
     "build": "echo 'No build step needed'",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --forceExit --detectOpenHandles",
+    "test:watch": "jest --watch --forceExit --detectOpenHandles",
     "verify-deployment": "node ../scripts/verify-deployment.js"
   },
   "keywords": [],
@@ -38,5 +39,9 @@
     "socket.io": "^4.8.1",
     "stripe": "^18.3.0",
     "sharp": "^0.33.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
   }
 }
