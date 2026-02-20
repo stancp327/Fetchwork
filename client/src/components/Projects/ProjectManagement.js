@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import './ProjectManagement.css';
 
@@ -209,7 +209,7 @@ const TABS = [
 ];
 
 const ProjectManagement = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [proposalJobs, setProposalJobs] = useState([]);
@@ -403,3 +403,4 @@ const ProjectManagement = () => {
 };
 
 export default ProjectManagement;
+

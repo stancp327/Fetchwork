@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import './Reviews.css';
 
@@ -265,7 +265,7 @@ const WriteReviewForm = ({ jobId, revieweeId, reviewerType, onSubmit, onCancel }
 
 // ── Main Reviews Component ──────────────────────────────────────
 const Reviews = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
   const revieweeId = searchParams.get('revieweeId') || (user?._id || user?.userId);
@@ -427,3 +427,4 @@ const Reviews = () => {
 };
 
 export default Reviews;
+

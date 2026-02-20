@@ -97,6 +97,7 @@ const Navigation = () => {
             <NotificationBadge type="message" count={notifications.unreadMessages}>
               <Link to="/messages" onClick={closeMobileMenu}>Messages</Link>
             </NotificationBadge>
+            <Link to="/disputes" onClick={closeMobileMenu}>Disputes</Link>
             {user?.isAdmin && <Link to="/admin" onClick={closeMobileMenu}>Admin</Link>}
             <Link to="/profile" onClick={closeMobileMenu}>Profile</Link>
             <button className="nav-logout-btn" onClick={handleLogout}>Logout</button>
