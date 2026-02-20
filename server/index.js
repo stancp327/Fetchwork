@@ -7,65 +7,17 @@ const jwt = require('jsonwebtoken');
 const http = require('http');
 const { Server } = require('socket.io');
 const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
 const session = require('express-session');
-const crypto = require('crypto');
-const { validateRegister, validateLogin } = require('./middleware/validation');
-const User = require('./models/User');
-const adminRoutes = require('./routes/admin');
 
-// Load .env.local first (for local development), then .env as fallback
-require('dotenv').config({ path: '.env.local' });
-require('dotenv').config();
-const publicProfiles = require('./routes/publicProfiles');
-const portfolioRoutes = require('./routes/portfolio');
+// ── Config ──────────────────────────────────────────────────────
+const { PORT, MONGO_URI, JWT_SECRET } = require('./config/env');
+const configurePassport = require('./config/passport');
 
-
+// ── App Setup ───────────────────────────────────────────────────
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 10000;
-const MONGO_URI = process.env.MONGO_URI;
 
-const ADMIN_EMAILS = ['admin@fetchwork.com', 'stancp327@gmail.com'];
-
-const requiredEnvVars = {
-  MONGO_URI: process.env.MONGO_URI,
-  JWT_SECRET: process.env.JWT_SECRET,
-  RESEND_API_KEY: process.env.RESEND_API_KEY,
-  FROM_EMAIL: process.env.FROM_EMAIL,
-  CLIENT_URL: process.env.CLIENT_URL
-};
-
-const missingVars = Object.entries(requiredEnvVars)
-  .filter(([key, value]) => !value)
-  .map(([key]) => key);
-
-if (missingVars.length > 0) {
-  console.error('❌ DEPLOYMENT FAILURE: Missing critical environment variables:');
-  missingVars.forEach(varName => {
-    console.error(`   - ${varName}: Required for server startup`);
-  });
-  console.error('');
-  console.error('Please configure these environment variables in your Render dashboard:');
-  console.error('- MONGO_URI: MongoDB Atlas connection string');
-  console.error('- JWT_SECRET: Secure secret key (minimum 32 characters)');
-  console.error('- RESEND_API_KEY: Email service API key (starts with "re_")');
-  console.error('- FROM_EMAIL: Email address for sending notifications');
-  console.error('- CLIENT_URL: Frontend URL for email links and OAuth redirects');
-  
-  if (missingVars.includes('FROM_EMAIL') || missingVars.includes('RESEND_API_KEY')) {
-    console.warn('⚠️  Email service may not function properly without proper configuration');
-  }
-  if (missingVars.includes('CLIENT_URL')) {
-    console.warn('⚠️  OAuth and email links may not work without CLIENT_URL configuration');
-  }
-  
-  process.exit(1);
-}
-
-console.log('✅ All critical environment variables present');
-
+// ── Socket.io ───────────────────────────────────────────────────
 const allowedSocketOrigins = (() => {
   const fromEnv = process.env.SOCKET_CORS_ORIGIN || process.env.CLIENT_URL || '';
   const split = fromEnv.split(',').map(s => s.trim()).filter(Boolean);
@@ -82,13 +34,13 @@ const io = new Server(server, {
 });
 
 app.set('io', io);
-
 app.set('trust proxy', true);
 
+// ── Middleware ───────────────────────────────────────────────────
 app.use(helmet());
-app.use('/uploads', express.static('uploads'));
-
 app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret-key-for-development',
@@ -97,140 +49,36 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
+// ── Passport ────────────────────────────────────────────────────
 app.use(passport.initialize());
 app.use(passport.session());
+configurePassport();
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/auth/google/callback"
-  }, async (accessToken, refreshToken, profile, done) => {
-    try {
-      let user = await User.findOne({ googleId: profile.id });
-      
-      if (user) {
-        return done(null, user);
-      }
-      
-      user = await User.findOne({ email: profile.emails[0].value });
-      if (user) {
-        user.googleId = profile.id;
-        if (!Array.isArray(user.providers)) user.providers = [];
-        if (!user.providers.includes('google')) user.providers.push('google');
-
-        await user.save();
-        return done(null, user);
-      }
-      
-      user = new User({
-        googleId: profile.id,
-        email: profile.emails[0].value,
-        firstName: profile.name.givenName,
-        lastName: profile.name.familyName,
-        isVerified: true, // Google accounts are pre-verified
-        providers: ['google']
-      });
-      
-      await user.save();
-      return done(null, user);
-    } catch (error) {
-      return done(error, null);
-    }
-  }));
-} else {
-  console.warn('⚠️ Google OAuth not configured - missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
-}
-
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-  passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: "/api/auth/facebook/callback",
-    profileFields: ['id', 'emails', 'name']
-  }, async (accessToken, refreshToken, profile, done) => {
-    try {
-      let user = await User.findOne({ facebookId: profile.id });
-      
-      if (user) {
-        return done(null, user);
-      }
-      
-      if (profile.emails && profile.emails[0]) {
-        user = await User.findOne({ email: profile.emails[0].value });
-        if (user) {
-          user.facebookId = profile.id;
-          if (!Array.isArray(user.providers)) user.providers = [];
-          if (!user.providers.includes('facebook')) user.providers.push('facebook');
-          await user.save();
-          return done(null, user);
-        }
-      }
-      
-      user = new User({
-        facebookId: profile.id,
-        email: profile.emails ? profile.emails[0].value : '',
-        firstName: profile.name.givenName,
-        lastName: profile.name.familyName,
-        isVerified: true, // Facebook accounts are pre-verified
-        providers: ['facebook']
-      });
-      
-      await user.save();
-      return done(null, user);
-    } catch (error) {
-      return done(error, null);
-    }
-  }));
-} else {
-  console.warn('⚠️ Facebook OAuth not configured - missing FACEBOOK_APP_ID or FACEBOOK_APP_SECRET');
-}
-
-passport.serializeUser((user, done) => {
-  done(null, user._id);
+// ── Rate Limiting ───────────────────────────────────────────────
+const adminRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 500 : 5000,
 });
-
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (error) {
-    done(error, null);
-  }
-});
-
-app.use('/api/public-profiles', publicProfiles);
-app.use('/api/portfolio', portfolioRoutes);
 
 const generalRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Higher limit for development
-  skip: (req) => req.path.startsWith('/api/admin') // Skip rate limiting for admin routes
-});
-
-const adminRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 500 : 5000, // Much higher limit for admin operations
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
+  skip: (req) => req.path.startsWith('/api/admin')
 });
 
 app.use('/api/admin', adminRateLimit);
 app.use(generalRateLimit);
 
-// Middleware
-app.use(express.json());
-
-app.use('/uploads', express.static('uploads'));
-
-// Connect to MongoDB
+// ── Database ────────────────────────────────────────────────────
 mongoose.connect(MONGO_URI)
-.then(() => console.log('MongoDB connected'))
-.catch((err) => console.error('MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.error('MongoDB connection error:', err));
 
-// Simple route
+// ── Health & Status Routes ──────────────────────────────────────
 app.get('/', (req, res) => {
   res.send('FetchWork backend running with MongoDB');
 });
@@ -272,393 +120,9 @@ app.get('/health', (req, res) => {
   res.status(hasErrors ? 503 : 200).json(healthStatus);
 });
 
-const { authenticateToken } = require('./middleware/auth');
-
-app.post('/api/auth/register', validateRegister, async (req, res) => {
-  try {
-    const { email, password, firstName, lastName, accountType } = req.body;
-    
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-    
-    const user = new User({ 
-      email, 
-      password, 
-      firstName, 
-      lastName,
-      accountType: accountType || 'both',
-      isVerified: false,
-      emailVerificationToken: crypto.randomBytes(32).toString('hex'),
-      emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-    });
-    
-    try {
-      await user.save();
-    } catch (error) {
-      if (error.code === 11000) {
-        console.log(`⚠️  Duplicate key error for email: ${email}`);
-        return res.status(400).json({ error: 'User already exists' });
-      }
-      throw error;
-    }
-    
-    try {
-      const emailService = require('./services/emailService');
-      const emailWorkflowService = require('./services/emailWorkflowService');
-      await emailService.sendEmailVerification(user, user.emailVerificationToken);
-      setTimeout(() => emailWorkflowService.sendOnboardingSequence(user._id), 60000);
-    } catch (emailError) {
-      console.warn('Warning: Could not send verification email:', emailError.message);
-    }
-    
-    res.status(201).json({
-      message: 'Registration successful. Please check your email to verify your account.',
-      requiresVerification: true
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.post('/api/auth/login', validateLogin, async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    console.log(`🔐 Login attempt for: ${email}`);
-    
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      console.log(`❌ User not found: ${email}`);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    console.log(`👤 User found: ${email}, created: ${user.createdAt}, verified: ${user.isVerified}`);
-    
-    const isValidPassword = await user.comparePassword(password);
-    
-    if (!isValidPassword) {
-      console.log(`❌ Password mismatch for: ${email}`);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    console.log(`✅ Password valid for: ${email}`);
-    
-    if (user.isSuspended) {
-      console.log(`❌ User suspended: ${email}`);
-      return res.status(403).json({ error: 'Account suspended' });
-    }
-    
-    if (!user.isActive) {
-      console.log(`❌ User inactive: ${email}`);
-      return res.status(403).json({ error: 'Account deactivated' });
-    }
-    
-    const authEnhancementDate = new Date('2025-07-26T10:00:00Z'); // Updated deployment time to allow existing admin account
-    const requiresVerification = user.createdAt > authEnhancementDate && !user.isVerified;
-    
-    if (requiresVerification) {
-      return res.status(401).json({ 
-        error: 'Please verify your email address before logging in.',
-        requiresVerification: true 
-      });
-    }
-    
-    let isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted || user.role === 'admin';
-    if (isAdmin && user.role !== 'admin') {
-      user.role = 'admin';
-      await user.save();
-    }
-    const token = await new Promise((resolve, reject) => {
-      jwt.sign({ userId: user._id, isAdmin, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
-        if (err) reject(err);
-        else resolve(token);
-      });
-    });
-    
-    res.json({
-      message: 'Login successful',
-      token,
-      user: { 
-        id: user._id, 
-        email: user.email, 
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isAdmin 
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.get('/api/auth/me', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    const isAdmin = user.role === 'admin' || ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted;
-    res.json({
-      user: { 
-        id: user._id, 
-        email: user.email, 
-        firstName: user.firstName, 
-        lastName: user.lastName,
-        isAdmin 
-      }
-    });
-  } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.get('/api/auth/verify-email', async (req, res) => {
-  try {
-    const { token } = req.query;
-    const user = await User.findOne({
-      emailVerificationToken: token,
-      emailVerificationExpires: { $gt: Date.now() }
-    });
-    
-    if (!user) {
-      return res.status(400).json({ error: 'Invalid or expired verification token' });
-    }
-    
-    user.isVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save();
-    
-    res.json({ message: 'Email verified successfully. You can now log in.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Email verification failed' });
-  }
-});
-
-app.post('/api/auth/resend-verification', async (req, res) => {
-  try {
-    const { email } = req.body || {};
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'Valid email is required' });
-    }
-    const normalized = email.trim().toLowerCase();
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    if (!app.locals._resendIp) app.locals._resendIp = new Map();
-    if (!app.locals._resendEmail) app.locals._resendEmail = new Map();
-    const now = Date.now();
-    const windowMs = 24 * 60 * 60 * 1000;
-    const limit = 5;
-
-    const ipKey = String(ip);
-    const emailKey = normalized;
-
-    const prune = (arr) => arr.filter(ts => now - ts < windowMs);
-
-    let ipArr = app.locals._resendIp.get(ipKey) || [];
-    ipArr = prune(ipArr);
-    if (ipArr.length >= limit) {
-      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-    }
-
-    let emailArr = app.locals._resendEmail.get(emailKey) || [];
-    emailArr = prune(emailArr);
-    if (emailArr.length >= limit) {
-      return res.status(429).json({ error: 'Too many requests for this email. Please try again later.' });
-    }
-
-    const user = await User.findOne({ email: normalized });
-
-    const generic = { message: 'If an account exists, a verification email has been sent.' };
-
-    if (!user) {
-      ipArr.push(now);
-      app.locals._resendIp.set(ipKey, ipArr);
-      emailArr.push(now);
-      app.locals._resendEmail.set(emailKey, emailArr);
-      return res.json(generic);
-    }
-
-    if (user.isVerified) {
-      ipArr.push(now);
-      app.locals._resendIp.set(ipKey, ipArr);
-      emailArr.push(now);
-      app.locals._resendEmail.set(emailKey, emailArr);
-      return res.json(generic);
-    }
-
-    const token = crypto.randomBytes(32).toString('hex');
-    user.emailVerificationToken = token;
-    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
-    await user.save();
-
-    try {
-      const emailService = require('./services/emailService');
-      await emailService.sendEmailVerification(user, token);
-    } catch (e) {}
-
-    ipArr.push(now);
-    app.locals._resendIp.set(ipKey, ipArr);
-    emailArr.push(now);
-    app.locals._resendEmail.set(emailKey, emailArr);
-
-    return res.json(generic);
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to send verification email' });
-  }
-});
-
-app.post('/api/auth/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    console.log(`🔄 Password reset request for: ${email}`);
-    
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      console.log(`❌ User not found for password reset: ${email}`);
-      return res.json({ message: 'If an account exists, a reset email has been sent.' });
-    }
-    
-    console.log(`👤 User found for password reset: ${email}`);
-    
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
-    await user.save();
-    
-    console.log(`🔑 Reset token generated for: ${email}`);
-    
-    try {
-      const emailService = require('./services/emailService');
-      await emailService.sendPasswordResetEmail(user, resetToken);
-      console.log(`📧 Password reset email sent successfully to: ${email}`);
-    } catch (emailError) {
-      console.error(`❌ Failed to send password reset email to ${email}:`, emailError);
-    }
-    
-    res.json({ message: 'If an account exists, a reset email has been sent.' });
-  } catch (error) {
-    console.error('Password reset error:', error);
-    res.status(500).json({ error: 'Password reset request failed' });
-  }
-});
-
-app.post('/api/auth/reset-password', async (req, res) => {
-  try {
-    const { token, password } = req.body;
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
-    
-    if (!user) {
-      return res.status(400).json({ error: 'Invalid or expired reset token' });
-    }
-    
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
-    
-    res.json({ message: 'Password reset successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Password reset failed' });
-  }
-});
-
-app.post('/api/auth/recover-admin', async (req, res) => {
-  try {
-    const { email, recoveryKey } = req.body;
-    
-    if (recoveryKey !== process.env.ADMIN_RECOVERY_KEY) {
-      return res.status(401).json({ error: 'Invalid recovery key' });
-    }
-    
-    if (!ADMIN_EMAILS.includes(email)) {
-      return res.status(400).json({ error: 'Not an admin email' });
-    }
-    
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: 'Admin user not found' });
-    }
-    
-    // Reactivate admin account
-    user.isActive = true;
-    user.isSuspended = false;
-    user.suspensionReason = '';
-    await user.save();
-    
-    console.log(`🔧 Admin account recovered: ${email}`);
-    res.json({ message: 'Admin account recovered successfully' });
-  } catch (error) {
-    console.error('Admin recovery error:', error);
-    res.status(500).json({ error: 'Recovery failed' });
-  }
-});
-
-app.get('/api/auth/google', passport.authenticate('google', {
-  scope: ['profile', 'email']
-}));
-
-app.get('/api/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  async (req, res) => {
-    try {
-      let isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted || req.user.role === 'admin';
-      if (isAdmin && req.user.role !== 'admin') {
-        req.user.role = 'admin';
-        await req.user.save();
-      }
-      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      
-      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
-        id: req.user._id,
-        email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        isAdmin
-      }))}`);
-    } catch (error) {
-      res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
-    }
-  }
-);
-
-app.get('/api/auth/facebook', passport.authenticate('facebook', {
-  scope: ['email']
-}));
-
-app.get('/api/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/login' }),
-  async (req, res) => {
-    try {
-      let isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted || req.user.role === 'admin';
-      if (isAdmin && req.user.role !== 'admin') {
-        req.user.role = 'admin';
-        await req.user.save();
-      }
-      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      
-      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
-        id: req.user._id,
-        email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        isAdmin
-      }))}`);
-    } catch (error) {
-      res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
-    }
-  }
-);
-
+// ── API Routes ──────────────────────────────────────────────────
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/messages', require('./routes/messages'));
@@ -669,16 +133,18 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/email', require('./routes/email'));
 app.use('/api/preferences', require('./routes/preferences'));
-app.use('/api/admin', adminRoutes);
 app.use('/api/freelancers', require('./routes/freelancers'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/contact', require('./routes/contact'));
+app.use('/api/public-profiles', require('./routes/publicProfiles'));
+app.use('/api/portfolio', require('./routes/portfolio'));
 
+// ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error('No token provided'));
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return next(new Error('Invalid token'));
     socket.user = user;
     next();
@@ -688,6 +154,7 @@ io.use((socket, next) => {
 const registerSocketEvents = require('./socket/events');
 registerSocketEvents(io);
 
+// ── Error Handling ──────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
@@ -697,6 +164,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// ── Start Server ────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
