@@ -33,6 +33,7 @@ const UniversalSearch = React.lazy(() => import('./components/Search/UniversalSe
 const AdminDashboard = React.lazy(() => import('./components/Admin/AdminDashboard'));
 const ProjectManagement = React.lazy(() => import('./components/Projects/ProjectManagement'));
 const Security = React.lazy(() => import('./components/Security/Security'));
+const DisputeCenter = React.lazy(() => import('./components/Disputes/DisputeCenter'));
 const OnboardingWizard = React.lazy(() => import('./components/Onboarding/ProfileWizard/Wizard'));
 
 const ContactUs = React.lazy(() => import('./components/common/ContactUs'));
@@ -245,6 +246,11 @@ function AppContent() {
           <Route path="/security" element={
             <ProtectedRoute>
               <Security />
+            </ProtectedRoute>
+          } />
+          <Route path="/disputes" element={
+            <ProtectedRoute>
+              <DisputeCenter />
             </ProtectedRoute>
           } />
           <Route path="/freelancers" element={<FreelancerDiscovery />} />

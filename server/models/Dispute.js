@@ -1,5 +1,32 @@
 const mongoose = require('mongoose');
 
+const disputeMessageSchema = new mongoose.Schema({
+  sender: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  senderRole: {
+    type: String,
+    enum: ['client', 'freelancer', 'admin'],
+    required: true
+  },
+  message: {
+    type: String,
+    required: true,
+    maxlength: [2000, 'Message cannot exceed 2000 characters']
+  },
+  attachments: [{
+    filename: String,
+    url: String,
+    size: Number
+  }],
+  isInternal: {
+    type: Boolean,
+    default: false
+  }
+}, { timestamps: true });
+
 const disputeSchema = new mongoose.Schema({
   job: {
     type: mongoose.Schema.Types.ObjectId,
@@ -51,9 +78,10 @@ const disputeSchema = new mongoose.Schema({
       ref: 'User'
     }
   }],
+  messages: [disputeMessageSchema],
   status: {
     type: String,
-    enum: ['open', 'under_review', 'resolved', 'closed'],
+    enum: ['open', 'under_review', 'awaiting_response', 'resolved', 'closed', 'escalated'],
     default: 'open'
   },
   adminNotes: {
@@ -62,18 +90,26 @@ const disputeSchema = new mongoose.Schema({
   },
   resolution: {
     type: String,
-    enum: ['client_favor', 'freelancer_favor', 'partial_refund', 'no_action'],
+    enum: ['client_favor', 'freelancer_favor', 'partial_refund', 'no_action', 'mutual_agreement'],
     default: null
   },
   resolutionAmount: {
     type: Number,
     default: 0
   },
+  resolutionSummary: {
+    type: String,
+    maxlength: [2000, 'Resolution summary cannot exceed 2000 characters']
+  },
   resolvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  resolvedAt: Date
+  resolvedAt: Date,
+  deadline: {
+    type: Date,
+    default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from creation
+  }
 }, {
   timestamps: true
 });
