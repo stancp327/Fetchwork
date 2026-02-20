@@ -1,7 +1,20 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+
+if (!STRIPE_SECRET_KEY) {
+  console.warn('⚠️ Stripe not configured - missing STRIPE_SECRET_KEY. Payment features will be disabled.');
+}
+
+const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
 
 class StripeService {
+  _ensureStripe() {
+    if (!stripe) {
+      throw new Error('Stripe is not configured. Set STRIPE_SECRET_KEY environment variable.');
+    }
+  }
+
   async createConnectAccount(email, country = 'US') {
+    this._ensureStripe();
     try {
       const account = await stripe.accounts.create({
         type: 'express',
@@ -21,6 +34,7 @@ class StripeService {
   }
 
   async createAccountLink(accountId, refreshUrl, returnUrl) {
+    this._ensureStripe();
     try {
       const accountLink = await stripe.accountLinks.create({
         account: accountId,
@@ -37,6 +51,7 @@ class StripeService {
   }
 
   async getAccountStatus(accountId) {
+    this._ensureStripe();
     try {
       const account = await stripe.accounts.retrieve(accountId);
       
@@ -54,6 +69,7 @@ class StripeService {
   }
 
   async createPaymentIntent(amount, currency = 'usd', applicationFeeAmount, stripeAccount) {
+    this._ensureStripe();
     try {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
@@ -72,6 +88,7 @@ class StripeService {
   }
 
   async createTransfer(amount, destination, currency = 'usd') {
+    this._ensureStripe();
     try {
       const transfer = await stripe.transfers.create({
         amount: Math.round(amount * 100), // Convert to cents
@@ -87,6 +104,7 @@ class StripeService {
   }
 
   async holdFundsInEscrow(amount, currency = 'usd', metadata = {}) {
+    this._ensureStripe();
     try {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100),
@@ -103,6 +121,7 @@ class StripeService {
   }
 
   async releaseFundsFromEscrow(paymentIntentId, amountToCapture) {
+    this._ensureStripe();
     try {
       const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId, {
         amount_to_capture: amountToCapture ? Math.round(amountToCapture * 100) : undefined,
@@ -116,6 +135,7 @@ class StripeService {
   }
 
   async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer') {
+    this._ensureStripe();
     try {
       const refund = await stripe.refunds.create({
         payment_intent: paymentIntentId,
@@ -131,6 +151,7 @@ class StripeService {
   }
 
   async constructWebhookEvent(payload, signature, endpointSecret) {
+    this._ensureStripe();
     try {
       const event = stripe.webhooks.constructEvent(payload, signature, endpointSecret);
       return event;
@@ -141,6 +162,7 @@ class StripeService {
   }
 
   async getBalance(stripeAccountId = null) {
+    this._ensureStripe();
     try {
       const balance = await stripe.balance.retrieve(
         stripeAccountId ? { stripeAccount: stripeAccountId } : {}
@@ -154,6 +176,7 @@ class StripeService {
   }
 
   async listTransactions(limit = 10, startingAfter = null) {
+    this._ensureStripe();
     try {
       const transactions = await stripe.balanceTransactions.list({
         limit: limit,
@@ -169,3 +192,5 @@ class StripeService {
 }
 
 module.exports = new StripeService();
+
+
