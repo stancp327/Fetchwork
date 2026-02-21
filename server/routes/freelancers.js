@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const { validateQueryParams } = require('../middleware/validation');
+const { geocode, nearSphereQuery } = require('../config/geocoding');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -32,6 +33,15 @@ router.get('/', validateQueryParams, async (req, res) => {
         { 'location.state': { $regex: locQuery, $options: 'i' } },
         { 'location.zipCode': { $regex: locQuery, $options: 'i' } }
       );
+    }
+
+    // Distance-based search: ?near=94520&radius=25
+    if (req.query.near && req.query.near.trim() !== '') {
+      const radius = parseInt(req.query.radius) || 25;
+      const coords = await geocode(req.query.near.trim());
+      if (coords) {
+        filters['location.coordinates'] = nearSphereQuery(coords, radius);
+      }
     }
     
     if (req.query.minRate || req.query.maxRate) {

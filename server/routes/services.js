@@ -3,6 +3,7 @@ const router = express.Router();
 const Service = require('../models/Service');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
+const { geocode, nearSphereQuery } = require('../config/geocoding');
 
 router.get('/', async (req, res) => {
   try {
@@ -31,6 +32,23 @@ router.get('/', async (req, res) => {
       }
       if (req.query.maxPrice) {
         filters['pricing.basic.price'].$lte = parseFloat(req.query.maxPrice);
+      }
+    }
+
+    // Location type filter: remote / local / all
+    if (req.query.locationType && req.query.locationType !== 'all') {
+      filters['location.locationType'] = req.query.locationType;
+    }
+
+    // Distance-based search: ?near=94520&radius=25
+    if (req.query.near && req.query.near.trim() !== '') {
+      const radius = parseInt(req.query.radius) || 25;
+      const coords = await geocode(req.query.near.trim());
+      if (coords) {
+        filters['location.coordinates'] = nearSphereQuery(coords, radius);
+        if (!filters['location.locationType']) {
+          filters['location.locationType'] = { $in: ['local', 'hybrid'] };
+        }
       }
     }
     
@@ -94,7 +112,8 @@ router.post('/', authenticateToken, async (req, res) => {
       pricing,
       gallery,
       faqs,
-      requirements
+      requirements,
+      location
     } = req.body;
     
     if (!title || !description || !category || !pricing?.basic) {
@@ -113,6 +132,7 @@ router.post('/', authenticateToken, async (req, res) => {
       gallery: gallery || [],
       faqs: faqs || [],
       requirements,
+      location: location || { locationType: 'remote' },
       freelancer: req.user._id,
       status: 'active'
     });
