@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../../utils/api';
+import { CATEGORIES } from '../../utils/categories';
 import '../UserComponents.css';
 
 const PostJob = () => {
@@ -20,8 +21,10 @@ const PostJob = () => {
     currency: 'USD',
     duration: '',
     experienceLevel: '',
-    location: 'Remote',
-    isRemote: true,
+    locationType: 'remote',
+    city: '',
+    state: '',
+    zipCode: '',
     isUrgent: false
   });
   const [errors, setErrors] = useState({});
@@ -102,8 +105,15 @@ const PostJob = () => {
         },
         duration: formData.duration,
         experienceLevel: formData.experienceLevel,
-        location: formData.location.trim(),
-        isRemote: formData.isRemote,
+        location: {
+          locationType: formData.locationType,
+          city: formData.city.trim(),
+          state: formData.state.trim(),
+          zipCode: formData.zipCode.trim(),
+          address: formData.city && formData.state ? `${formData.city.trim()}, ${formData.state.trim()}` : '',
+          coordinates: { type: 'Point', coordinates: [0, 0] },
+          serviceRadius: 25
+        },
         isUrgent: formData.isUrgent
       };
 
@@ -187,18 +197,9 @@ const PostJob = () => {
               onChange={handleInputChange}
             >
               <option value="">Select a category</option>
-              <option value="web_development">Web Development</option>
-              <option value="mobile_development">Mobile Development</option>
-              <option value="design">Design</option>
-              <option value="writing">Writing</option>
-              <option value="marketing">Marketing</option>
-              <option value="data_entry">Data Entry</option>
-              <option value="customer_service">Customer Service</option>
-              <option value="translation">Translation</option>
-              <option value="video_editing">Video Editing</option>
-              <option value="photography">Photography</option>
-              <option value="consulting">Consulting</option>
-              <option value="other">Other</option>
+              {CATEGORIES.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
+              ))}
             </select>
             {errors.category && <div className="error-text">{errors.category}</div>}
           </div>
@@ -311,27 +312,58 @@ const PostJob = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="location">Location</label>
-            <input
-              type="text"
-              id="location"
-              name="location"
-              value={formData.location}
+            <label htmlFor="locationType">Work Type</label>
+            <select
+              id="locationType"
+              name="locationType"
+              value={formData.locationType}
               onChange={handleInputChange}
-              placeholder="e.g. New York, NY or Remote"
-            />
+            >
+              <option value="remote">🌐 Remote</option>
+              <option value="local">📍 Local / On-site</option>
+              <option value="hybrid">🔄 Hybrid (Remote + Local)</option>
+            </select>
           </div>
 
-          <div className="checkbox-group">
-            <input
-              type="checkbox"
-              id="isRemote"
-              name="isRemote"
-              checked={formData.isRemote}
-              onChange={handleInputChange}
-            />
-            <label htmlFor="isRemote">This is a remote job</label>
-          </div>
+          {formData.locationType !== 'remote' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px' }}>
+              <div className="form-group">
+                <label htmlFor="city">City</label>
+                <input
+                  type="text"
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Concord"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="state">State</label>
+                <input
+                  type="text"
+                  id="state"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  placeholder="e.g. CA"
+                  maxLength={2}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="zipCode">Zip Code</label>
+                <input
+                  type="text"
+                  id="zipCode"
+                  name="zipCode"
+                  value={formData.zipCode}
+                  onChange={handleInputChange}
+                  placeholder="e.g. 94520"
+                  maxLength={10}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="checkbox-group">
             <input

@@ -1,22 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
+import { categoryOptions } from '../../utils/categories';
 import './UniversalSearch.css';
 
 const CATEGORIES = [
   { value: '', label: 'All Categories' },
-  { value: 'web_development', label: 'Web Development' },
-  { value: 'mobile_development', label: 'Mobile Development' },
-  { value: 'design', label: 'Design' },
-  { value: 'writing', label: 'Writing' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'data_entry', label: 'Data Entry' },
-  { value: 'customer_service', label: 'Customer Service' },
-  { value: 'translation', label: 'Translation' },
-  { value: 'video_editing', label: 'Video Editing' },
-  { value: 'photography', label: 'Photography' },
-  { value: 'consulting', label: 'Consulting' },
-  { value: 'other', label: 'Other' },
+  ...categoryOptions
 ];
 
 const DURATIONS = [

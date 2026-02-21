@@ -31,7 +31,7 @@ const mockJob = {
   skills: ['React', 'JavaScript', 'CSS', 'HTML', 'Node.js', 'MongoDB'],
   proposalCount: 12,
   views: 45,
-  location: 'Remote'
+  location: { locationType: 'remote', address: '', city: '', state: '', zipCode: '', coordinates: { type: 'Point', coordinates: [0, 0] }, serviceRadius: 25 }
 };
 
 const renderJobCard = (job = mockJob) => {

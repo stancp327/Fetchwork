@@ -1,5 +1,6 @@
 import React from 'react';
 import SearchSuggestions from '../common/SearchSuggestions';
+import { CATEGORIES } from '../../utils/categories';
 
 const FilterPanel = ({ filters, onFilterChange }) => {
   const handleFilterChange = (key, value) => {
@@ -23,18 +24,9 @@ const FilterPanel = ({ filters, onFilterChange }) => {
           onChange={(e) => handleFilterChange('category', e.target.value)}
         >
           <option value="all">All Categories</option>
-          <option value="web_development">Web Development</option>
-          <option value="mobile_development">Mobile Development</option>
-          <option value="design">Design</option>
-          <option value="writing">Writing</option>
-          <option value="marketing">Marketing</option>
-          <option value="data_entry">Data Entry</option>
-          <option value="customer_service">Customer Service</option>
-          <option value="translation">Translation</option>
-          <option value="video_editing">Video Editing</option>
-          <option value="photography">Photography</option>
-          <option value="consulting">Consulting</option>
-          <option value="other">Other</option>
+          {CATEGORIES.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
+          ))}
         </select>
       </div>
 

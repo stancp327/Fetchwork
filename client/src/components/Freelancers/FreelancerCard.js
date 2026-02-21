@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
+import { getLocationDisplay } from '../../utils/location';
 
 const FreelancerCard = ({ freelancer }) => {
   const profilePath = `/freelancer/${freelancer.username || freelancer._id}`;
@@ -50,7 +51,7 @@ const FreelancerCard = ({ freelancer }) => {
       </div>
 
       <div className="freelancer-location">
-        📍 {freelancer.location || 'Location not specified'}
+        📍 {getLocationDisplay(freelancer.location) || 'Location not specified'}
       </div>
 
       <div className="freelancer-actions">

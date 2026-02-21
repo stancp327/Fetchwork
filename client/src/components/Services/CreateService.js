@@ -1,24 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
+import { categoryOptions } from '../../utils/categories';
 import './CreateService.css';
 
 const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
 
 const CATEGORIES = [
   { value: '', label: 'Select a category' },
-  { value: 'web_development', label: 'Web Development' },
-  { value: 'mobile_development', label: 'Mobile Development' },
-  { value: 'design', label: 'Design' },
-  { value: 'writing', label: 'Writing' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'data_entry', label: 'Data Entry' },
-  { value: 'customer_service', label: 'Customer Service' },
-  { value: 'translation', label: 'Translation' },
-  { value: 'video_editing', label: 'Video Editing' },
-  { value: 'photography', label: 'Photography' },
-  { value: 'consulting', label: 'Consulting' },
-  { value: 'other', label: 'Other' },
+  ...categoryOptions
 ];
 
 // ── Stepper ─────────────────────────────────────────────────────

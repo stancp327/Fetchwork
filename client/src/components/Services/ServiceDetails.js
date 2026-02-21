@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getLocationDisplay } from '../../utils/location';
 import { useAuth } from '../../context/AuthContext';
 import { formatCategory } from '../../utils/formatters';
 import { getApiBaseUrl } from '../../utils/api';
@@ -168,7 +169,7 @@ const ServiceDetails = () => {
                     <span>⭐ {service.freelancer.rating || 0} rating</span>
                     <span>📦 {service.freelancer.totalJobs || 0} orders</span>
                     {service.freelancer.location && (
-                      <span>📍 {service.freelancer.location}</span>
+                      <span>📍 {getLocationDisplay(service.freelancer.location)}</span>
                     )}
                   </div>
                   {service.freelancer.socialLinks?.portfolio && (
