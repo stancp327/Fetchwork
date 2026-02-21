@@ -5,6 +5,7 @@ const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { validateJobPost, validateProposal, validateQueryParams, validateMongoId } = require('../middleware/validation');
 const { uploadJobAttachments } = require('../middleware/upload');
+const { geocode, nearSphereQuery } = require('../config/geocoding');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -59,7 +60,21 @@ router.get('/', validateQueryParams, async (req, res) => {
       }
     }
 
+    // Distance-based search: ?near=94520&radius=25 or ?near=Concord,CA&radius=50
+    if (req.query.near && req.query.near.trim() !== '') {
+      const radius = parseInt(req.query.radius) || 25;
+      const coords = await geocode(req.query.near.trim());
+      if (coords) {
+        filters['location.coordinates'] = nearSphereQuery(coords, radius);
+        // Distance search implies local jobs (include hybrid too)
+        if (!filters['location.locationType']) {
+          filters['location.locationType'] = { $in: ['local', 'hybrid'] };
+        }
+      }
+    }
+
     if (req.query.zipCode && req.query.zipCode.trim() !== '') {
+      // Exact zip match (no distance calc) — fast filter
       filters['location.zipCode'] = req.query.zipCode.trim();
     }
 
