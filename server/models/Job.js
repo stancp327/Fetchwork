@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { categoryEnum } = require('../config/categories');
+const { locationSchema } = require('../config/locationSchema');
 
 const jobSchema = new mongoose.Schema({
   title: {
@@ -15,20 +17,7 @@ const jobSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: [
-      'web_development',
-      'mobile_development',
-      'design',
-      'writing',
-      'marketing',
-      'data_entry',
-      'customer_service',
-      'translation',
-      'video_editing',
-      'photography',
-      'consulting',
-      'other'
-    ]
+    enum: categoryEnum
   },
   subcategory: {
     type: String,
@@ -125,15 +114,7 @@ const jobSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  location: {
-    type: String,
-    trim: true,
-    default: 'Remote'
-  },
-  isRemote: {
-    type: Boolean,
-    default: true
-  },
+  location: locationSchema,
   jobType: {
     type: String,
     enum: ['fixed_price', 'hourly', 'full_time', 'part_time', 'contract', 'freelance'],
@@ -241,8 +222,9 @@ jobSchema.index({ 'budget.amount': 1 });
 jobSchema.index({ createdAt: -1 });
 jobSchema.index({ isActive: 1, status: 1 });
 jobSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-jobSchema.index({ location: 1 });
-jobSchema.index({ isRemote: 1 });
+jobSchema.index({ 'location.locationType': 1 });
+jobSchema.index({ 'location.zipCode': 1 });
+jobSchema.index({ 'location.coordinates': '2dsphere' });
 jobSchema.index({ jobType: 1 });
 jobSchema.index({ isUrgent: 1 });
 jobSchema.index({ isFeatured: 1 });

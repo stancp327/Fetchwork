@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { locationSchema } = require('../config/locationSchema');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -45,11 +46,7 @@ const userSchema = new mongoose.Schema({
     min: [0, 'Hourly rate cannot be negative'],
     default: 0
   },
-  location: {
-    type: String,
-    trim: true,
-    default: ''
-  },
+  location: locationSchema,
   phone: {
     type: String,
     trim: true,
@@ -207,7 +204,9 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ email: 1 });
 userSchema.index({ email: 1, isVerified: 1 });
 userSchema.index({ skills: 1 });
-userSchema.index({ location: 1 });
+userSchema.index({ 'location.locationType': 1 });
+userSchema.index({ 'location.zipCode': 1 });
+userSchema.index({ 'location.coordinates': '2dsphere' });
 userSchema.index({ rating: -1 });
 userSchema.index({ isActive: 1, isSuspended: 1 });
 userSchema.index({ username: 1 }, { unique: true, sparse: true });

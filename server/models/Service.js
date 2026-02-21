@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { categoryEnum } = require('../config/categories');
+const { locationSchema } = require('../config/locationSchema');
 
 const serviceSchema = new mongoose.Schema({
   title: {
@@ -15,20 +17,7 @@ const serviceSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: [
-      'web_development',
-      'mobile_development', 
-      'design',
-      'writing',
-      'marketing',
-      'data_entry',
-      'customer_service',
-      'translation',
-      'video_editing',
-      'photography',
-      'consulting',
-      'other'
-    ]
+    enum: categoryEnum
   },
   subcategory: {
     type: String,
@@ -62,6 +51,7 @@ const serviceSchema = new mongoose.Schema({
       revisions: { type: Number, default: 3 }
     }
   },
+  location: locationSchema,
   freelancer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -125,6 +115,9 @@ serviceSchema.index({ skills: 1 });
 serviceSchema.index({ 'pricing.basic.price': 1 });
 serviceSchema.index({ rating: -1 });
 serviceSchema.index({ isActive: 1, status: 1 });
+serviceSchema.index({ 'location.locationType': 1 });
+serviceSchema.index({ 'location.zipCode': 1 });
+serviceSchema.index({ 'location.coordinates': '2dsphere' });
 
 serviceSchema.methods.incrementViews = function() {
   this.views += 1;
