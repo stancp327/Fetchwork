@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatBudget, formatDuration, formatCategory, formatJobStatus, getStatusClass } from '../../utils/formatters';
+import { getLocationDisplay } from '../../utils/location';
 
 const JobCard = ({ job }) => {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ const JobCard = ({ job }) => {
 
       <div className="card-footer">
         <div className="card-meta">
-          {job.proposalCount} proposals • {job.views} views • {job.location}
+          {job.proposalCount} proposals • {job.views} views • {getLocationDisplay(job.location)}
         </div>
         <button 
           onClick={() => navigate(`/jobs/${job._id}`)}

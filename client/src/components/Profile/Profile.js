@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import FileUpload from '../common/FileUpload';
+import { getLocationDisplay } from '../../utils/location';
 import './Profile.css';
 
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
@@ -38,7 +39,7 @@ const SummaryCard = ({ data, completion }) => (
     </div>
     <h3 className="summary-name">{data.firstName} {data.lastName}</h3>
     {data.headline && <p className="summary-headline">{data.headline}</p>}
-    {data.location && <p className="summary-location">📍 {data.location}</p>}
+    {data.location && <p className="summary-location">📍 {getLocationDisplay(data.location)}</p>}
 
     <div className="summary-completion">
       <div className="completion-bar">
@@ -108,7 +109,7 @@ const TabOverview = ({ data, completion, onTabChange }) => {
         <div className="overview-card">
           <h4>Contact</h4>
           <p>{data.phone || 'No phone'}</p>
-          <p>{data.location || 'No location'}</p>
+          <p>{getLocationDisplay(data.location) || 'No location'}</p>
         </div>
       </div>
     </div>
@@ -149,8 +150,16 @@ const TabAbout = ({ data, onChange, onFileSelect }) => (
     </div>
     <div className="prof-row">
       <div className="prof-field">
-        <label>Location</label>
-        <input type="text" value={data.location} onChange={e => onChange('location', e.target.value)} placeholder="City, Country" />
+        <label>City</label>
+        <input type="text" value={typeof data.location === 'object' ? (data.location?.city || '') : (data.location || '')} onChange={e => onChange('location', { ...(typeof data.location === 'object' ? data.location : {}), locationType: data.location?.locationType || 'remote', city: e.target.value })} placeholder="City" />
+      </div>
+      <div className="prof-field">
+        <label>State</label>
+        <input type="text" value={data.location?.state || ''} onChange={e => onChange('location', { ...(typeof data.location === 'object' ? data.location : {}), locationType: data.location?.locationType || 'remote', state: e.target.value })} placeholder="State" maxLength={2} />
+      </div>
+      <div className="prof-field">
+        <label>Zip Code</label>
+        <input type="text" value={data.location?.zipCode || ''} onChange={e => onChange('location', { ...(typeof data.location === 'object' ? data.location : {}), locationType: data.location?.locationType || 'remote', zipCode: e.target.value })} placeholder="Zip" maxLength={10} />
       </div>
       <div className="prof-field">
         <label>Phone</label>
@@ -336,7 +345,7 @@ const Profile = () => {
         firstName: u.firstName || '', lastName: u.lastName || '',
         bio: u.bio || '', headline: u.headline || '',
         skills: u.skills || [], hourlyRate: u.hourlyRate || 0,
-        location: u.location || '', phone: u.phone || '',
+        location: u.location || { locationType: 'remote', city: '', state: '', zipCode: '' }, phone: u.phone || '',
         profilePicture: u.profilePicture || '', languages: u.languages || '',
         primaryCategory: u.primaryCategory || '', email: u.email || '',
         isVerified: u.isVerified || false, rating: u.rating || 0,

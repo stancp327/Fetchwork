@@ -21,7 +21,7 @@ export const createJobPostingSchema = (job, client) => ({
     "@type": "Place",
     "address": {
       "@type": "PostalAddress",
-      "addressLocality": job.location
+      "addressLocality": typeof job.location === 'object' ? (job.location?.city || 'Remote') : (job.location || 'Remote')
     }
   },
   "baseSalary": {
@@ -52,7 +52,9 @@ export const createPersonSchema = (user) => ({
   },
   "address": user.location ? {
     "@type": "PostalAddress",
-    "addressLocality": user.location
+    "addressLocality": typeof user.location === 'object' ? (user.location?.city || '') : (user.location || ''),
+    "addressRegion": user.location?.state || '',
+    "postalCode": user.location?.zipCode || ''
   } : undefined,
   "sameAs": [
     user.socialLinks?.linkedin,

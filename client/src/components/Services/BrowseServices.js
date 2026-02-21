@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
+import { categoryOptions } from '../../utils/categories';
+import { getLocationDisplay, getLocationTypeBadge } from '../../utils/location';
 import SEO from '../common/SEO';
 import BrowseLayout, {
   SearchBar, FilterSelect, FilterInput,
@@ -10,14 +12,7 @@ import '../common/BrowseLayout.css';
 
 const CATEGORIES = [
   { value: 'all', label: 'All Categories' },
-  { value: 'web_development', label: 'Web Development' },
-  { value: 'mobile_development', label: 'Mobile Development' },
-  { value: 'design', label: 'Design' },
-  { value: 'writing', label: 'Writing' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'video_editing', label: 'Video Editing' },
-  { value: 'consulting', label: 'Consulting' },
-  { value: 'other', label: 'Other' },
+  ...categoryOptions
 ];
 
 const SORT_OPTIONS = [
@@ -53,6 +48,10 @@ const ServiceCard = ({ service }) => {
 
       <div className="browse-card-tags">
         {service.category && <span className="browse-tag primary">{service.category.replace(/_/g, ' ')}</span>}
+        {getLocationTypeBadge(service.location) && <span className="browse-tag">{getLocationTypeBadge(service.location)}</span>}
+        {service.location?.locationType !== 'remote' && service.location?.city && (
+          <span className="browse-tag">📍 {getLocationDisplay(service.location)}</span>
+        )}
         {service.deliveryTime && <span className="browse-tag">📦 {service.deliveryTime}</span>}
         {service.tags?.slice(0, 3).map((t, i) => <span key={i} className="browse-tag">{t}</span>)}
       </div>
@@ -75,7 +74,7 @@ const BrowseServices = () => {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
-    category: 'all', minPrice: '', maxPrice: '', deliveryTime: 'all', sortBy: 'newest'
+    category: 'all', locationType: 'all', near: '', radius: '25', minPrice: '', maxPrice: '', deliveryTime: 'all', sortBy: 'newest'
   });
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
@@ -112,6 +111,13 @@ const BrowseServices = () => {
     <>
       <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 600 }}>Filters</h3>
       <FilterSelect label="Category" value={filters.category} onChange={v => updateFilter('category', v)} options={CATEGORIES} />
+      <FilterSelect label="Work Type" value={filters.locationType} onChange={v => updateFilter('locationType', v)}
+        options={[{ value: 'all', label: 'All Types' }, { value: 'remote', label: '🌐 Remote' }, { value: 'local', label: '📍 Local' }, { value: 'hybrid', label: '🔄 Hybrid' }]} />
+      <FilterInput label="Near (zip or city)" value={filters.near} onChange={v => updateFilter('near', v)} placeholder="e.g. 94520 or Concord" />
+      {filters.near && (
+        <FilterSelect label="Distance" value={filters.radius} onChange={v => updateFilter('radius', v)}
+          options={[{ value: '5', label: '5 miles' }, { value: '10', label: '10 miles' }, { value: '25', label: '25 miles' }, { value: '50', label: '50 miles' }, { value: '100', label: '100 miles' }]} />
+      )}
       <FilterInput label="Min Price" value={filters.minPrice} onChange={v => updateFilter('minPrice', v)} placeholder="$0" type="number" />
       <FilterInput label="Max Price" value={filters.maxPrice} onChange={v => updateFilter('maxPrice', v)} placeholder="No limit" type="number" />
       <FilterSelect label="Delivery Time" value={filters.deliveryTime} onChange={v => updateFilter('deliveryTime', v)}

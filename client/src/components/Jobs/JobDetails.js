@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getLocationDisplay } from '../../utils/location';
 import { formatBudget } from '../../utils/formatters';
 import SEO from '../common/SEO';
 import { createJobPostingSchema } from '../../utils/structuredData';
@@ -317,7 +318,7 @@ const JobDetails = () => {
 
             <div className="job-details-info">
               <div className="info-item">
-                <strong>Location:</strong> {job.location || 'Remote'}
+                <strong>Location:</strong> {getLocationDisplay(job.location)}
               </div>
               {job.isUrgent && (
                 <div className="info-item urgent">

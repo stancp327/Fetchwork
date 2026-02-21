@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
+import { categoryLabelMap } from '../../utils/categories';
 import './ProjectManagement.css';
 
 // ── Status helpers ──────────────────────────────────────────────
@@ -14,20 +15,7 @@ const STATUS_LABELS = {
   disputed: 'Disputed',
 };
 
-const CATEGORY_LABELS = {
-  web_development: 'Web Development',
-  mobile_development: 'Mobile Development',
-  design: 'Design',
-  writing: 'Writing',
-  marketing: 'Marketing',
-  data_entry: 'Data Entry',
-  customer_service: 'Customer Service',
-  translation: 'Translation',
-  video_editing: 'Video Editing',
-  photography: 'Photography',
-  consulting: 'Consulting',
-  other: 'Other',
-};
+const CATEGORY_LABELS = categoryLabelMap;
 
 const formatCurrency = (amount, currency = 'USD') =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
