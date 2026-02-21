@@ -1,346 +1,395 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { getApiBaseUrl } from '../../utils/api';
-import '../UserComponents.css';
+import { apiRequest } from '../../utils/api';
+import './CreateService.css';
 
+const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
+
+const CATEGORIES = [
+  { value: '', label: 'Select a category' },
+  { value: 'web_development', label: 'Web Development' },
+  { value: 'mobile_development', label: 'Mobile Development' },
+  { value: 'design', label: 'Design' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'data_entry', label: 'Data Entry' },
+  { value: 'customer_service', label: 'Customer Service' },
+  { value: 'translation', label: 'Translation' },
+  { value: 'video_editing', label: 'Video Editing' },
+  { value: 'photography', label: 'Photography' },
+  { value: 'consulting', label: 'Consulting' },
+  { value: 'other', label: 'Other' },
+];
+
+// ── Stepper ─────────────────────────────────────────────────────
+const Stepper = ({ steps, current, onStepClick }) => (
+  <div className="wizard-stepper">
+    {steps.map((step, i) => (
+      <button
+        key={step}
+        className={`step ${i === current ? 'active' : ''} ${i < current ? 'done' : ''}`}
+        onClick={() => i <= current && onStepClick(i)}
+        disabled={i > current}
+      >
+        <span className="step-num">{i < current ? '✓' : i + 1}</span>
+        <span className="step-label">{step}</span>
+      </button>
+    ))}
+  </div>
+);
+
+// ── Live Preview ────────────────────────────────────────────────
+const LivePreview = ({ data }) => (
+  <div className="wizard-preview">
+    <h3 className="preview-heading">Live Preview</h3>
+    <div className="preview-card">
+      <div className="preview-card-img">
+        {data.imagePreview ? (
+          <img src={data.imagePreview} alt="" />
+        ) : (
+          <div className="preview-placeholder">📷 Service Image</div>
+        )}
+      </div>
+      <div className="preview-card-body">
+        <h4>{data.title || 'Your Service Title'}</h4>
+        <p className="preview-desc">
+          {data.description?.substring(0, 120) || 'Service description will appear here...'}
+          {data.description?.length > 120 ? '...' : ''}
+        </p>
+        {data.category && (
+          <span className="preview-tag">{CATEGORIES.find(c => c.value === data.category)?.label || data.category}</span>
+        )}
+      </div>
+      {data.basicPrice && (
+        <div className="preview-card-footer">
+          <span className="preview-price">Starting at ${data.basicPrice}</span>
+          {data.basicDeliveryTime && <span className="preview-delivery">📦 {data.basicDeliveryTime} day{data.basicDeliveryTime > 1 ? 's' : ''}</span>}
+        </div>
+      )}
+    </div>
+
+    {/* Package Summary */}
+    {data.basicTitle && (
+      <div className="preview-package">
+        <h4>Basic Package</h4>
+        <div className="preview-pkg-row"><span>Title:</span><span>{data.basicTitle}</span></div>
+        {data.basicPrice && <div className="preview-pkg-row"><span>Price:</span><span>${data.basicPrice}</span></div>}
+        {data.basicDeliveryTime && <div className="preview-pkg-row"><span>Delivery:</span><span>{data.basicDeliveryTime} days</span></div>}
+        <div className="preview-pkg-row"><span>Revisions:</span><span>{data.basicRevisions || 0}</span></div>
+      </div>
+    )}
+
+    {data.skills && (
+      <div className="preview-skills">
+        {data.skills.split(',').filter(Boolean).map((s, i) => (
+          <span key={i} className="preview-skill-tag">{s.trim()}</span>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// ── Step Components ─────────────────────────────────────────────
+const StepDetails = ({ data, onChange, errors }) => (
+  <div className="wizard-step-content">
+    <h2>Service Details</h2>
+    <p className="wizard-tip">💡 A clear, descriptive title helps clients find your service.</p>
+
+    <div className="wiz-field">
+      <label>Service Title *</label>
+      <input
+        type="text" value={data.title} maxLength={100}
+        onChange={e => onChange('title', e.target.value)}
+        placeholder="e.g. I will create a professional website for your business"
+      />
+      <div className="wiz-field-footer">
+        <span className="wiz-error">{errors.title}</span>
+        <span className="wiz-count">{data.title.length}/100</span>
+      </div>
+    </div>
+
+    <div className="wiz-field">
+      <label>Description *</label>
+      <textarea
+        value={data.description} maxLength={3000} rows={6}
+        onChange={e => onChange('description', e.target.value)}
+        placeholder="Describe your service in detail — what you offer, your process, what makes you different..."
+      />
+      <div className="wiz-field-footer">
+        <span className="wiz-error">{errors.description}</span>
+        <span className="wiz-count">{data.description.length}/3000</span>
+      </div>
+    </div>
+
+    <div className="wiz-row">
+      <div className="wiz-field">
+        <label>Category *</label>
+        <select value={data.category} onChange={e => onChange('category', e.target.value)}>
+          {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+        {errors.category && <span className="wiz-error">{errors.category}</span>}
+      </div>
+      <div className="wiz-field">
+        <label>Subcategory</label>
+        <input type="text" value={data.subcategory} onChange={e => onChange('subcategory', e.target.value)} placeholder="e.g. React, WordPress" />
+      </div>
+    </div>
+
+    <div className="wiz-field">
+      <label>Tags / Skills</label>
+      <input type="text" value={data.skills} onChange={e => onChange('skills', e.target.value)} placeholder="React, Node.js, MongoDB (comma separated)" />
+    </div>
+  </div>
+);
+
+const StepPricing = ({ data, onChange, errors }) => (
+  <div className="wizard-step-content">
+    <h2>Pricing</h2>
+    <p className="wizard-tip">💡 Start with a basic package. You can add more tiers later.</p>
+
+    <div className="pricing-card">
+      <h3>Basic Package</h3>
+      <div className="wiz-field">
+        <label>Package Title *</label>
+        <input type="text" value={data.basicTitle} onChange={e => onChange('basicTitle', e.target.value)} placeholder="e.g. Starter Website" />
+        {errors.basicTitle && <span className="wiz-error">{errors.basicTitle}</span>}
+      </div>
+      <div className="wiz-field">
+        <label>What's Included *</label>
+        <textarea rows={3} value={data.basicDescription} onChange={e => onChange('basicDescription', e.target.value)} placeholder="Describe what's included in this package..." />
+        {errors.basicDescription && <span className="wiz-error">{errors.basicDescription}</span>}
+      </div>
+      <div className="wiz-row wiz-row-3">
+        <div className="wiz-field">
+          <label>Price ($) *</label>
+          <input type="number" value={data.basicPrice} onChange={e => onChange('basicPrice', e.target.value)} placeholder="25" min="5" step="0.01" />
+          {errors.basicPrice && <span className="wiz-error">{errors.basicPrice}</span>}
+        </div>
+        <div className="wiz-field">
+          <label>Delivery (days) *</label>
+          <input type="number" value={data.basicDeliveryTime} onChange={e => onChange('basicDeliveryTime', e.target.value)} placeholder="3" min="1" />
+          {errors.basicDeliveryTime && <span className="wiz-error">{errors.basicDeliveryTime}</span>}
+        </div>
+        <div className="wiz-field">
+          <label>Revisions</label>
+          <input type="number" value={data.basicRevisions} onChange={e => onChange('basicRevisions', e.target.value)} min="0" max="10" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const StepMedia = ({ data, onChange }) => (
+  <div className="wizard-step-content">
+    <h2>Media</h2>
+    <p className="wizard-tip">💡 Services with images get 3x more views.</p>
+    <div className="media-upload-area">
+      <div className="media-dropzone">
+        <span className="media-icon">📁</span>
+        <p>Drag & drop images here or click to browse</p>
+        <p className="media-hint">PNG, JPG, GIF up to 5MB. Recommended: 1280x720px</p>
+        <input
+          type="file" accept="image/*" className="media-file-input"
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = () => onChange('imagePreview', reader.result);
+              reader.readAsDataURL(file);
+            }
+          }}
+        />
+      </div>
+      {data.imagePreview && (
+        <div className="media-preview">
+          <img src={data.imagePreview} alt="Preview" />
+          <button className="media-remove" onClick={() => onChange('imagePreview', '')}>×</button>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const StepRequirements = ({ data, onChange }) => (
+  <div className="wizard-step-content">
+    <h2>Requirements</h2>
+    <p className="wizard-tip">💡 Clear requirements help set expectations and avoid revisions.</p>
+    <div className="wiz-field">
+      <label>What do you need from the buyer?</label>
+      <textarea
+        rows={5} value={data.requirements} maxLength={1000}
+        onChange={e => onChange('requirements', e.target.value)}
+        placeholder="e.g. Brand guidelines, logo files, content text, reference websites..."
+      />
+      <div className="wiz-field-footer">
+        <span />
+        <span className="wiz-count">{data.requirements.length}/1000</span>
+      </div>
+    </div>
+  </div>
+);
+
+const StepReview = ({ data }) => (
+  <div className="wizard-step-content">
+    <h2>Review & Publish</h2>
+    <p className="wizard-tip">Double-check everything before publishing. You can edit anytime after.</p>
+
+    <div className="review-sections">
+      <div className="review-section">
+        <h4>Details</h4>
+        <div className="review-row"><span>Title:</span><span>{data.title || '—'}</span></div>
+        <div className="review-row"><span>Category:</span><span>{CATEGORIES.find(c => c.value === data.category)?.label || '—'}</span></div>
+        <div className="review-row"><span>Description:</span><span>{data.description?.substring(0, 200) || '—'}{data.description?.length > 200 ? '...' : ''}</span></div>
+      </div>
+      <div className="review-section">
+        <h4>Basic Package</h4>
+        <div className="review-row"><span>Title:</span><span>{data.basicTitle || '—'}</span></div>
+        <div className="review-row"><span>Price:</span><span>{data.basicPrice ? `$${data.basicPrice}` : '—'}</span></div>
+        <div className="review-row"><span>Delivery:</span><span>{data.basicDeliveryTime ? `${data.basicDeliveryTime} days` : '—'}</span></div>
+        <div className="review-row"><span>Revisions:</span><span>{data.basicRevisions}</span></div>
+      </div>
+      {data.requirements && (
+        <div className="review-section">
+          <h4>Requirements</h4>
+          <p style={{ color: '#4b5563', fontSize: '0.9rem' }}>{data.requirements}</p>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// ── Main Wizard ─────────────────────────────────────────────────
 const CreateService = () => {
   const navigate = useNavigate();
+  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    subcategory: '',
-    skills: '',
-    requirements: '',
-    basicTitle: '',
-    basicDescription: '',
-    basicPrice: '',
-    basicDeliveryTime: '',
-    basicRevisions: 1
-  });
   const [errors, setErrors] = useState({});
+  const [showPreview, setShowPreview] = useState(true);
+  const [data, setData] = useState({
+    title: '', description: '', category: '', subcategory: '', skills: '',
+    requirements: '', basicTitle: '', basicDescription: '', basicPrice: '',
+    basicDeliveryTime: '', basicRevisions: 1, imagePreview: ''
+  });
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = 'Service title is required';
-    } else if (formData.title.length > 100) {
-      newErrors.title = 'Title cannot exceed 100 characters';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Service description is required';
-    } else if (formData.description.length > 3000) {
-      newErrors.description = 'Description cannot exceed 3000 characters';
-    }
-
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
-    }
-
-    if (!formData.basicTitle.trim()) {
-      newErrors.basicTitle = 'Basic package title is required';
-    }
-
-    if (!formData.basicDescription.trim()) {
-      newErrors.basicDescription = 'Basic package description is required';
-    }
-
-    if (!formData.basicPrice || parseFloat(formData.basicPrice) < 5) {
-      newErrors.basicPrice = 'Price must be at least $5';
-    }
-
-    if (!formData.basicDeliveryTime || parseInt(formData.basicDeliveryTime) < 1) {
-      newErrors.basicDeliveryTime = 'Delivery time must be at least 1 day';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const update = (key, value) => {
+    setData(prev => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+  const validateStep = () => {
+    const e = {};
+    if (step === 0) {
+      if (!data.title.trim()) e.title = 'Required';
+      if (!data.description.trim()) e.description = 'Required';
+      if (!data.category) e.category = 'Required';
     }
+    if (step === 1) {
+      if (!data.basicTitle.trim()) e.basicTitle = 'Required';
+      if (!data.basicDescription.trim()) e.basicDescription = 'Required';
+      if (!data.basicPrice || parseFloat(data.basicPrice) < 5) e.basicPrice = 'Min $5';
+      if (!data.basicDeliveryTime || parseInt(data.basicDeliveryTime) < 1) e.basicDeliveryTime = 'Min 1 day';
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+  const handleNext = () => {
+    if (!validateStep()) return;
+    setStep(prev => Math.min(prev + 1, STEPS.length - 1));
+  };
 
+  const handleBack = () => setStep(prev => Math.max(prev - 1, 0));
+
+  const handlePublish = async () => {
     setLoading(true);
     setError(null);
-
     try {
-      const skillsArray = formData.skills
-        .split(',')
-        .map(skill => skill.trim())
-        .filter(skill => skill.length > 0);
-
       const serviceData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        category: formData.category,
-        subcategory: formData.subcategory.trim() || undefined,
-        skills: skillsArray,
-        requirements: formData.requirements.trim(),
+        title: data.title.trim(),
+        description: data.description.trim(),
+        category: data.category,
+        subcategory: data.subcategory.trim() || undefined,
+        skills: data.skills.split(',').map(s => s.trim()).filter(Boolean),
+        requirements: data.requirements.trim(),
         pricing: {
           basic: {
-            title: formData.basicTitle.trim(),
-            description: formData.basicDescription.trim(),
-            price: parseFloat(formData.basicPrice),
-            deliveryTime: parseInt(formData.basicDeliveryTime),
-            revisions: parseInt(formData.basicRevisions)
+            title: data.basicTitle.trim(),
+            description: data.basicDescription.trim(),
+            price: parseFloat(data.basicPrice),
+            deliveryTime: parseInt(data.basicDeliveryTime),
+            revisions: parseInt(data.basicRevisions)
           }
         }
       };
 
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please log in to create a service.');
-        navigate('/login');
-        return;
-      }
-      await axios.post(`${getApiBaseUrl()}/api/services`, serviceData, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      setSuccess(true);
-      setTimeout(() => {
-        navigate('/browse-services');
-      }, 2000);
-
-    } catch (error) {
-      console.error('Failed to create service:', error);
-      const serverMsg = error.response?.data?.error || error.message;
-      if (error.response?.status === 401) {
-        setError('Your session expired. Please log in again.');
+      await apiRequest('/api/services', { method: 'POST', body: JSON.stringify(serviceData) });
+      navigate('/browse-services');
+    } catch (err) {
+      if (err.message?.includes('401') || err.message?.includes('session')) {
         navigate('/login');
       } else {
-        setError(serverMsg || 'Failed to create service');
+        setError(err.message || 'Failed to create service');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="user-container">
-        <div className="success">
-          <h3>Service Created Successfully!</h3>
-          <p>Your service is now live and available for clients. Redirecting to browse services...</p>
-        </div>
-      </div>
-    );
-  }
+  const stepContent = [
+    <StepDetails data={data} onChange={update} errors={errors} />,
+    <StepPricing data={data} onChange={update} errors={errors} />,
+    <StepMedia data={data} onChange={update} />,
+    <StepRequirements data={data} onChange={update} />,
+    <StepReview data={data} />,
+  ];
 
   return (
-    <div className="user-container">
-      <div className="user-header">
-        <h1>Create a Service</h1>
-        <p>Offer your skills to clients with a professional service listing</p>
+    <div className="wizard-container">
+      {/* Header */}
+      <div className="wizard-header">
+        <div>
+          <h1>Create a Service</h1>
+          <p>Offer your skills to clients with a professional listing</p>
+        </div>
+        <button
+          className={`preview-toggle ${showPreview ? 'active' : ''}`}
+          onClick={() => setShowPreview(!showPreview)}
+        >
+          {showPreview ? '👁️ Hide Preview' : '👁️ Show Preview'}
+        </button>
       </div>
 
-      <div className="main-content">
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="title">Service Title *</label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              placeholder="e.g. I will create a professional website for your business"
-              maxLength={100}
-            required
-            />
-            {errors.title && <div className="error-text">{errors.title}</div>}
+      {/* Stepper */}
+      <Stepper steps={STEPS} current={step} onStepClick={setStep} />
+
+      {/* Content */}
+      <div className={`wizard-body ${showPreview ? 'with-preview' : ''}`}>
+        <div className="wizard-form-panel">
+          {stepContent[step]}
+          {error && <div className="wizard-error">⚠️ {error}</div>}
+        </div>
+
+        {showPreview && (
+          <div className="wizard-preview-panel">
+            <LivePreview data={data} />
           </div>
+        )}
+      </div>
 
-          <div className="form-group">
-            <label htmlFor="description">Service Description *</label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Describe your service in detail..."
-              rows={6}
-              maxLength={3000}
-            required
-            />
-            <div style={{ fontSize: '0.8rem', color: '#6c757d', textAlign: 'right' }}>
-              {formData.description.length}/3000 characters
-            </div>
-            {errors.description && <div className="error-text">{errors.description}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="category">Category *</label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-            required
-            >
-              <option value="">Select a category</option>
-              <option value="web_development">Web Development</option>
-              <option value="mobile_development">Mobile Development</option>
-              <option value="design">Design</option>
-              <option value="writing">Writing</option>
-              <option value="marketing">Marketing</option>
-              <option value="data_entry">Data Entry</option>
-              <option value="customer_service">Customer Service</option>
-              <option value="translation">Translation</option>
-              <option value="video_editing">Video Editing</option>
-              <option value="photography">Photography</option>
-              <option value="consulting">Consulting</option>
-              <option value="other">Other</option>
-            </select>
-            {errors.category && <div className="error-text">{errors.category}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="skills">Skills and Tags</label>
-            <input
-              type="text"
-              id="skills"
-              name="skills"
-              value={formData.skills}
-              onChange={handleInputChange}
-              placeholder="e.g. React, Node.js, MongoDB (comma separated)"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="requirements">Requirements from Buyer</label>
-            <textarea
-              id="requirements"
-              name="requirements"
-              value={formData.requirements}
-              onChange={handleInputChange}
-              placeholder="What do you need from the buyer to get started?"
-              rows={3}
-              maxLength={1000}
-            />
-          </div>
-
-          <div className="section-title" style={{ marginTop: '30px', marginBottom: '20px' }}>
-            Basic Package *
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="basicTitle">Package Title *</label>
-            <input
-              type="text"
-              id="basicTitle"
-              name="basicTitle"
-              value={formData.basicTitle}
-              onChange={handleInputChange}
-              placeholder="e.g. Basic Website"
-            required
-            />
-            {errors.basicTitle && <div className="error-text">{errors.basicTitle}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="basicDescription">Package Description *</label>
-            <textarea
-              id="basicDescription"
-              name="basicDescription"
-              value={formData.basicDescription}
-              onChange={handleInputChange}
-              placeholder="What's included in this package?"
-              rows={3}
-            required
-            />
-            {errors.basicDescription && <div className="error-text">{errors.basicDescription}</div>}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-            <div className="form-group">
-              <label htmlFor="basicPrice">Price ($) *</label>
-              <input
-                type="number"
-                id="basicPrice"
-                name="basicPrice"
-                value={formData.basicPrice}
-                onChange={handleInputChange}
-                placeholder="25"
-                min="5"
-                step="0.01"
-              required
-              />
-              {errors.basicPrice && <div className="error-text">{errors.basicPrice}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="basicDeliveryTime">Delivery Time (days) *</label>
-              <input
-                type="number"
-                id="basicDeliveryTime"
-                name="basicDeliveryTime"
-                value={formData.basicDeliveryTime}
-                onChange={handleInputChange}
-                placeholder="3"
-                min="1"
-              required
-              />
-              {errors.basicDeliveryTime && <div className="error-text">{errors.basicDeliveryTime}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="basicRevisions">Revisions</label>
-              <input
-                type="number"
-                id="basicRevisions"
-                name="basicRevisions"
-                value={formData.basicRevisions}
-                onChange={handleInputChange}
-                min="0"
-                max="10"
-              />
-            </div>
-          </div>
-
-          {error && <div className="error">{error}</div>}
-
-          <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading}
-            >
-              {loading ? 'Creating Service...' : 'Create Service'}
+      {/* Sticky Actions */}
+      <div className="wizard-actions">
+        <button className="wiz-btn secondary" onClick={() => navigate('/dashboard')}>Cancel</button>
+        <div className="wizard-actions-right">
+          {step > 0 && <button className="wiz-btn secondary" onClick={handleBack}>← Back</button>}
+          {step < STEPS.length - 1 ? (
+            <button className="wiz-btn primary" onClick={handleNext}>Continue →</button>
+          ) : (
+            <button className="wiz-btn publish" onClick={handlePublish} disabled={loading}>
+              {loading ? 'Publishing...' : '🚀 Publish Service'}
             </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => navigate('/dashboard')}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
       </div>
     </div>
   );
