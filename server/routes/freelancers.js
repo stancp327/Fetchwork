@@ -24,7 +24,14 @@ router.get('/', validateQueryParams, async (req, res) => {
     }
     
     if (req.query.location) {
-      filters.location = { $regex: req.query.location, $options: 'i' };
+      const locQuery = req.query.location;
+      filters.$or = filters.$or || [];
+      filters.$or.push(
+        { 'location.address': { $regex: locQuery, $options: 'i' } },
+        { 'location.city': { $regex: locQuery, $options: 'i' } },
+        { 'location.state': { $regex: locQuery, $options: 'i' } },
+        { 'location.zipCode': { $regex: locQuery, $options: 'i' } }
+      );
     }
     
     if (req.query.minRate || req.query.maxRate) {

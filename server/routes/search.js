@@ -41,13 +41,13 @@ router.get('/suggestions', async (req, res) => {
       suggestions.push({ text: formattedCategory, type: 'category' });
     });
 
-    const locations = await Job.distinct('location', {
-      location: regex,
+    const cities = await Job.distinct('location.city', {
+      'location.city': regex,
       isActive: true,
       status: 'open'
     });
-    locations.slice(0, 2).forEach(location => {
-      suggestions.push({ text: location, type: 'location' });
+    cities.filter(c => c).slice(0, 2).forEach(city => {
+      suggestions.push({ text: city, type: 'location' });
     });
 
     res.json({ suggestions: suggestions.slice(0, 10) });

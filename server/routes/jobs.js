@@ -48,37 +48,33 @@ router.get('/', validateQueryParams, async (req, res) => {
     if (req.query.workLocation && req.query.workLocation !== 'all') {
       switch (req.query.workLocation) {
         case 'remote':
-          filters.isRemote = true;
+          filters['location.locationType'] = 'remote';
           break;
         case 'local':
-          filters.isRemote = false;
-          filters.location = { $exists: true, $ne: '', $ne: 'Remote' };
+          filters['location.locationType'] = 'local';
           break;
         case 'hybrid':
-          filters.$or = filters.$or ? [...filters.$or, 
-            { isRemote: true },
-            { $and: [{ isRemote: false }, { location: { $exists: true, $ne: '', $ne: 'Remote' } }] }
-          ] : [
-            { isRemote: true },
-            { $and: [{ isRemote: false }, { location: { $exists: true, $ne: '', $ne: 'Remote' } }] }
-          ];
+          filters['location.locationType'] = 'hybrid';
           break;
       }
+    }
+
+    if (req.query.zipCode && req.query.zipCode.trim() !== '') {
+      filters['location.zipCode'] = req.query.zipCode.trim();
     }
 
     if (req.query.specificLocation && req.query.specificLocation.trim() !== '') {
       const locationQuery = req.query.specificLocation.trim();
       if (locationQuery.toLowerCase() === 'remote') {
-        filters.isRemote = true;
+        filters['location.locationType'] = 'remote';
       } else {
-        filters.$and = filters.$and || [];
-        filters.$and.push({
-          $or: [
-            { location: { $regex: locationQuery, $options: 'i' } },
-            { isRemote: false }
-          ]
-        });
-        filters.location = { $regex: locationQuery, $options: 'i' };
+        filters.$or = filters.$or || [];
+        filters.$or.push(
+          { 'location.address': { $regex: locationQuery, $options: 'i' } },
+          { 'location.city': { $regex: locationQuery, $options: 'i' } },
+          { 'location.state': { $regex: locationQuery, $options: 'i' } },
+          { 'location.zipCode': { $regex: locationQuery, $options: 'i' } }
+        );
       }
     }
 
@@ -207,10 +203,28 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       duration,
       experienceLevel,
       location,
-      isRemote,
+      isRemote, // backward compat: accept old field
       isUrgent,
       jobType
     } = req.body;
+
+    // Build location object — support both old format (string + isRemote) and new format (object)
+    let locationData;
+    if (location && typeof location === 'object' && location.locationType) {
+      locationData = location;
+    } else {
+      // Backward compatibility: convert old string + isRemote to new format
+      const isRemoteJob = isRemote !== false;
+      locationData = {
+        locationType: isRemoteJob ? 'remote' : 'local',
+        address: (typeof location === 'string' && location !== 'Remote') ? location : '',
+        city: '',
+        state: '',
+        zipCode: '',
+        coordinates: { type: 'Point', coordinates: [0, 0] },
+        serviceRadius: 25
+      };
+    }
     
     const job = new Job({
       title,
@@ -221,8 +235,7 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       budget,
       duration,
       experienceLevel,
-      location: location || 'Remote',
-      isRemote: isRemote !== false,
+      location: locationData,
       isUrgent: isUrgent || false,
       jobType: jobType || 'freelance',
       client: req.user._id,
@@ -262,7 +275,7 @@ router.put('/:id', authenticateToken, validateMongoId, validateJobPost, async (r
     
     const allowedUpdates = [
       'title', 'description', 'category', 'subcategory', 'skills',
-      'budget', 'duration', 'experienceLevel', 'location', 'isRemote', 'isUrgent', 'jobType'
+      'budget', 'duration', 'experienceLevel', 'location', 'isUrgent', 'jobType'
     ];
     
     allowedUpdates.forEach(field => {
