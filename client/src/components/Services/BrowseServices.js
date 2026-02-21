@@ -1,240 +1,167 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { formatCategory } from '../../utils/formatters';
-import { getApiBaseUrl } from '../../utils/api';
-import '../UserComponents.css';
+import { apiRequest } from '../../utils/api';
+import SEO from '../common/SEO';
+import BrowseLayout, {
+  SearchBar, FilterSelect, FilterInput,
+  ResultsControls, BrowsePagination, BrowseEmpty
+} from '../common/BrowseLayout';
+import '../common/BrowseLayout.css';
+
+const CATEGORIES = [
+  { value: 'all', label: 'All Categories' },
+  { value: 'web_development', label: 'Web Development' },
+  { value: 'mobile_development', label: 'Mobile Development' },
+  { value: 'design', label: 'Design' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'video_editing', label: 'Video Editing' },
+  { value: 'consulting', label: 'Consulting' },
+  { value: 'other', label: 'Other' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'popular', label: 'Most Popular' },
+  { value: 'price_low', label: 'Price: Low to High' },
+  { value: 'price_high', label: 'Price: High to Low' },
+  { value: 'rating', label: 'Highest Rated' },
+];
+
+const ServiceCard = ({ service }) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="browse-card" onClick={() => navigate(`/services/${service._id}`)}>
+      {service.images?.[0] && (
+        <div style={{
+          height: 160, borderRadius: '10px 10px 0 0', margin: '-1.25rem -1.25rem 1rem',
+          background: `url(${service.images[0]}) center/cover no-repeat`, width: 'calc(100% + 2.5rem)'
+        }} />
+      )}
+      <div className="browse-card-header">
+        <div>
+          <h3 className="browse-card-title">{service.title}</h3>
+          <div className="browse-card-meta">
+            {service.seller?.firstName} {service.seller?.lastName}
+            {service.seller?.rating > 0 && ` • ⭐ ${service.seller.rating.toFixed(1)}`}
+          </div>
+        </div>
+      </div>
+
+      <p className="browse-card-desc">{service.description}</p>
+
+      <div className="browse-card-tags">
+        {service.category && <span className="browse-tag primary">{service.category.replace(/_/g, ' ')}</span>}
+        {service.deliveryTime && <span className="browse-tag">📦 {service.deliveryTime}</span>}
+        {service.tags?.slice(0, 3).map((t, i) => <span key={i} className="browse-tag">{t}</span>)}
+      </div>
+
+      <div className="browse-card-footer">
+        <span style={{ fontWeight: 700, color: '#111827' }}>
+          Starting at ${service.packages?.[0]?.price || service.startingPrice || '—'}
+        </span>
+        <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/services/${service._id}`); }}>
+          View Service
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const BrowseServices = () => {
-  const navigate = useNavigate();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
-    search: '',
-    category: 'all',
-    minPrice: '',
-    maxPrice: ''
+    category: 'all', minPrice: '', maxPrice: '', deliveryTime: 'all', sortBy: 'newest'
   });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 12,
-    total: 0,
-    pages: 0
-  });
-
-  const apiBaseUrl = getApiBaseUrl();
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, pages: 0 });
+  const [viewMode, setViewMode] = useState('grid');
 
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString()
+      const params = new URLSearchParams({ page, limit: 12 });
+      if (search) params.set('search', search);
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v && v !== 'all') params.set(k, v);
       });
 
-      if (filters.search) params.append('search', filters.search);
-      if (filters.category !== 'all') params.append('category', filters.category);
-      if (filters.minPrice) params.append('minPrice', filters.minPrice);
-      if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
-
-      const response = await axios.get(`${apiBaseUrl}/api/services?${params}`);
-      setServices(response.data.services);
-      setPagination(response.data.pagination);
+      const data = await apiRequest(`/api/services?${params}`);
+      setServices(data.services || []);
+      setPagination(data.pagination || {});
       setError(null);
-    } catch (error) {
-      console.error('Failed to fetch services:', error);
-      setError(error.response?.data?.error || 'Failed to load services');
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl, filters, pagination.page, pagination.limit]);
+  }, [search, filters, page]);
 
-  useEffect(() => {
-    fetchServices();
-  }, [fetchServices]);
+  useEffect(() => { fetchServices(); }, [fetchServices]);
 
-  const handleFilterChange = (key, value) => {
+  const updateFilter = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPage(1);
   };
 
-  if (loading) {
-    return (
-      <div className="user-container">
-        <div className="loading">Loading services...</div>
-      </div>
-    );
-  }
+  const sidebar = (
+    <>
+      <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 600 }}>Filters</h3>
+      <FilterSelect label="Category" value={filters.category} onChange={v => updateFilter('category', v)} options={CATEGORIES} />
+      <FilterInput label="Min Price" value={filters.minPrice} onChange={v => updateFilter('minPrice', v)} placeholder="$0" type="number" />
+      <FilterInput label="Max Price" value={filters.maxPrice} onChange={v => updateFilter('maxPrice', v)} placeholder="No limit" type="number" />
+      <FilterSelect label="Delivery Time" value={filters.deliveryTime} onChange={v => updateFilter('deliveryTime', v)}
+        options={[
+          { value: 'all', label: 'Any' },
+          { value: '1_day', label: '24 Hours' },
+          { value: '3_days', label: 'Up to 3 Days' },
+          { value: '7_days', label: 'Up to 7 Days' },
+          { value: '14_days', label: 'Up to 2 Weeks' },
+          { value: '30_days', label: 'Up to 1 Month' },
+        ]} />
+    </>
+  );
 
   return (
-    <div className="user-container">
-      <div className="user-header">
-        <h1>Browse Services</h1>
-        <p>Find professional services from talented freelancers</p>
-      </div>
+    <>
+      <SEO title="Browse Services" description="Find ready-made freelance services." />
+      <BrowseLayout
+        title="Browse Services"
+        subtitle="Find ready-made solutions from skilled freelancers"
+        sidebar={sidebar}
+      >
+        <SearchBar value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search services, keywords, or categories..." />
 
-      <div className="filters">
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Search services, skills, or keywords..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-          />
-        </div>
+        <ResultsControls
+          total={pagination.total || 0}
+          sortValue={filters.sortBy}
+          onSortChange={v => updateFilter('sortBy', v)}
+          sortOptions={SORT_OPTIONS}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
 
-        <div className="filter-group">
-          <label>Category</label>
-          <select
-            value={filters.category}
-            onChange={(e) => handleFilterChange('category', e.target.value)}
-          >
-            <option value="all">All Categories</option>
-            <option value="web_development">Web Development</option>
-            <option value="mobile_development">Mobile Development</option>
-            <option value="design">Design</option>
-            <option value="writing">Writing</option>
-            <option value="marketing">Marketing</option>
-            <option value="data_entry">Data Entry</option>
-            <option value="customer_service">Customer Service</option>
-            <option value="translation">Translation</option>
-            <option value="video_editing">Video Editing</option>
-            <option value="photography">Photography</option>
-            <option value="consulting">Consulting</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label>Min Price</label>
-          <input
-            type="number"
-            placeholder="$0"
-            value={filters.minPrice}
-            onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-          />
-        </div>
-
-        <div className="filter-group">
-          <label>Max Price</label>
-          <input
-            type="number"
-            placeholder="No limit"
-            value={filters.maxPrice}
-            onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-          />
-        </div>
-      </div>
-
-      {error && <div className="error">{error}</div>}
-
-      <div className="main-content">
-        <div className="section-title">
-          {pagination.total} Services Found
-        </div>
-
-        {services.length === 0 ? (
-          <div className="empty-state">
-            <h3>No services found</h3>
-            <p>Try adjusting your search criteria or filters</p>
+        {loading ? (
+          <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
+            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="browse-card" style={{ height: 240, background: '#f9fafb' }} />)}
           </div>
+        ) : error ? (
+          <BrowseEmpty icon="⚠️" title="Error loading services" message={error} />
+        ) : services.length === 0 ? (
+          <BrowseEmpty icon="🛒" title="No services found" message="Try adjusting your search or filters" />
         ) : (
-          <>
-            <div className="services-grid">
-              {services.map((service) => (
-                <div key={service._id} className="service-card">
-                  <div className="service-image">
-                    {service.gallery && service.gallery.length > 0 ? (
-                      <img src={service.gallery[0].url} alt={service.title} />
-                    ) : (
-                      <div className="placeholder-image">
-                        <span>📋</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="service-content">
-                    <div className="freelancer-info">
-                      <img 
-                        src={service.freelancer.profilePicture || '/default-avatar.png'} 
-                        alt={`${service.freelancer.firstName} ${service.freelancer.lastName}`}
-                        className="freelancer-avatar"
-                      />
-                      <span>{service.freelancer.firstName} {service.freelancer.lastName}</span>
-                      {service.freelancer.rating > 0 && (
-                        <span className="rating">⭐ {service.freelancer.rating.toFixed(1)}</span>
-                      )}
-                    </div>
-                    
-                    <h3 className="service-title">{service.title}</h3>
-                    <p className="service-description">
-                      {service.description.substring(0, 100)}
-                      {service.description.length > 100 ? '...' : ''}
-                    </p>
-                    
-                    <div className="service-tags">
-                      <span className="tag primary">{formatCategory(service.category)}</span>
-                      {service.skills.slice(0, 2).map((skill, index) => (
-                        <span key={index} className="tag">{skill}</span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="service-footer">
-                    <div className="service-stats">
-                      <span>⭐ {service.rating.toFixed(1)} ({service.totalReviews})</span>
-                      <span>📦 {service.totalOrders} orders</span>
-                    </div>
-                    <div className="service-price">
-                      <span>Starting at</span>
-                      <strong>${service.pricing.basic.price}</strong>
-                    </div>
-                    <button 
-                      onClick={() => navigate(`/services/${service._id}`)}
-                      className="btn btn-primary"
-                    >
-                      View Service
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {pagination.pages > 1 && (
-              <div className="pagination">
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                  disabled={pagination.page === 1}
-                >
-                  Previous
-                </button>
-                
-                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setPagination(prev => ({ ...prev, page }))}
-                      className={pagination.page === page ? 'active' : ''}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-                
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                  disabled={pagination.page === pagination.pages}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
+          <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
+            {services.map(s => <ServiceCard key={s._id} service={s} />)}
+          </div>
         )}
-      </div>
-    </div>
+
+        <BrowsePagination current={page} total={pagination.pages || 0} onChange={setPage} />
+      </BrowseLayout>
+    </>
   );
 };
 

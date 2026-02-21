@@ -1,125 +1,180 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { apiRequest } from '../../utils/api';
 import SEO from '../common/SEO';
-import FreelancerCard from './FreelancerCard';
-import FreelancerFilterPanel from './FreelancerFilterPanel';
-import Pagination from '../common/Pagination';
-import '../UserComponents.css';
-import { getApiBaseUrl } from '../../utils/api';
+import BrowseLayout, {
+  SearchBar, FilterSelect, FilterInput,
+  ResultsControls, BrowsePagination, BrowseEmpty
+} from '../common/BrowseLayout';
+import '../common/BrowseLayout.css';
+
+const CATEGORIES = [
+  { value: 'all', label: 'All Skills' },
+  { value: 'web_development', label: 'Web Development' },
+  { value: 'mobile_development', label: 'Mobile Development' },
+  { value: 'design', label: 'Design' },
+  { value: 'writing', label: 'Writing' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'video_editing', label: 'Video Editing' },
+  { value: 'consulting', label: 'Consulting' },
+  { value: 'other', label: 'Other' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'rating', label: 'Highest Rated' },
+  { value: 'newest', label: 'Recently Joined' },
+  { value: 'rate_low', label: 'Rate: Low to High' },
+  { value: 'rate_high', label: 'Rate: High to Low' },
+  { value: 'most_jobs', label: 'Most Jobs Completed' },
+];
+
+const FreelancerCard = ({ freelancer }) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="browse-card" onClick={() => navigate(`/freelancers/${freelancer._id}`)}>
+      <div className="browse-card-header">
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: '50%', background: '#eff6ff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.2rem', fontWeight: 700, color: '#2563eb', flexShrink: 0,
+            overflow: 'hidden'
+          }}>
+            {freelancer.profilePicture
+              ? <img src={freelancer.profilePicture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : `${freelancer.firstName?.[0] || ''}${freelancer.lastName?.[0] || ''}`
+            }
+          </div>
+          <div>
+            <h3 className="browse-card-title">{freelancer.firstName} {freelancer.lastName}</h3>
+            <div className="browse-card-meta">
+              {freelancer.headline || freelancer.title || 'Freelancer'}
+              {freelancer.location && ` • 📍 ${freelancer.location}`}
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {freelancer.rating > 0 && (
+            <div style={{ fontWeight: 600, color: '#f59e0b' }}>⭐ {freelancer.rating.toFixed(1)}</div>
+          )}
+          {freelancer.hourlyRate > 0 && (
+            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#111827' }}>${freelancer.hourlyRate}/hr</div>
+          )}
+        </div>
+      </div>
+
+      {freelancer.bio && <p className="browse-card-desc">{freelancer.bio}</p>}
+
+      <div className="browse-card-tags">
+        {freelancer.skills?.slice(0, 5).map((s, i) => <span key={i} className="browse-tag">{s}</span>)}
+        {freelancer.skills?.length > 5 && <span className="browse-tag">+{freelancer.skills.length - 5}</span>}
+        {freelancer.isAvailable && <span className="browse-tag success">Available</span>}
+        {freelancer.isVerified && <span className="browse-tag primary">Verified</span>}
+      </div>
+
+      <div className="browse-card-footer">
+        <span className="browse-card-stats">
+          {freelancer.completedJobs || 0} jobs completed
+          {freelancer.totalEarnings > 0 && ` • $${(freelancer.totalEarnings / 1000).toFixed(0)}k+ earned`}
+        </span>
+        <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/freelancers/${freelancer._id}`); }}>
+          View Profile
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const FreelancerDiscovery = () => {
   const [freelancers, setFreelancers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
-    search: '',
-    skills: '',
-    location: '',
-    minRate: '',
-    maxRate: '',
-    rating: 'all',
-    availability: 'all',
-    sortBy: 'rating'
+    category: 'all', minRate: '', maxRate: '', availability: 'all', sortBy: 'rating'
   });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 12,
-    total: 0,
-    pages: 0
-  });
-
-  const apiBaseUrl = getApiBaseUrl();
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, pages: 0 });
+  const [viewMode, setViewMode] = useState('grid');
 
   const fetchFreelancers = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString()
+      const params = new URLSearchParams({ page, limit: 12 });
+      if (search) params.set('search', search);
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v && v !== 'all') params.set(k, v);
       });
 
-      if (filters.search) params.append('search', filters.search);
-      if (filters.skills) params.append('skills', filters.skills);
-      if (filters.location) params.append('location', filters.location);
-      if (filters.minRate) params.append('minRate', filters.minRate);
-      if (filters.maxRate) params.append('maxRate', filters.maxRate);
-      if (filters.rating !== 'all') params.append('rating', filters.rating);
-      if (filters.availability !== 'all') params.append('availability', filters.availability);
-      if (filters.sortBy !== 'rating') params.append('sortBy', filters.sortBy);
-
-      const response = await axios.get(`${apiBaseUrl}/api/freelancers?${params}`);
-      setFreelancers(response.data.freelancers);
-      setPagination(response.data.pagination);
+      const data = await apiRequest(`/api/users/freelancers?${params}`);
+      setFreelancers(data.freelancers || data.users || []);
+      setPagination(data.pagination || {});
       setError(null);
-    } catch (error) {
-      console.error('Failed to fetch freelancers:', error);
-      setError(error.response?.data?.error || 'Failed to load freelancers');
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl, filters, pagination.page, pagination.limit]);
+  }, [search, filters, page]);
 
-  useEffect(() => {
-    fetchFreelancers();
-  }, [fetchFreelancers]);
+  useEffect(() => { fetchFreelancers(); }, [fetchFreelancers]);
 
-  const handleFilterChange = (key, value) => {
+  const updateFilter = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPage(1);
   };
 
-  const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  if (loading) {
-    return (
-      <div className="user-container">
-        <div className="loading">Loading freelancers...</div>
-      </div>
-    );
-  }
+  const sidebar = (
+    <>
+      <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 600 }}>Filters</h3>
+      <FilterSelect label="Category" value={filters.category} onChange={v => updateFilter('category', v)} options={CATEGORIES} />
+      <FilterInput label="Min Rate ($/hr)" value={filters.minRate} onChange={v => updateFilter('minRate', v)} placeholder="$0" type="number" />
+      <FilterInput label="Max Rate ($/hr)" value={filters.maxRate} onChange={v => updateFilter('maxRate', v)} placeholder="No limit" type="number" />
+      <FilterSelect label="Availability" value={filters.availability} onChange={v => updateFilter('availability', v)}
+        options={[
+          { value: 'all', label: 'Any' },
+          { value: 'available', label: 'Available Now' },
+          { value: 'busy', label: 'Currently Busy' },
+        ]} />
+    </>
+  );
 
   return (
     <>
-      <SEO 
+      <SEO title="Discover Freelancers" description="Find skilled freelancers for your project." />
+      <BrowseLayout
         title="Discover Freelancers"
-        description="Find skilled freelancers for your projects. Browse profiles, portfolios, and reviews to hire the perfect professional."
-        keywords="hire freelancers, skilled professionals, remote workers, freelance talent"
-      />
-      <div className="user-container">
-        <div className="user-header">
-        <h1>Discover Freelancers</h1>
-        <p>Find skilled professionals for your projects</p>
-      </div>
+        subtitle="Find skilled professionals for your next project"
+        sidebar={sidebar}
+      >
+        <SearchBar value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search by name, skills, or expertise..." />
 
-      <FreelancerFilterPanel filters={filters} onFilterChange={handleFilterChange} />
+        <ResultsControls
+          total={pagination.total || 0}
+          sortValue={filters.sortBy}
+          onSortChange={v => updateFilter('sortBy', v)}
+          sortOptions={SORT_OPTIONS}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
 
-      {error && <div className="error">{error}</div>}
-
-      <div className="main-content">
-        <div className="section-title">
-          {pagination.total} Freelancers Found
-        </div>
-
-        {freelancers.length === 0 ? (
-          <div className="empty-state">
-            <h3>No freelancers found</h3>
-            <p>Try adjusting your search criteria or filters</p>
+        {loading ? (
+          <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
+            {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="browse-card" style={{ height: 200, background: '#f9fafb' }} />)}
           </div>
+        ) : error ? (
+          <BrowseEmpty icon="⚠️" title="Error loading freelancers" message={error} />
+        ) : freelancers.length === 0 ? (
+          <BrowseEmpty icon="👥" title="No freelancers found" message="Try adjusting your search or filters" />
         ) : (
-          <>
-            <div className="freelancer-grid">
-              {freelancers.map((freelancer) => (
-                <FreelancerCard key={freelancer._id} freelancer={freelancer} />
-              ))}
-            </div>
-
-            <Pagination pagination={pagination} onPageChange={handlePageChange} />
-          </>
+          <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
+            {freelancers.map(f => <FreelancerCard key={f._id} freelancer={f} />)}
+          </div>
         )}
-      </div>
-    </div>
+
+        <BrowsePagination current={page} total={pagination.pages || 0} onChange={setPage} />
+      </BrowseLayout>
     </>
   );
 };
