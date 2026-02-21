@@ -1,21 +1,94 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
 import { getApiBaseUrl } from '../../utils/api';
-import '../UserComponents.css';
+import './Messages.css';
 
+// ── Time Formatting ─────────────────────────────────────────────
+const formatTime = (ts) => {
+  const d = new Date(ts);
+  const now = new Date();
+  const hrs = (now - d) / 3600000;
+  if (hrs < 24) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (hrs < 168) return d.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+// ── Conversation Item ───────────────────────────────────────────
+const ConvoItem = ({ convo, selected, userId, onClick }) => {
+  const other = convo.participants?.find(p => p._id !== userId);
+  const unread = convo.unreadCount > 0;
+
+  return (
+    <div className={`convo-item ${selected ? 'selected' : ''} ${unread ? 'unread' : ''}`} onClick={onClick}>
+      <div className="convo-avatar">
+        {other?.profilePicture ? (
+          <img src={other.profilePicture} alt="" />
+        ) : (
+          <span>{other?.firstName?.[0]}{other?.lastName?.[0]}</span>
+        )}
+      </div>
+      <div className="convo-info">
+        <div className="convo-top">
+          <span className="convo-name">{other?.firstName} {other?.lastName}</span>
+          <span className="convo-time">{formatTime(convo.lastActivity)}</span>
+        </div>
+        {convo.job && <div className="convo-job">Re: {convo.job.title}</div>}
+        {convo.lastMessage && (
+          <div className="convo-preview">{convo.lastMessage.content?.substring(0, 60)}{convo.lastMessage.content?.length > 60 ? '...' : ''}</div>
+        )}
+      </div>
+      {unread && <span className="convo-badge">{convo.unreadCount}</span>}
+    </div>
+  );
+};
+
+// ── Message Bubble ──────────────────────────────────────────────
+const MsgBubble = ({ msg, isMine, deliveryStatus }) => (
+  <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>
+    <div className="msg-bubble">
+      <div className="msg-content">{msg.content}</div>
+      {msg.attachments?.length > 0 && (
+        <div className="msg-attachments">
+          {msg.attachments.map((a, i) => (
+            <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="msg-attach-link">
+              📎 {a.filename || 'Attachment'}
+            </a>
+          ))}
+        </div>
+      )}
+      <div className="msg-meta">
+        <span>{formatTime(msg.createdAt)}</span>
+        {isMine && (
+          <span className="msg-status">
+            {msg.isRead ? '✓✓' : deliveryStatus?.has(msg._id) ? '✓✓' : '✓'}
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// ── Main Messages ───────────────────────────────────────────────
 const Messages = () => {
   const { user } = useAuth();
+  const userId = user?._id || user?.id || user?.userId;
   const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [selectedConvo, setSelectedConvo] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [sendingMessage, setSendingMessage] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [deliveryStatus, setDeliveryStatus] = useState(new Map());
+  const [showContext, setShowContext] = useState(false);
+  const [mobileView, setMobileView] = useState('inbox');
+  const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
   const apiBaseUrl = getApiBaseUrl();
@@ -27,56 +100,34 @@ const Messages = () => {
       switch (event) {
         case 'message:receive':
           setMessages(prev => {
-            const messageExists = prev.some(msg => msg._id === data.message._id);
-            if (messageExists) return prev;
+            if (prev.some(m => m._id === data.message._id)) return prev;
             return [...prev, data.message];
           });
           fetchConversations();
           break;
-        
         case 'message:read':
-          setMessages(prev => prev.map(msg =>
-            data.messageIds.includes(msg._id) 
-              ? { ...msg, isRead: true, readAt: data.readAt }
-              : msg
+          setMessages(prev => prev.map(m =>
+            data.messageIds?.includes(m._id) ? { ...m, isRead: true } : m
           ));
           break;
-        
         case 'conversation:update':
           fetchConversations();
           break;
-        
         case 'typing:start':
-          if (data.conversationId === selectedConversation?._id) {
+          if (data.conversationId === selectedConvo?._id) {
             setTypingUsers(prev => new Set([...prev, data.userId]));
           }
           break;
-        
         case 'typing:stop':
-          if (data.conversationId === selectedConversation?._id) {
-            setTypingUsers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(data.userId);
-              return newSet;
-            });
+          if (data.conversationId === selectedConvo?._id) {
+            setTypingUsers(prev => { const s = new Set(prev); s.delete(data.userId); return s; });
           }
           break;
-        
-        case 'user:online':
-          break;
-        
-        case 'user:offline':
-          break;
-        
         case 'message:delivered':
           setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
           break;
-        
-        case 'user:online_status':
-          break;
-        
         default:
-          console.warn('[UI] Unhandled socket event:', event);
+          break;
       }
     }
   });
@@ -84,447 +135,270 @@ const Messages = () => {
   const fetchConversations = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/messages/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await axios.get(`${apiBaseUrl}/api/messages/conversations`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      setConversations(response.data.conversations);
+      setConversations(res.data.conversations || []);
       setError(null);
-    } catch (error) {
-      console.error('Failed to fetch conversations:', error);
-      setError(error.response?.data?.error || 'Failed to load conversations');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, token]);
 
-  const fetchMessages = useCallback(async (conversationId) => {
+  const fetchMessages = useCallback(async (convo) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${apiBaseUrl}/api/messages/conversations/${conversationId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await axios.get(`${apiBaseUrl}/api/messages/conversations/${convo._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(response.data.messages);
-      setSelectedConversation(response.data.conversation);
-      
-      const unreadMessages = response.data.messages.filter(msg => 
-        !msg.isRead && msg.recipient === user?.id
-      );
-      
-      if (unreadMessages.length > 0 && socketRef.current) {
+      setMessages(res.data.messages || []);
+      setSelectedConvo(res.data.conversation || convo);
+      setMobileView('chat');
+
+      const unread = (res.data.messages || []).filter(m => !m.isRead && m.recipient === userId);
+      if (unread.length > 0 && socketRef.current) {
         socketRef.current.emit('message:read', {
-          conversationId,
-          messageIds: unreadMessages.map(m => m._id)
+          conversationId: convo._id,
+          messageIds: unread.map(m => m._id)
         });
       }
-      
-      if (response.data.conversation && socketRef.current) {
-        const otherParticipant = getOtherParticipant(response.data.conversation);
-        if (otherParticipant) {
-          socketRef.current.emit('user:get_online_status', {
-            userIds: [otherParticipant._id]
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch messages:', error);
-      setError(error.response?.data?.error || 'Failed to load messages');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to load messages');
     }
-  }, [apiBaseUrl, user?.id]);
+  }, [apiBaseUrl, token, userId]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    
-    if (!newMessage.trim() || !selectedConversation) {
-      return;
-    }
+    if (!newMessage.trim() || !selectedConvo || sending) return;
 
-    setSendingMessage(true);
-    
-    const optimisticMessage = {
+    setSending(true);
+    const optimistic = {
       _id: `temp-${Date.now()}`,
       content: newMessage.trim(),
-      sender: { _id: user?.id, firstName: user?.firstName, lastName: user?.lastName },
+      sender: { _id: userId, firstName: user?.firstName, lastName: user?.lastName },
       createdAt: new Date().toISOString(),
       isRead: false,
-      conversation: selectedConversation._id
+      conversation: selectedConvo._id
     };
-    
-    setMessages(prev => [...prev, optimisticMessage]);
-    const messageContent = newMessage.trim();
+    setMessages(prev => [...prev, optimistic]);
+    const content = newMessage.trim();
     setNewMessage('');
-    
+
     try {
+      const other = selectedConvo.participants?.find(p => p._id !== userId);
       if (socketRef.current) {
         socketRef.current.emit('message:send', {
-          recipientId: getOtherParticipant(selectedConversation)?._id,
-          content: messageContent,
+          recipientId: other?._id,
+          content,
           messageType: 'text'
         });
       } else {
-        const response = await axios.post(
-          `${apiBaseUrl}/api/messages/conversations/${selectedConversation._id}/messages`,
-          { content: messageContent },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }
+        const res = await axios.post(
+          `${apiBaseUrl}/api/messages/conversations/${selectedConvo._id}/messages`,
+          { content },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        
-        setMessages(prev => prev.map(msg => 
-          msg._id === optimisticMessage._id ? response.data.data : msg
-        ));
-        
-        await fetchConversations();
+        setMessages(prev => prev.map(m => m._id === optimistic._id ? res.data.data : m));
+        fetchConversations();
       }
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      setError(error.response?.data?.error || 'Failed to send message');
-      setMessages(prev => prev.filter(msg => msg._id !== optimisticMessage._id));
+    } catch (err) {
+      setError('Failed to send message');
+      setMessages(prev => prev.filter(m => m._id !== optimistic._id));
     } finally {
-      setSendingMessage(false);
+      setSending(false);
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchConversations();
-    }
-  }, [user, fetchConversations]);
-
-  const formatMessageTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-    
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 168) {
-      return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const handleTyping = (e) => {
+    setNewMessage(e.target.value);
+    if (socketRef.current && selectedConvo) {
+      socketRef.current.emit('typing:start', { conversationId: selectedConvo._id });
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socketRef.current?.emit('typing:stop', { conversationId: selectedConvo._id });
+      }, 2000);
     }
   };
 
-  const getOtherParticipant = (conversation) => {
-    return conversation.participants.find(p => p._id !== user?.id);
-  };
+  useEffect(() => { if (user) fetchConversations(); }, [user, fetchConversations]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  if (loading) {
-    return (
-      <div className="user-container">
-        <div className="loading">Loading messages...</div>
-      </div>
-    );
-  }
+  const otherParticipant = selectedConvo?.participants?.find(p => p._id !== userId);
+
+  // Filter conversations
+  const filtered = conversations.filter(c => {
+    if (filter === 'unread' && !c.unreadCount) return false;
+    if (search) {
+      const other = c.participants?.find(p => p._id !== userId);
+      const name = `${other?.firstName} ${other?.lastName}`.toLowerCase();
+      const jobTitle = c.job?.title?.toLowerCase() || '';
+      return name.includes(search.toLowerCase()) || jobTitle.includes(search.toLowerCase());
+    }
+    return true;
+  });
 
   return (
-    <div className="user-container">
-      <div className="user-header">
-        <h1>Messages</h1>
-        <p>Communicate with clients and freelancers</p>
+    <div className="messages-page">
+      {/* Header */}
+      <div className="messages-header">
+        <div className="messages-header-left">
+          {mobileView === 'chat' && (
+            <button className="mobile-back-btn" onClick={() => setMobileView('inbox')}>← Back</button>
+          )}
+          <h1>Messages</h1>
+        </div>
+        <div className="messages-header-right">
+          <input
+            type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search conversations..." className="messages-search"
+          />
+        </div>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && <div className="messages-error">⚠️ {error} <button onClick={() => setError(null)}>×</button></div>}
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: window.innerWidth <= 767 ? '1fr' : '1fr 2fr',
-        gap: '20px', 
-        height: window.innerWidth <= 767 ? 'auto' : '600px',
-        minHeight: window.innerWidth <= 767 ? '70vh' : '600px',
-        background: 'white',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{ 
-          borderRight: '1px solid #e9ecef',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <div style={{ 
-            padding: '20px',
-            borderBottom: '1px solid #e9ecef',
-            background: '#f8f9fa'
-          }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Conversations</h3>
+      <div className="messages-layout">
+        {/* ── Inbox ──────────────────────────────────────────── */}
+        <div className={`messages-inbox ${mobileView === 'inbox' ? 'mobile-show' : 'mobile-hide'}`}>
+          <div className="inbox-filters">
+            <button className={`inbox-filter ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All</button>
+            <button className={`inbox-filter ${filter === 'unread' ? 'active' : ''}`} onClick={() => setFilter('unread')}>Unread</button>
           </div>
-          
-          <div style={{ 
-            flex: 1,
-            overflowY: 'auto'
-          }}>
-            {conversations.length === 0 ? (
-              <div className="empty-state" style={{ padding: '40px 20px' }}>
-                <h4>No conversations yet</h4>
-                <p>Start a conversation by applying to a job or posting one</p>
+          <div className="inbox-list">
+            {loading ? (
+              <div className="inbox-loading">Loading...</div>
+            ) : filtered.length === 0 ? (
+              <div className="inbox-empty">
+                <p>{search ? 'No matching conversations' : 'No conversations yet'}</p>
+                <p className="inbox-empty-sub">Start by applying to a job or posting one</p>
               </div>
             ) : (
-              conversations.map((conversation) => {
-                const otherParticipant = getOtherParticipant(conversation);
-                return (
-                  <div
-                    key={conversation._id}
-                    onClick={() => fetchMessages(conversation._id)}
-                    style={{
-                      padding: '15px 20px',
-                      borderBottom: '1px solid #f1f3f4',
-                      cursor: 'pointer',
-                      background: selectedConversation?._id === conversation._id ? '#e3f2fd' : 'transparent',
-                      transition: 'background-color 0.2s ease'
-                    }}
-                  >
-                    <div style={{ 
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px'
-                    }}>
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: '#667eea',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: '600',
-                        fontSize: '0.9rem'
-                      }}>
-                        {otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ 
-                          fontWeight: '600',
-                          fontSize: '0.9rem',
-                          marginBottom: '2px'
-                        }}>
-                          {otherParticipant?.firstName} {otherParticipant?.lastName}
-                        </div>
-                        {conversation.job && (
-                          <div style={{ 
-                            fontSize: '0.8rem',
-                            color: '#6c757d',
-                            marginBottom: '2px'
-                          }}>
-                            Re: {conversation.job.title}
-                          </div>
-                        )}
-                        <div style={{ 
-                          fontSize: '0.8rem',
-                          color: '#6c757d'
-                        }}>
-                          {formatMessageTime(conversation.lastActivity)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              filtered.map(c => (
+                <ConvoItem
+                  key={c._id} convo={c} userId={userId}
+                  selected={selectedConvo?._id === c._id}
+                  onClick={() => fetchMessages(c)}
+                />
+              ))
             )}
           </div>
         </div>
 
-        <div style={{ 
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          {selectedConversation ? (
+        {/* ── Chat Thread ────────────────────────────────────── */}
+        <div className={`messages-chat ${mobileView === 'chat' ? 'mobile-show' : 'mobile-hide'}`}>
+          {selectedConvo ? (
             <>
-              <div style={{ 
-                padding: '20px',
-                borderBottom: '1px solid #e9ecef',
-                background: '#f8f9fa'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: '#667eea',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: '600'
-                  }}>
-                    {getOtherParticipant(selectedConversation)?.firstName?.[0]}
-                    {getOtherParticipant(selectedConversation)?.lastName?.[0]}
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
-                      {getOtherParticipant(selectedConversation)?.firstName} {getOtherParticipant(selectedConversation)?.lastName}
-                    </h3>
-                    {selectedConversation.job && (
-                      <div style={{ fontSize: '0.9rem', color: '#6c757d' }}>
-                        Re: {selectedConversation.job.title}
-                      </div>
+              <div className="chat-header">
+                <div className="chat-header-info">
+                  <div className="chat-avatar">
+                    {otherParticipant?.profilePicture ? (
+                      <img src={otherParticipant.profilePicture} alt="" />
+                    ) : (
+                      <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>
                     )}
                   </div>
+                  <div>
+                    <h3>{otherParticipant?.firstName} {otherParticipant?.lastName}</h3>
+                    {selectedConvo.job && <p className="chat-job-link">Re: {selectedConvo.job.title}</p>}
+                  </div>
                 </div>
+                <button className="context-toggle" onClick={() => setShowContext(!showContext)}>
+                  ℹ️
+                </button>
               </div>
 
-              <div style={{ 
-                flex: 1,
-                overflowY: 'auto',
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '15px'
-              }}>
+              <div className="chat-messages">
                 {messages.length === 0 ? (
-                  <div className="empty-state">
-                    <h4>No messages yet</h4>
-                    <p>Start the conversation!</p>
-                  </div>
+                  <div className="chat-empty"><p>No messages yet. Start the conversation!</p></div>
                 ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message._id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: message.sender._id === user?.id ? 'flex-end' : 'flex-start'
-                      }}
-                    >
-                      <div
-                        style={{
-                          maxWidth: '70%',
-                          padding: '12px 16px',
-                          borderRadius: '18px',
-                          background: message.sender._id === user?.id ? '#667eea' : '#f1f3f4',
-                          color: message.sender._id === user?.id ? 'white' : '#333',
-                          fontSize: '0.9rem',
-                          lineHeight: '1.4',
-                          opacity: message._id.startsWith('temp-') ? 0.7 : 1
-                        }}
-                      >
-                        <div>{message.content}</div>
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            opacity: 0.7,
-                            marginTop: '4px',
-                            textAlign: 'right',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            gap: '4px'
-                          }}
-                        >
-                          {formatMessageTime(message.createdAt)}
-                          {message.sender._id === user?.id && (
-                            <span style={{ fontSize: '0.7rem' }}>
-                              {message.isRead ? '✓✓' : deliveryStatus.has(message._id) ? '✓✓' : '✓'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  messages.map(msg => (
+                    <MsgBubble
+                      key={msg._id} msg={msg}
+                      isMine={msg.sender?._id === userId}
+                      deliveryStatus={deliveryStatus}
+                    />
                   ))
                 )}
-                
                 {typingUsers.size > 0 && (
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'flex-start',
-                    marginTop: '10px'
-                  }}>
-                    <div style={{
-                      padding: '8px 12px',
-                      background: '#f1f3f4',
-                      borderRadius: '12px',
-                      fontSize: '0.8rem',
-                      color: '#6c757d',
-                      fontStyle: 'italic'
-                    }}>
-                      {getOtherParticipant(selectedConversation)?.firstName} is typing...
-                    </div>
+                  <div className="typing-indicator">
+                    {otherParticipant?.firstName} is typing...
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
-              <form onSubmit={sendMessage} style={{ 
-                padding: '20px',
-                borderTop: '1px solid #e9ecef',
-                display: 'flex',
-                gap: '10px'
-              }}>
+              <form className="chat-composer" onSubmit={sendMessage}>
                 <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value);
-                    
-                    if (socketRef.current && selectedConversation) {
-                      socketRef.current.emit('typing:start', {
-                        conversationId: selectedConversation._id
-                      });
-                      
-                      if (typingTimeoutRef.current) {
-                        clearTimeout(typingTimeoutRef.current);
-                      }
-                      
-                      typingTimeoutRef.current = setTimeout(() => {
-                        socketRef.current.emit('typing:stop', {
-                          conversationId: selectedConversation._id
-                        });
-                      }, 2000);
-                    }
-                  }}
+                  type="text" value={newMessage} onChange={handleTyping}
+                  placeholder="Type a message..."
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) sendMessage(e); }}
+                  disabled={sending}
                   onBlur={() => {
-                    if (socketRef.current && selectedConversation) {
-                      socketRef.current.emit('typing:stop', {
-                        conversationId: selectedConversation._id
-                      });
-                    }
-                    if (typingTimeoutRef.current) {
-                      clearTimeout(typingTimeoutRef.current);
-                    }
+                    socketRef.current?.emit('typing:stop', { conversationId: selectedConvo._id });
+                    clearTimeout(typingTimeoutRef.current);
                   }}
-                  placeholder="Type your message..."
-                  style={{
-                    flex: 1,
-                    padding: '12px 16px',
-                    border: '1px solid #ced4da',
-                    borderRadius: '24px',
-                    fontSize: '0.9rem',
-                    outline: 'none'
-                  }}
-                  disabled={sendingMessage}
                 />
-                <button
-                  type="submit"
-                  disabled={!newMessage.trim() || sendingMessage}
-                  className="btn btn-primary"
-                  style={{
-                    borderRadius: '24px',
-                    padding: '12px 20px'
-                  }}
-                >
-                  {sendingMessage ? 'Sending...' : 'Send'}
+                <button type="submit" disabled={!newMessage.trim() || sending} className="send-btn">
+                  {sending ? '...' : '→'}
                 </button>
               </form>
+
+              {/* Quick Actions */}
+              <div className="chat-quick-actions">
+                {selectedConvo.job && (
+                  <Link to={`/disputes`} className="quick-act">⚖️ Dispute</Link>
+                )}
+                <button className="quick-act">💳 Request Payment</button>
+                <button className="quick-act">📅 Schedule</button>
+              </div>
             </>
           ) : (
-            <div className="empty-state" style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <h3>Select a conversation</h3>
-                <p>Choose a conversation from the left to start messaging</p>
-              </div>
+            <div className="chat-placeholder">
+              <div className="chat-placeholder-icon">💬</div>
+              <h3>Select a conversation</h3>
+              <p>Choose from the left to start messaging</p>
             </div>
           )}
         </div>
+
+        {/* ── Context Panel ──────────────────────────────────── */}
+        {selectedConvo && showContext && (
+          <div className="messages-context">
+            <div className="context-header">
+              <h3>Details</h3>
+              <button onClick={() => setShowContext(false)}>×</button>
+            </div>
+            <div className="context-profile">
+              <div className="context-avatar">
+                {otherParticipant?.profilePicture ? (
+                  <img src={otherParticipant.profilePicture} alt="" />
+                ) : (
+                  <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>
+                )}
+              </div>
+              <h4>{otherParticipant?.firstName} {otherParticipant?.lastName}</h4>
+              <Link to={`/freelancers/${otherParticipant?._id}`} className="context-link">View Profile</Link>
+            </div>
+            {selectedConvo.job && (
+              <div className="context-section">
+                <h4>Linked Job</h4>
+                <Link to={`/jobs/${selectedConvo.job._id}`} className="context-job-card">
+                  <span>{selectedConvo.job.title}</span>
+                  <span className="context-job-budget">{selectedConvo.job.budget?.amount ? `$${selectedConvo.job.budget.amount}` : ''}</span>
+                </Link>
+              </div>
+            )}
+            {selectedConvo.service && (
+              <div className="context-section">
+                <h4>Linked Service</h4>
+                <Link to={`/services/${selectedConvo.service._id}`} className="context-job-card">
+                  <span>{selectedConvo.service.title}</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
