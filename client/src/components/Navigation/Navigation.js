@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
 import { useNotifications } from '../../hooks/useNotifications';
@@ -11,108 +11,146 @@ const Navigation = () => {
   const { currentRole, switchRole } = useRole();
   const { notifications } = useNotifications();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
 
-  const handleRoleSwitch = (role) => {
-    switchRole(role);
-  };
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const handleLogout = () => {
-    logout();
+  // Close mobile menu on route change
+  useEffect(() => {
     setIsMobileMenuOpen(false);
-  };
+  }, [location.pathname]);
 
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+
+  const NavLink = ({ to, children, badge }) => (
+    <Link
+      to={to}
+      className={`nav-link ${isActive(to) ? 'active' : ''}`}
+      onClick={closeMobileMenu}
+    >
+      {children}
+      {badge > 0 && <span className="nav-badge-inline">{badge}</span>}
+    </Link>
+  );
 
   return (
-    <nav className="navigation">
-      <div className="nav-brand">
-        <Link to="/" className="brand-link">
-          <img src="/fetchwork-logo.png" alt="FetchWork" className="nav-logo" />
-          <span className="brand-text">FetchWork</span>
-        </Link>
-      </div>
-      
-      {isAuthenticated && (user?.accountType === 'freelancer' || user?.accountType === 'both') && (
-        <div className="role-switcher">
-          <span className="role-label">Viewing as:</span>
-          <div className="role-toggle">
-            <button 
-              className={`role-btn ${currentRole === 'freelancer' ? 'active' : ''}`}
-              onClick={() => handleRoleSwitch('freelancer')}
-            >
-              Freelancer
-            </button>
-            {(user?.accountType === 'both' || user?.accountType === 'client') && (
-              <button 
-                className={`role-btn ${currentRole === 'client' ? 'active' : ''}`}
-                onClick={() => handleRoleSwitch('client')}
-              >
-                Client
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+    <>
+      <nav className={`navigation ${scrolled ? 'scrolled' : ''}`}>
+        <div className="nav-inner">
+          {/* Brand */}
+          <Link to="/" className="nav-brand" onClick={closeMobileMenu}>
+            <img src="/fetchwork-logo.png" alt="FetchWork" className="nav-logo" />
+            <span className="brand-text">FetchWork</span>
+          </Link>
 
-      <button 
-        className="mobile-menu-toggle"
-        onClick={toggleMobileMenu}
-        aria-label="Toggle mobile menu"
-      >
-        <span className="hamburger-line"></span>
-        <span className="hamburger-line"></span>
-        <span className="hamburger-line"></span>
-      </button>
+          {/* Desktop Nav Links */}
+          <div className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+            {/* Mobile-only: role switcher + close */}
+            <div className="mobile-nav-header">
+              {isAuthenticated && (user?.accountType === 'freelancer' || user?.accountType === 'both') && (
+                <div className="mobile-role-switcher">
+                  <button
+                    className={`role-pill ${currentRole === 'freelancer' ? 'active' : ''}`}
+                    onClick={() => switchRole('freelancer')}
+                  >
+                    Freelancer
+                  </button>
+                  <button
+                    className={`role-pill ${currentRole === 'client' ? 'active' : ''}`}
+                    onClick={() => switchRole('client')}
+                  >
+                    Client
+                  </button>
+                </div>
+              )}
+              <button className="mobile-close-btn" onClick={closeMobileMenu}>×</button>
+            </div>
 
-      <div className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        {isAuthenticated ? (
-          <>
-            <Link to="/dashboard" onClick={closeMobileMenu}>Dashboard</Link>
-            <Link to="/freelancers" onClick={closeMobileMenu}>Discover Freelancers</Link>
-            {currentRole === 'freelancer' ? (
+            {isAuthenticated ? (
               <>
-                <Link to="/browse-jobs" onClick={closeMobileMenu}>Browse Jobs</Link>
-                <Link to="/browse-services" onClick={closeMobileMenu}>Browse Services</Link>
-                <Link to="/create-service" onClick={closeMobileMenu}>Create Service</Link>
+                <NavLink to="/dashboard">Dashboard</NavLink>
+                <NavLink to="/freelancers">Freelancers</NavLink>
+                <NavLink to="/browse-jobs">Jobs</NavLink>
+                <NavLink to="/browse-services">Services</NavLink>
+
+                <div className="nav-divider" />
+
+                {currentRole === 'freelancer' ? (
+                  <NavLink to="/create-service">Create</NavLink>
+                ) : (
+                  <NavLink to="/post-job">Create</NavLink>
+                )}
+
+                <NavLink to="/messages" badge={notifications.unreadMessages}>
+                  Messages
+                </NavLink>
+                <NavLink to="/disputes">Disputes</NavLink>
+
+                {user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
+
+                <div className="nav-divider" />
+
+                <NavLink to="/profile">Profile</NavLink>
+                <button className="nav-logout-btn" onClick={() => { logout(); closeMobileMenu(); }}>
+                  Logout
+                </button>
               </>
             ) : (
               <>
-                <Link to="/post-job" onClick={closeMobileMenu}>Post Job</Link>
-                <Link to="/browse-services" onClick={closeMobileMenu}>Browse Services</Link>
-                {notifications.pendingProposals > 0 && (
-                  <NotificationBadge type="proposal" count={notifications.pendingProposals}>
-                    <Link to="/dashboard" onClick={closeMobileMenu}>
-                      <span>New Proposals</span>
-                    </Link>
-                  </NotificationBadge>
-                )}
+                <NavLink to="/freelancers">Freelancers</NavLink>
+                <NavLink to="/browse-jobs">Jobs</NavLink>
+                <NavLink to="/browse-services">Services</NavLink>
+
+                <div className="nav-spacer" />
+
+                <Link to="/login" className="nav-link nav-login" onClick={closeMobileMenu}>Login</Link>
+                <Link to="/register" className="nav-cta-btn" onClick={closeMobileMenu}>Get Started</Link>
               </>
             )}
-            <NotificationBadge type="message" count={notifications.unreadMessages}>
-              <Link to="/messages" onClick={closeMobileMenu}>Messages</Link>
-            </NotificationBadge>
-            <Link to="/disputes" onClick={closeMobileMenu}>Disputes</Link>
-            {user?.isAdmin && <Link to="/admin" onClick={closeMobileMenu}>Admin</Link>}
-            <Link to="/profile" onClick={closeMobileMenu}>Profile</Link>
-            <button className="nav-logout-btn" onClick={handleLogout}>Logout</button>
-          </>
-        ) : (
-          <>
-            <Link to="/freelancers" onClick={closeMobileMenu}>Discover Freelancers</Link>
-            <Link to="/browse-jobs" onClick={closeMobileMenu}>Browse Jobs</Link>
-            <Link to="/browse-services" onClick={closeMobileMenu}>Browse Services</Link>
-            <Link to="/login" onClick={closeMobileMenu}>Login</Link>
-            <Link to="/register" onClick={closeMobileMenu}>Register</Link>
-          </>
-        )}
-      </div>
-    </nav>
+          </div>
+
+          {/* Desktop role switcher */}
+          {isAuthenticated && (user?.accountType === 'freelancer' || user?.accountType === 'both') && (
+            <div className="desktop-role-switcher">
+              <div className="role-toggle">
+                <button
+                  className={`role-btn ${currentRole === 'freelancer' ? 'active' : ''}`}
+                  onClick={() => switchRole('freelancer')}
+                >
+                  Freelancer
+                </button>
+                <button
+                  className={`role-btn ${currentRole === 'client' ? 'active' : ''}`}
+                  onClick={() => switchRole('client')}
+                >
+                  Client
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Hamburger */}
+          <button
+            className={`mobile-menu-toggle ${isMobileMenuOpen ? 'open' : ''}`}
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
+            <span /><span /><span />
+          </button>
+        </div>
+      </nav>
+
+      {/* Overlay */}
+      {isMobileMenuOpen && <div className="nav-overlay" onClick={closeMobileMenu} />}
+    </>
   );
 };
 
