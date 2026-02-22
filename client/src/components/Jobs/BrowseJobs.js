@@ -24,6 +24,27 @@ const SORT_OPTIONS = [
   { value: 'most_proposals', label: 'Most Proposals' },
 ];
 
+const deadlineLabel = (date) => {
+  if (!date) return null;
+  const d = new Date(date);
+  const now = new Date();
+  const days = Math.ceil((d - now) / 86400000);
+  if (days < 0) return { text: 'Overdue', color: '#dc2626' };
+  if (days === 0) return { text: 'Due today', color: '#dc2626' };
+  if (days <= 3) return { text: `${days}d left`, color: '#f59e0b' };
+  if (days <= 7) return { text: `${days}d left`, color: '#f59e0b' };
+  return { text: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), color: '#6b7280' };
+};
+
+const interestLevel = (proposals, views) => {
+  const p = proposals || 0;
+  const v = views || 0;
+  if (p >= 10 || v >= 50) return { text: '🔥 High interest', color: '#dc2626' };
+  if (p >= 5 || v >= 20) return { text: '👀 Growing interest', color: '#f59e0b' };
+  if (p >= 1) return { text: `${p} applicant${p > 1 ? 's' : ''}`, color: '#6b7280' };
+  return { text: 'Be the first to apply', color: '#10b981' };
+};
+
 const JobCard = ({ job }) => {
   const navigate = useNavigate();
   const timeAgo = (date) => {
@@ -31,13 +52,18 @@ const JobCard = ({ job }) => {
     return d === 0 ? 'Today' : d === 1 ? 'Yesterday' : `${d}d ago`;
   };
 
+  const isRemote = !job.location || job.location?.locationType === 'remote' || (typeof job.location === 'string' && (!job.location || job.location === 'Remote'));
+  const dl = deadlineLabel(job.deadline);
+  const interest = interestLevel(job.proposalCount, job.views);
+
   return (
-    <div className="browse-card" onClick={() => navigate(`/jobs/${job._id}`)}>
+    <div className="browse-card" onClick={() => navigate(`/jobs/${job._id}`)} style={{ borderLeft: isRemote ? '3px solid #2563eb' : '3px solid #10b981' }}>
       <div className="browse-card-header">
         <div>
           <h3 className="browse-card-title">{job.title}</h3>
           <div className="browse-card-meta">
             {job.client?.firstName} {job.client?.lastName} • {timeAgo(job.createdAt)}
+            {dl && <> • <span style={{ color: dl.color, fontWeight: 600 }}>⏰ {dl.text}</span></>}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -50,17 +76,20 @@ const JobCard = ({ job }) => {
 
       <div className="browse-card-tags">
         <span className="browse-tag primary">{formatCategory(job.category)}</span>
+        {isRemote ? (
+          <span className="browse-tag" style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>🌐 Remote</span>
+        ) : (
+          <span className="browse-tag" style={{ background: '#ecfdf5', color: '#059669', fontWeight: 600 }}>📍 {getLocationDisplay(job.location)}</span>
+        )}
         {job.experienceLevel && <span className="browse-tag">{job.experienceLevel}</span>}
-        {getLocationTypeBadge(job.location) && <span className="browse-tag">{getLocationTypeBadge(job.location)}</span>}
-        {job.location?.locationType !== 'remote' && <span className="browse-tag">📍 {getLocationDisplay(job.location)}</span>}
-        {job.isUrgent && <span className="browse-tag danger">Urgent</span>}
+        {job.isUrgent && <span className="browse-tag danger">🚨 Urgent</span>}
         {job.skills?.slice(0, 3).map((s, i) => <span key={i} className="browse-tag">{s}</span>)}
         {job.skills?.length > 3 && <span className="browse-tag">+{job.skills.length - 3}</span>}
       </div>
 
       <div className="browse-card-footer">
-        <span className="browse-card-stats">
-          {job.proposalCount || 0} proposals • {job.views || 0} views
+        <span className="browse-card-stats" style={{ color: interest.color, fontWeight: 500 }}>
+          {interest.text} • {job.views || 0} views
         </span>
         <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/jobs/${job._id}`); }}>
           Apply Now

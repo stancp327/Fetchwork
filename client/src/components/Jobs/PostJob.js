@@ -25,6 +25,7 @@ const PostJob = () => {
     city: '',
     state: '',
     zipCode: '',
+    deadline: '',
     isUrgent: false
   });
   const [errors, setErrors] = useState({});
@@ -114,6 +115,7 @@ const PostJob = () => {
           coordinates: { type: 'Point', coordinates: [0, 0] },
           serviceRadius: 25
         },
+        deadline: formData.deadline || null,
         isUrgent: formData.isUrgent
       };
 
@@ -309,6 +311,21 @@ const PostJob = () => {
               <option value="expert">Expert</option>
             </select>
             {errors.experienceLevel && <div className="error-text">{errors.experienceLevel}</div>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="deadline">Project Deadline</label>
+            <input
+              type="date"
+              id="deadline"
+              name="deadline"
+              value={formData.deadline}
+              onChange={handleInputChange}
+              min={new Date().toISOString().split('T')[0]}
+            />
+            <div style={{ fontSize: '0.8rem', color: '#6c757d', marginTop: '0.25rem' }}>
+              When do you need this completed by? (Optional)
+            </div>
           </div>
 
           <div className="form-group">

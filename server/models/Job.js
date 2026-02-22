@@ -136,6 +136,10 @@ const jobSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  deadline: {
+    type: Date,
+    default: null
+  },
   startDate: Date,
   endDate: Date,
   completedAt: Date,

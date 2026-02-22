@@ -320,9 +320,25 @@ const JobDetails = () => {
               <div className="info-item">
                 <strong>Location:</strong> {getLocationDisplay(job.location)}
               </div>
+              {job.deadline && (
+                <div className="info-item">
+                  <strong>⏰ Deadline:</strong> {new Date(job.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {(() => {
+                    const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000);
+                    if (days < 0) return <span style={{ color: '#dc2626', marginLeft: '0.5rem' }}>(Overdue)</span>;
+                    if (days <= 3) return <span style={{ color: '#f59e0b', marginLeft: '0.5rem' }}>({days}d left)</span>;
+                    if (days <= 7) return <span style={{ color: '#f59e0b', marginLeft: '0.5rem' }}>({days}d left)</span>;
+                    return null;
+                  })()}
+                </div>
+              )}
+              <div className="info-item">
+                <strong>👀 Interest:</strong> {job.proposalCount || 0} applicants • {job.views || 0} views
+                {(job.proposalCount >= 10 || job.views >= 50) && <span style={{ color: '#dc2626', marginLeft: '0.5rem' }}>🔥 High demand</span>}
+              </div>
               {job.isUrgent && (
                 <div className="info-item urgent">
-                  <strong>🔥 Urgent Project</strong>
+                  <strong>🚨 Urgent Project</strong>
                 </div>
               )}
             </div>
