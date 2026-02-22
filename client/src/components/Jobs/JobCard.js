@@ -39,7 +39,8 @@ const JobCard = ({ job }) => {
 
       <div className="card-footer">
         <div className="card-meta">
-          {job.proposalCount} proposals • {job.views} views • {getLocationDisplay(job.location)}
+          {job.proposalCount || 0} applicant{(job.proposalCount || 0) !== 1 ? 's' : ''} • {job.views || 0} views • {getLocationDisplay(job.location)}
+          {job.deadline && ` • ⏰ Due ${new Date(job.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
         </div>
         <button 
           onClick={() => navigate(`/jobs/${job._id}`)}

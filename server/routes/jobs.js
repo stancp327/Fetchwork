@@ -220,7 +220,8 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       location,
       isRemote, // backward compat: accept old field
       isUrgent,
-      jobType
+      jobType,
+      deadline
     } = req.body;
 
     // Build location object — support both old format (string + isRemote) and new format (object)
@@ -251,6 +252,7 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
       duration,
       experienceLevel,
       location: locationData,
+      deadline: deadline ? new Date(deadline) : null,
       isUrgent: isUrgent || false,
       jobType: jobType || 'freelance',
       client: req.user._id,
@@ -290,7 +292,7 @@ router.put('/:id', authenticateToken, validateMongoId, validateJobPost, async (r
     
     const allowedUpdates = [
       'title', 'description', 'category', 'subcategory', 'skills',
-      'budget', 'duration', 'experienceLevel', 'location', 'isUrgent', 'jobType'
+      'budget', 'duration', 'experienceLevel', 'location', 'isUrgent', 'jobType', 'deadline'
     ];
     
     allowedUpdates.forEach(field => {
