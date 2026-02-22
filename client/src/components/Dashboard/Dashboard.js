@@ -8,16 +8,25 @@ import { formatBudget } from '../../utils/formatters';
 import './Dashboard.css';
 
 // ── Stat Card ───────────────────────────────────────────────────
-const StatCard = ({ icon, label, value, sub, color = '#2563eb' }) => (
-  <div className="dash-stat-card">
-    <div className="dash-stat-icon" style={{ background: `${color}15`, color }}>{icon}</div>
-    <div className="dash-stat-info">
-      <div className="dash-stat-value">{value}</div>
-      <div className="dash-stat-label">{label}</div>
-      {sub && <div className="dash-stat-sub">{sub}</div>}
-    </div>
-  </div>
-);
+const StatCard = ({ icon, label, value, sub, color = '#2563eb', to }) => {
+  const content = (
+    <>
+      <div className="dash-stat-icon" style={{ background: `${color}15`, color }}>{icon}</div>
+      <div className="dash-stat-info">
+        <div className="dash-stat-value">{value}</div>
+        <div className="dash-stat-label">{label}</div>
+        {sub && <div className="dash-stat-sub">{sub}</div>}
+      </div>
+    </>
+  );
+  return to ? (
+    <Link to={to} className="dash-stat-card dash-stat-clickable" style={{ textDecoration: 'none', color: 'inherit' }}>
+      {content}
+    </Link>
+  ) : (
+    <div className="dash-stat-card">{content}</div>
+  );
+};
 
 // ── Activity Item ───────────────────────────────────────────────
 const ActivityItem = ({ icon, title, meta, time, link, tag }) => (
@@ -229,17 +238,17 @@ const Dashboard = () => {
       <div className="dash-stats-row">
         {isClientMode ? (
           <>
-            <StatCard icon="📋" label="Active Jobs" value={stats.activeJobsAsClient || 0} color="#2563eb" />
-            <StatCard icon="📨" label="Proposals" value={stats.pendingProposals || 0} color="#f59e0b" />
+            <StatCard icon="📋" label="Active Jobs" value={stats.activeJobsAsClient || 0} color="#2563eb" to="/projects" />
+            <StatCard icon="📨" label="Proposals" value={stats.pendingProposals || 0} color="#f59e0b" to="/projects" />
             <StatCard icon="💰" label="Total Spent" value={formatCurrency(stats.totalSpent || 0)} color="#10b981" />
-            <StatCard icon="💬" label="Messages" value={stats.unreadMessages || 0} sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" />
+            <StatCard icon="💬" label="Messages" value={stats.unreadMessages || 0} sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" to="/messages" />
           </>
         ) : (
           <>
-            <StatCard icon="💼" label="Active Jobs" value={stats.activeJobsAsFreelancer || 0} color="#2563eb" />
-            <StatCard icon="📨" label="Proposals" value={stats.pendingProposals || 0} color="#f59e0b" />
+            <StatCard icon="💼" label="Active Jobs" value={stats.activeJobsAsFreelancer || 0} color="#2563eb" to="/projects" />
+            <StatCard icon="📨" label="Proposals" value={stats.pendingProposals || 0} color="#f59e0b" to="/projects" />
             <StatCard icon="💰" label="Earnings" value={formatCurrency(stats.totalEarnings || 0)} color="#10b981" />
-            <StatCard icon="💬" label="Messages" value={stats.unreadMessages || 0} sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" />
+            <StatCard icon="💬" label="Messages" value={stats.unreadMessages || 0} sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" to="/messages" />
           </>
         )}
       </div>
@@ -250,6 +259,7 @@ const Dashboard = () => {
         <div className="dash-main">
           <div className="dash-section-header">
             <h2>Recent Activity</h2>
+            {activityItems.length > 0 && <Link to="/projects" className="dash-view-all">View All Jobs →</Link>}
           </div>
           {activityItems.length > 0 ? (
             <div className="activity-list">
@@ -271,6 +281,7 @@ const Dashboard = () => {
               {isClientMode ? (
                 <>
                   <QuickAction icon="📝" label="Post Job" to="/post-job" primary />
+                  <QuickAction icon="📋" label="My Jobs" to="/projects" />
                   <QuickAction icon="🔍" label="Find Freelancers" to="/freelancers" />
                   <QuickAction icon="🛒" label="Browse Services" to="/browse-services" />
                   <QuickAction icon="💬" label="Messages" to="/messages" />
@@ -278,6 +289,7 @@ const Dashboard = () => {
               ) : (
                 <>
                   <QuickAction icon="🔍" label="Browse Jobs" to="/browse-jobs" primary />
+                  <QuickAction icon="💼" label="My Jobs" to="/projects" />
                   <QuickAction icon="➕" label="Create Service" to="/create-service" />
                   <QuickAction icon="👤" label="Edit Profile" to="/profile" />
                   <QuickAction icon="💬" label="Messages" to="/messages" />
