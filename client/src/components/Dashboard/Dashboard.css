@@ -144,6 +144,15 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+.dash-stat-clickable {
+  cursor: pointer;
+}
+
+.dash-stat-clickable:hover {
+  border-color: #2563eb;
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.1);
+}
+
 .dash-stat-icon {
   width: 48px;
   height: 48px;
@@ -193,6 +202,17 @@
   font-weight: 600;
   color: #111827;
   margin: 0;
+}
+
+.dash-view-all {
+  font-size: 0.85rem;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.dash-view-all:hover {
+  text-decoration: underline;
 }
 
 /* ── Activity List ────────────────────────────────────────────── */
