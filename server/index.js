@@ -38,8 +38,40 @@ app.set('trust proxy', true);
 
 // ── Middleware ───────────────────────────────────────────────────
 app.use(helmet());
-app.use(cors());
-app.use(express.json());
+
+// CORS — lock to allowed origins only
+const allowedOrigins = (() => {
+  const clientUrl = process.env.CLIENT_URL || '';
+  const origins = ['http://localhost:3000'];
+  if (clientUrl) {
+    origins.push(clientUrl);
+    // Also allow www/non-www variants
+    if (clientUrl.includes('www.')) {
+      origins.push(clientUrl.replace('www.', ''));
+    } else if (clientUrl.includes('://')) {
+      const withWww = clientUrl.replace('://', '://www.');
+      origins.push(withWww);
+    }
+  }
+  return origins;
+})();
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`CORS blocked origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 app.use(session({
@@ -59,6 +91,24 @@ app.use(passport.session());
 configurePassport();
 
 // ── Rate Limiting ───────────────────────────────────────────────
+// Auth endpoints: strict limit to prevent brute force
+const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 15 : 1000,
+  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Login specifically: even stricter
+const loginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000,
+  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const adminRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'production' ? 500 : 5000,
@@ -67,9 +117,13 @@ const adminRateLimit = rateLimit({
 const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'production' ? 100 : 1000,
-  skip: (req) => req.path.startsWith('/api/admin')
+  skip: (req) => req.path.startsWith('/api/admin') || req.path.startsWith('/api/auth'),
 });
 
+app.use('/api/auth/login', loginRateLimit);
+app.use('/api/auth/register', authRateLimit);
+app.use('/api/auth/forgot-password', authRateLimit);
+app.use('/api/auth/reset-password', authRateLimit);
 app.use('/api/admin', adminRateLimit);
 app.use(generalRateLimit);
 
