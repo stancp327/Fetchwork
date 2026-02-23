@@ -33,6 +33,7 @@ const Payments = React.lazy(() => import('./components/Payments/Payments'));
 const Reviews = React.lazy(() => import('./components/Reviews/Reviews'));
 const UniversalSearch = React.lazy(() => import('./components/Search/UniversalSearch'));
 const AdminDashboard = React.lazy(() => import('./components/Admin/AdminDashboard'));
+const AdminDisputeDetail = React.lazy(() => import('./components/Admin/AdminDisputeDetail'));
 const ProjectManagement = React.lazy(() => import('./components/Projects/ProjectManagement'));
 const MyOffers = React.lazy(() => import('./components/Offers/MyOffers'));
 const JobProgress = React.lazy(() => import('./components/Jobs/JobProgress'));
@@ -241,6 +242,11 @@ function AppContent() {
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminRoute />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/disputes/:id" element={
+            <ProtectedRoute>
+              <AdminDisputeDetail />
             </ProtectedRoute>
           } />
           <Route path="/projects" element={
