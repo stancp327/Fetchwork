@@ -83,6 +83,13 @@ const CATEGORIES = [
     subcategories: ['Business', 'Legal', 'Financial', 'Career Coaching', 'IT Consulting']
   },
   {
+    id: 'customer_service',
+    label: 'Customer Service',
+    type: 'remote',
+    icon: 'phone',
+    subcategories: ['Phone Support', 'Chat Support', 'Email Support', 'Technical Support']
+  },
+  {
     id: 'tutoring',
     label: 'Tutoring & Lessons',
     type: 'both',
@@ -162,8 +169,8 @@ const CATEGORIES = [
     subcategories: ['Hair Styling', 'Makeup', 'Massage', 'Personal Training', 'Nutrition']
   },
   {
-    id: 'photography_local',
-    label: 'Photography (Local)',
+    id: 'photography',
+    label: 'Photography',
     type: 'local',
     icon: 'camera',
     subcategories: ['Portraits', 'Events', 'Real Estate', 'Product Photography', 'Headshots']
