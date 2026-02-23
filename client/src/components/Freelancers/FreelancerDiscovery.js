@@ -102,7 +102,7 @@ const FreelancerDiscovery = () => {
         if (v && v !== 'all') params.set(k, v);
       });
 
-      const data = await apiRequest(`/api/users/freelancers?${params}`);
+      const data = await apiRequest(`/api/freelancers?${params}`);
       setFreelancers(data.freelancers || data.users || []);
       setPagination(data.pagination || {});
       setError(null);
