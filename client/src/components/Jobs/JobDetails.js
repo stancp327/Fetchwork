@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getLocationDisplay } from '../../utils/location';
 import { formatBudget } from '../../utils/formatters';
@@ -534,6 +534,14 @@ const JobDetails = () => {
               </div>
             )}
 
+            {(job.status === 'in_progress' || job.status === 'completed') && 
+             user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
+              <div style={{ marginBottom: '1rem' }}>
+                <Link to={`/jobs/${job._id}/progress`} className="btn btn-primary" style={{ textDecoration: 'none' }}>
+                  📊 Track Progress
+                </Link>
+              </div>
+            )}
             {(job.status === 'in_progress' || job.status === 'completed') && 
              user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
               <div className="dispute-section">
