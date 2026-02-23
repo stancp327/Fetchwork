@@ -19,10 +19,15 @@ function configurePassport() {
         
         user = await User.findOne({ email: profile.emails[0].value });
         if (user) {
+          // Link Google account — use updateOne to skip full model validation
+          await User.updateOne(
+            { _id: user._id },
+            { 
+              $set: { googleId: profile.id },
+              $addToSet: { providers: 'google' }
+            }
+          );
           user.googleId = profile.id;
-          if (!Array.isArray(user.providers)) user.providers = [];
-          if (!user.providers.includes('google')) user.providers.push('google');
-          await user.save();
           return done(null, user);
         }
         
@@ -62,10 +67,14 @@ function configurePassport() {
         if (profile.emails && profile.emails[0]) {
           user = await User.findOne({ email: profile.emails[0].value });
           if (user) {
+            await User.updateOne(
+              { _id: user._id },
+              { 
+                $set: { facebookId: profile.id },
+                $addToSet: { providers: 'facebook' }
+              }
+            );
             user.facebookId = profile.id;
-            if (!Array.isArray(user.providers)) user.providers = [];
-            if (!user.providers.includes('facebook')) user.providers.push('facebook');
-            await user.save();
             return done(null, user);
           }
         }
