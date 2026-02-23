@@ -37,6 +37,16 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
+// Warn if JWT_SECRET is too short (vulnerable to brute force)
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+  console.warn('⚠️  JWT_SECRET is shorter than 32 characters — consider using a stronger secret');
+}
+
+// Warn about default session secret in production
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  console.warn('⚠️  SESSION_SECRET not set — using fallback (not secure for production)');
+}
+
 console.log('✅ All critical environment variables present');
 
 const ADMIN_EMAILS = ['admin@fetchwork.com', 'stancp327@gmail.com'];
