@@ -5,6 +5,7 @@ import { getLocationDisplay } from '../../utils/location';
 import { useAuth } from '../../context/AuthContext';
 import { formatCategory } from '../../utils/formatters';
 import { getApiBaseUrl } from '../../utils/api';
+import CustomOfferModal from '../Offers/CustomOfferModal';
 import '../UserComponents.css';
 
 const ServiceDetails = () => {
@@ -17,6 +18,7 @@ const ServiceDetails = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState('basic');
   const [requirements, setRequirements] = useState('');
+  const [showOfferModal, setShowOfferModal] = useState(false);
 
   const apiBaseUrl = getApiBaseUrl();
 
@@ -258,6 +260,14 @@ const ServiceDetails = () => {
                       >
                         {orderLoading ? 'Ordering...' : `Order Now - $${currentPackage.price}`}
                       </button>
+
+                      <button
+                        onClick={() => setShowOfferModal(true)}
+                        className="btn btn-secondary"
+                        style={{ width: '100%', marginTop: '0.5rem', fontSize: '0.9rem' }}
+                      >
+                        📋 Request Custom Offer
+                      </button>
                     </div>
                   )}
 
@@ -272,6 +282,22 @@ const ServiceDetails = () => {
           </div>
         </div>
       </div>
+      {showOfferModal && service && (
+        <CustomOfferModal
+          isOpen={true}
+          onClose={() => setShowOfferModal(false)}
+          recipientId={service.freelancer?._id}
+          recipientName={`${service.freelancer?.firstName} ${service.freelancer?.lastName}`}
+          serviceId={service._id}
+          offerType="custom_order"
+          prefillTerms={{
+            amount: service.pricing?.basic?.price || '',
+            deliveryTime: service.pricing?.basic?.deliveryTime || '',
+            description: `Custom request for: ${service.title}`
+          }}
+          onSuccess={() => alert('Offer sent! Check your offers page.')}
+        />
+      )}
     </div>
   );
 };
