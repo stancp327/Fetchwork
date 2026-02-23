@@ -162,6 +162,15 @@ const TabAbout = ({ data, onChange, onFileSelect }) => (
         <input type="text" value={data.location?.zipCode || ''} onChange={e => onChange('location', { ...(typeof data.location === 'object' ? data.location : {}), locationType: data.location?.locationType || 'remote', zipCode: e.target.value })} placeholder="Zip" maxLength={10} />
       </div>
       <div className="prof-field">
+        <label>Availability Status</label>
+        <select value={data.availabilityStatus || 'available'} onChange={e => onChange('availabilityStatus', e.target.value)}>
+          <option value="available">🟢 Available Now</option>
+          <option value="busy">🟡 Busy</option>
+          <option value="not_taking_work">🔴 Not Taking Work</option>
+          <option value="away">⚫ Away</option>
+        </select>
+      </div>
+      <div className="prof-field">
         <label>Phone</label>
         <input type="tel" value={data.phone} onChange={e => onChange('phone', e.target.value)} placeholder="+1 (555) 123-4567" />
       </div>

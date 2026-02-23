@@ -184,6 +184,16 @@ const userSchema = new mongoose.Schema({
     behance: String,
     dribbble: String
   },
+  availabilityStatus: {
+    type: String,
+    enum: ['available', 'busy', 'not_taking_work', 'away'],
+    default: 'available'
+  },
+  availabilityNote: {
+    type: String,
+    maxlength: 200,
+    default: ''
+  },
   bannerUrl: { type: String, default: '' },
   visibility: {
     showEmail: { type: Boolean, default: false },

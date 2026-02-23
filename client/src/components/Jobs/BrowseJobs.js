@@ -9,6 +9,7 @@ import BrowseLayout, {
   SearchBar, FilterSelect, FilterInput, FilterCheckbox,
   ResultsControls, BrowsePagination, BrowseEmpty
 } from '../common/BrowseLayout';
+import SaveButton from '../common/SaveButton';
 import '../common/BrowseLayout.css';
 
 const CATEGORIES = [
@@ -57,7 +58,10 @@ const JobCard = ({ job }) => {
   const interest = interestLevel(job.proposalCount, job.views);
 
   return (
-    <div className="browse-card" onClick={() => navigate(`/jobs/${job._id}`)} style={{ borderLeft: isRemote ? '3px solid #2563eb' : '3px solid #10b981' }}>
+    <div className="browse-card" onClick={() => navigate(`/jobs/${job._id}`)} style={{ borderLeft: isRemote ? '3px solid #2563eb' : '3px solid #10b981', position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem' }}>
+        <SaveButton itemId={job._id} itemType="job" size="sm" />
+      </div>
       <div className="browse-card-header">
         <div>
           <h3 className="browse-card-title">{job.title}</h3>
