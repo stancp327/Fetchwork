@@ -262,6 +262,7 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/freelancers" element={<FreelancerDiscovery />} />
+          <Route path="/freelancers/:id" element={<PublicProfile />} />
           <Route path="/freelancer/:username" element={<PublicProfile />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/support" element={<Support />} />

@@ -1,145 +1,366 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { getApiBaseUrl } from '../../utils/api';
-import './Profile.css';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { apiRequest } from '../../utils/api';
+import { getLocationDisplay } from '../../utils/location';
+import { getCategoryLabel, getCategoryIcon } from '../../utils/categories';
+import CustomOfferModal from '../Offers/CustomOfferModal';
+import { useAuth } from '../../context/AuthContext';
+import './PublicProfile.css';
+
+const StarRating = ({ rating }) => {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <span className="pp-stars">
+      {'★'.repeat(full)}{half ? '½' : ''}{'☆'.repeat(5 - full - (half ? 1 : 0))}
+      <span className="pp-rating-num">{rating.toFixed(1)}</span>
+    </span>
+  );
+};
 
 const PublicProfile = () => {
-  const { username } = useParams();
+  const { id, username } = useParams();
+  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [data, setData] = useState(null);
-  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [activeSection, setActiveSection] = useState('about');
+
+  const freelancerId = id || username;
 
   useEffect(() => {
-    const run = async () => {
+    const fetchProfile = async () => {
       try {
-        const resp = await fetch(`${getApiBaseUrl()}/api/public-profiles/${encodeURIComponent(username)}`);
-        if (!resp.ok) throw new Error('Not found');
-        const json = await resp.json();
-        setData(json);
-      } catch (e) {
-        setErr('Profile not found');
+        setLoading(true);
+        const result = await apiRequest(`/api/freelancers/${freelancerId}`);
+        setData(result);
+      } catch (err) {
+        setError('Freelancer not found');
+      } finally {
+        setLoading(false);
       }
     };
-    run();
-  }, [username]);
+    if (freelancerId) fetchProfile();
+  }, [freelancerId]);
 
-  if (err) return <div className="profile-container"><div className="error-message">{err}</div></div>;
-  if (!data) return <div className="profile-container"><div className="loading">Loading profile...</div></div>;
+  if (loading) return (
+    <div className="pp-container">
+      <div className="pp-loading">
+        <div className="pp-loading-spinner"></div>
+        <p>Loading profile...</p>
+      </div>
+    </div>
+  );
+
+  if (error || !data) return (
+    <div className="pp-container">
+      <div className="pp-error">
+        <h2>😕 {error || 'Profile not found'}</h2>
+        <button onClick={() => navigate('/freelancers')} className="pp-btn-secondary">Browse Freelancers</button>
+      </div>
+    </div>
+  );
+
+  const f = data.freelancer;
+  const stats = data.stats;
+  const services = data.services || [];
+  const reviews = data.reviews || [];
+  const portfolio = f.portfolio || [];
+  const languages = f.languages || [];
+  const certifications = f.certifications || [];
+  const experience = f.experience || [];
+  const education = f.education || [];
+  const isOwnProfile = currentUser?._id === f._id;
+
+  const initials = `${f.firstName?.[0] || ''}${f.lastName?.[0] || ''}`.toUpperCase();
 
   return (
-    <div className="profile-container">
-      {data.bannerUrl && (
-        <div className="profile-banner" style={{ backgroundImage: `url(${data.bannerUrl})` }} />
-      )}
-      <div className="profile-header">
-        {data.profilePicture ? <img src={data.profilePicture} alt="" className="profile-avatar" /> : null}
-        <div>
-          <h1>{data.firstName} {data.lastName}</h1>
-          <p>{data.headline || data.tagline}</p>
-          <div className="skills-list">
-            {(data.skills || []).map((s, i) => <span key={i} className="skill-tag">{s}</span>)}
+    <div className="pp-container">
+      {/* ── Hero Section ────────────────────────────────────── */}
+      <div className="pp-hero">
+        <div className="pp-hero-bg"></div>
+        <div className="pp-hero-content">
+          <div className="pp-avatar-wrapper">
+            {f.profilePicture ? (
+              <img src={f.profilePicture} alt={f.firstName} className="pp-avatar" />
+            ) : (
+              <div className="pp-avatar pp-avatar-initials">{initials}</div>
+            )}
+            {f.isVerified && <span className="pp-verified-badge" title="Verified">✓</span>}
           </div>
-          <div className="profile-stats">
-            <span className="stat-badge">⭐ {Number(data.rating || 0).toFixed(1)}</span>
-            <span className="stat-badge">✓ {data.completedJobs || 0} jobs</span>
+          <div className="pp-hero-info">
+            <h1 className="pp-name">{f.firstName} {f.lastName}</h1>
+            {f.headline && <p className="pp-headline">{f.headline}</p>}
+            <div className="pp-hero-meta">
+              {stats.rating > 0 && <StarRating rating={stats.rating} />}
+              {stats.totalReviews > 0 && <span className="pp-meta-item">({stats.totalReviews} reviews)</span>}
+              <span className="pp-meta-item">📍 {getLocationDisplay(f.location)}</span>
+              {stats.memberSince && <span className="pp-meta-item">📅 Member since {new Date(stats.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
+            </div>
           </div>
-
+          <div className="pp-hero-actions">
+            {f.hourlyRate > 0 && <div className="pp-rate">${f.hourlyRate}<span>/hr</span></div>}
+            {!isOwnProfile && (
+              <>
+                <button className="pp-btn-primary" onClick={() => navigate(`/messages?to=${f._id}`)}>💬 Message</button>
+                <button className="pp-btn-secondary" onClick={() => setShowOfferModal(true)}>📋 Make Offer</button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {data.bio && (
-        <div className="profile-section">
-          <h2>About</h2>
-          <p>{data.bio}</p>
+      {/* ── Stats Bar ───────────────────────────────────────── */}
+      <div className="pp-stats-bar">
+        <div className="pp-stat">
+          <div className="pp-stat-value">{stats.completedJobs || 0}</div>
+          <div className="pp-stat-label">Jobs Completed</div>
         </div>
-      )}
-
-      {Array.isArray(data.languages) && data.languages.length > 0 && (
-        <div className="profile-section">
-          <h2>Languages</h2>
-          <ul className="list">
-            {data.languages.map((l, idx) => (
-              <li key={idx}>{l.name} — {l.level}</li>
-            ))}
-          </ul>
+        <div className="pp-stat">
+          <div className="pp-stat-value">{stats.rating?.toFixed(1) || '0.0'}</div>
+          <div className="pp-stat-label">Rating</div>
         </div>
-      )}
-
-      {Array.isArray(data.experience) && data.experience.length > 0 && (
-        <div className="profile-section">
-          <h2>Experience</h2>
-          <ul className="list">
-            {data.experience.map((e, idx) => (
-              <li key={idx}>
-                <strong>{e.role}</strong> at {e.company}
-                <div className="muted">{e.startDate} — {e.endDate}</div>
-                {e.description && <div>{e.description}</div>}
-              </li>
-            ))}
-          </ul>
+        <div className="pp-stat">
+          <div className="pp-stat-value">{stats.totalReviews || 0}</div>
+          <div className="pp-stat-label">Reviews</div>
         </div>
-      )}
-
-      {Array.isArray(data.education) && data.education.length > 0 && (
-        <div className="profile-section">
-          <h2>Education</h2>
-          <ul className="list">
-            {data.education.map((ed, idx) => (
-              <li key={idx}>
-                <strong>{ed.degree}</strong> at {ed.school}
-                <div className="muted">{ed.startDate} — {ed.endDate}</div>
-              </li>
-            ))}
-          </ul>
+        <div className="pp-stat">
+          <div className="pp-stat-value">{services.length}</div>
+          <div className="pp-stat-label">Services</div>
         </div>
-      )}
-
-      {Array.isArray(data.certifications) && data.certifications.length > 0 && (
-        <div className="profile-section">
-          <h2>Certifications</h2>
-          <ul className="list">
-            {data.certifications.map((c, idx) => (
-              <li key={idx}>
-                <strong>{c.name}</strong> — {c.issuer}
-                {c.credentialUrl ? (
-                  <div><a href={c.credentialUrl} target="_blank" rel="noreferrer">View credential</a></div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {Array.isArray(data.portfolio) && data.portfolio.length > 0 && (
-        <div className="profile-section">
-          <h2>Portfolio</h2>
-          <div className="gallery-grid">
-            {data.portfolio.map((p, idx) => (
-              <div key={idx} className="gallery-item">
-                <div className="gallery-media">
-                  {(p.mediaUrls || []).map((url, i) => {
-                    const lower = String(url).toLowerCase();
-                    const isVideo = lower.endsWith('.mp4') || lower.endsWith('.mov');
-                    return (
-                      <a key={`${idx}-${i}`} href={url} target="_blank" rel="noreferrer">
-                        {isVideo ? (
-                          <video src={url} controls style={{ width: '100%', height: 'auto' }} />
-                        ) : (
-                          <img src={url} alt={p.title || 'Portfolio'} />
-                        )}
-                      </a>
-                    );
-                  })}
-                </div>
-                {(p.title || p.description) && (
-                  <div className="gallery-meta">
-                    {p.title && <div className="title">{p.title}</div>}
-                    {p.description && <div className="desc">{p.description}</div>}
-                  </div>
-                )}
-              </div>
-            ))}
+        {f.responseTime && (
+          <div className="pp-stat">
+            <div className="pp-stat-value">{f.responseTime}</div>
+            <div className="pp-stat-label">Avg Response</div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* ── Navigation Tabs ─────────────────────────────────── */}
+      <div className="pp-nav">
+        {['about', 'portfolio', 'services', 'reviews'].map(tab => (
+          <button
+            key={tab}
+            className={`pp-nav-tab ${activeSection === tab ? 'active' : ''}`}
+            onClick={() => setActiveSection(tab)}
+          >
+            {tab === 'about' ? '👤 About' : tab === 'portfolio' ? '🖼️ Portfolio' : tab === 'services' ? '🛒 Services' : '⭐ Reviews'}
+            {tab === 'reviews' && reviews.length > 0 && ` (${reviews.length})`}
+            {tab === 'services' && services.length > 0 && ` (${services.length})`}
+            {tab === 'portfolio' && portfolio.length > 0 && ` (${portfolio.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Content Area ────────────────────────────────────── */}
+      <div className="pp-content">
+        {/* About Tab */}
+        {activeSection === 'about' && (
+          <div className="pp-section-grid">
+            <div className="pp-main-col">
+              {f.bio && (
+                <div className="pp-card">
+                  <h2>About Me</h2>
+                  <p className="pp-bio">{f.bio}</p>
+                </div>
+              )}
+
+              {f.skills?.length > 0 && (
+                <div className="pp-card">
+                  <h2>Skills</h2>
+                  <div className="pp-skills">
+                    {f.skills.map((s, i) => <span key={i} className="pp-skill-tag">{s}</span>)}
+                  </div>
+                </div>
+              )}
+
+              {experience.length > 0 && (
+                <div className="pp-card">
+                  <h2>Experience</h2>
+                  {experience.map((e, i) => (
+                    <div key={i} className="pp-timeline-item">
+                      <strong>{e.role || e.title}</strong>
+                      {e.company && <span> at {e.company}</span>}
+                      {(e.startDate || e.endDate) && (
+                        <div className="pp-muted">{e.startDate} — {e.endDate || 'Present'}</div>
+                      )}
+                      {e.description && <p>{e.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {education.length > 0 && (
+                <div className="pp-card">
+                  <h2>Education</h2>
+                  {education.map((e, i) => (
+                    <div key={i} className="pp-timeline-item">
+                      <strong>{e.degree}</strong>
+                      {e.school && <span> — {e.school}</span>}
+                      {(e.startDate || e.endDate) && (
+                        <div className="pp-muted">{e.startDate} — {e.endDate || 'Present'}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pp-side-col">
+              {languages.length > 0 && (
+                <div className="pp-card">
+                  <h2>🌍 Languages</h2>
+                  <ul className="pp-lang-list">
+                    {languages.map((l, i) => (
+                      <li key={i}>
+                        <span className="pp-lang-name">{l.name}</span>
+                        <span className="pp-lang-level">{l.level}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {certifications.length > 0 && (
+                <div className="pp-card">
+                  <h2>📜 Certifications</h2>
+                  {certifications.map((c, i) => (
+                    <div key={i} className="pp-cert">
+                      <strong>{c.name}</strong>
+                      {c.issuer && <div className="pp-muted">{c.issuer}</div>}
+                      {c.credentialUrl && (
+                        <a href={c.credentialUrl} target="_blank" rel="noreferrer" className="pp-link">View credential →</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="pp-card">
+                <h2>📊 Quick Facts</h2>
+                <div className="pp-facts">
+                  {f.hourlyRate > 0 && <div className="pp-fact"><span>Rate</span><strong>${f.hourlyRate}/hr</strong></div>}
+                  <div className="pp-fact"><span>Jobs Done</span><strong>{stats.completedJobs || 0}</strong></div>
+                  {f.accountType && <div className="pp-fact"><span>Account</span><strong>{f.accountType}</strong></div>}
+                  <div className="pp-fact"><span>Location</span><strong>{getLocationDisplay(f.location)}</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Portfolio Tab */}
+        {activeSection === 'portfolio' && (
+          <div>
+            {portfolio.length > 0 ? (
+              <div className="pp-portfolio-grid">
+                {portfolio.map((p, i) => (
+                  <div key={i} className="pp-portfolio-item">
+                    {p.url && (
+                      <div className="pp-portfolio-media">
+                        {p.mediaType === 'video' ? (
+                          <video src={p.url} controls className="pp-portfolio-video" />
+                        ) : (
+                          <img src={p.url} alt={p.title || 'Portfolio piece'} className="pp-portfolio-img" />
+                        )}
+                      </div>
+                    )}
+                    <div className="pp-portfolio-info">
+                      {p.title && <h3>{p.title}</h3>}
+                      {p.description && <p>{p.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="pp-empty">
+                <div className="pp-empty-icon">🖼️</div>
+                <p>No portfolio items yet</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Services Tab */}
+        {activeSection === 'services' && (
+          <div>
+            {services.length > 0 ? (
+              <div className="pp-services-grid">
+                {services.map((s, i) => (
+                  <Link to={`/services/${s._id}`} key={i} className="pp-service-card">
+                    <div className="pp-service-header">
+                      <span className="pp-service-cat">{getCategoryIcon(s.category)} {getCategoryLabel(s.category)}</span>
+                      {s.rating > 0 && <span className="pp-service-rating">⭐ {s.rating.toFixed(1)}</span>}
+                    </div>
+                    <h3>{s.title}</h3>
+                    <div className="pp-service-footer">
+                      <span className="pp-service-price">From ${s.pricing?.basic?.price || '—'}</span>
+                      {s.pricing?.basic?.deliveryTime && (
+                        <span className="pp-service-delivery">⏱️ {s.pricing.basic.deliveryTime}d</span>
+                      )}
+                      {s.totalOrders > 0 && <span className="pp-service-orders">{s.totalOrders} orders</span>}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="pp-empty">
+                <div className="pp-empty-icon">🛒</div>
+                <p>No services listed yet</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reviews Tab */}
+        {activeSection === 'reviews' && (
+          <div>
+            {reviews.length > 0 ? (
+              <div className="pp-reviews">
+                {reviews.map((r, i) => (
+                  <div key={i} className="pp-review-card">
+                    <div className="pp-review-header">
+                      <div className="pp-review-author">
+                        {r.reviewer?.profilePicture ? (
+                          <img src={r.reviewer.profilePicture} alt="" className="pp-review-avatar" />
+                        ) : (
+                          <div className="pp-review-avatar pp-avatar-initials-sm">
+                            {r.reviewer?.firstName?.[0]}{r.reviewer?.lastName?.[0]}
+                          </div>
+                        )}
+                        <div>
+                          <strong>{r.reviewer?.firstName} {r.reviewer?.lastName}</strong>
+                          <div className="pp-muted">{new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
+                        </div>
+                      </div>
+                      <StarRating rating={r.rating} />
+                    </div>
+                    {r.comment && <p className="pp-review-text">{r.comment}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="pp-empty">
+                <div className="pp-empty-icon">⭐</div>
+                <p>No reviews yet</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Custom Offer Modal ──────────────────────────────── */}
+      {showOfferModal && (
+        <CustomOfferModal
+          isOpen={true}
+          onClose={() => setShowOfferModal(false)}
+          recipientId={f._id}
+          recipientName={`${f.firstName} ${f.lastName}`}
+          offerType="direct_offer"
+          onSuccess={() => alert('Offer sent!')}
+        />
       )}
     </div>
   );

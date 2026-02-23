@@ -120,4 +120,49 @@ router.get('/', validateQueryParams, async (req, res) => {
   }
 });
 
+// GET /api/freelancers/:id — public profile
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId');
+
+    if (!user || !user.isActive || user.isSuspended) {
+      return res.status(404).json({ error: 'Freelancer not found' });
+    }
+
+    // Get their services
+    const Service = require('../models/Service');
+    const services = await Service.find({ freelancer: user._id, isActive: true, status: 'active' })
+      .select('title category pricing rating totalOrders location')
+      .limit(10);
+
+    // Get their reviews
+    const Review = require('../models/Review');
+    const reviews = await Review.find({ reviewee: user._id, moderationStatus: 'approved' })
+      .populate('reviewer', 'firstName lastName profilePicture')
+      .sort({ rating: -1 })
+      .limit(5);
+
+    // Get completed jobs count
+    const Job = require('../models/Job');
+    const completedJobs = await Job.countDocuments({ freelancer: user._id, status: 'completed' });
+
+    res.json({
+      freelancer: user,
+      services,
+      reviews,
+      stats: {
+        completedJobs: user.completedJobs || completedJobs,
+        totalEarnings: user.totalEarnings || 0,
+        rating: user.rating || 0,
+        totalReviews: user.totalReviews || 0,
+        memberSince: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching freelancer profile:', error);
+    res.status(500).json({ error: 'Failed to fetch freelancer profile' });
+  }
+});
+
 module.exports = router;
