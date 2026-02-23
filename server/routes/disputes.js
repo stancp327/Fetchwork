@@ -19,7 +19,6 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You are not authorized to dispute this job' });
     }
 
-    // Check for existing active dispute on this job
     const existing = await Dispute.findOne({
       job: jobId,
       status: { $in: ['open', 'under_review', 'awaiting_response', 'escalated'] }
@@ -50,7 +49,6 @@ router.post('/', authenticateToken, async (req, res) => {
     job.disputeReason = reason;
     await job.save();
 
-    // Notify the other party via email
     try {
       const emailService = require('../services/emailService');
       const otherPartyId = job.client.toString() === req.user.userId ? job.freelancer : job.client;
@@ -93,97 +91,9 @@ router.get('/user', authenticateToken, async (req, res) => {
   }
 });
 
-// ── Get Single Dispute (for participants + admin) ───────────────
-router.get('/:id', authenticateToken, async (req, res) => {
-  try {
-    const dispute = await Dispute.findById(req.params.id)
-      .populate('job', 'title budget status category description')
-      .populate('client freelancer filedBy resolvedBy', 'firstName lastName email profilePicture')
-      .populate('messages.sender', 'firstName lastName profilePicture')
-      .populate('evidence.uploadedBy', 'firstName lastName');
-
-    if (!dispute) {
-      return res.status(404).json({ error: 'Dispute not found' });
-    }
-
-    // Authorization: must be client, freelancer, or admin
-    const userId = req.user.userId;
-    const isParticipant = 
-      dispute.client._id.toString() === userId ||
-      dispute.freelancer._id.toString() === userId;
-    const isAdmin = req.user.isAdmin || req.user.role === 'admin';
-
-    if (!isParticipant && !isAdmin) {
-      return res.status(403).json({ error: 'Not authorized to view this dispute' });
-    }
-
-    // Filter out internal messages for non-admins
-    const disputeObj = dispute.toObject();
-    if (!isAdmin) {
-      disputeObj.messages = disputeObj.messages.filter(m => !m.isInternal);
-    }
-
-    res.json({ dispute: disputeObj, isAdmin });
-  } catch (error) {
-    console.error('Error fetching dispute:', error);
-    res.status(500).json({ error: 'Failed to fetch dispute' });
-  }
-});
-
-// ── Add Message / Response ──────────────────────────────────────
-router.post('/:id/messages', authenticateToken, async (req, res) => {
-  try {
-    const { message, attachments, isInternal } = req.body;
-    const dispute = await Dispute.findById(req.params.id);
-
-    if (!dispute) {
-      return res.status(404).json({ error: 'Dispute not found' });
-    }
-
-    const userId = req.user.userId;
-    const isClient = dispute.client.toString() === userId;
-    const isFreelancer = dispute.freelancer.toString() === userId;
-    const isAdmin = req.user.isAdmin || req.user.role === 'admin';
-
-    if (!isClient && !isFreelancer && !isAdmin) {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
-    // Only admins can post internal messages
-    if (isInternal && !isAdmin) {
-      return res.status(403).json({ error: 'Only admins can post internal notes' });
-    }
-
-    let senderRole = 'admin';
-    if (isClient) senderRole = 'client';
-    else if (isFreelancer) senderRole = 'freelancer';
-
-    dispute.messages.push({
-      sender: userId,
-      senderRole,
-      message,
-      attachments: attachments || [],
-      isInternal: isInternal || false
-    });
-
-    // If the other party responds, update status to under_review
-    if (dispute.status === 'awaiting_response') {
-      dispute.status = 'under_review';
-    }
-
-    await dispute.save();
-
-    const populated = await Dispute.findById(dispute._id)
-      .populate('messages.sender', 'firstName lastName profilePicture');
-
-    const newMessage = populated.messages[populated.messages.length - 1];
-
-    res.status(201).json({ message: newMessage });
-  } catch (error) {
-    console.error('Error adding message:', error);
-    res.status(500).json({ error: 'Failed to add message' });
-  }
-});
+// ══════════════════════════════════════════════════════════════════
+// ADMIN ROUTES — must come BEFORE /:id to avoid route conflict
+// ══════════════════════════════════════════════════════════════════
 
 // ── Admin: List All Disputes ────────────────────────────────────
 router.get('/admin/all', authenticateAdmin, requirePermission('dispute_resolution'), async (req, res) => {
@@ -221,7 +131,6 @@ router.get('/admin/all', authenticateAdmin, requirePermission('dispute_resolutio
   }
 });
 
-// Keep old admin route for backward compat
 router.get('/admin', authenticateAdmin, requirePermission('dispute_resolution'), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -277,7 +186,6 @@ router.patch('/:id/status', authenticateAdmin, requirePermission('dispute_resolu
       dispute.resolvedBy = req.admin._id;
       dispute.resolvedAt = new Date();
 
-      // Add resolution as a system message
       dispute.messages.push({
         sender: req.admin._id,
         senderRole: 'admin',
@@ -296,7 +204,6 @@ router.patch('/:id/status', authenticateAdmin, requirePermission('dispute_resolu
         await job.save();
       }
 
-      // Notify both parties
       try {
         const emailService = require('../services/emailService');
         const client = await User.findById(dispute.client);
@@ -321,6 +228,98 @@ router.patch('/:id/status', authenticateAdmin, requirePermission('dispute_resolu
   } catch (error) {
     console.error('Error updating dispute:', error);
     res.status(500).json({ error: 'Failed to update dispute' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// PARAMETERIZED ROUTES — must come AFTER /admin, /admin/all, /user
+// ══════════════════════════════════════════════════════════════════
+
+// ── Get Single Dispute (for participants + admin) ───────────────
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const dispute = await Dispute.findById(req.params.id)
+      .populate('job', 'title budget status category description')
+      .populate('client freelancer filedBy resolvedBy', 'firstName lastName email profilePicture')
+      .populate('messages.sender', 'firstName lastName profilePicture')
+      .populate('evidence.uploadedBy', 'firstName lastName');
+
+    if (!dispute) {
+      return res.status(404).json({ error: 'Dispute not found' });
+    }
+
+    const userId = req.user.userId;
+    const isParticipant = 
+      dispute.client._id.toString() === userId ||
+      dispute.freelancer._id.toString() === userId;
+    const isAdmin = req.user.isAdmin || req.user.role === 'admin';
+
+    if (!isParticipant && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorized to view this dispute' });
+    }
+
+    const disputeObj = dispute.toObject();
+    if (!isAdmin) {
+      disputeObj.messages = disputeObj.messages.filter(m => !m.isInternal);
+    }
+
+    res.json({ dispute: disputeObj, isAdmin });
+  } catch (error) {
+    console.error('Error fetching dispute:', error);
+    res.status(500).json({ error: 'Failed to fetch dispute' });
+  }
+});
+
+// ── Add Message / Response ──────────────────────────────────────
+router.post('/:id/messages', authenticateToken, async (req, res) => {
+  try {
+    const { message, attachments, isInternal } = req.body;
+    const dispute = await Dispute.findById(req.params.id);
+
+    if (!dispute) {
+      return res.status(404).json({ error: 'Dispute not found' });
+    }
+
+    const userId = req.user.userId;
+    const isClient = dispute.client.toString() === userId;
+    const isFreelancer = dispute.freelancer.toString() === userId;
+    const isAdmin = req.user.isAdmin || req.user.role === 'admin';
+
+    if (!isClient && !isFreelancer && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    if (isInternal && !isAdmin) {
+      return res.status(403).json({ error: 'Only admins can post internal notes' });
+    }
+
+    let senderRole = 'admin';
+    if (isClient) senderRole = 'client';
+    else if (isFreelancer) senderRole = 'freelancer';
+
+    dispute.messages.push({
+      sender: userId,
+      senderRole,
+      message,
+      attachments: attachments || [],
+      isInternal: isInternal || false
+    });
+
+    if (dispute.status === 'awaiting_response') {
+      dispute.status = 'under_review';
+    }
+
+    await dispute.save();
+
+    const populated = await Dispute.findById(dispute._id)
+      .populate('messages.sender', 'firstName lastName profilePicture');
+
+    const newMessage = populated.messages[populated.messages.length - 1];
+
+    res.status(201).json({ message: newMessage });
+  } catch (error) {
+    console.error('Error adding message:', error);
+    res.status(500).json({ error: 'Failed to add message' });
   }
 });
 
