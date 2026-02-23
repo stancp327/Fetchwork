@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../../utils/api';
 import { CATEGORIES } from '../../utils/categories';
-import '../UserComponents.css';
+import './PostJob.css';
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -141,248 +141,255 @@ const PostJob = () => {
 
   if (success) {
     return (
-      <div className="user-container">
-        <div className="success">
-          <h3>Job Posted Successfully!</h3>
-          <p>Your job has been posted and is now live. Redirecting to browse jobs...</p>
-        </div>
+      <div className="post-job-success">
+        <h3>✅ Job Posted Successfully!</h3>
+        <p>Your job is now live. Redirecting to browse jobs...</p>
       </div>
     );
   }
 
   return (
-    <div className="user-container">
-      <div className="user-header">
+    <div className="post-job-page">
+      <div className="post-job-header">
         <h1>Post a Job</h1>
         <p>Find the perfect freelancer for your project</p>
       </div>
 
-      <div className="main-content">
+      <div className="post-job-form">
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="title">Job Title *</label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              placeholder="e.g. Build a responsive website"
-              maxLength={100}
-            />
-            {errors.title && <div className="error-text">{errors.title}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="description">Job Description *</label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Describe your project in detail..."
-              rows={8}
-              maxLength={5000}
-            />
-            <div style={{ fontSize: '0.8rem', color: '#6c757d', textAlign: 'right' }}>
-              {formData.description.length}/5000 characters
-            </div>
-            {errors.description && <div className="error-text">{errors.description}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="category">Category *</label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-            >
-              <option value="">Select a category</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
-              ))}
-            </select>
-            {errors.category && <div className="error-text">{errors.category}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="subcategory">Subcategory</label>
-            <input
-              type="text"
-              id="subcategory"
-              name="subcategory"
-              value={formData.subcategory}
-              onChange={handleInputChange}
-              placeholder="e.g. React Development, Logo Design"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="skills">Required Skills</label>
-            <input
-              type="text"
-              id="skills"
-              name="skills"
-              value={formData.skills}
-              onChange={handleInputChange}
-              placeholder="e.g. JavaScript, React, Node.js (comma separated)"
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '15px' }}>
-            <div className="form-group">
-              <label htmlFor="budgetType">Budget Type *</label>
-              <select
-                id="budgetType"
-                name="budgetType"
-                value={formData.budgetType}
-                onChange={handleInputChange}
-              >
-                <option value="fixed">Fixed Price</option>
-                <option value="hourly">Hourly Rate</option>
-              </select>
-            </div>
+          <div className="form-section">
+            <div className="form-section-title">Job Details</div>
 
             <div className="form-group">
-              <label htmlFor="budgetAmount">
-                Budget Amount * ({formData.budgetType === 'hourly' ? 'per hour' : 'total'})
-              </label>
+              <label htmlFor="title">Job Title *</label>
               <input
-                type="number"
-                id="budgetAmount"
-                name="budgetAmount"
-                value={formData.budgetAmount}
+                type="text"
+                id="title"
+                name="title"
+                value={formData.title}
                 onChange={handleInputChange}
-                placeholder="0"
-                min="1"
-                step="0.01"
+                placeholder="e.g. Build a responsive website"
+                maxLength={100}
               />
-              {errors.budgetAmount && <div className="error-text">{errors.budgetAmount}</div>}
+              {errors.title && <div className="error-text">{errors.title}</div>}
             </div>
 
             <div className="form-group">
-              <label htmlFor="currency">Currency</label>
+              <label htmlFor="description">Job Description *</label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Describe your project in detail..."
+                rows={6}
+                maxLength={5000}
+              />
+              <div className="char-count">
+                {formData.description.length}/5000 characters
+              </div>
+              {errors.description && <div className="error-text">{errors.description}</div>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="category">Category *</label>
               <select
-                id="currency"
-                name="currency"
-                value={formData.currency}
+                id="category"
+                name="category"
+                value={formData.category}
                 onChange={handleInputChange}
               >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="CAD">CAD</option>
-                <option value="AUD">AUD</option>
+                <option value="">Select a category</option>
+                {CATEGORIES.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
+                ))}
+              </select>
+              {errors.category && <div className="error-text">{errors.category}</div>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="subcategory">Subcategory</label>
+              <input
+                type="text"
+                id="subcategory"
+                name="subcategory"
+                value={formData.subcategory}
+                onChange={handleInputChange}
+                placeholder="e.g. React Development, Logo Design"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="skills">Required Skills</label>
+              <input
+                type="text"
+                id="skills"
+                name="skills"
+                value={formData.skills}
+                onChange={handleInputChange}
+                placeholder="e.g. JavaScript, React, Node.js (comma separated)"
+              />
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-title">Budget & Timeline</div>
+
+            <div className="post-job-grid-3">
+              <div className="form-group">
+                <label htmlFor="budgetType">Budget Type *</label>
+                <select
+                  id="budgetType"
+                  name="budgetType"
+                  value={formData.budgetType}
+                  onChange={handleInputChange}
+                >
+                  <option value="fixed">Fixed Price</option>
+                  <option value="hourly">Hourly Rate</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="budgetAmount">
+                  Amount * ({formData.budgetType === 'hourly' ? '/hr' : 'total'})
+                </label>
+                <input
+                  type="number"
+                  id="budgetAmount"
+                  name="budgetAmount"
+                  value={formData.budgetAmount}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                  min="1"
+                  step="0.01"
+                />
+                {errors.budgetAmount && <div className="error-text">{errors.budgetAmount}</div>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="currency">Currency</label>
+                <select
+                  id="currency"
+                  name="currency"
+                  value={formData.currency}
+                  onChange={handleInputChange}
+                >
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="CAD">CAD</option>
+                  <option value="AUD">AUD</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="duration">Project Duration *</label>
+              <select
+                id="duration"
+                name="duration"
+                value={formData.duration}
+                onChange={handleInputChange}
+              >
+                <option value="">Select duration</option>
+                <option value="less_than_1_week">Less than 1 week</option>
+                <option value="1_2_weeks">1-2 weeks</option>
+                <option value="1_month">1 month</option>
+                <option value="2_3_months">2-3 months</option>
+                <option value="3_6_months">3-6 months</option>
+                <option value="more_than_6_months">More than 6 months</option>
+              </select>
+              {errors.duration && <div className="error-text">{errors.duration}</div>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="experienceLevel">Experience Level *</label>
+              <select
+                id="experienceLevel"
+                name="experienceLevel"
+                value={formData.experienceLevel}
+                onChange={handleInputChange}
+              >
+                <option value="">Select experience level</option>
+                <option value="entry">Entry Level</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="expert">Expert</option>
+              </select>
+              {errors.experienceLevel && <div className="error-text">{errors.experienceLevel}</div>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="deadline">Deadline (optional)</label>
+              <input
+                type="date"
+                id="deadline"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleInputChange}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-section-title">Location</div>
+
+            <div className="form-group">
+              <label htmlFor="locationType">Work Type</label>
+              <select
+                id="locationType"
+                name="locationType"
+                value={formData.locationType}
+                onChange={handleInputChange}
+              >
+                <option value="remote">🌐 Remote</option>
+                <option value="local">📍 Local / On-site</option>
+                <option value="hybrid">🔄 Hybrid</option>
               </select>
             </div>
-          </div>
 
-          <div className="form-group">
-            <label htmlFor="duration">Project Duration *</label>
-            <select
-              id="duration"
-              name="duration"
-              value={formData.duration}
-              onChange={handleInputChange}
-            >
-              <option value="">Select duration</option>
-              <option value="less_than_1_week">Less than 1 week</option>
-              <option value="1_2_weeks">1-2 weeks</option>
-              <option value="1_month">1 month</option>
-              <option value="2_3_months">2-3 months</option>
-              <option value="3_6_months">3-6 months</option>
-              <option value="more_than_6_months">More than 6 months</option>
-            </select>
-            {errors.duration && <div className="error-text">{errors.duration}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="experienceLevel">Experience Level Required *</label>
-            <select
-              id="experienceLevel"
-              name="experienceLevel"
-              value={formData.experienceLevel}
-              onChange={handleInputChange}
-            >
-              <option value="">Select experience level</option>
-              <option value="entry">Entry Level</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="expert">Expert</option>
-            </select>
-            {errors.experienceLevel && <div className="error-text">{errors.experienceLevel}</div>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="deadline">Project Deadline</label>
-            <input
-              type="date"
-              id="deadline"
-              name="deadline"
-              value={formData.deadline}
-              onChange={handleInputChange}
-              min={new Date().toISOString().split('T')[0]}
-            />
-            <div style={{ fontSize: '0.8rem', color: '#6c757d', marginTop: '0.25rem' }}>
-              When do you need this completed by? (Optional)
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="locationType">Work Type</label>
-            <select
-              id="locationType"
-              name="locationType"
-              value={formData.locationType}
-              onChange={handleInputChange}
-            >
-              <option value="remote">🌐 Remote</option>
-              <option value="local">📍 Local / On-site</option>
-              <option value="hybrid">🔄 Hybrid (Remote + Local)</option>
-            </select>
-          </div>
-
-          {formData.locationType !== 'remote' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px' }}>
-              <div className="form-group">
-                <label htmlFor="city">City</label>
-                <input
-                  type="text"
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Concord"
-                />
+            {formData.locationType !== 'remote' && (
+              <div className="post-job-grid-location">
+                <div className="form-group">
+                  <label htmlFor="city">City</label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Concord"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="state">State</label>
+                  <input
+                    type="text"
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    placeholder="CA"
+                    maxLength={2}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="zipCode">Zip Code</label>
+                  <input
+                    type="text"
+                    id="zipCode"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    onChange={handleInputChange}
+                    placeholder="94520"
+                    maxLength={10}
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label htmlFor="state">State</label>
-                <input
-                  type="text"
-                  id="state"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  placeholder="e.g. CA"
-                  maxLength={2}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="zipCode">Zip Code</label>
-                <input
-                  type="text"
-                  id="zipCode"
-                  name="zipCode"
-                  value={formData.zipCode}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 94520"
-                  maxLength={10}
-                />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className="checkbox-group">
+          <div className="post-job-checkbox">
             <input
               type="checkbox"
               id="isUrgent"
@@ -390,22 +397,22 @@ const PostJob = () => {
               checked={formData.isUrgent}
               onChange={handleInputChange}
             />
-            <label htmlFor="isUrgent">This is an urgent job</label>
+            <label htmlFor="isUrgent">⚡ This is an urgent job</label>
           </div>
 
-          {error && <div className="error">{error}</div>}
+          {error && <div className="error-banner">{error}</div>}
 
-          <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
+          <div className="post-job-actions">
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn-primary"
               disabled={loading}
             >
-              {loading ? 'Posting Job...' : 'Post Job'}
+              {loading ? 'Posting...' : 'Post Job'}
             </button>
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn-secondary"
               onClick={() => navigate('/dashboard')}
             >
               Cancel

@@ -8,7 +8,7 @@ import { createJobPostingSchema } from '../../utils/structuredData';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
 import FileUpload from '../common/FileUpload';
-import '../UserComponents.css';
+import './JobDetails.css';
 import { getApiBaseUrl } from '../../utils/api';
 
 const JobDetails = () => {
@@ -211,39 +211,33 @@ const JobDetails = () => {
 
   if (loading) {
     return (
-      <div className="user-container">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading job details...</p>
-        </div>
+      <div className="jd-state-page">
+        <div className="loading-spinner-jd"></div>
+        <p>Loading job details...</p>
       </div>
     );
   }
 
   if (error && !job) {
     return (
-      <div className="user-container">
-        <div className="error-state">
-          <h2>Error Loading Job</h2>
-          <p>{error}</p>
-          <button onClick={() => navigate('/browse-jobs')} className="btn btn-primary">
-            Back to Browse Jobs
-          </button>
-        </div>
+      <div className="jd-state-page">
+        <h2>Error Loading Job</h2>
+        <p>{error}</p>
+        <button onClick={() => navigate('/browse-jobs')} className="btn-back">
+          Back to Browse Jobs
+        </button>
       </div>
     );
   }
 
   if (!job) {
     return (
-      <div className="user-container">
-        <div className="error-state">
-          <h2>Job Not Found</h2>
-          <p>The job you're looking for doesn't exist or has been removed.</p>
-          <button onClick={() => navigate('/browse-jobs')} className="btn btn-primary">
-            Back to Browse Jobs
-          </button>
-        </div>
+      <div className="jd-state-page">
+        <h2>Job Not Found</h2>
+        <p>The job you're looking for doesn't exist or has been removed.</p>
+        <button onClick={() => navigate('/browse-jobs')} className="btn-back">
+          Back to Browse Jobs
+        </button>
       </div>
     );
   }
@@ -261,55 +255,50 @@ const JobDetails = () => {
         type="article"
         structuredData={jobStructuredData}
       />
-      <div className="user-container">
-      <div className="job-details">
-        <div className="job-header">
-          <button onClick={() => navigate('/browse-jobs')} className="back-button">
-            ← Back to Jobs
-          </button>
-          <div className="job-meta">
-            <span className="job-category">{job.category}</span>
-            <span className="job-posted">Posted {formatDate(job.createdAt)}</span>
-          </div>
+      <div className="job-details-page">
+        <button onClick={() => navigate('/browse-jobs')} className="back-button">
+          ← Back to Jobs
+        </button>
+        <div className="job-meta">
+          <span className="job-category">{job.category}</span>
+          <span className="job-posted">Posted {formatDate(job.createdAt)}</span>
         </div>
 
-        <div className="job-content">
-          <div className="job-main">
-            <div className="job-title-section">
-              <h1 className="job-title">{job.title}</h1>
-              <span className={`job-status-badge ${job.status}`}>{formatJobStatus(job.status)}</span>
+        <div className="job-content-grid">
+          <div className="job-main-card">
+            <div className="job-title-row">
+              <h1>{job.title}</h1>
+              <span className={`status-badge ${job.status}`}>{formatJobStatus(job.status)}</span>
             </div>
             
-            <div className="job-overview">
-              <div className="job-stat">
+            <div className="job-stats-row">
+              <div className="job-stat-item">
                 <span className="stat-label">Budget</span>
                 <span className="stat-value">{formatBudget(job.budget)}</span>
               </div>
-              <div className="job-stat">
+              <div className="job-stat-item">
                 <span className="stat-label">Duration</span>
                 <span className="stat-value">{job.duration}</span>
               </div>
-              <div className="job-stat">
-                <span className="stat-label">Experience Level</span>
+              <div className="job-stat-item">
+                <span className="stat-label">Experience</span>
                 <span className="stat-value">{job.experienceLevel}</span>
               </div>
-              <div className="job-stat">
+              <div className="job-stat-item">
                 <span className="stat-label">Proposals</span>
                 <span className="stat-value">{job.proposals?.length || 0}</span>
               </div>
             </div>
 
-            <div className="job-description">
+            <div className="job-section">
               <h3>Job Description</h3>
-              <div className="description-content">
-                {job.description.split('\n').map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
-                ))}
-              </div>
+              {job.description.split('\n').map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
             </div>
 
             {job.skills && job.skills.length > 0 && (
-              <div className="job-skills">
+              <div className="job-section">
                 <h3>Required Skills</h3>
                 <div className="skills-list">
                   {job.skills.map((skill, index) => (
@@ -319,66 +308,59 @@ const JobDetails = () => {
               </div>
             )}
 
-            <div className="job-details-info">
-              <div className="info-item">
-                <strong>Location:</strong> {getLocationDisplay(job.location)}
-              </div>
-              {job.deadline && (
-                <div className="info-item">
-                  <strong>⏰ Deadline:</strong> {new Date(job.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  {(() => {
-                    const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000);
-                    if (days < 0) return <span style={{ color: '#dc2626', marginLeft: '0.5rem' }}>(Overdue)</span>;
-                    if (days <= 3) return <span style={{ color: '#f59e0b', marginLeft: '0.5rem' }}>({days}d left)</span>;
-                    if (days <= 7) return <span style={{ color: '#f59e0b', marginLeft: '0.5rem' }}>({days}d left)</span>;
-                    return null;
-                  })()}
+            <div className="job-section">
+              <div className="job-info-list">
+                <div className="job-info-item">
+                  <strong>📍 Location:</strong> {getLocationDisplay(job.location)}
                 </div>
-              )}
-              <div className="info-item">
-                <strong>👀 Interest:</strong> {job.proposalCount || 0} applicants • {job.views || 0} views
-                {(job.proposalCount >= 10 || job.views >= 50) && <span style={{ color: '#dc2626', marginLeft: '0.5rem' }}>🔥 High demand</span>}
-              </div>
-              {job.isUrgent && (
-                <div className="info-item urgent">
-                  <strong>🚨 Urgent Project</strong>
+                {job.deadline && (
+                  <div className="job-info-item">
+                    <strong>⏰ Deadline:</strong> {new Date(job.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {(() => {
+                      const days = Math.ceil((new Date(job.deadline) - new Date()) / 86400000);
+                      if (days < 0) return <span style={{ color: '#dc2626', marginLeft: '0.5rem' }}>(Overdue)</span>;
+                      if (days <= 7) return <span style={{ color: '#f59e0b', marginLeft: '0.5rem' }}>({days}d left)</span>;
+                      return null;
+                    })()}
+                  </div>
+                )}
+                <div className="job-info-item">
+                  <strong>👀 Interest:</strong> {job.proposalCount || 0} applicants • {job.views || 0} views
+                  {(job.proposalCount >= 10 || job.views >= 50) && <span style={{ color: '#dc2626', marginLeft: '0.5rem' }}>🔥 High demand</span>}
                 </div>
-              )}
+                {job.isUrgent && (
+                  <div className="job-info-item urgent">
+                    <strong>🚨 Urgent Project</strong>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="job-sidebar">
-            <div className="client-info">
+          <div className="job-sidebar-col">
+            <div className="sidebar-card">
               <h3>About the Client</h3>
-              <div className="client-details">
-                <div className="client-name">
-                  {job.client.firstName} {job.client.lastName}
-                </div>
-                <div className="client-stats">
-                  <div className="client-stat">
-                    <span>⭐ {job.client.rating || 'No rating'}</span>
-                  </div>
-                  <div className="client-stat">
-                    <span>📋 {job.client.totalJobs || 0} jobs posted</span>
-                  </div>
-                  {job.client.memberSince && (
-                    <div className="client-stat">
-                      <span>📅 Member since {formatDate(job.client.memberSince)}</span>
-                    </div>
-                  )}
-                </div>
+              <div className="client-name">
+                {job.client.firstName} {job.client.lastName}
+              </div>
+              <div className="client-stats">
+                <div className="client-stat">⭐ {job.client.rating || 'No rating'}</div>
+                <div className="client-stat">📋 {job.client.totalJobs || 0} jobs posted</div>
+                {job.client.memberSince && (
+                  <div className="client-stat">📅 Member since {formatDate(job.client.memberSince)}</div>
+                )}
               </div>
             </div>
 
             {!isOwnJob && job.status === 'open' && (
-              <div className="apply-section">
+              <div className="sidebar-card">
                 {hasApplied ? (
                   <div className="already-applied">
                     <h3>✅ Application Submitted</h3>
                     <p>You have already submitted a proposal for this job.</p>
                   </div>
                 ) : (
-                  <div className="apply-form">
+                  <>
                     <h3>Submit a Proposal</h3>
                     <form onSubmit={handleApply}>
                       <div className="form-group">
@@ -387,13 +369,13 @@ const JobDetails = () => {
                           id="coverLetter"
                           value={proposal.coverLetter}
                           onChange={(e) => setProposal({...proposal, coverLetter: e.target.value})}
-                          placeholder="Explain why you're the best fit for this project..."
-                          rows="6"
+                          placeholder="Explain why you're the best fit..."
+                          rows="5"
                           required
                         />
                       </div>
                       
-                      <div className="form-row">
+                      <div className="form-row-2">
                         <div className="form-group">
                           <label htmlFor="proposedBudget">Your Bid ($) *</label>
                           <input
@@ -415,7 +397,7 @@ const JobDetails = () => {
                             onChange={(e) => setProposal({...proposal, proposedDuration: e.target.value})}
                             required
                           >
-                            <option value="">Select timeline</option>
+                            <option value="">Select</option>
                             <option value="1-3 days">1-3 days</option>
                             <option value="1 week">1 week</option>
                             <option value="2 weeks">2 weeks</option>
@@ -437,49 +419,21 @@ const JobDetails = () => {
                         />
                       </div>
 
-                      {error && (
-                        <div className="error-message" style={{ 
-                          background: '#f8d7da', 
-                          color: '#721c24', 
-                          padding: '10px', 
-                          borderRadius: '4px',
-                          marginBottom: '15px',
-                          border: '1px solid #f5c6cb'
-                        }}>
-                          {error}
-                        </div>
-                      )}
+                      {error && <div className="error-banner-jd">{error}</div>}
                       
                       <button 
                         type="submit" 
-                        className="btn btn-primary btn-full"
+                        className="btn-submit-proposal"
                         disabled={applying}
-                        style={{
-                          background: applying ? '#6c757d' : '#667eea',
-                          cursor: applying ? 'not-allowed' : 'pointer'
-                        }}
                       >
-                        {applying ? (
-                          <>
-                            <span style={{ marginRight: '8px' }}>⏳</span>
-                            Submitting Proposal...
-                          </>
-                        ) : (
-                          <>
-                            <span style={{ marginRight: '8px' }}>📝</span>
-                            Submit Proposal
-                          </>
-                        )}
+                        {applying ? '⏳ Submitting...' : '📝 Submit Proposal'}
                       </button>
 
-                      <div style={{ textAlign: 'center', margin: '1rem 0 0', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
-                        <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 0.5rem' }}>
-                          Want to propose different terms?
-                        </p>
+                      <div className="custom-offer-divider">
+                        <p>Want to propose different terms?</p>
                         <button
                           type="button"
-                          className="btn btn-secondary"
-                          style={{ fontSize: '0.85rem' }}
+                          className="btn-full btn-secondary-jd"
                           onClick={() => {
                             setOfferRecipient({
                               id: job.client._id,
@@ -492,42 +446,37 @@ const JobDetails = () => {
                         </button>
                       </div>
                     </form>
-                  </div>
+                  </>
                 )}
               </div>
             )}
 
             {isOwnJob && (
-              <div className="job-owner-actions">
+              <div className="sidebar-card">
                 <h3>Your Job</h3>
-                <p>You posted this job.</p>
+                <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>You posted this job.</p>
                 <button 
                   onClick={() => navigate(`/jobs/${id}/proposals`)}
-                  className="btn btn-secondary btn-full"
+                  className="btn-full btn-secondary-jd"
+                  style={{ marginBottom: '0.5rem' }}
                 >
                   View Proposals ({job.proposals?.length || 0})
                 </button>
                 
                 {job.proposals?.length > 0 && (
-                  <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.5rem 0 0' }}>
-                    💡 You can send a counter offer from the proposals page
+                  <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '0.5rem 0' }}>
+                    💡 Send a counter offer from the proposals page
                   </p>
                 )}
                 
                 {job.status === 'in_progress' && job.escrowAmount === 0 && (
-                  <button
-                    className="btn btn-primary btn-full"
-                    onClick={() => handleFundEscrow()}
-                  >
+                  <button className="btn-full btn-primary-jd" style={{ marginTop: '0.5rem' }} onClick={handleFundEscrow}>
                     Fund Escrow ({formatBudget(job.budget)})
                   </button>
                 )}
                 
                 {job.status === 'completed' && job.escrowAmount > 0 && (
-                  <button 
-                    className="btn btn-success btn-full"
-                    onClick={() => handleReleaseEscrow()}
-                  >
+                  <button className="btn-full btn-success-jd" style={{ marginTop: '0.5rem' }} onClick={handleReleaseEscrow}>
                     Release Payment (${job.escrowAmount})
                   </button>
                 )}
@@ -536,26 +485,20 @@ const JobDetails = () => {
 
             {(job.status === 'in_progress' || job.status === 'completed') && 
              user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
-              <div style={{ marginBottom: '1rem' }}>
-                <Link to={`/jobs/${job._id}/progress`} className="btn btn-primary" style={{ textDecoration: 'none' }}>
+              <div className="sidebar-card">
+                <Link to={`/jobs/${job._id}/progress`} className="btn-full btn-primary-jd" style={{ textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
                   📊 Track Progress
                 </Link>
-              </div>
-            )}
-            {(job.status === 'in_progress' || job.status === 'completed') && 
-             user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
-              <div className="dispute-section">
                 <button 
-                  className="btn btn-danger dispute-btn"
+                  className="btn-full btn-danger-jd"
                   onClick={() => setShowDisputeModal(true)}
                 >
-                  File Dispute
+                  ⚠️ File Dispute
                 </button>
               </div>
             )}
           </div>
         </div>
-      </div>
 
       {showDisputeModal && (
         <DisputeFilingForm

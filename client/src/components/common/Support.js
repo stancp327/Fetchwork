@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import SEO from './SEO';
-import '../UserComponents.css';
+/* Support uses inline styles - no external CSS dependency */
 
 const Support = () => {
   const [activeSection, setActiveSection] = useState('faq');
@@ -116,10 +116,10 @@ const Support = () => {
         description="Find answers to common questions and get help with FetchWork. Our comprehensive support center covers everything from getting started to advanced features."
         keywords="support, help, faq, freelance, fetchwork"
       />
-      <div className="user-container">
-        <div className="user-header">
-          <h1>Support Center</h1>
-          <p>Find answers to your questions and get the help you need</p>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: 'calc(64px + 2rem) 1.5rem 2rem' }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1a1a2e', margin: '0 0 0.5rem' }}>Support Center</h1>
+          <p style={{ color: '#6b7280', fontSize: '0.95rem', margin: 0 }}>Find answers to your questions and get the help you need</p>
         </div>
 
         <div className="support-navigation">

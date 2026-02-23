@@ -1,0 +1,257 @@
+/* ── Post Job ─────────────────────────────────────────────────── */
+.post-job-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  padding-top: calc(64px + 2rem);
+}
+
+.post-job-header {
+  margin-bottom: 2rem;
+}
+
+.post-job-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 0.5rem;
+}
+
+.post-job-header p {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.post-job-form {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.post-job-form .form-section {
+  margin-bottom: 1.5rem;
+}
+
+.post-job-form .form-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.post-job-form .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.post-job-form label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.375rem;
+}
+
+.post-job-form input[type="text"],
+.post-job-form input[type="number"],
+.post-job-form input[type="date"],
+.post-job-form select,
+.post-job-form textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #1f2937;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  min-height: 44px;
+}
+
+.post-job-form input:focus,
+.post-job-form select:focus,
+.post-job-form textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.post-job-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.post-job-form .char-count {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.post-job-form .error-text {
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.post-job-form .error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Grid rows ────────────────────────────────────────────────── */
+.post-job-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 1rem;
+}
+
+.post-job-grid-location {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Checkbox ─────────────────────────────────────────────────── */
+.post-job-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.post-job-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+}
+
+.post-job-checkbox label {
+  margin: 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ── Actions ──────────────────────────────────────────────────── */
+.post-job-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.post-job-actions .btn-primary {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background 0.15s;
+}
+
+.post-job-actions .btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.post-job-actions .btn-primary:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.post-job-actions .btn-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-height: 44px;
+  transition: all 0.15s;
+}
+
+.post-job-actions .btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* ── Success ──────────────────────────────────────────────────── */
+.post-job-success {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  max-width: 500px;
+  margin: calc(64px + 3rem) auto 0;
+}
+
+.post-job-success h3 {
+  color: #059669;
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.post-job-success p {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .post-job-page {
+    padding: 1.25rem 1rem;
+    padding-top: calc(64px + 1.25rem);
+  }
+
+  .post-job-form {
+    padding: 1.25rem;
+  }
+
+  .post-job-grid-3,
+  .post-job-grid-location {
+    grid-template-columns: 1fr;
+  }
+
+  .post-job-actions {
+    flex-direction: column;
+  }
+
+  .post-job-actions .btn-primary,
+  .post-job-actions .btn-secondary {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .post-job-page {
+    padding: 1rem 0.75rem;
+    padding-top: calc(64px + 1rem);
+  }
+
+  .post-job-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .post-job-form {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+}

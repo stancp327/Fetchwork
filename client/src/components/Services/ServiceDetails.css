@@ -1,0 +1,417 @@
+/* ── Service Details ──────────────────────────────────────────── */
+.service-details-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  padding-top: calc(64px + 2rem);
+}
+
+.service-details-page .service-header {
+  margin-bottom: 1.5rem;
+}
+
+.service-details-page .service-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 0.75rem;
+  line-height: 1.3;
+}
+
+.service-details-page .service-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.service-details-page .tag {
+  background: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.service-details-page .tag.primary {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* ── Grid ─────────────────────────────────────────────────────── */
+.service-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ── Main ─────────────────────────────────────────────────────── */
+.service-details-page .service-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.service-gallery {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f9fafb;
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-image {
+  font-size: 3rem;
+  color: #d1d5db;
+}
+
+.service-description,
+.service-skills,
+.service-faqs {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.service-description h3,
+.service-skills h3,
+.service-faqs h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem;
+}
+
+.service-description p {
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.service-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.faq-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.faq-item:last-child { border-bottom: none; }
+
+.faq-item h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.35rem;
+}
+
+.faq-item p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────── */
+.service-details-page .service-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.freelancer-card,
+.pricing-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.freelancer-info {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.freelancer-avatar-large {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.freelancer-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.25rem;
+}
+
+.freelancer-bio {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+}
+
+.freelancer-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.freelancer-links { margin-top: 0.5rem; }
+
+.portfolio-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.portfolio-link:hover { text-decoration: underline; }
+
+/* ── Package selector ─────────────────────────────────────────── */
+.package-selector {
+  display: flex;
+  gap: 2px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 1rem;
+}
+
+.package-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 44px;
+}
+
+.package-btn:hover { color: #2563eb; }
+
+.package-btn.active {
+  background: white;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+}
+
+.package-details h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.35rem;
+}
+
+.package-details > p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 1rem;
+  line-height: 1.4;
+}
+
+.package-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.package-features .feature {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.package-features .feature strong {
+  color: #1f2937;
+}
+
+.service-requirements {
+  margin-bottom: 1rem;
+}
+
+.service-requirements h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.35rem;
+}
+
+.service-requirements p {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Order section ────────────────────────────────────────────── */
+.order-section .form-group {
+  margin-bottom: 1rem;
+}
+
+.order-section label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.375rem;
+}
+
+.order-section textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  resize: vertical;
+  box-sizing: border-box;
+  min-height: 80px;
+}
+
+.order-section textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.order-section .btn-primary {
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  min-height: 48px;
+  transition: background 0.15s;
+}
+
+.order-section .btn-primary:hover { background: #1d4ed8; }
+.order-section .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+
+.order-section .btn-secondary {
+  width: 100%;
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.625rem;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-height: 44px;
+  margin-top: 0.5rem;
+  transition: all 0.15s;
+}
+
+.order-section .btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.own-service-notice {
+  text-align: center;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.own-service-notice p {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* ── Loading/Error ────────────────────────────────────────────── */
+.sd-state-page {
+  max-width: 500px;
+  margin: calc(64px + 3rem) auto 0;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .service-details-page {
+    padding: 1.25rem 1rem;
+    padding-top: calc(64px + 1rem);
+  }
+
+  .service-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-details-page .service-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .service-description,
+  .service-skills,
+  .service-faqs,
+  .freelancer-card,
+  .pricing-card {
+    padding: 1rem;
+  }
+
+  .freelancer-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .freelancer-stats {
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .service-details-page {
+    padding: 1rem 0.75rem;
+    padding-top: calc(64px + 0.75rem);
+  }
+
+  .service-meta {
+    gap: 0.5rem;
+  }
+
+  .package-selector {
+    flex-direction: column;
+  }
+}
