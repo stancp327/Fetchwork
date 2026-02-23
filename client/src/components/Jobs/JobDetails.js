@@ -5,6 +5,7 @@ import { getLocationDisplay } from '../../utils/location';
 import { formatBudget } from '../../utils/formatters';
 import SEO from '../common/SEO';
 import { createJobPostingSchema } from '../../utils/structuredData';
+import CustomOfferModal from '../Offers/CustomOfferModal';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
 import FileUpload from '../common/FileUpload';
 import '../UserComponents.css';
@@ -19,6 +20,8 @@ const JobDetails = () => {
   const [error, setError] = useState('');
   const [applying, setApplying] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerRecipient, setOfferRecipient] = useState(null);
   const [proposal, setProposal] = useState({
     coverLetter: '',
     proposedBudget: '',
@@ -468,6 +471,26 @@ const JobDetails = () => {
                           </>
                         )}
                       </button>
+
+                      <div style={{ textAlign: 'center', margin: '1rem 0 0', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                        <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 0.5rem' }}>
+                          Want to propose different terms?
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ fontSize: '0.85rem' }}
+                          onClick={() => {
+                            setOfferRecipient({
+                              id: job.client._id,
+                              name: `${job.client.firstName} ${job.client.lastName}`
+                            });
+                            setShowOfferModal(true);
+                          }}
+                        >
+                          📋 Send Custom Offer
+                        </button>
+                      </div>
                     </form>
                   </div>
                 )}
@@ -484,6 +507,12 @@ const JobDetails = () => {
                 >
                   View Proposals ({job.proposals?.length || 0})
                 </button>
+                
+                {job.proposals?.length > 0 && (
+                  <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.5rem 0 0' }}>
+                    💡 You can send a counter offer from the proposals page
+                  </p>
+                )}
                 
                 {job.status === 'in_progress' && job.escrowAmount === 0 && (
                   <button
@@ -525,6 +554,23 @@ const JobDetails = () => {
           jobId={job._id}
           onClose={() => setShowDisputeModal(false)}
           onSubmit={handleDisputeFiled}
+        />
+      )}
+
+      {showOfferModal && offerRecipient && (
+        <CustomOfferModal
+          isOpen={true}
+          onClose={() => { setShowOfferModal(false); setOfferRecipient(null); }}
+          recipientId={offerRecipient.id}
+          recipientName={offerRecipient.name}
+          jobId={job._id}
+          offerType="custom_order"
+          prefillTerms={{
+            amount: job.budget?.amount || '',
+            deliveryTime: '',
+            description: `Custom offer for: ${job.title}`
+          }}
+          onSuccess={() => alert('Offer sent! Check your offers page.')}
         />
       )}
     </div>

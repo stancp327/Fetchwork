@@ -140,6 +140,7 @@ app.use('/api/public-profiles', require('./routes/publicProfiles'));
 app.use('/api/portfolio', require('./routes/portfolio'));
 app.use('/api/errors', require('./routes/errors'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/offers', require('./routes/offers'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {
