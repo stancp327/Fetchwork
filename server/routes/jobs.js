@@ -517,4 +517,189 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
   }
 });
 
+// ── Milestone Management ────────────────────────────────────────
+
+// POST /api/jobs/:id/milestones — add milestones (client only)
+router.post('/:id/milestones', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (job.client.toString() !== req.user.userId) {
+      return res.status(403).json({ error: 'Only the client can manage milestones' });
+    }
+
+    const { milestones } = req.body;
+    if (!Array.isArray(milestones) || milestones.length === 0) {
+      return res.status(400).json({ error: 'At least one milestone is required' });
+    }
+
+    for (const m of milestones) {
+      if (!m.title || m.amount === undefined) {
+        return res.status(400).json({ error: 'Each milestone needs a title and amount' });
+      }
+      job.milestones.push({
+        title: m.title,
+        description: m.description || '',
+        amount: m.amount,
+        dueDate: m.dueDate || null,
+        status: 'pending'
+      });
+    }
+
+    // Add progress update
+    job.progressUpdates.push({
+      author: req.user.userId,
+      type: 'update',
+      message: `Added ${milestones.length} milestone${milestones.length > 1 ? 's' : ''}: ${milestones.map(m => m.title).join(', ')}`
+    });
+
+    await job.save();
+    res.json({ message: 'Milestones added', job });
+  } catch (error) {
+    console.error('Error adding milestones:', error);
+    res.status(500).json({ error: 'Failed to add milestones' });
+  }
+});
+
+// PUT /api/jobs/:id/milestones/:index — update milestone status
+router.put('/:id/milestones/:index', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = req.user.userId;
+    const isClient = job.client.toString() === userId;
+    const isFreelancer = job.freelancer?.toString() === userId;
+    if (!isClient && !isFreelancer) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const idx = parseInt(req.params.index);
+    if (idx < 0 || idx >= job.milestones.length) {
+      return res.status(404).json({ error: 'Milestone not found' });
+    }
+
+    const milestone = job.milestones[idx];
+    const { status } = req.body;
+
+    // Freelancer can mark as in_progress or completed
+    if (isFreelancer && ['in_progress', 'completed'].includes(status)) {
+      milestone.status = status;
+      if (status === 'completed') milestone.completedAt = new Date();
+
+      job.progressUpdates.push({
+        author: userId,
+        type: status === 'completed' ? 'milestone_completed' : 'status_change',
+        message: `Milestone "${milestone.title}" marked as ${status.replace('_', ' ')}`,
+        milestoneIndex: idx
+      });
+    }
+
+    // Client can approve completed milestones
+    if (isClient && status === 'approved' && milestone.status === 'completed') {
+      milestone.status = 'approved';
+      milestone.approvedAt = new Date();
+
+      job.progressUpdates.push({
+        author: userId,
+        type: 'milestone_completed',
+        message: `Approved milestone "${milestone.title}" — $${milestone.amount}`,
+        milestoneIndex: idx
+      });
+    }
+
+    // Client can request revision
+    if (isClient && status === 'in_progress' && milestone.status === 'completed') {
+      milestone.status = 'in_progress';
+      milestone.completedAt = null;
+
+      job.progressUpdates.push({
+        author: userId,
+        type: 'revision_requested',
+        message: `Requested revision on milestone "${milestone.title}"${req.body.message ? ': ' + req.body.message : ''}`,
+        milestoneIndex: idx
+      });
+    }
+
+    await job.save();
+    res.json({ message: 'Milestone updated', job });
+  } catch (error) {
+    console.error('Error updating milestone:', error);
+    res.status(500).json({ error: 'Failed to update milestone' });
+  }
+});
+
+// ── Progress Updates ────────────────────────────────────────────
+
+// GET /api/jobs/:id/progress — get progress timeline
+router.get('/:id/progress', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('progressUpdates.author', 'firstName lastName profilePicture')
+      .populate('client', 'firstName lastName')
+      .populate('freelancer', 'firstName lastName');
+
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = req.user.userId;
+    if (job.client._id.toString() !== userId && job.freelancer?._id?.toString() !== userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    res.json({
+      progress: job.progressUpdates || [],
+      milestones: job.milestones || [],
+      status: job.status,
+      deadline: job.deadline,
+      job: {
+        _id: job._id,
+        title: job.title,
+        client: job.client,
+        freelancer: job.freelancer
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching progress:', error);
+    res.status(500).json({ error: 'Failed to fetch progress' });
+  }
+});
+
+// POST /api/jobs/:id/progress — post a progress update
+router.post('/:id/progress', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = req.user.userId;
+    if (job.client.toString() !== userId && job.freelancer?.toString() !== userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const { message, type, attachments } = req.body;
+    if (!message || message.trim() === '') {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    job.progressUpdates.push({
+      author: userId,
+      type: type || 'update',
+      message: message.trim(),
+      attachments: attachments || []
+    });
+
+    await job.save();
+
+    const updated = await Job.findById(job._id)
+      .populate('progressUpdates.author', 'firstName lastName profilePicture');
+
+    res.status(201).json({
+      message: 'Update posted',
+      update: updated.progressUpdates[updated.progressUpdates.length - 1]
+    });
+  } catch (error) {
+    console.error('Error posting progress update:', error);
+    res.status(500).json({ error: 'Failed to post update' });
+  }
+});
+
 module.exports = router;

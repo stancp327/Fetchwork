@@ -164,6 +164,22 @@ const jobSchema = new mongoose.Schema({
     completedAt: Date,
     approvedAt: Date
   }],
+  progressUpdates: [{
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    type: {
+      type: String,
+      enum: ['update', 'milestone_completed', 'file_delivered', 'revision_requested', 'status_change'],
+      default: 'update'
+    },
+    message: { type: String, required: true, maxlength: 2000 },
+    attachments: [{
+      url: String,
+      filename: String,
+      fileType: String
+    }],
+    milestoneIndex: { type: Number, default: null },
+    createdAt: { type: Date, default: Date.now }
+  }],
   totalPaid: {
     type: Number,
     default: 0

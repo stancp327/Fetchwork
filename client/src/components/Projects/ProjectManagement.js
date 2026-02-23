@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import { categoryLabelMap } from '../../utils/categories';
@@ -167,6 +167,16 @@ const ProjectCard = ({ job, userRole, onAcceptProposal, onComplete }) => {
           jobId={job._id}
           onAccept={onAcceptProposal}
         />
+      )}
+
+      {/* Track Progress button */}
+      {(status === 'in_progress' || status === 'completed') && (
+        <Link to={`/jobs/${job._id}/progress`} className="btn-track-progress" style={{
+          display: 'inline-block', padding: '0.5rem 1rem', background: '#2563eb', color: 'white',
+          borderRadius: '8px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.75rem'
+        }}>
+          📊 Track Progress
+        </Link>
       )}
 
       {/* Complete button for in-progress jobs */}
