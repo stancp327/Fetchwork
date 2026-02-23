@@ -103,8 +103,11 @@ const AdminDisputePanel = () => {
           onChange={(e) => fetchDisputesData(1, e.target.value)}
         >
           <option value="all">All Disputes</option>
-          <option value="open">Open</option>
+          <option value="opened">Open</option>
+          <option value="needs_info">Needs Info</option>
           <option value="under_review">Under Review</option>
+          <option value="escalated">Escalated</option>
+          <option value="proposed_resolution">Resolution Proposed</option>
           <option value="resolved">Resolved</option>
           <option value="closed">Closed</option>
         </select>
@@ -152,7 +155,7 @@ const AdminDisputePanel = () => {
                 <td>{new Date(dispute.createdAt).toLocaleDateString()}</td>
                 <td>
                   <div className="dispute-actions">
-                    {dispute.status === 'open' && (
+                    {(dispute.status === 'opened' || dispute.status === 'open') && (
                       <button
                         className="action-btn review"
                         onClick={() => updateDisputeStatus(dispute._id, 'under_review')}
@@ -168,11 +171,17 @@ const AdminDisputePanel = () => {
                         Resolve
                       </button>
                     )}
+                    {dispute.status === 'escalated' && (
+                      <button
+                        className="action-btn review"
+                        onClick={() => updateDisputeStatus(dispute._id, 'under_review')}
+                      >
+                        Take Over
+                      </button>
+                    )}
                     <button
                       className="action-btn view"
-                      onClick={() => {
-                        alert(`Dispute Details:\n\nReason: ${dispute.reason}\nDescription: ${dispute.description}\nStatus: ${dispute.status}`);
-                      }}
+                      onClick={() => window.open(`/admin/disputes/${dispute._id}`, '_blank')}
                     >
                       View Details
                     </button>

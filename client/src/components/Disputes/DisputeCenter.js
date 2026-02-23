@@ -9,12 +9,16 @@ import './DisputeCenter.css';
 // ── Status Badge ────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const labels = {
-    open: 'Open',
+    opened: 'Open',
+    needs_info: 'Info Needed',
     under_review: 'Under Review',
-    awaiting_response: 'Awaiting Response',
+    escalated: 'Escalated',
+    proposed_resolution: 'Resolution Proposed',
     resolved: 'Resolved',
     closed: 'Closed',
-    escalated: 'Escalated'
+    // Legacy compat
+    open: 'Open',
+    awaiting_response: 'Awaiting Response'
   };
   return (
     <span className={`dispute-status-badge status-${status}`}>
@@ -210,7 +214,7 @@ const DisputeCenter = () => {
       {/* Status Filter Tabs */}
       <div className="dispute-filters">
         <div className="dispute-filter-tabs">
-          {['all', 'open', 'under_review', 'awaiting_response', 'escalated', 'resolved', 'closed'].map(status => (
+          {['all', 'opened', 'needs_info', 'under_review', 'escalated', 'proposed_resolution', 'resolved', 'closed'].map(status => (
             <button
               key={status}
               className={`filter-tab ${statusFilter === status ? 'active' : ''}`}

@@ -102,8 +102,6 @@ const Navigation = () => {
                 <NavLink to="/messages" badge={notifications.unreadMessages}>
                   Messages
                 </NavLink>
-                <NavLink to="/disputes">Disputes</NavLink>
-
                 {user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
 
                 <div className="nav-divider" />

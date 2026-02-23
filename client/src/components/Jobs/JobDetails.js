@@ -483,6 +483,19 @@ const JobDetails = () => {
               </div>
             )}
 
+            {job.status === 'disputed' && 
+             user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
+              <div className="sidebar-card">
+                <h3>⚠️ Dispute Active</h3>
+                <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+                  This job has an active dispute. An admin is reviewing the case.
+                </p>
+                <Link to={`/disputes`} className="btn-full btn-danger-jd" style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+                  View My Disputes
+                </Link>
+              </div>
+            )}
+
             {(job.status === 'in_progress' || job.status === 'completed') && 
              user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
               <div className="sidebar-card">
