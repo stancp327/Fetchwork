@@ -92,3 +92,33 @@
 .metric-value {
   color: var(--color-text-secondary);
 }
+
+@media (max-width: 768px) {
+  .monitoring-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .monitoring-controls {
+    flex-wrap: wrap;
+  }
+
+  .monitoring-sections {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .online-users-section,
+  .system-health-section {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .online-user-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}

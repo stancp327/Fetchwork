@@ -391,8 +391,18 @@
 @media (max-width: 768px) {
   .pm-container { padding: var(--space-lg); }
   .pm-stats { grid-template-columns: repeat(2, 1fr); }
-  .pm-tabs { overflow-x: auto; }
+  .pm-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pm-tabs button { min-height: 44px; flex-shrink: 0; }
   .pm-project-header { flex-direction: column; gap: var(--space-sm); }
   .pm-project-meta { flex-direction: column; gap: var(--space-sm); }
   .pm-proposal-item { flex-direction: column; gap: var(--space-sm); align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .pm-container { padding: 0.75rem; }
+  .pm-stats { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .pm-stat-card { padding: 0.75rem; }
+  .pm-project-card { padding: 0.75rem; }
+  .pm-tabs { gap: 0; }
+  .pm-tabs button { font-size: 0.8rem; padding: 0.5rem 0.75rem; }
 }

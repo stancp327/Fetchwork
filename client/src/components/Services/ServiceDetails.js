@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { formatCategory } from '../../utils/formatters';
 import { getApiBaseUrl } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
-import '../UserComponents.css';
+import './ServiceDetails.css';
 
 const ServiceDetails = () => {
   const { id } = useParams();
@@ -76,24 +76,24 @@ const ServiceDetails = () => {
 
   if (loading) {
     return (
-      <div className="user-container">
-        <div className="loading">Loading service...</div>
+      <div className="sd-state-page">
+        <p>Loading service...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="user-container">
-        <div className="error">{error}</div>
+      <div className="sd-state-page">
+        <p style={{ color: '#dc2626' }}>{error}</p>
       </div>
     );
   }
 
   if (!service) {
     return (
-      <div className="user-container">
-        <div className="error">Service not found</div>
+      <div className="sd-state-page">
+        <p>Service not found</p>
       </div>
     );
   }
@@ -102,7 +102,7 @@ const ServiceDetails = () => {
   const isOwnService = user && service.freelancer._id === user._id;
 
   return (
-    <div className="user-container">
+    <div className="service-details-page">
       <div className="service-details">
         <div className="service-header">
           <h1>{service.title}</h1>
