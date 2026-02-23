@@ -104,8 +104,8 @@ router.post('/login', validateLogin, async (req, res) => {
     
     let isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted || user.role === 'admin';
     if (isAdmin && user.role !== 'admin') {
+      await User.updateOne({ _id: user._id }, { $set: { role: 'admin' } });
       user.role = 'admin';
-      await user.save();
     }
     const token = await new Promise((resolve, reject) => {
       jwt.sign({ userId: user._id, isAdmin, role: user.role }, JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
@@ -353,10 +353,11 @@ router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/login' }),
   async (req, res) => {
     try {
+      const User = require('../models/User');
       let isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted || req.user.role === 'admin';
       if (isAdmin && req.user.role !== 'admin') {
+        await User.updateOne({ _id: req.user._id }, { $set: { role: 'admin' } });
         req.user.role = 'admin';
-        await req.user.save();
       }
       const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, JWT_SECRET, { expiresIn: '7d' });
       
@@ -382,10 +383,11 @@ router.get('/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
   async (req, res) => {
     try {
+      const User = require('../models/User');
       let isAdmin = ADMIN_EMAILS.includes(req.user.email) || req.user.isAdminPromoted || req.user.role === 'admin';
       if (isAdmin && req.user.role !== 'admin') {
+        await User.updateOne({ _id: req.user._id }, { $set: { role: 'admin' } });
         req.user.role = 'admin';
-        await req.user.save();
       }
       const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, JWT_SECRET, { expiresIn: '7d' });
       
