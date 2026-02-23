@@ -8,6 +8,8 @@ import BrowseLayout, {
   SearchBar, FilterSelect, FilterInput,
   ResultsControls, BrowsePagination, BrowseEmpty
 } from '../common/BrowseLayout';
+import SaveButton from '../common/SaveButton';
+import AvailabilityBadge from '../common/AvailabilityBadge';
 import '../common/BrowseLayout.css';
 
 const CATEGORIES = [
@@ -49,7 +51,8 @@ const FreelancerCard = ({ freelancer }) => {
             </div>
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+          <SaveButton itemId={freelancer._id} itemType="freelancer" size="sm" />
           {freelancer.rating > 0 && (
             <div style={{ fontWeight: 600, color: '#f59e0b' }}>⭐ {freelancer.rating.toFixed(1)}</div>
           )}
@@ -64,7 +67,7 @@ const FreelancerCard = ({ freelancer }) => {
       <div className="browse-card-tags">
         {freelancer.skills?.slice(0, 5).map((s, i) => <span key={i} className="browse-tag">{s}</span>)}
         {freelancer.skills?.length > 5 && <span className="browse-tag">+{freelancer.skills.length - 5}</span>}
-        {freelancer.isAvailable && <span className="browse-tag success">Available</span>}
+        {freelancer.availabilityStatus && <AvailabilityBadge status={freelancer.availabilityStatus} />}
         {freelancer.isVerified && <span className="browse-tag primary">Verified</span>}
       </div>
 

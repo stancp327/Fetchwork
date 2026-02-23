@@ -120,6 +120,33 @@ router.get('/', validateQueryParams, async (req, res) => {
   }
 });
 
+// GET /api/freelancers/:id/similar — similar freelancers
+router.get('/:id/similar', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('skills category location');
+    if (!user) return res.status(404).json({ error: 'Freelancer not found' });
+
+    const similar = await User.find({
+      _id: { $ne: user._id },
+      isActive: true,
+      isSuspended: false,
+      accountType: { $in: ['freelancer', 'both'] },
+      $or: [
+        { skills: { $in: user.skills || [] } },
+        { 'location.city': user.location?.city }
+      ]
+    })
+      .select('firstName lastName headline profilePicture rating hourlyRate skills location completedJobs availabilityStatus')
+      .sort({ rating: -1 })
+      .limit(4);
+
+    res.json({ similar });
+  } catch (error) {
+    console.error('Error fetching similar freelancers:', error);
+    res.status(500).json({ error: 'Failed to fetch similar freelancers' });
+  }
+});
+
 // GET /api/freelancers/:id — public profile
 router.get('/:id', async (req, res) => {
   try {

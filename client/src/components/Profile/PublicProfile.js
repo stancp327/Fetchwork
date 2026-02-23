@@ -4,6 +4,8 @@ import { apiRequest } from '../../utils/api';
 import { getLocationDisplay } from '../../utils/location';
 import { getCategoryLabel, getCategoryIcon } from '../../utils/categories';
 import CustomOfferModal from '../Offers/CustomOfferModal';
+import SaveButton from '../common/SaveButton';
+import AvailabilityBadge from '../common/AvailabilityBadge';
 import { useAuth } from '../../context/AuthContext';
 import './PublicProfile.css';
 
@@ -27,6 +29,7 @@ const PublicProfile = () => {
   const [error, setError] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [activeSection, setActiveSection] = useState('about');
+  const [similar, setSimilar] = useState([]);
 
   const freelancerId = id || username;
 
@@ -42,7 +45,12 @@ const PublicProfile = () => {
         setLoading(false);
       }
     };
-    if (freelancerId) fetchProfile();
+    if (freelancerId) {
+      fetchProfile();
+      apiRequest(`/api/freelancers/${freelancerId}/similar`)
+        .then(data => setSimilar(data.similar || []))
+        .catch(() => {});
+    }
   }, [freelancerId]);
 
   if (loading) return (
@@ -101,6 +109,10 @@ const PublicProfile = () => {
             </div>
           </div>
           <div className="pp-hero-actions">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <AvailabilityBadge status={f.availabilityStatus} />
+              {!isOwnProfile && <SaveButton itemId={f._id} itemType="freelancer" size="lg" />}
+            </div>
             {f.hourlyRate > 0 && <div className="pp-rate">${f.hourlyRate}<span>/hr</span></div>}
             {!isOwnProfile && (
               <>
@@ -350,6 +362,42 @@ const PublicProfile = () => {
           </div>
         )}
       </div>
+
+      {/* ── Similar Freelancers ──────────────────────────────── */}
+      {similar.length > 0 && (
+        <div style={{ padding: '0 2rem 2rem' }}>
+          <h2 style={{ fontSize: '1.15rem', marginBottom: '1rem', color: '#111827' }}>Similar Freelancers</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
+            {similar.map(s => (
+              <Link to={`/freelancers/${s._id}`} key={s._id} style={{
+                background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: '1rem',
+                textDecoration: 'none', color: 'inherit', transition: 'border-color 0.15s'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: '50%', background: '#eff6ff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.9rem', fontWeight: 700, color: '#2563eb', overflow: 'hidden'
+                  }}>
+                    {s.profilePicture
+                      ? <img src={s.profilePicture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : `${s.firstName?.[0]}${s.lastName?.[0]}`}
+                  </div>
+                  <div>
+                    <strong style={{ fontSize: '0.9rem' }}>{s.firstName} {s.lastName}</strong>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{s.headline || 'Freelancer'}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.75rem' }}>
+                  {s.rating > 0 && <span>⭐ {s.rating.toFixed(1)}</span>}
+                  {s.hourlyRate > 0 && <span>${s.hourlyRate}/hr</span>}
+                  {s.availabilityStatus && <AvailabilityBadge status={s.availabilityStatus} />}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Custom Offer Modal ──────────────────────────────── */}
       {showOfferModal && (

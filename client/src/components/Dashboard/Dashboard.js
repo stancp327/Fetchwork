@@ -285,6 +285,7 @@ const Dashboard = () => {
                   <QuickAction icon="🔍" label="Find Freelancers" to="/freelancers" />
                   <QuickAction icon="🛒" label="Browse Services" to="/browse-services" />
                   <QuickAction icon="📋" label="Offers" to="/offers" />
+                  <QuickAction icon="❤️" label="Saved" to="/saved" />
                   <QuickAction icon="💬" label="Messages" to="/messages" />
                 </>
               ) : (
@@ -292,6 +293,7 @@ const Dashboard = () => {
                   <QuickAction icon="🔍" label="Browse Jobs" to="/browse-jobs" primary />
                   <QuickAction icon="💼" label="My Jobs" to="/projects" />
                   <QuickAction icon="📋" label="Offers" to="/offers" />
+                  <QuickAction icon="❤️" label="Saved" to="/saved" />
                   <QuickAction icon="➕" label="Create Service" to="/create-service" />
                   <QuickAction icon="👤" label="Edit Profile" to="/profile" />
                   <QuickAction icon="💬" label="Messages" to="/messages" />

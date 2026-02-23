@@ -8,6 +8,7 @@ import BrowseLayout, {
   SearchBar, FilterSelect, FilterInput,
   ResultsControls, BrowsePagination, BrowseEmpty
 } from '../common/BrowseLayout';
+import SaveButton from '../common/SaveButton';
 import '../common/BrowseLayout.css';
 
 const CATEGORIES = [
@@ -27,7 +28,10 @@ const ServiceCard = ({ service }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="browse-card" onClick={() => navigate(`/services/${service._id}`)}>
+    <div className="browse-card" onClick={() => navigate(`/services/${service._id}`)} style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 1 }}>
+        <SaveButton itemId={service._id} itemType="service" size="sm" />
+      </div>
       {service.images?.[0] && (
         <div style={{
           height: 160, borderRadius: '10px 10px 0 0', margin: '-1.25rem -1.25rem 1rem',
