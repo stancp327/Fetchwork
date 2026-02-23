@@ -18,6 +18,7 @@ const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [usersData, setUsersData] = useState(null);
   const [jobsData, setJobsData] = useState(null);
+  const [servicesData, setServicesData] = useState(null);
   const [paymentsData, setPaymentsData] = useState(null);
   const [reviewsData, setReviewsData] = useState(null);
   const [monitoringData, setMonitoringData] = useState(null);
@@ -77,6 +78,17 @@ const AdminDashboard = () => {
     }
   }, []);
 
+  const fetchServicesData = useCallback(async (page = 1, status = 'all') => {
+    try {
+      const response = await apiRequest('/api/admin/services', {
+        params: { page, status, limit: 10 }
+      });
+      setServicesData(response);
+    } catch (error) {
+      console.error('Failed to fetch services data:', error);
+    }
+  }, []);
+
   const fetchPaymentsData = useCallback(async (page = 1, status = 'all') => {
     try {
       const response = await apiRequest('/api/admin/payments', {
@@ -125,6 +137,10 @@ const AdminDashboard = () => {
       fetchJobsData().catch(error => {
         console.error('Failed to fetch jobs data:', error);
       });
+    } else if (activeTab === 'services' && isAdminAuthenticated) {
+      fetchServicesData().catch(error => {
+        console.error('Failed to fetch services data:', error);
+      });
     } else if (activeTab === 'payments' && isAdminAuthenticated) {
       fetchPaymentsData().catch(error => {
         console.error('Failed to fetch payments data:', error);
@@ -138,7 +154,7 @@ const AdminDashboard = () => {
         console.error('Failed to fetch monitoring data:', error);
       });
     }
-  }, [activeTab, isAdminAuthenticated, fetchUsersData, fetchJobsData, fetchPaymentsData, fetchReviewsData, fetchMonitoringData]);
+  }, [activeTab, isAdminAuthenticated, fetchUsersData, fetchJobsData, fetchServicesData, fetchPaymentsData, fetchReviewsData, fetchMonitoringData]);
 
   useEffect(() => {
     let interval;
@@ -286,6 +302,12 @@ const AdminDashboard = () => {
           id="jobs"
           label="Jobs"
           active={activeTab === 'jobs'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="services"
+          label="Services"
+          active={activeTab === 'services'}
           onClick={setActiveTab}
         />
         <TabButton
@@ -559,25 +581,51 @@ const AdminDashboard = () => {
                             </td>
                             <td>{new Date(job.createdAt).toLocaleDateString()}</td>
                             <td>
-                              <button
-                                className="action-btn cancel"
-                                onClick={async () => {
-                                  const reason = prompt('Reason for cancellation:');
-                                  if (reason) {
-                                    try {
-                                      await apiRequest(`/api/admin/jobs/${job._id}/cancel`, {
-                                        method: 'PUT',
-                                        body: JSON.stringify({ reason })
-                                      });
-                                      fetchJobsData();
-                                    } catch (err) {
-                                      console.error('Failed to cancel job:', err);
+                              <div className="action-buttons">
+                                {job.status !== 'cancelled' && (
+                                  <button
+                                    className="action-btn cancel"
+                                    onClick={async () => {
+                                      const reason = prompt('Reason for cancellation:');
+                                      if (reason) {
+                                        try {
+                                          await apiRequest(`/api/admin/jobs/${job._id}/cancel`, {
+                                            method: 'PUT',
+                                            body: JSON.stringify({ reason })
+                                          });
+                                          fetchJobsData();
+                                        } catch (err) {
+                                          console.error('Failed to cancel job:', err);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                                <button
+                                  className="action-btn delete"
+                                  onClick={async () => {
+                                    if (!window.confirm(`Remove "${job.title}"? This will hide it from all users.`)) return;
+                                    const reason = prompt('Reason for removal:');
+                                    if (reason) {
+                                      try {
+                                        await apiRequest(`/api/admin/jobs/${job._id}`, {
+                                          method: 'DELETE',
+                                          body: JSON.stringify({ reason })
+                                        });
+                                        alert('Job removed');
+                                        fetchJobsData();
+                                      } catch (err) {
+                                        console.error('Failed to remove job:', err);
+                                        alert('Failed to remove job');
+                                      }
                                     }
-                                  }
-                                }}
-                              >
-                                Cancel
-                              </button>
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         )) : (
@@ -597,6 +645,83 @@ const AdminDashboard = () => {
                 <div className="loading-container">
                   <div className="loading-spinner"></div>
                   <p>Loading jobs...</p>
+                </div>
+              )}
+            </div>
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'services' && (
+          <TracingErrorBoundary componentName="ServicesTab">
+            <div className="jobs-tab">
+              <h2>Service Management</h2>
+              {servicesData ? (
+                <div className="jobs-management">
+                  <div className="jobs-controls">
+                    <select className="status-filter" onChange={(e) => fetchServicesData(1, e.target.value)}>
+                      <option value="all">All Services</option>
+                      <option value="active">Active</option>
+                      <option value="paused">Paused</option>
+                      <option value="draft">Draft</option>
+                      <option value="under_review">Under Review</option>
+                    </select>
+                  </div>
+                  <div className="jobs-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Title</th>
+                          <th>Freelancer</th>
+                          <th>Category</th>
+                          <th>Price (Basic)</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.isArray(servicesData?.services) && servicesData.services.length > 0 ? servicesData.services.map((service) => (
+                          <tr key={service._id}>
+                            <td>{service.title}</td>
+                            <td>{service.freelancer ? `${service.freelancer.firstName} ${service.freelancer.lastName}` : 'N/A'}</td>
+                            <td>{service.category?.replace(/_/g, ' ') || 'N/A'}</td>
+                            <td>${service.pricing?.basic?.price || 'N/A'}</td>
+                            <td><span className={`status ${service.status}`}>{service.status}</span></td>
+                            <td>
+                              <div className="action-buttons">
+                                <button
+                                  className="action-btn delete"
+                                  onClick={async () => {
+                                    if (!window.confirm(`Remove "${service.title}"?`)) return;
+                                    try {
+                                      await apiRequest(`/api/admin/services/${service._id}`, { method: 'DELETE' });
+                                      alert('Service removed');
+                                      fetchServicesData();
+                                    } catch (err) {
+                                      console.error('Failed to remove service:', err);
+                                      alert('Failed to remove service');
+                                    }
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan="6" className="no-data">No services found</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="pagination">
+                    <span>Page {servicesData?.pagination?.current || 1} of {servicesData?.pagination?.pages || 1}</span>
+                    <span>Total: {servicesData?.pagination?.total || 0} services</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <p>Loading services...</p>
                 </div>
               )}
             </div>

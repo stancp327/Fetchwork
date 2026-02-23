@@ -5,6 +5,7 @@ const { validateUserSuspension, validateReviewModeration, validateQueryParams, v
 const User = require('../models/User');
 const Admin = require('../models/Admin');
 const Job = require('../models/Job');
+const Service = require('../models/Service');
 const Payment = require('../models/Payment');
 const Review = require('../models/Review');
 const { Message, ChatRoom } = require('../models/Message');
@@ -329,6 +330,83 @@ router.put('/jobs/:jobId/cancel', authenticateAdmin, requirePermission('job_mana
   } catch (error) {
     console.error('Admin cancel job error:', error);
     res.status(500).json({ error: 'Failed to cancel job' });
+  }
+});
+
+// ── Services Admin ──────────────────────────────────────────────
+router.get('/services', authenticateAdmin, requirePermission('job_management'), validateQueryParams, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const status = req.query.status || 'all';
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+
+    let query = {};
+    if (status !== 'all') query.status = status;
+
+    const services = await Service.find(query)
+      .populate('freelancer', 'firstName lastName email')
+      .sort({ [sortBy]: sortOrder })
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    const total = await Service.countDocuments(query);
+
+    res.json({
+      services,
+      pagination: { current: page, pages: Math.ceil(total / limit), total, limit }
+    });
+  } catch (error) {
+    console.error('Admin services error:', error);
+    res.status(500).json({ error: 'Failed to retrieve services' });
+  }
+});
+
+router.delete('/services/:serviceId', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.serviceId);
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+
+    service.isActive = false;
+    service.status = 'paused';
+    await service.save();
+
+    res.json({ message: 'Service removed successfully', service: { _id: service._id, title: service.title } });
+  } catch (error) {
+    console.error('Admin remove service error:', error);
+    res.status(500).json({ error: 'Failed to remove service' });
+  }
+});
+
+router.delete('/jobs/:jobId', authenticateAdmin, requirePermission('job_management'), validateJobIdParam, async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const { reason } = req.body;
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    // Soft delete: deactivate and mark as removed
+    job.isActive = false;
+    job.status = 'cancelled';
+    job.adminAction = {
+      action: 'removed',
+      reason: reason || 'Removed by admin',
+      removedAt: new Date(),
+      removedBy: req.admin._id
+    };
+    await job.save();
+
+    res.json({
+      message: 'Job removed successfully',
+      job: { _id: job._id, title: job.title, status: job.status }
+    });
+  } catch (error) {
+    console.error('Admin remove job error:', error);
+    res.status(500).json({ error: 'Failed to remove job' });
   }
 });
 

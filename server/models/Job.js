@@ -203,6 +203,12 @@ const jobSchema = new mongoose.Schema({
     maxlength: [2000, 'Admin notes cannot exceed 2000 characters'],
     default: ''
   },
+  adminAction: {
+    action: { type: String, enum: ['removed', 'cancelled', 'flagged', null], default: null },
+    reason: { type: String, default: '' },
+    removedAt: { type: Date, default: null },
+    removedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', default: null }
+  },
   isActive: {
     type: Boolean,
     default: true
