@@ -197,12 +197,14 @@
   border: none;
   cursor: pointer;
   padding: 10px;
-  z-index: 1001;
+  z-index: 1002;
   -webkit-tap-highlight-color: transparent;
   min-width: 44px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
+  position: relative;
+  touch-action: manipulation;
 }
 
 .mobile-menu-toggle span {
@@ -235,6 +237,8 @@
     bottom: 0;
     width: 300px;
     max-width: 85vw;
+    height: 100vh;
+    height: 100dvh;
     background: white;
     flex-direction: column;
     align-items: stretch;
@@ -244,6 +248,7 @@
     transition: transform 0.3s ease;
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     z-index: 1001;
   }
 
