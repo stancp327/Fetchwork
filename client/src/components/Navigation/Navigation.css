@@ -190,19 +190,25 @@
 
 /* ── Hamburger ────────────────────────────────────────────────── */
 .mobile-menu-toggle {
-  display: none;
+  display: none !important;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 8px;
+  padding: 10px;
   z-index: 1001;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-menu-toggle span {
-  width: 22px;
-  height: 2px;
+  display: block;
+  width: 24px;
+  height: 2.5px;
   background: #374151;
   border-radius: 2px;
   transition: all 0.3s;
@@ -220,7 +226,7 @@
 @media (max-width: 1024px) {
   .desktop-role-switcher { display: none; }
 
-  .mobile-menu-toggle { display: flex; }
+  .mobile-menu-toggle { display: flex !important; }
 
   .nav-links {
     position: fixed;
