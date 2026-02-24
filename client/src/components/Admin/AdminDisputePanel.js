@@ -39,7 +39,7 @@ const AdminDisputePanel = () => {
 
   const updateDisputeStatus = async (disputeId, status, resolution = null, resolutionAmount = 0, adminNotes = '') => {
     try {
-      await apiRequest(`/api/disputes/${disputeId}/status`, {
+      await apiRequest(`/api/disputes/admin/${disputeId}/status`, {
         method: 'PATCH',
         body: JSON.stringify({
           status,
