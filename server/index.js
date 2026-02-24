@@ -184,6 +184,7 @@ app.use('/api/services', require('./routes/services'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/chatrooms', require('./routes/chatrooms'));
 app.use('/api/disputes', require('./routes/disputes'));
+app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));

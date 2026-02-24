@@ -235,6 +235,80 @@ class EmailService {
     return this.sendEmail(user.email, subject, content, subject, color);
   }
 
+  // ── Dispute Emails ───────────────────────────────────────────
+  async sendDisputeNotification(recipient, filer, dispute, job) {
+    const subject = `Dispute Filed: ${job.title}`;
+    const content = `
+      <p>Hi ${recipient.firstName},</p>
+      <p>A dispute has been filed for the job <strong>${job.title}</strong> by ${filer.firstName} ${filer.lastName}.</p>
+      <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${this.brandColors.danger};">
+        <p style="margin: 0 0 8px;"><strong>Reason:</strong> ${(dispute.reason || '').replace(/_/g, ' ')}</p>
+        <p style="margin: 0;"><strong>Description:</strong> ${(dispute.description || '').substring(0, 200)}${dispute.description?.length > 200 ? '...' : ''}</p>
+      </div>
+      <p>Escrow payments are automatically held while the dispute is under review. An admin will review the case shortly.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${process.env.CLIENT_URL}/disputes" style="background: ${this.brandColors.danger}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Dispute</a>
+      </div>
+    `;
+    return this.sendEmail(recipient.email, subject, content, 'Dispute Filed', this.brandColors.danger);
+  }
+
+  async sendDisputeStatusChange(recipient, dispute, oldStatus, newStatus, job) {
+    const statusLabels = {
+      opened: 'Open', needs_info: 'More Info Needed', under_review: 'Under Review',
+      escalated: 'Escalated', proposed_resolution: 'Resolution Proposed',
+      resolved: 'Resolved', closed: 'Closed'
+    };
+    const subject = `Dispute Update: ${statusLabels[newStatus] || newStatus}`;
+    const color = newStatus === 'resolved' ? this.brandColors.success : this.brandColors.warning;
+    const content = `
+      <p>Hi ${recipient.firstName},</p>
+      <p>The status of your dispute for <strong>${job?.title || 'your job'}</strong> has been updated.</p>
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>Previous Status:</strong> ${statusLabels[oldStatus] || oldStatus}</p>
+        <p><strong>New Status:</strong> ${statusLabels[newStatus] || newStatus}</p>
+      </div>
+      ${newStatus === 'needs_info' ? '<p>⚠️ The admin reviewing your case has requested additional information. Please check the dispute thread and respond as soon as possible.</p>' : ''}
+      ${newStatus === 'proposed_resolution' ? '<p>An admin has proposed a resolution for your dispute. Please review the proposed terms.</p>' : ''}
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${process.env.CLIENT_URL}/disputes" style="background: ${color}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Dispute</a>
+      </div>
+    `;
+    return this.sendEmail(recipient.email, subject, content, subject, color);
+  }
+
+  async sendDisputeResolutionNotification(recipient, dispute) {
+    const resType = dispute.resolution?.type?.replace(/_/g, ' ') || 'decided';
+    const subject = `Dispute Resolved: ${resType}`;
+    const content = `
+      <p>Hi ${recipient.firstName},</p>
+      <p>Your dispute has been resolved.</p>
+      <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${this.brandColors.success};">
+        <p style="margin: 0 0 8px;"><strong>Resolution:</strong> ${resType}</p>
+        ${dispute.resolution?.amounts?.toFreelancer > 0 ? `<p style="margin: 0 0 8px;"><strong>To Freelancer:</strong> $${dispute.resolution.amounts.toFreelancer}</p>` : ''}
+        ${dispute.resolution?.amounts?.toClient > 0 ? `<p style="margin: 0 0 8px;"><strong>Refund to Client:</strong> $${dispute.resolution.amounts.toClient}</p>` : ''}
+        ${dispute.resolution?.summary ? `<p style="margin: 0;"><strong>Summary:</strong> ${dispute.resolution.summary}</p>` : ''}
+      </div>
+      <p>Payment holds have been removed. If you have any questions about this resolution, please contact our support team.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${process.env.CLIENT_URL}/disputes" style="background: ${this.brandColors.success}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Details</a>
+      </div>
+    `;
+    return this.sendEmail(recipient.email, subject, content, 'Dispute Resolved', this.brandColors.success);
+  }
+
+  async sendDisputeMessageNotification(recipient, senderName, disputeId, jobTitle) {
+    const subject = `New message in your dispute: ${jobTitle}`;
+    const content = `
+      <p>Hi ${recipient.firstName},</p>
+      <p><strong>${senderName}</strong> sent a new message regarding the dispute for <strong>${jobTitle}</strong>.</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${process.env.CLIENT_URL}/disputes" style="background: ${this.brandColors.primary}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Message</a>
+      </div>
+    `;
+    return this.sendEmail(recipient.email, subject, content, 'New Dispute Message');
+  }
+
   async sendAdminBroadcast(recipients, subject, message) {
     try {
       const emailPromises = recipients.map(email => 

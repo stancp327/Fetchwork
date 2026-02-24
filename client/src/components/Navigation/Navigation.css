@@ -360,3 +360,143 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ── Notification Bell ───────────────────────────────────────── */
+.notif-bell-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notif-bell-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.notif-bell-btn:hover {
+  background: #f3f4f6;
+}
+
+.notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+}
+
+.notif-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  z-index: 1100;
+  overflow: hidden;
+}
+
+.notif-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.notif-mark-all {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.notif-mark-all:hover {
+  background: #eff6ff;
+}
+
+.notif-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.notif-list {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f9fafb;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.notif-item:hover {
+  background: #f9fafb;
+}
+
+.notif-item.unread {
+  background: #eff6ff;
+  border-left: 3px solid #2563eb;
+}
+
+.notif-item.read {
+  opacity: 0.7;
+}
+
+.notif-item-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.15rem;
+}
+
+.notif-item-msg {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+  .notif-dropdown {
+    position: fixed;
+    top: 64px;
+    right: 0.5rem;
+    left: 0.5rem;
+    width: auto;
+  }
+}
