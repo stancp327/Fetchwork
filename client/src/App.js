@@ -192,11 +192,7 @@ function AppContent() {
               <OnboardingWizard />
             </ProtectedRoute>
           } />
-          <Route path="/browse-jobs" element={
-            <ProtectedRoute>
-              <BrowseJobs />
-            </ProtectedRoute>
-          } />
+          <Route path="/browse-jobs" element={<BrowseJobs />} />
           <Route path="/browse-services" element={<BrowseServices />} />
           <Route path="/create-service" element={
             <ProtectedRoute>

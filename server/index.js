@@ -34,10 +34,23 @@ const io = new Server(server, {
 });
 
 app.set('io', io);
-app.set('trust proxy', true);
+app.set('trust proxy', 1); // Trust first proxy (Render's load balancer)
 
 // ── Middleware ───────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", process.env.CLIENT_URL || 'https://fetchwork.net'].filter(Boolean),
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    }
+  } : false, // Disable CSP in development
+}));
 
 // CORS — lock to allowed origins only
 const allowedOrigins = (() => {
@@ -148,32 +161,49 @@ app.get('/test-db', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const dbConnected = mongoose.connection.readyState === 1;
+
   const healthStatus = {
-    status: 'healthy',
+    status: dbConnected ? 'healthy' : 'degraded',
     timestamp: new Date().toISOString(),
-    environment: {
+    services: {
+      database: dbConnected ? 'connected' : 'disconnected',
+      server: 'running'
+    }
+  };
+
+  // Only expose detailed info in development
+  if (!isProduction) {
+    healthStatus.environment = {
       nodeVersion: process.version,
       nodeEnv: process.env.NODE_ENV || 'development',
       port: PORT
-    },
-    services: {
-      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-      server: 'running'
-    },
-    environmentVariables: {
+    };
+    healthStatus.environmentVariables = {
       MONGO_URI: process.env.MONGO_URI ? 'configured' : 'missing',
       JWT_SECRET: process.env.JWT_SECRET ? 'configured' : 'missing',
       RESEND_API_KEY: process.env.RESEND_API_KEY ? 'configured' : 'missing',
       FROM_EMAIL: process.env.FROM_EMAIL ? 'configured' : 'missing',
       CLIENT_URL: process.env.CLIENT_URL ? 'configured' : 'missing',
       NODE_ENV: process.env.NODE_ENV ? 'configured' : 'missing'
+    };
+  }
+
+  res.status(dbConnected ? 200 : 503).json(healthStatus);
+});
+
+// ── Global Param Validation ─────────────────────────────────────
+// Validate any :id-like param as a MongoDB ObjectId before it hits routes
+const mongoIdPattern = /^[0-9a-fA-F]{24}$/;
+const idParamNames = ['id', 'userId', 'jobId', 'serviceId', 'reviewId', 'roomId', 'conversationId', 'offerId', 'disputeId'];
+idParamNames.forEach(paramName => {
+  app.param(paramName, (req, res, next, value) => {
+    if (!mongoIdPattern.test(value)) {
+      return res.status(400).json({ error: `Invalid ${paramName} format` });
     }
-  };
-
-  const hasErrors = Object.values(healthStatus.environmentVariables).includes('missing') ||
-                   healthStatus.services.database !== 'connected';
-
-  res.status(hasErrors ? 503 : 200).json(healthStatus);
+    next();
+  });
 });
 
 // ── API Routes ──────────────────────────────────────────────────

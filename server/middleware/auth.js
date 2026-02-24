@@ -70,11 +70,12 @@ const authenticateAdmin = async (req, res, next) => {
     
     // Create admin-compatible object for middleware compatibility
     // This shims the Admin model interface while using User records with isAdmin flag
+    // TODO: Implement real RBAC when adding multiple admin roles
     const adminUser = {
       ...user.toObject(),
       role: 'super_admin',
       hasPermission: function(permission) {
-        return true;
+        return true; // Single admin for now — all permissions granted
       },
       getPublicProfile: function() {
         return user.getPublicProfile();

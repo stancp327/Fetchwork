@@ -6,6 +6,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { validateJobPost, validateProposal, validateQueryParams, validateMongoId } = require('../middleware/validation');
 const { uploadJobAttachments } = require('../middleware/upload');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
+const { escapeRegex } = require('../utils/sanitize');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -129,11 +130,12 @@ router.get('/', validateQueryParams, async (req, res) => {
       const searchFilters = [];
       
       searchTerms.forEach(term => {
+        const safeTerm = escapeRegex(term);
         searchFilters.push(
-          { title: { $regex: term, $options: 'i' } },
-          { description: { $regex: term, $options: 'i' } },
-          { skills: { $in: [new RegExp(term, 'i')] } },
-          { category: { $regex: term, $options: 'i' } }
+          { title: { $regex: safeTerm, $options: 'i' } },
+          { description: { $regex: safeTerm, $options: 'i' } },
+          { skills: { $in: [new RegExp(safeTerm, 'i')] } },
+          { category: { $regex: safeTerm, $options: 'i' } }
         );
       });
       

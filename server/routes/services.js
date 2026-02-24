@@ -4,6 +4,7 @@ const Service = require('../models/Service');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
+const { escapeRegex } = require('../utils/sanitize');
 
 router.get('/', async (req, res) => {
   try {
@@ -53,10 +54,11 @@ router.get('/', async (req, res) => {
     }
     
     if (req.query.search) {
+      const safeSearch = escapeRegex(req.query.search);
       filters.$or = [
-        { title: { $regex: req.query.search, $options: 'i' } },
-        { description: { $regex: req.query.search, $options: 'i' } },
-        { skills: { $in: [new RegExp(req.query.search, 'i')] } }
+        { title: { $regex: safeSearch, $options: 'i' } },
+        { description: { $regex: safeSearch, $options: 'i' } },
+        { skills: { $in: [new RegExp(safeSearch, 'i')] } }
       ];
     }
     

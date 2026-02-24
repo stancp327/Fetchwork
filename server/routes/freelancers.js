@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const { validateQueryParams } = require('../middleware/validation');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
+const { escapeRegex } = require('../utils/sanitize');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -21,11 +22,11 @@ router.get('/', validateQueryParams, async (req, res) => {
     
     if (req.query.skills) {
       const skills = req.query.skills.split(',').map(skill => skill.trim());
-      filters.skills = { $in: skills.map(skill => new RegExp(skill, 'i')) };
+      filters.skills = { $in: skills.map(skill => new RegExp(escapeRegex(skill), 'i')) };
     }
     
     if (req.query.location) {
-      const locQuery = req.query.location;
+      const locQuery = escapeRegex(req.query.location);
       filters.$or = filters.$or || [];
       filters.$or.push(
         { 'location.address': { $regex: locQuery, $options: 'i' } },
@@ -63,12 +64,13 @@ router.get('/', validateQueryParams, async (req, res) => {
       filters.$and = filters.$and || [];
       
       searchTerms.forEach(term => {
+        const safeTerm = escapeRegex(term);
         filters.$and.push({
           $or: [
-            { firstName: { $regex: term, $options: 'i' } },
-            { lastName: { $regex: term, $options: 'i' } },
-            { bio: { $regex: term, $options: 'i' } },
-            { skills: { $in: [new RegExp(term, 'i')] } }
+            { firstName: { $regex: safeTerm, $options: 'i' } },
+            { lastName: { $regex: safeTerm, $options: 'i' } },
+            { bio: { $regex: safeTerm, $options: 'i' } },
+            { skills: { $in: [new RegExp(safeTerm, 'i')] } }
           ]
         });
       });

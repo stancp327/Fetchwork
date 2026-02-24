@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateAdmin, requirePermission } = require('../middleware/auth');
 const { validateUserSuspension, validateReviewModeration, validateQueryParams, validateUserIdParam, validateJobIdParam, validateReviewIdParam } = require('../middleware/validation');
 const User = require('../models/User');
+const { escapeRegex } = require('../utils/sanitize');
 const Admin = require('../models/Admin');
 const Job = require('../models/Job');
 const Service = require('../models/Service');
@@ -180,10 +181,11 @@ router.get('/users', authenticateAdmin, requirePermission('user_management'), va
     let query = {};
     
     if (search) {
+      const safeSearch = escapeRegex(search);
       query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { firstName: { $regex: safeSearch, $options: 'i' } },
+        { lastName: { $regex: safeSearch, $options: 'i' } },
+        { email: { $regex: safeSearch, $options: 'i' } }
       ];
     }
 

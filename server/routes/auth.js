@@ -6,6 +6,7 @@ const passport = require('passport');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { validateRegister, validateLogin } = require('../middleware/validation');
+const { body } = require('express-validator');
 const { ADMIN_EMAILS, JWT_SECRET, CLIENT_URL } = require('../config/env');
 
 // ── Register ────────────────────────────────────────────────────
@@ -62,33 +63,28 @@ router.post('/register', validateRegister, async (req, res) => {
 router.post('/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(`🔐 Login attempt for: ${email}`);
+    const isDev = process.env.NODE_ENV !== 'production';
+    if (isDev) console.log(`🔐 Login attempt for: ${email}`);
     
     const user = await User.findOne({ email });
     
     if (!user) {
-      console.log(`❌ User not found: ${email}`);
+      if (isDev) console.log(`❌ User not found: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    
-    console.log(`👤 User found: ${email}, created: ${user.createdAt}, verified: ${user.isVerified}`);
     
     const isValidPassword = await user.comparePassword(password);
     
     if (!isValidPassword) {
-      console.log(`❌ Password mismatch for: ${email}`);
+      if (isDev) console.log(`❌ Password mismatch for: ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    console.log(`✅ Password valid for: ${email}`);
-    
     if (user.isSuspended) {
-      console.log(`❌ User suspended: ${email}`);
       return res.status(403).json({ error: 'Account suspended' });
     }
     
     if (!user.isActive) {
-      console.log(`❌ User inactive: ${email}`);
       return res.status(403).json({ error: 'Account deactivated' });
     }
     
@@ -168,10 +164,10 @@ router.get('/verify-email', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired verification token' });
     }
     
-    user.isVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save();
+    await User.updateOne({ _id: user._id }, {
+      $set: { isVerified: true },
+      $unset: { emailVerificationToken: '', emailVerificationExpires: '' }
+    });
     
     res.json({ message: 'Email verified successfully. You can now log in.' });
   } catch (error) {
@@ -290,7 +286,24 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // ── Reset Password ──────────────────────────────────────────────
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', [
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+  body('token')
+    .notEmpty()
+    .withMessage('Reset token is required'),
+  (req, res, next) => {
+    const { validationResult } = require('express-validator');
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Validation failed', details: errors.array() });
+    }
+    next();
+  }
+], async (req, res) => {
   try {
     const { token, password } = req.body;
     const user = await User.findOne({
@@ -302,10 +315,12 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
     
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.updateOne({ _id: user._id }, {
+      $set: { password: hashedPassword },
+      $unset: { resetPasswordToken: '', resetPasswordExpires: '' }
+    });
     
     res.json({ message: 'Password reset successfully' });
   } catch (error) {

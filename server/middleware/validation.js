@@ -1,4 +1,5 @@
 const { body, param, query, validationResult } = require('express-validator');
+const { categoryEnum } = require('../config/categories');
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -64,7 +65,7 @@ const validateJobPost = [
     .isLength({ min: 1, max: 5000 })
     .withMessage('Description is required and cannot exceed 5000 characters'),
   body('category')
-    .isIn(['web_development', 'mobile_development', 'design', 'writing', 'marketing', 'data_entry', 'customer_service', 'translation', 'video_editing', 'photography', 'consulting', 'other'])
+    .isIn(categoryEnum)
     .withMessage('Invalid category'),
   body('budget.type')
     .isIn(['fixed', 'hourly'])
