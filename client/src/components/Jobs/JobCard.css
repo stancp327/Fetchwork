@@ -1,16 +1,15 @@
-/* Enhanced Job Card Styles */
+/* ── Job Card — Mobile-first ──────────────────────────────────── */
 .job-card {
   background: var(--gradient-surface);
   backdrop-filter: blur(var(--blur-sm));
   border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  padding: var(--space-lg);
   box-shadow: var(--shadow-lg);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all var(--transition-spring);
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  will-change: transform;
 }
 
 .job-card::before {
@@ -25,48 +24,29 @@
   transition: transform var(--transition-normal);
 }
 
-.job-card::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity var(--transition-normal);
-}
-
 .job-card:hover {
-  transform: translateY(-6px) scale(1.01);
-  box-shadow: var(--shadow-elevated-xl), var(--shadow-glow);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
 }
 
 .job-card:hover::before {
   transform: scaleY(1);
 }
 
-.job-card:hover::after {
-  opacity: 1;
-}
-
+/* ── Header ───────────────────────────────────────────────────── */
 .job-card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--space-sm);
   margin-bottom: var(--space-md);
 }
 
 .job-card-title {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  margin: 0 0 var(--space-xs) 0;
+  margin: 0;
   line-height: var(--line-height-tight);
-  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-primary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
   position: relative;
   z-index: 2;
 }
@@ -110,16 +90,19 @@
   border: 1px solid rgba(23, 162, 184, 0.2);
 }
 
+/* ── Description ──────────────────────────────────────────────── */
 .job-card-description {
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: var(--line-height-relaxed);
   margin-bottom: var(--space-md);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  font-size: var(--font-size-sm);
 }
 
+/* ── Skills ───────────────────────────────────────────────────── */
 .job-card-skills {
   display: flex;
   flex-wrap: wrap;
@@ -128,69 +111,45 @@
 }
 
 .skill-tag {
-  background: var(--gradient-glass);
-  backdrop-filter: blur(var(--blur-sm));
-  color: var(--color-primary-700);
-  padding: var(--space-sm) var(--space-md);
+  color: var(--color-primary);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.05);
   transition: all var(--transition-normal);
-  position: relative;
-  overflow: hidden;
-  z-index: 2;
-}
-
-.skill-tag::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
-  transition: left var(--transition-slow);
-}
-
-.skill-tag:hover::before {
-  left: 100%;
 }
 
 .skill-tag:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
   background: rgba(99, 102, 241, 0.1);
 }
 
+/* ── Footer ───────────────────────────────────────────────────── */
 .job-card-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
   padding-top: var(--space-md);
   border-top: 1px solid var(--color-border-light);
 }
 
 .job-card-budget {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
-  background: var(--gradient-success);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  padding: var(--space-sm) var(--space-md);
+  color: var(--color-success);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-lg);
-  background-color: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.2);
-  position: relative;
-  z-index: 2;
 }
 
 .job-card-meta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-xs);
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
 }
 
 .job-card-date {
@@ -206,49 +165,49 @@
   border-radius: var(--radius-sm);
 }
 
-@media (max-width: 768px) {
+/* ── Tablet+ (768px) ──────────────────────────────────────────── */
+@media (min-width: 768px) {
   .job-card {
-    padding: var(--space-lg);
+    padding: var(--space-xl);
   }
-  
+
   .job-card-header {
-    flex-direction: column;
-    gap: var(--space-md);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
   }
-  
+
   .job-card-title {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
   }
-  
-  .job-card-budget {
-    font-size: var(--font-size-lg);
-  }
-  
+
   .job-card-footer {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-sm);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
-  
+
   .job-card-meta {
-    align-items: flex-start;
-    width: 100%;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-xs);
+    width: auto;
   }
-  
+
   .skill-tag {
-    padding: var(--space-xs) var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+  }
+
+  .job-card:hover {
+    transform: translateY(-6px) scale(1.01);
   }
 }
 
+/* ── Reduced motion ───────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .job-card,
-  .skill-tag {
+  .job-card {
     will-change: auto;
-  }
-  
-  .job-card::after,
-  .skill-tag::before {
-    animation: none;
     transition: none;
   }
 }
