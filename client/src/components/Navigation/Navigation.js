@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
@@ -12,6 +12,18 @@ const Navigation = () => {
   const { notifications, markAsRead, markAllRead } = useNotifications();
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const totalUnread = (notifications.unreadMessages || 0) + (notifications.unreadNotifications || 0);
+  const notifRef = useRef(null);
+
+  // Close notification dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -105,7 +117,7 @@ const Navigation = () => {
                   Messages
                 </NavLink>
 
-                <div className="notif-bell-wrapper" style={{ position: 'relative' }}>
+                <div className="notif-bell-wrapper" ref={notifRef} style={{ position: 'relative' }}>
                   <button 
                     className="notif-bell-btn"
                     onClick={() => setShowNotifDropdown(!showNotifDropdown)}

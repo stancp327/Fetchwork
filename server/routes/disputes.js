@@ -1,6 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { authenticateToken, authenticateAdmin, requirePermission } = require('../middleware/auth');
+
+// Rate limiter for dispute messages — 20 per 15 min per user
+const disputeMessageLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 20 : 200,
+  keyGenerator: (req) => req.user?.userId || req.ip,
+  message: { error: 'Too many messages. Please wait before sending more.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiter for filing disputes — 5 per hour
+const disputeFileLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 5 : 50,
+  keyGenerator: (req) => req.user?.userId || req.ip,
+  message: { error: 'Too many dispute filings. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 const Dispute = require('../models/Dispute');
 const AuditLog = require('../models/AuditLog');
 const Job = require('../models/Job');
@@ -48,9 +69,24 @@ const getRole = (dispute, userId) => {
 // ══════════════════════════════════════════════════════════════════
 
 // ── File a Dispute ──────────────────────────────────────────────
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, disputeFileLimit, async (req, res) => {
   try {
     const { jobId, milestoneId, reason, description } = req.body;
+
+    // Validate required fields
+    if (!jobId) return res.status(400).json({ error: 'Job ID is required' });
+    if (!reason) return res.status(400).json({ error: 'Reason is required' });
+    if (!description || description.trim().length < 20) {
+      return res.status(400).json({ error: 'Description must be at least 20 characters' });
+    }
+    if (description.length > 2000) {
+      return res.status(400).json({ error: 'Description cannot exceed 2000 characters' });
+    }
+
+    const validReasons = ['non_delivery', 'quality_issues', 'missed_deadline', 'payment_fraud', 'scope_creep', 'abusive_communication', 'other'];
+    if (!validReasons.includes(reason)) {
+      return res.status(400).json({ error: 'Invalid dispute reason' });
+    }
 
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ error: 'Job not found' });
@@ -226,7 +262,7 @@ router.post('/:id/evidence', authenticateToken, async (req, res) => {
 });
 
 // ── User: Add Message ───────────────────────────────────────────
-router.post('/:id/messages', authenticateToken, async (req, res) => {
+router.post('/:id/messages', authenticateToken, disputeMessageLimit, async (req, res) => {
   try {
     const { message, attachments } = req.body;
     const dispute = await Dispute.findById(req.params.id);
