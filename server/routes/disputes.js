@@ -5,6 +5,36 @@ const Dispute = require('../models/Dispute');
 const AuditLog = require('../models/AuditLog');
 const Job = require('../models/Job');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
+
+// ── Helper: send notification + email ───────────────────────────
+const notifyUser = async (recipientId, type, title, message, link, refs = {}) => {
+  try {
+    await Notification.notify({
+      recipient: recipientId,
+      type, title, message, link,
+      relatedDispute: refs.disputeId,
+      relatedJob: refs.jobId
+    });
+  } catch (e) {
+    console.warn('In-app notification failed:', e.message);
+  }
+};
+
+const sendDisputeEmail = async (action, ...args) => {
+  try {
+    const emailService = require('../services/emailService');
+    if (emailService[action]) await emailService[action](...args);
+  } catch (e) {
+    console.warn(`Dispute email (${action}) failed:`, e.message);
+  }
+};
+
+const STATUS_LABELS = {
+  opened: 'Open', needs_info: 'More Info Needed', under_review: 'Under Review',
+  escalated: 'Escalated', proposed_resolution: 'Resolution Proposed',
+  resolved: 'Resolved', closed: 'Closed'
+};
 
 // ── Helper: get actor role for a dispute ────────────────────────
 const getRole = (dispute, userId) => {
@@ -80,17 +110,20 @@ router.post('/', authenticateToken, async (req, res) => {
       userAgent: req.get('user-agent')
     });
 
-    // Notify other party
-    try {
-      const emailService = require('../services/emailService');
-      const otherPartyId = job.client.toString() === userId ? job.freelancer : job.client;
-      const otherParty = await User.findById(otherPartyId);
-      const filer = await User.findById(userId);
-      if (otherParty && emailService.sendDisputeNotification) {
-        await emailService.sendDisputeNotification(otherParty, filer, dispute, job);
-      }
-    } catch (emailError) {
-      console.warn('Dispute notification email failed:', emailError.message);
+    // Notify other party (in-app + email)
+    const otherPartyId = job.client.toString() === userId ? job.freelancer : job.client;
+    const otherParty = await User.findById(otherPartyId);
+    const filer = await User.findById(userId);
+    
+    await notifyUser(otherPartyId, 'dispute_opened',
+      'Dispute Filed',
+      `${filer.firstName} ${filer.lastName} filed a dispute for "${job.title}"`,
+      `/disputes`,
+      { disputeId: dispute._id, jobId: job._id }
+    );
+
+    if (otherParty && filer) {
+      await sendDisputeEmail('sendDisputeNotification', otherParty, filer, dispute, job);
     }
 
     res.status(201).json({ message: 'Dispute filed successfully', dispute });
@@ -426,6 +459,25 @@ router.patch('/admin/:id/status', authenticateAdmin, requirePermission('dispute_
       userAgent: req.get('user-agent')
     });
 
+    // Notify both parties of status change
+    const job = await Job.findById(dispute.job);
+    const client = await User.findById(dispute.client);
+    const freelancer = await User.findById(dispute.freelancer);
+    const jobTitle = job?.title || 'your job';
+    const statusLabel = STATUS_LABELS[status] || status;
+
+    for (const party of [dispute.client, dispute.freelancer]) {
+      await notifyUser(party, 'dispute_status_changed',
+        `Dispute Update: ${statusLabel}`,
+        `Your dispute for "${jobTitle}" is now ${statusLabel}`,
+        `/disputes`,
+        { disputeId: dispute._id, jobId: dispute.job }
+      );
+    }
+    
+    if (client) await sendDisputeEmail('sendDisputeStatusChange', client, dispute, prevStatus, status, job);
+    if (freelancer) await sendDisputeEmail('sendDisputeStatusChange', freelancer, dispute, prevStatus, status, job);
+
     res.json({ message: `Status changed: ${prevStatus} → ${status}`, dispute });
   } catch (error) {
     console.error('Error changing dispute status:', error);
@@ -679,20 +731,22 @@ router.post('/admin/:id/resolve', authenticateAdmin, requirePermission('dispute_
       userAgent: req.get('user-agent')
     });
 
-    // Notify both parties
-    try {
-      const emailService = require('../services/emailService');
-      const client = await User.findById(dispute.client);
-      const freelancer = await User.findById(dispute.freelancer);
-      if (emailService.sendDisputeResolutionNotification) {
-        await Promise.all([
-          emailService.sendDisputeResolutionNotification(client, dispute),
-          emailService.sendDisputeResolutionNotification(freelancer, dispute)
-        ]);
-      }
-    } catch (emailError) {
-      console.warn('Resolution notification email failed:', emailError.message);
+    // Notify both parties (in-app + email)
+    const client = await User.findById(dispute.client);
+    const freelancer = await User.findById(dispute.freelancer);
+    const resLabel = (resolutionType || 'no_action').replace(/_/g, ' ');
+
+    for (const party of [dispute.client, dispute.freelancer]) {
+      await notifyUser(party, 'dispute_resolved',
+        'Dispute Resolved',
+        `Your dispute has been resolved: ${resLabel}`,
+        `/disputes`,
+        { disputeId: dispute._id, jobId: dispute.job }
+      );
     }
+
+    if (client) await sendDisputeEmail('sendDisputeResolutionNotification', client, dispute);
+    if (freelancer) await sendDisputeEmail('sendDisputeResolutionNotification', freelancer, dispute);
 
     res.json({ message: 'Dispute resolved', dispute });
   } catch (error) {

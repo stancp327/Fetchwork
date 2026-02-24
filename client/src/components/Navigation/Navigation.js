@@ -9,7 +9,9 @@ import './Navigation.css';
 const Navigation = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { currentRole, switchRole } = useRole();
-  const { notifications } = useNotifications();
+  const { notifications, markAsRead, markAllRead } = useNotifications();
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const totalUnread = (notifications.unreadMessages || 0) + (notifications.unreadNotifications || 0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -102,6 +104,50 @@ const Navigation = () => {
                 <NavLink to="/messages" badge={notifications.unreadMessages}>
                   Messages
                 </NavLink>
+
+                <div className="notif-bell-wrapper" style={{ position: 'relative' }}>
+                  <button 
+                    className="notif-bell-btn"
+                    onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                    aria-label="Notifications"
+                  >
+                    🔔
+                    {notifications.unreadNotifications > 0 && (
+                      <span className="notif-badge">{notifications.unreadNotifications > 9 ? '9+' : notifications.unreadNotifications}</span>
+                    )}
+                  </button>
+                  {showNotifDropdown && (
+                    <div className="notif-dropdown">
+                      <div className="notif-dropdown-header">
+                        <span>Notifications</span>
+                        {notifications.unreadNotifications > 0 && (
+                          <button className="notif-mark-all" onClick={() => { markAllRead(); }}>Mark all read</button>
+                        )}
+                      </div>
+                      {(notifications.items || []).length === 0 ? (
+                        <div className="notif-empty">No new notifications</div>
+                      ) : (
+                        <div className="notif-list">
+                          {notifications.items.slice(0, 8).map(n => (
+                            <div 
+                              key={n._id} 
+                              className={`notif-item ${n.read ? 'read' : 'unread'}`}
+                              onClick={() => {
+                                if (!n.read) markAsRead(n._id);
+                                if (n.link) { window.location.href = n.link; }
+                                setShowNotifDropdown(false);
+                              }}
+                            >
+                              <div className="notif-item-title">{n.title}</div>
+                              <div className="notif-item-msg">{n.message}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
 
                 <div className="nav-divider" />
