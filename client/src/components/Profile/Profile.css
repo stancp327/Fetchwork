@@ -2,7 +2,7 @@
 .profile-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 5rem;
+  padding: 1rem 1rem 5rem;
 }
 
 /* Loading */
@@ -19,10 +19,9 @@
 /* ── Header ───────────────────────────────────────────────────── */
 .profile-page-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   margin-bottom: 1.5rem;
-  flex-wrap: wrap;
   gap: 1rem;
 }
 
@@ -59,6 +58,9 @@
   text-decoration: none;
   color: #374151;
   transition: all 0.15s;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .btn-preview:hover, .btn-share:hover { border-color: #2563eb; color: #2563eb; }
@@ -73,17 +75,20 @@
 }
 
 .profile-tab {
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 0.75rem;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: #6b7280;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .profile-tab:hover { color: #111827; }
@@ -94,10 +99,10 @@
   font-weight: 600;
 }
 
-/* ── Content Layout ───────────────────────────────────────────── */
+/* ── Content Layout — mobile: single column ───────────────────── */
 .profile-content {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   align-items: start;
 }
@@ -109,8 +114,7 @@
   border-radius: 14px;
   padding: 1.5rem;
   text-align: center;
-  position: sticky;
-  top: 80px;
+  position: static;
 }
 
 .summary-avatar {
@@ -157,9 +161,7 @@
 .stat-lbl { font-size: 0.7rem; color: #9ca3af; }
 
 /* ── Main Area ────────────────────────────────────────────────── */
-.profile-main {
-  min-width: 0;
-}
+.profile-main { min-width: 0; }
 
 .tab-content h2 { font-size: 1.2rem; font-weight: 600; margin: 0 0 1rem; color: #111827; }
 .tab-desc { color: #6b7280; font-size: 0.9rem; margin: -0.5rem 0 1.5rem; }
@@ -170,12 +172,13 @@
 .prof-field input, .prof-field select, .prof-field textarea {
   width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db;
   border-radius: 10px; font-size: 0.9rem; transition: border-color 0.15s; background: white; font-family: inherit;
+  min-height: 44px; box-sizing: border-box;
 }
 .prof-field input:focus, .prof-field select:focus, .prof-field textarea:focus {
   border-color: #2563eb; outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
-.prof-field textarea { resize: vertical; }
-.prof-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.prof-field textarea { resize: vertical; min-height: 80px; }
+.prof-row { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .field-footer { display: flex; justify-content: space-between; margin-top: 0.25rem; }
 .field-hint { font-size: 0.8rem; color: #9ca3af; margin-top: 0.25rem; }
 .char-count { font-size: 0.75rem; color: #9ca3af; }
@@ -196,7 +199,7 @@
   display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem;
   background: white; border: 1px solid #e5e7eb; border-radius: 10px;
   cursor: pointer; font-size: 0.85rem; text-align: left; width: 100%;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s; min-height: 44px;
 }
 .todo-item:hover { border-color: #2563eb; }
 .todo-circle { width: 16px; height: 16px; border: 2px solid #d1d5db; border-radius: 50%; flex-shrink: 0; }
@@ -205,7 +208,7 @@
   background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 14px;
   padding: 1.25rem; font-weight: 500; color: #059669; margin-bottom: 1.5rem;
 }
-.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.overview-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .overview-card {
   background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem;
 }
@@ -221,6 +224,7 @@
 .btn-add-skill {
   padding: 0.6rem 1rem; background: #2563eb; color: white; border: none;
   border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+  min-height: 44px;
 }
 .btn-add-skill:hover { background: #1d4ed8; }
 .skills-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
@@ -236,7 +240,7 @@
 .skills-empty { color: #9ca3af; font-size: 0.9rem; }
 
 /* ── Portfolio Tab ────────────────────────────────────────────── */
-.portfolio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.portfolio-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .portfolio-tile {
   border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: white;
 }
@@ -259,7 +263,8 @@
 .btn-create-service {
   display: inline-block; padding: 0.5rem 1rem; background: #2563eb; color: white;
   border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem;
-  margin-top: 0.75rem; transition: background 0.15s;
+  margin-top: 0.75rem; transition: background 0.15s; min-height: 44px;
+  display: inline-flex; align-items: center;
 }
 .btn-create-service:hover { background: #1d4ed8; }
 
@@ -278,8 +283,8 @@
 .profile-sticky-actions {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: white; border-top: 1px solid #e5e7eb;
-  padding: 0.75rem 2rem; display: flex; align-items: center; gap: 1rem;
-  z-index: 100; box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  padding: 0.75rem 1rem; display: flex; align-items: center; gap: 1rem;
+  z-index: 100; box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06); flex-wrap: wrap;
 }
 
 .unsaved-indicator { color: #f59e0b; font-weight: 600; font-size: 0.85rem; }
@@ -288,10 +293,12 @@
 .btn-cancel {
   padding: 0.5rem 1.25rem; background: white; color: #374151;
   border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 500;
+  min-height: 44px;
 }
 .btn-save {
   padding: 0.5rem 1.25rem; background: #2563eb; color: white;
   border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
+  min-height: 44px;
 }
 .btn-save:hover { background: #1d4ed8; }
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -299,20 +306,24 @@
 .sticky-error { color: #dc2626; font-size: 0.8rem; }
 .sticky-success { color: #059669; font-size: 0.8rem; }
 
-/* ── Responsive ───────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .profile-content { grid-template-columns: 1fr; }
-  .profile-summary-card { position: static; }
-  .overview-grid { grid-template-columns: 1fr; }
+/* ── Tablet (≥640px) ──────────────────────────────────────────── */
+@media (min-width: 640px) {
+  .profile-page { padding: 2rem 1.5rem 5rem; }
+  .profile-page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .profile-tab { padding: 0.75rem 1.25rem; font-size: 0.9rem; }
+  .prof-row { grid-template-columns: 1fr 1fr; }
   .portfolio-grid { grid-template-columns: 1fr 1fr; }
+  .profile-sticky-actions { padding: 0.75rem 2rem; }
 }
 
-@media (max-width: 640px) {
-  .profile-page { padding: 1rem 1rem 5rem; }
-  .profile-page-header { flex-direction: column; align-items: flex-start; }
-  .profile-tabs { gap: 0; }
-  .profile-tab { padding: 0.6rem 0.75rem; font-size: 0.8rem; }
-  .prof-row { grid-template-columns: 1fr; }
-  .portfolio-grid { grid-template-columns: 1fr; }
-  .profile-sticky-actions { padding: 0.75rem 1rem; flex-wrap: wrap; }
+/* ── Desktop (≥900px) ─────────────────────────────────────────── */
+@media (min-width: 900px) {
+  .profile-content { grid-template-columns: 280px 1fr; }
+  .profile-summary-card { position: sticky; top: 80px; }
+  .overview-grid { grid-template-columns: 1fr 1fr; }
+  .portfolio-grid { grid-template-columns: repeat(3, 1fr); }
 }
