@@ -139,19 +139,66 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+// Webhook handler is mounted separately in index.js (before express.json middleware)
+// to preserve the raw body needed for Stripe signature verification.
+
+// Exported separately for index.js to mount before body parsers
+router.webhookHandler = async (req, res) => {
   try {
-    const result = await stripeService.handleWebhook(req.body, req.headers['stripe-signature']);
-    
-    if (result.success) {
-      res.json({ received: true });
-    } else {
-      res.status(400).json({ error: result.error });
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!endpointSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET not configured');
+      return res.status(500).json({ error: 'Webhook not configured' });
     }
+
+    const sig = req.headers['stripe-signature'];
+    if (!sig) {
+      return res.status(400).json({ error: 'Missing stripe-signature header' });
+    }
+
+    let event;
+    try {
+      event = stripeService.constructWebhookEvent(req.body, sig, endpointSecret);
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        console.log('💰 Payment succeeded:', event.data.object.id);
+        // TODO: Update job payment status, notify freelancer
+        break;
+
+      case 'payment_intent.payment_failed':
+        console.log('❌ Payment failed:', event.data.object.id);
+        // TODO: Notify client of failed payment
+        break;
+
+      case 'account.updated':
+        console.log('🔄 Connected account updated:', event.data.object.id);
+        // TODO: Update user's Stripe account status
+        break;
+
+      case 'transfer.created':
+        console.log('💸 Transfer created:', event.data.object.id);
+        break;
+
+      case 'charge.refunded':
+        console.log('↩️ Charge refunded:', event.data.object.id);
+        // TODO: Update dispute/payment records
+        break;
+
+      default:
+        console.log(`Unhandled webhook event: ${event.type}`);
+    }
+
+    res.json({ received: true });
   } catch (error) {
-    console.error('Error handling webhook:', error);
+    console.error('Webhook handler error:', error);
     res.status(500).json({ error: 'Webhook handler failed' });
   }
-});
+};
 
 module.exports = router;

@@ -86,11 +86,21 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// ── Stripe Webhook (MUST be before express.json() — needs raw body for signature verification)
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), require('./routes/payments').webhookHandler);
+
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
+// Session secret: required in production, fallback in dev
+const sessionSecret = process.env.SESSION_SECRET || (
+  process.env.NODE_ENV === 'production'
+    ? (() => { console.error('FATAL: SESSION_SECRET is required in production'); process.exit(1); })()
+    : 'fallback-secret-key-for-development'
+);
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret-key-for-development',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
