@@ -301,53 +301,17 @@
   color: var(--color-text-secondary);
 }
 
-@media (max-width: 768px) {
-  .modal-dispute-overlay {
-    padding: 0.5rem;
-  }
+/* Mobile base */
+.modal-dispute-overlay { padding: 0.5rem; }
+.modal-dispute-wrapper { max-height: 95vh; }
+.step-item { flex-direction: column; text-align: center; gap: 0.25rem; }
+.step-number { width: 24px; height: 24px; font-size: 0.7rem; }
+.footer-buttons { flex-direction: column; }
+.reason-option { min-height: 44px; }
 
-  .modal-dispute-wrapper {
-    max-height: 95vh;
-  }
-
-  .modal-header {
-    padding: 1rem;
-  }
-
-  .modal-header h2 {
-    font-size: 1.3rem;
-  }
-
-  .step-indicator {
-    padding: 1rem;
-    gap: 0.5rem;
-  }
-
-  .step-item {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.25rem;
-  }
-
-  .step-number {
-    width: 24px;
-    height: 24px;
-    font-size: 0.7rem;
-  }
-
-  .modal-body {
-    padding: 1rem;
-  }
-
-  .reason-option {
-    padding: 0.75rem;
-  }
-
-  .dispute-description {
-    min-height: 100px;
-  }
-
-  .footer-buttons {
-    flex-direction: column;
-  }
+@media (min-width: 768px) {
+  .modal-dispute-overlay { padding: 2rem; }
+  .step-item { flex-direction: row; text-align: left; }
+  .step-number { width: 32px; height: 32px; font-size: 0.8rem; }
+  .footer-buttons { flex-direction: row; }
 }

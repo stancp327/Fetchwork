@@ -86,8 +86,5 @@
   text-align: center;
 }
 
-@media (max-width: 768px) {
-  .file-upload-area {
-    padding: var(--space-px-20);
-  }
-}
+/* Touch target for upload area */
+.file-upload-area { min-height: 100px; }

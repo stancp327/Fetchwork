@@ -213,13 +213,11 @@
 .btn-offer-action.counter { background: #2563eb; color: white; }
 .btn-offer-action.decline { background: #f3f4f6; color: #dc2626; }
 
-/* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .offer-form-row {
-    grid-template-columns: 1fr;
-  }
-  .offer-modal {
-    margin: 0.5rem;
-    max-height: 95vh;
-  }
+/* Mobile base */
+.offer-form-row { grid-template-columns: 1fr; }
+.offer-modal { margin: 0.5rem; max-height: 95vh; }
+
+@media (min-width: 640px) {
+  .offer-form-row { grid-template-columns: 1fr 1fr 1fr; }
+  .offer-modal { margin: 2rem; max-height: 85vh; }
 }

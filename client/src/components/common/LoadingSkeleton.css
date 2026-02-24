@@ -143,15 +143,11 @@
   gap: var(--space-xl);
 }
 
-@media (max-width: 768px) {
-  .skeleton-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-  }
-  
-  .skeleton-card {
-    padding: var(--space-lg);
-  }
+/* Mobile base */
+.skeleton-grid { grid-template-columns: 1fr; }
+
+@media (min-width: 768px) {
+  .skeleton-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

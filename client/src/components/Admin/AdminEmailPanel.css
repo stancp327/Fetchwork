@@ -127,14 +127,9 @@ button[type="submit"]:disabled {
   border: 1px solid #f5c6cb;
 }
 
-@media (max-width: 768px) {
-  .email-actions {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .broadcast-section,
-  .test-section {
-    padding: var(--space-px-20);
-  }
+/* Mobile base */
+.email-actions { grid-template-columns: 1fr; }
+
+@media (min-width: 768px) {
+  .email-actions { grid-template-columns: 1fr 1fr; }
 }

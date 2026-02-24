@@ -253,39 +253,12 @@
   cursor: pointer;
 }
 
-/* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .dispute-center {
-    padding: 1rem;
-  }
+/* Mobile base */
+.dispute-filters { flex-direction: column; align-items: flex-start; }
+.dispute-filter-tabs { overflow-x: auto; flex-wrap: nowrap; width: 100%; -webkit-overflow-scrolling: touch; }
+.filter-tab { flex-shrink: 0; min-height: 44px; }
 
-  .dispute-center-header h1 {
-    font-size: 1.4rem;
-  }
-
-  .dispute-filters {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .dispute-filter-tabs {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    width: 100%;
-    padding-bottom: 0.5rem;
-  }
-
-  .filter-tab {
-    flex-shrink: 0;
-    font-size: 0.8rem;
-    padding: 0.4rem 0.75rem;
-  }
-
-  .dispute-card {
-    padding: 1rem;
-  }
-
-  .dispute-card-title h4 {
-    font-size: 0.95rem;
-  }
+@media (min-width: 768px) {
+  .dispute-filters { flex-direction: row; align-items: center; }
+  .dispute-filter-tabs { flex-wrap: wrap; width: auto; }
 }

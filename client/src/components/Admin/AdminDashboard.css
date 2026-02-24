@@ -517,85 +517,23 @@
   padding: var(--space-px-40) var(--space-px-20);
 }
 
-@media (max-width: 768px) {
-  .admin-dashboard {
-    padding: 15px;
-  }
-  
-  .dashboard-header {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-  
-  .dashboard-tabs {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .activity-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .activity-item {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
+/* Mobile base */
+.dashboard-header { flex-direction: column; gap: 15px; text-align: center; }
+.dashboard-tabs { flex-wrap: wrap; justify-content: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.stats-grid { grid-template-columns: 1fr; }
+.activity-grid { grid-template-columns: 1fr; }
+.activity-item { grid-template-columns: 1fr; }
+.users-controls, .jobs-controls, .payments-controls, .reviews-controls { flex-direction: column; align-items: stretch; }
+.search-input { max-width: none; }
+.tab-button { min-height: 44px; flex-shrink: 0; }
+.users-table table, .jobs-table table, .payments-table table, .reviews-table table { display: block; overflow-x: auto; white-space: nowrap; }
 
-  .users-controls, .jobs-controls, .payments-controls, .reviews-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-input {
-    max-width: none;
-  }
-
-  .users-table, .jobs-table, .payments-table, .reviews-table {
-    font-size: 0.85rem;
-  }
-
-  .review-actions {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .action-btn {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-  }
-
-  /* Enhanced mobile table responsiveness */
-  .users-table table, .jobs-table table, .payments-table table, .reviews-table table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-  
-  .users-table th, .jobs-table th, .payments-table th, .reviews-table th,
-  .users-table td, .jobs-table td, .payments-table td, .reviews-table td {
-    padding: 8px 12px;
-    font-size: 0.8rem;
-  }
-  
-  /* Hide less critical columns on mobile */
-  .users-table th:nth-child(n+4), .users-table td:nth-child(n+4),
-  .jobs-table th:nth-child(n+5), .jobs-table td:nth-child(n+5) {
-    display: none;
-  }
-  
-  .tab-button {
-    font-size: var(--font-size-base);
-    padding: 10px 16px;
-  }
-  
-  .dashboard-header h1 {
-    font-size: 2rem;
-  }
+@media (min-width: 768px) {
+  .dashboard-header { flex-direction: row; text-align: left; }
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .activity-grid { grid-template-columns: 1fr 1fr; }
+  .users-controls, .jobs-controls, .payments-controls, .reviews-controls { flex-direction: row; }
+  .users-table table, .jobs-table table, .payments-table table, .reviews-table table { display: table; overflow-x: visible; white-space: normal; }
 }
 
 /* Analytics Tab Styles */
@@ -659,19 +597,11 @@
   height: 400px;
 }
 
-@media (max-width: 768px) {
-  .analytics-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .analytics-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
-  }
-  
-  .chart-container {
-    height: 300px;
-  }
+/* Analytics mobile base */
+.analytics-grid { grid-template-columns: 1fr; }
+.analytics-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+
+@media (min-width: 768px) {
+  .analytics-grid { grid-template-columns: 1fr 1fr; }
+  .analytics-header { flex-direction: row; align-items: center; }
 }

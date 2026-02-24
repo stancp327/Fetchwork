@@ -206,38 +206,14 @@
   padding: var(--space-px-40);
 }
 
-@media (max-width: 768px) {
-  .disputes-management {
-    padding: var(--space-px-20);
-  }
+/* Mobile base */
+.disputes-controls { flex-direction: column; align-items: stretch; }
+.admin-panel-table { display: block; overflow-x: auto; }
+.dispute-actions { flex-direction: column; gap: 4px; }
+.action-btn { min-height: 44px; }
 
-  .disputes-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .admin-panel-table {
-    font-size: var(--font-size-base);
-  }
-
-  .admin-panel-table th,
-  .admin-panel-table td {
-    padding: 8px;
-  }
-
-  .dispute-actions {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .action-btn {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-  }
-
-  .pagination {
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
-  }
+@media (min-width: 768px) {
+  .disputes-controls { flex-direction: row; }
+  .admin-panel-table { display: table; }
+  .dispute-actions { flex-direction: row; }
 }

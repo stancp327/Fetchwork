@@ -12,6 +12,9 @@
 .skill-tag { background: #eef2ff; color: #3730a3; padding: 6px 10px; border-radius: 16px; display: inline-flex; align-items: center; gap: 6px; }
 .wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
 .info { color: #2563eb; }
-@media (max-width: 768px) {
-  .steps { grid-template-columns: repeat(2, 1fr); }
+/* Mobile base */
+.steps { grid-template-columns: repeat(2, 1fr); }
+
+@media (min-width: 768px) {
+  .steps { grid-template-columns: repeat(4, 1fr); }
 }

@@ -287,61 +287,19 @@
   border-color: #ccc;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .modal-proposal-overlay {
-    padding: 0.5rem;
-  }
+/* Mobile base */
+.modal-proposal-overlay { padding: 0.5rem; }
+.modal-proposal-wrapper { max-height: 95vh; }
+.form-grid { grid-template-columns: 1fr; }
+.footer-buttons { flex-direction: column; }
+.step-number { width: 25px; height: 25px; font-size: 0.8rem; }
+.btn-primary, .btn-secondary { width: 100%; min-height: 44px; }
 
-  .modal-proposal-wrapper {
-    max-height: 95vh;
-  }
-
-  .modal-header {
-    padding: 1rem;
-  }
-
-  .modal-header h2 {
-    font-size: 1.3rem;
-  }
-
-  .step-indicator {
-    padding: 1rem;
-    gap: 1rem;
-  }
-
-  .step-item:not(:last-child)::after {
-    width: 1rem;
-  }
-
-  .step-number {
-    width: 25px;
-    height: 25px;
-    font-size: 0.8rem;
-  }
-
-  .step-title {
-    font-size: 0.7rem;
-  }
-
-  .modal-body {
-    padding: 1rem;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-group.full-width {
-    grid-column: span 1;
-  }
-
-  .footer-buttons {
-    flex-direction: column;
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    width: 100%;
-  }
+@media (min-width: 768px) {
+  .modal-proposal-overlay { padding: 2rem; }
+  .modal-proposal-wrapper { max-height: 85vh; }
+  .form-grid { grid-template-columns: 1fr 1fr; }
+  .footer-buttons { flex-direction: row; }
+  .step-number { width: 32px; height: 32px; font-size: 0.9rem; }
+  .btn-primary, .btn-secondary { width: auto; }
 }

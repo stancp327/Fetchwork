@@ -368,32 +368,13 @@
   line-height: 1.5;
 }
 
-/* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .dispute-detail-content {
-    grid-template-columns: 1fr;
-  }
+/* Mobile base */
+.dispute-detail-content { grid-template-columns: 1fr; }
+.dispute-detail-header { flex-direction: column; }
+.msg-row { max-width: 95%; }
 
-  .dispute-messages-panel {
-    min-height: 400px;
-    max-height: 500px;
-  }
-}
-
-@media (max-width: 600px) {
-  .dispute-detail {
-    padding: 1rem;
-  }
-
-  .dispute-detail-title h2 {
-    font-size: 1.2rem;
-  }
-
-  .dispute-detail-header {
-    flex-direction: column;
-  }
-
-  .msg-row { max-width: 95%; }
-
-  .dispute-messages-list { padding: 1rem; }
+@media (min-width: 900px) {
+  .dispute-detail-content { grid-template-columns: 1fr 350px; }
+  .dispute-detail-header { flex-direction: row; }
+  .msg-row { max-width: 75%; }
 }

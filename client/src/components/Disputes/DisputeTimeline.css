@@ -132,40 +132,9 @@
   margin-right: 0.5rem;
 }
 
-@media (max-width: 768px) {
-  .dispute-timeline {
-    margin: 0 1rem 1.5rem 1rem;
-    padding: 1rem;
-  }
+/* Mobile base */
+.timeline-circle { width: 28px; height: 28px; font-size: 0.8rem; }
 
-  .dispute-timeline h3 {
-    font-size: 1.2rem;
-  }
-
-  .timeline-step {
-    gap: 0.75rem;
-    padding: 0.5rem 0;
-  }
-
-  .timeline-circle {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
-  }
-
-  .timeline-line {
-    height: 35px;
-  }
-
-  .timeline-title {
-    font-size: var(--font-size-base);
-  }
-
-  .timeline-description {
-    font-size: 0.8rem;
-  }
-
-  .resolution-summary {
-    padding: 1rem;
-  }
+@media (min-width: 768px) {
+  .timeline-circle { width: 36px; height: 36px; font-size: 0.9rem; }
 }

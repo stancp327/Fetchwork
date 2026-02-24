@@ -150,48 +150,16 @@
   box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
 }
 
-@media (max-width: 768px) {
-  .milestone-tracker {
-    margin: 0 1rem 1.5rem 1rem;
-    padding: 1rem;
-  }
+/* Mobile base */
+.milestone-circle { width: 28px; height: 28px; font-size: 0.8rem; }
+.dashboard-milestone-tracker { grid-column: span 1; }
 
-  .milestone-header h3 {
-    font-size: 1.2rem;
-  }
-
-  .milestone-item {
-    gap: 0.75rem;
-    padding: 0.5rem 0;
-  }
-
-  .milestone-circle {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
-  }
-
-  .milestone-line {
-    height: 35px;
-  }
-
-  .milestone-title {
-    font-size: var(--font-size-base);
-  }
-
-  .milestone-description {
-    font-size: 0.8rem;
-  }
+@media (min-width: 768px) {
+  .milestone-circle { width: 36px; height: 36px; font-size: 0.9rem; }
 }
 
-.dashboard-milestone-tracker {
-  grid-column: span 2;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-milestone-tracker {
-    grid-column: span 1;
-  }
+@media (min-width: 1024px) {
+  .dashboard-milestone-tracker { grid-column: span 2; }
 }
 
 .milestone-skip {

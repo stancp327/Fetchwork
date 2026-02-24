@@ -1,107 +1,70 @@
-.jp-container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
-.jp-loading, .jp-error { text-align: center; padding: 3rem; color: #6b7280; }
-.jp-back { color: #2563eb; text-decoration: none; font-size: 0.85rem; }
+/* ── Job Progress — Mobile-first ──────────────────────────────── */
+.jp-container { width: 100%; max-width: 1100px; margin: 0 auto; padding: var(--space-lg) var(--container-padding); }
+.jp-loading, .jp-error { text-align: center; padding: var(--space-3xl); color: #6b7280; }
+.jp-back { color: #2563eb; text-decoration: none; font-size: var(--font-size-sm); min-height: 44px; display: inline-flex; align-items: center; }
 .jp-back:hover { text-decoration: underline; }
-.jp-header h1 { margin: 0.5rem 0 0.25rem; font-size: 1.5rem; color: #111827; }
-.jp-meta { font-size: 0.85rem; color: #6b7280; }
+.jp-header h1 { margin: var(--space-sm) 0 var(--space-xs); font-size: var(--font-size-xl); color: #111827; }
+.jp-meta { font-size: var(--font-size-sm); color: #6b7280; }
 
 /* Progress Card */
-.jp-progress-card {
-  background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; margin: 1.5rem 0;
-}
-.jp-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.jp-progress-header h2 { margin: 0; font-size: 1rem; }
-.jp-progress-pct { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
+.jp-progress-card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: var(--space-lg); margin: var(--space-xl) 0; }
+.jp-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); }
+.jp-progress-header h2 { margin: 0; font-size: var(--font-size-base); }
+.jp-progress-pct { font-size: var(--font-size-2xl); font-weight: 700; color: #2563eb; }
 .jp-progress-bar-outer { height: 10px; background: #e5e7eb; border-radius: 10px; overflow: hidden; }
 .jp-progress-bar-inner { height: 100%; background: linear-gradient(90deg, #2563eb, #10b981); border-radius: 10px; transition: width 0.3s; }
-.jp-progress-summary { font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem; }
+.jp-progress-summary { font-size: var(--font-size-xs); color: #6b7280; margin-top: var(--space-sm); }
 
-/* Layout */
-.jp-layout { display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; }
+/* Layout — single column on mobile */
+.jp-layout { display: flex; flex-direction: column; gap: var(--space-xl); }
 
-/* Milestones Panel */
-.jp-milestones-panel { }
-.jp-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.jp-panel-header h2 { margin: 0; font-size: 1.1rem; }
-.jp-milestones-list { display: flex; flex-direction: column; gap: 0.75rem; }
+/* Milestones */
+.jp-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-sm); }
+.jp-panel-header h2 { margin: 0; font-size: var(--font-size-lg); }
+.jp-milestones-list { display: flex; flex-direction: column; gap: var(--space-md); }
+.jp-milestone-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: var(--space-lg); }
+.jp-milestone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); flex-wrap: wrap; gap: var(--space-xs); }
+.jp-milestone-num { color: #6b7280; font-size: var(--font-size-xs); }
+.jp-milestone-badge { padding: 0.15rem 0.5rem; border-radius: 12px; font-size: var(--font-size-xs); font-weight: 600; }
+.jp-milestone-desc { font-size: var(--font-size-sm); color: #6b7280; margin: var(--space-xs) 0; }
+.jp-milestone-meta { display: flex; gap: var(--space-md); font-size: var(--font-size-xs); color: #6b7280; margin: var(--space-sm) 0; flex-wrap: wrap; }
+.jp-milestone-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); flex-wrap: wrap; }
 
-.jp-milestone-card {
-  background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem;
-}
-.jp-milestone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
-.jp-milestone-num { color: #6b7280; font-size: 0.8rem; margin-right: 0.5rem; }
-.jp-milestone-badge {
-  padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600;
-}
-.jp-milestone-desc { font-size: 0.85rem; color: #6b7280; margin: 0.25rem 0; }
-.jp-milestone-meta { display: flex; gap: 0.75rem; font-size: 0.8rem; color: #6b7280; margin: 0.5rem 0; }
-.jp-milestone-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+/* Add Milestone */
+.jp-add-milestone { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: var(--space-lg); margin-bottom: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-sm); }
+.jp-add-milestone input, .jp-add-milestone textarea { padding: var(--space-sm) var(--space-md); border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; min-height: 44px; width: 100%; }
 
-/* Add Milestone Form */
-.jp-add-milestone {
-  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem; margin-bottom: 1rem;
-  display: flex; flex-direction: column; gap: 0.5rem;
-}
-.jp-add-milestone input, .jp-add-milestone textarea {
-  padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem;
-}
+/* Timeline */
+.jp-timeline-panel h2 { margin: 0 0 var(--space-lg); font-size: var(--font-size-lg); }
+.jp-post-update { margin-bottom: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-sm); }
+.jp-post-update textarea { padding: var(--space-md); border: 1px solid #d1d5db; border-radius: 8px; font-size: 16px; resize: vertical; min-height: 44px; width: 100%; }
 
-/* Timeline Panel */
-.jp-timeline-panel h2 { margin: 0 0 1rem; font-size: 1.1rem; }
-
-.jp-post-update {
-  margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;
-}
-.jp-post-update textarea {
-  padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem; resize: vertical;
-}
-
-.jp-timeline { position: relative; padding-left: 2.5rem; }
-.jp-timeline::before {
-  content: ''; position: absolute; left: 1rem; top: 0; bottom: 0; width: 2px; background: #e5e7eb;
-}
-.jp-timeline-item { position: relative; margin-bottom: 1.25rem; }
-.jp-timeline-dot {
-  position: absolute; left: -2.5rem; top: 0; width: 2rem; height: 2rem;
-  display: flex; align-items: center; justify-content: center;
-  background: white; border: 2px solid #e5e7eb; border-radius: 50%; font-size: 0.85rem;
-  z-index: 1;
-}
-.jp-timeline-content {
-  background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.85rem 1rem;
-}
-.jp-timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
-.jp-timeline-header strong { font-size: 0.85rem; }
-.jp-timeline-time { font-size: 0.75rem; color: #9ca3af; }
-.jp-timeline-msg { margin: 0; font-size: 0.85rem; color: #374151; line-height: 1.5; }
-.jp-timeline-attachments { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
-.jp-attachment {
-  padding: 0.25rem 0.5rem; background: #f3f4f6; border-radius: 4px;
-  font-size: 0.8rem; color: #2563eb; text-decoration: none;
-}
+.jp-timeline { position: relative; padding-left: 2rem; }
+.jp-timeline::before { content: ''; position: absolute; left: 0.75rem; top: 0; bottom: 0; width: 2px; background: #e5e7eb; }
+.jp-timeline-item { position: relative; margin-bottom: var(--space-lg); }
+.jp-timeline-dot { position: absolute; left: -2rem; top: 0; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid #e5e7eb; border-radius: 50%; font-size: 0.7rem; z-index: 1; }
+.jp-timeline-content { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: var(--space-md) var(--space-lg); }
+.jp-timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); flex-wrap: wrap; gap: var(--space-xs); }
+.jp-timeline-header strong { font-size: var(--font-size-sm); }
+.jp-timeline-time { font-size: var(--font-size-xs); color: #9ca3af; }
+.jp-timeline-msg { margin: 0; font-size: var(--font-size-sm); color: #374151; line-height: var(--line-height-relaxed); }
+.jp-timeline-attachments { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); flex-wrap: wrap; }
+.jp-attachment { padding: var(--space-xs) var(--space-sm); background: #f3f4f6; border-radius: 4px; font-size: var(--font-size-xs); color: #2563eb; text-decoration: none; }
 
 /* Buttons */
-.jp-btn-sm {
-  padding: 0.3rem 0.7rem; border: 1px solid #d1d5db; border-radius: 6px;
-  font-size: 0.75rem; font-weight: 500; cursor: pointer; background: white; color: #374151;
-}
+.jp-btn-sm { padding: var(--space-xs) var(--space-md); border: 1px solid #d1d5db; border-radius: 6px; font-size: var(--font-size-xs); font-weight: 500; cursor: pointer; background: white; color: #374151; min-height: 36px; }
 .jp-btn-sm.primary { background: #2563eb; color: white; border-color: #2563eb; }
 .jp-btn-sm.success { background: #10b981; color: white; border-color: #10b981; }
 .jp-btn-sm.warning { background: #f59e0b; color: white; border-color: #f59e0b; }
-.jp-btn-primary {
-  padding: 0.5rem 1rem; border: none; border-radius: 8px; background: #2563eb;
-  color: white; font-size: 0.85rem; font-weight: 500; cursor: pointer;
-}
+.jp-btn-primary { padding: var(--space-sm) var(--space-lg); border: none; border-radius: 8px; background: #2563eb; color: white; font-size: var(--font-size-sm); font-weight: 500; cursor: pointer; min-height: 44px; }
 .jp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.jp-btn-ghost {
-  padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 8px;
-  background: white; color: #374151; font-size: 0.85rem; cursor: pointer;
-}
-.jp-empty { padding: 2rem; text-align: center; color: #9ca3af; font-size: 0.9rem; }
+.jp-btn-ghost { padding: var(--space-sm) var(--space-lg); border: 1px solid #d1d5db; border-radius: 8px; background: white; color: #374151; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; }
+.jp-empty { padding: var(--space-2xl); text-align: center; color: #9ca3af; font-size: var(--font-size-sm); }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .jp-layout { grid-template-columns: 1fr; }
-  .jp-timeline { padding-left: 2rem; }
-  .jp-timeline-dot { left: -2rem; width: 1.5rem; height: 1.5rem; font-size: 0.7rem; }
+/* Tablet+ */
+@media (min-width: 768px) {
+  .jp-layout { display: grid; grid-template-columns: 380px 1fr; }
+  .jp-timeline { padding-left: 2.5rem; }
+  .jp-timeline-dot { left: -2.5rem; width: 2rem; height: 2rem; font-size: 0.85rem; }
+  .jp-header h1 { font-size: var(--font-size-2xl); }
 }
