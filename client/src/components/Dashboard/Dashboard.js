@@ -152,11 +152,14 @@ const Dashboard = () => {
 
   if (isClientMode) {
     (activity.jobsAsClient || []).forEach(job => {
+      const isDisputed = job.status === 'disputed';
       activityItems.push({
-        icon: '📋', title: job.title,
-        meta: `${job.proposalCount || 0} proposals • ${formatBudget(job.budget)}`,
+        icon: isDisputed ? '⚠️' : '📋', title: job.title,
+        meta: isDisputed ? `Dispute active • ${formatBudget(job.budget)}` : `${job.proposalCount || 0} proposals • ${formatBudget(job.budget)}`,
         time: timeAgo(job.createdAt), link: `/jobs/${job._id}`,
-        tag: { label: job.status === 'open' ? 'Open' : job.status.replace(/_/g, ' '), type: job.status === 'open' ? 'success' : 'default' },
+        tag: isDisputed
+          ? { label: 'Disputed', type: 'danger' }
+          : { label: job.status === 'open' ? 'Open' : job.status.replace(/_/g, ' '), type: job.status === 'open' ? 'success' : 'default' },
         date: new Date(job.createdAt)
       });
     });
@@ -174,11 +177,14 @@ const Dashboard = () => {
 
   if (isFreelancerMode) {
     (activity.jobsAsFreelancer || []).forEach(job => {
+      const isDisputed = job.status === 'disputed';
       activityItems.push({
-        icon: '💼', title: job.title,
-        meta: `Client: ${job.client?.firstName || 'Unknown'} • ${formatBudget(job.budget)}`,
+        icon: isDisputed ? '⚠️' : '💼', title: job.title,
+        meta: isDisputed ? `Dispute active • ${formatBudget(job.budget)}` : `Client: ${job.client?.firstName || 'Unknown'} • ${formatBudget(job.budget)}`,
         time: timeAgo(job.createdAt), link: `/jobs/${job._id}`,
-        tag: { label: 'In Progress', type: 'warning' },
+        tag: isDisputed
+          ? { label: 'Disputed', type: 'danger' }
+          : { label: 'In Progress', type: 'warning' },
         date: new Date(job.createdAt)
       });
     });

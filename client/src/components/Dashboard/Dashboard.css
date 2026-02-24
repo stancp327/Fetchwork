@@ -288,6 +288,7 @@
 .tag-warning { background: #fffbeb; color: #d97706; }
 .tag-new { background: #fef2f2; color: #dc2626; }
 .tag-default { background: #f3f4f6; color: #6b7280; }
+.tag-danger { background: #fef2f2; color: #dc2626; font-weight: 600; }
 
 .activity-time {
   font-size: 0.7rem;
