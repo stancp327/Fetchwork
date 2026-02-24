@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  server-tests:
+    name: Server Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Run server tests
+        working-directory: server
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-for-ci
+          SESSION_SECRET: test-session-secret-for-ci
+          MONGO_URI: ''
+        run: npm test
+
+  client-build:
+    name: Client Build & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Run client tests
+        working-directory: client
+        env:
+          CI: true
+        run: npm test -- --watchAll=false
+
+      - name: Build client
+        working-directory: client
+        env:
+          CI: true
+          REACT_APP_API_URL: https://fetchwork-1.onrender.com
+        run: npm run build
+
+  lint-check:
+    name: Lint & Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Audit server dependencies
+        working-directory: server
+        run: npm audit --audit-level=high || true
+
+      - name: Audit client dependencies
+        working-directory: client
+        run: npm audit --audit-level=high || true
