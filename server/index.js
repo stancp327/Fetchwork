@@ -44,8 +44,9 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", process.env.CLIENT_URL || 'https://fetchwork.net'].filter(Boolean),
+      connectSrc: ["'self'", process.env.CLIENT_URL || 'https://fetchwork.net', "https://accounts.google.com", "https://www.facebook.com"].filter(Boolean),
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      formAction: ["'self'", "https://accounts.google.com", "https://www.facebook.com"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
     }
