@@ -18,16 +18,16 @@
   --color-border: #e1e5e9;
   --color-border-light: #f1f3f4;
   
-  /* Typography */
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.8rem;
-  --font-size-base: 0.9rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.1rem;
-  --font-size-xl: 1.2rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 2.5rem;
-  --font-size-4xl: 3.5rem;
+  /* Typography — fluid scaling (mobile-first with clamp) */
+  --font-size-xs: clamp(0.7rem, 0.65rem + 0.25vw, 0.75rem);
+  --font-size-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.875rem);
+  --font-size-base: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);
+  --font-size-md: clamp(0.925rem, 0.875rem + 0.25vw, 1.05rem);
+  --font-size-lg: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --font-size-xl: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);
+  --font-size-2xl: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --font-size-3xl: clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem);
+  --font-size-4xl: clamp(1.75rem, 1.3rem + 2vw, 3.5rem);
   
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -70,11 +70,16 @@
   --shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 4px 20px rgba(0, 0, 0, 0.15);
   
-  /* Breakpoints (for reference in media queries) */
+  /* Container */
+  --container-max: 1200px;
+  --container-padding: clamp(1rem, 2vw, 2rem);
+  
+  /* Breakpoints (reference only — use in media queries as raw values)
+     sm: 480px | md: 768px | lg: 1024px | xl: 1280px */
   --breakpoint-sm: 480px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1200px;
+  --breakpoint-xl: 1280px;
   
   /* Enhanced design tokens for visual polish */
   --color-surface-glass: rgba(255, 255, 255, 0.85);
