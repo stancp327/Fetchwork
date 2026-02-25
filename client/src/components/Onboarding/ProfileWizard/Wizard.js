@@ -305,6 +305,10 @@ const Wizard = () => {
 
         {steps[stepIdx].key === 'portfolio' && (
           <div className="section">
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#1e40af', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>💡 Portfolio is optional — you can add items later from your profile.</span>
+              <button type="button" onClick={onNext} style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>Skip →</button>
+            </div>
             <div className="row">
               <label>Upload portfolio files</label>
               <input type="file" multiple onChange={async (e) => {
