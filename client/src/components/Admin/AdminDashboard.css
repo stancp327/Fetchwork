@@ -605,3 +605,64 @@
   .analytics-grid { grid-template-columns: 1fr 1fr; }
   .analytics-header { flex-direction: row; align-items: center; }
 }
+
+/* -- Admin User Detail — Mobile-first --------------------------- */
+.admin-user-detail {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: var(--space-md); margin-bottom: var(--space-lg); overflow: hidden;
+}
+.aud-header { display: flex; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.aud-name { margin: 0; font-size: var(--font-size-base); display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+.aud-role-badge { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 4px; font-weight: 600; }
+.aud-role-admin { background: #fef2f2; color: #dc2626; }
+.aud-role-moderator { background: #eff6ff; color: #2563eb; }
+.aud-role-user { background: #f3f4f6; color: #6b7280; }
+.aud-email { color: #6b7280; font-size: var(--font-size-xs); margin: 0.2rem 0 0; word-break: break-all; }
+.aud-waiver-info { color: #059669; font-size: var(--font-size-xs); margin: 0.25rem 0 0; }
+.aud-close { background: none; border: none; font-size: 1.5rem; color: #6b7280; cursor: pointer; padding: 0; flex-shrink: 0; }
+
+.aud-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.aud-stat {
+  background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: var(--space-sm);
+  text-align: center;
+}
+.aud-stat strong { display: block; font-size: var(--font-size-base); color: #1f2937; }
+.aud-stat span { font-size: 0.65rem; color: #9ca3af; text-transform: uppercase; }
+
+.aud-actions {
+  display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-bottom: var(--space-md);
+}
+.aud-actions .action-btn { font-size: 0.75rem; min-height: 36px; text-decoration: none; display: inline-flex; align-items: center; }
+
+.aud-section { margin-bottom: var(--space-md); }
+.aud-section h4 { font-size: var(--font-size-sm); margin: 0 0 var(--space-sm); color: #374151; }
+
+.aud-portfolio-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm);
+}
+.aud-portfolio-item {
+  background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;
+  font-size: 0.75rem; color: #374151;
+}
+.aud-portfolio-item img { width: 100%; height: 80px; object-fit: cover; display: block; }
+.aud-portfolio-item span { display: block; padding: var(--space-xs) var(--space-sm); }
+
+.aud-job-list { display: flex; flex-direction: column; gap: var(--space-xs); }
+.aud-job-card {
+  background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: var(--space-sm) var(--space-md);
+}
+.aud-job-card a { color: #2563eb; text-decoration: none; font-size: var(--font-size-sm); font-weight: 500; }
+.aud-job-card a:hover { text-decoration: underline; }
+.aud-job-meta { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: 0.2rem; font-size: 0.7rem; color: #6b7280; align-items: center; }
+
+@media (min-width: 480px) {
+  .aud-stats { grid-template-columns: repeat(5, 1fr); }
+  .aud-portfolio-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 768px) {
+  .admin-user-detail { padding: var(--space-lg); }
+}

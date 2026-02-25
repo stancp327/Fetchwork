@@ -165,7 +165,9 @@ const userSchema = new mongoose.Schema({
     reason: { type: String, default: '' },
     waivedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     waivedAt: { type: Date, default: null },
-    expiresAt: { type: Date, default: null } // null = permanent
+    expiresAt: { type: Date, default: null }, // null = permanent
+    maxJobs: { type: Number, default: null }, // null = unlimited
+    jobsUsed: { type: Number, default: 0 }
   },
   username: {
     type: String,
@@ -256,6 +258,25 @@ userSchema.pre('save', async function(next) {
     next(error);
   }
 });
+
+// Check if fee waiver is currently active
+userSchema.methods.isFeeWaived = function() {
+  if (!this.feeWaiver?.enabled) return false;
+  if (this.feeWaiver.expiresAt && new Date() > this.feeWaiver.expiresAt) return false;
+  if (this.feeWaiver.maxJobs && this.feeWaiver.jobsUsed >= this.feeWaiver.maxJobs) return false;
+  return true;
+};
+
+// Increment fee waiver usage (call after each job completion)
+userSchema.methods.useFeeWaiverJob = async function() {
+  if (this.isFeeWaived()) {
+    this.feeWaiver.jobsUsed = (this.feeWaiver.jobsUsed || 0) + 1;
+    if (this.feeWaiver.maxJobs && this.feeWaiver.jobsUsed >= this.feeWaiver.maxJobs) {
+      this.feeWaiver.enabled = false; // Auto-disable when limit reached
+    }
+    await this.save();
+  }
+};
 
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {

@@ -850,10 +850,10 @@ router.get('/users/:userId/detail', authenticateAdmin, requirePermission('user_m
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const [jobsAsClient, jobsAsFreelancer, services, reviews] = await Promise.all([
-      Job.find({ client: user._id }).select('title status budget createdAt proposalCount category').sort({ createdAt: -1 }).limit(50),
-      Job.find({ freelancer: user._id }).select('title status budget createdAt category').sort({ createdAt: -1 }).limit(50),
+      Job.find({ client: user._id }).select('title status budget createdAt proposalCount category freelancer').populate('freelancer', 'firstName lastName').sort({ createdAt: -1 }),
+      Job.find({ freelancer: user._id }).select('title status budget createdAt category client').populate('client', 'firstName lastName').sort({ createdAt: -1 }),
       Service.find({ freelancer: user._id }).select('title status category pricing isActive createdAt').sort({ createdAt: -1 }),
-      Review.find({ $or: [{ freelancer: user._id }, { client: user._id }] }).populate('freelancer client', 'firstName lastName').sort({ createdAt: -1 }).limit(20)
+      Review.find({ $or: [{ freelancer: user._id }, { client: user._id }] }).populate('freelancer client', 'firstName lastName').sort({ createdAt: -1 }).limit(50)
     ]);
 
     res.json({
@@ -879,21 +879,29 @@ router.get('/users/:userId/detail', authenticateAdmin, requirePermission('user_m
 // ── Fee waiver ──────────────────────────────────────────────────
 router.put('/users/:userId/fee-waiver', authenticateAdmin, requirePermission('fee_waiver'), validateUserIdParam, async (req, res) => {
   try {
-    const { enabled, reason, expiresAt } = req.body;
+    const { enabled, reason, expiresAt, maxJobs } = req.body;
     const user = await User.findById(req.params.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    user.feeWaiver = {
-      enabled: !!enabled,
-      reason: reason || '',
-      waivedBy: req.admin._id,
-      waivedAt: enabled ? new Date() : null,
-      expiresAt: expiresAt ? new Date(expiresAt) : null
-    };
+    if (enabled) {
+      user.feeWaiver = {
+        enabled: true,
+        reason: reason || '',
+        waivedBy: req.admin._id,
+        waivedAt: new Date(),
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        maxJobs: maxJobs ? parseInt(maxJobs) : null,
+        jobsUsed: 0
+      };
+    } else {
+      user.feeWaiver = { enabled: false, reason: '', waivedBy: null, waivedAt: null, expiresAt: null, maxJobs: null, jobsUsed: 0 };
+    }
     await user.save();
 
     res.json({
-      message: enabled ? `Fee waiver enabled for ${user.firstName}` : `Fee waiver removed for ${user.firstName}`,
+      message: enabled
+        ? `Fee waiver for ${user.firstName}: ${maxJobs || '∞'} jobs, expires ${expiresAt ? new Date(expiresAt).toLocaleDateString() : 'never'}`
+        : `Fee waiver removed for ${user.firstName}`,
       feeWaiver: user.feeWaiver
     });
   } catch (error) {

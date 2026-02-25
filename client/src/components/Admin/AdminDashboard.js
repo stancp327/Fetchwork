@@ -448,90 +448,134 @@ const AdminDashboard = () => {
             <div className="users-tab">
               <h2>User Management</h2>
 
-              {/* User Detail Panel */}
+              {/* User Detail Panel — Mobile-first */}
               {selectedUser && (
-                <div className="user-detail-panel" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div className="admin-user-detail">
+                  <div className="aud-header">
                     <div>
-                      <h3 style={{ margin: 0 }}>{selectedUser.user?.firstName} {selectedUser.user?.lastName}</h3>
-                      <p style={{ color: '#6b7280', margin: '0.25rem 0', fontSize: '0.85rem' }}>
-                        {selectedUser.user?.email} • Role: <strong>{selectedUser.user?.role}</strong>
-                        {selectedUser.user?.feeWaiver?.enabled && <span style={{ color: '#059669', marginLeft: '0.5rem' }}>💚 Fee Waived</span>}
-                      </p>
-                      <p style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-                        {selectedUser.summary?.totalJobsPosted} jobs posted • {selectedUser.summary?.totalJobsWorked} jobs worked • {selectedUser.summary?.totalServices} services • Account age: {selectedUser.summary?.accountAge} days
-                      </p>
+                      <h3 className="aud-name">
+                        {selectedUser.user?.firstName} {selectedUser.user?.lastName}
+                        <span className={`aud-role-badge aud-role-${selectedUser.user?.role}`}>{selectedUser.user?.role}</span>
+                      </h3>
+                      <p className="aud-email">{selectedUser.user?.email}</p>
+                      {selectedUser.user?.feeWaiver?.enabled && (
+                        <p className="aud-waiver-info">
+                          💚 Fee waived — {selectedUser.user.feeWaiver.reason}
+                          {selectedUser.user.feeWaiver.maxJobs && ` (${selectedUser.user.feeWaiver.jobsUsed || 0}/${selectedUser.user.feeWaiver.maxJobs} jobs)`}
+                          {selectedUser.user.feeWaiver.expiresAt && ` · Expires ${new Date(selectedUser.user.feeWaiver.expiresAt).toLocaleDateString()}`}
+                        </p>
+                      )}
                     </div>
-                    <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#6b7280' }}>×</button>
+                    <button className="aud-close" onClick={() => setSelectedUser(null)}>×</button>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="aud-stats">
+                    <div className="aud-stat"><strong>{selectedUser.summary?.totalJobsPosted || 0}</strong><span>Posted</span></div>
+                    <div className="aud-stat"><strong>{selectedUser.summary?.totalJobsWorked || 0}</strong><span>Worked</span></div>
+                    <div className="aud-stat"><strong>{selectedUser.summary?.totalServices || 0}</strong><span>Services</span></div>
+                    <div className="aud-stat"><strong>{selectedUser.summary?.totalReviews || 0}</strong><span>Reviews</span></div>
+                    <div className="aud-stat"><strong>{selectedUser.summary?.accountAge || 0}d</strong><span>Age</span></div>
                   </div>
 
                   {/* Quick actions */}
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  <div className="aud-actions">
                     <button className="action-btn promote" onClick={async () => {
                       try {
                         await apiRequest(`/api/admin/users/${selectedUser.user._id}/make-moderator`, { method: 'PUT', body: JSON.stringify({ permissions: ['job_management', 'content_moderation', 'dispute_management'] }) });
-                        alert('User is now a moderator');
-                        loadUserDetail(selectedUser.user._id);
+                        alert('User is now a moderator'); loadUserDetail(selectedUser.user._id);
                       } catch (e) { alert(e.message); }
-                    }}>🛡️ Make Moderator</button>
+                    }}>🛡️ Moderator</button>
                     <button className="action-btn" onClick={async () => {
-                      const reason = prompt('Reason for fee waiver:');
-                      if (reason) {
+                      if (selectedUser.user?.feeWaiver?.enabled) {
                         try {
-                          await apiRequest(`/api/admin/users/${selectedUser.user._id}/fee-waiver`, { method: 'PUT', body: JSON.stringify({ enabled: !selectedUser.user?.feeWaiver?.enabled, reason }) });
-                          alert(selectedUser.user?.feeWaiver?.enabled ? 'Fee waiver removed' : 'Fee waiver enabled');
-                          loadUserDetail(selectedUser.user._id);
+                          await apiRequest(`/api/admin/users/${selectedUser.user._id}/fee-waiver`, { method: 'PUT', body: JSON.stringify({ enabled: false }) });
+                          alert('Fee waiver removed'); loadUserDetail(selectedUser.user._id);
+                        } catch (e) { alert(e.message); }
+                      } else {
+                        const reason = prompt('Reason for fee waiver:') || 'New user promo';
+                        const maxJobs = prompt('Max free jobs (blank = unlimited):', '10');
+                        const daysStr = prompt('Duration in days (blank = 30):', '30');
+                        const days = parseInt(daysStr) || 30;
+                        const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+                        try {
+                          await apiRequest(`/api/admin/users/${selectedUser.user._id}/fee-waiver`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ enabled: true, reason, expiresAt, maxJobs: maxJobs ? parseInt(maxJobs) : null })
+                          });
+                          alert(`Fee waiver enabled: ${maxJobs || '∞'} jobs, ${days} days`); loadUserDetail(selectedUser.user._id);
                         } catch (e) { alert(e.message); }
                       }
-                    }}>{selectedUser.user?.feeWaiver?.enabled ? '💔 Remove Fee Waiver' : '💚 Waive Fees'}</button>
+                    }}>{selectedUser.user?.feeWaiver?.enabled ? '💔 Remove Waiver' : '💚 Waive Fees'}</button>
+                    <a href={`/freelancers/${selectedUser.user._id}`} target="_blank" rel="noopener noreferrer" className="action-btn">👤 Public Profile</a>
                   </div>
 
-                  {/* Jobs tables */}
-                  {selectedUser.jobsAsClient?.length > 0 && (
-                    <div style={{ marginBottom: '1rem' }}>
-                      <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.5rem' }}>Jobs Posted ({selectedUser.jobsAsClient.length})</h4>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
-                          <thead><tr style={{ background: '#f3f4f6' }}>
-                            <th style={{ padding: '0.4rem', textAlign: 'left' }}>Title</th>
-                            <th style={{ padding: '0.4rem' }}>Budget</th>
-                            <th style={{ padding: '0.4rem' }}>Status</th>
-                            <th style={{ padding: '0.4rem' }}>Date</th>
-                          </tr></thead>
-                          <tbody>
-                            {selectedUser.jobsAsClient.map(j => (
-                              <tr key={j._id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td style={{ padding: '0.4rem' }}><a href={`/jobs/${j._id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>{j.title}</a></td>
-                                <td style={{ padding: '0.4rem', textAlign: 'center' }}>{formatBudget(j.budget)}</td>
-                                <td style={{ padding: '0.4rem', textAlign: 'center' }}><span className={`status ${j.status}`}>{j.status}</span></td>
-                                <td style={{ padding: '0.4rem', textAlign: 'center' }}>{new Date(j.createdAt).toLocaleDateString()}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  {/* Portfolio */}
+                  {selectedUser.user?.portfolio?.length > 0 && (
+                    <div className="aud-section">
+                      <h4>📁 Portfolio ({selectedUser.user.portfolio.length})</h4>
+                      <div className="aud-portfolio-grid">
+                        {selectedUser.user.portfolio.map((p, i) => (
+                          <div key={i} className="aud-portfolio-item">
+                            {p.mediaUrls?.[0] && <img src={p.mediaUrls[0]} alt={p.title} />}
+                            <span>{p.title || `Item ${i + 1}`}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
+
+                  {/* Jobs Posted */}
+                  {selectedUser.jobsAsClient?.length > 0 && (
+                    <div className="aud-section">
+                      <h4>📋 Jobs Posted ({selectedUser.jobsAsClient.length})</h4>
+                      <div className="aud-job-list">
+                        {selectedUser.jobsAsClient.map(j => (
+                          <div key={j._id} className="aud-job-card">
+                            <a href={`/jobs/${j._id}`} target="_blank" rel="noopener noreferrer">{j.title}</a>
+                            <div className="aud-job-meta">
+                              <span className={`status ${j.status}`}>{j.status?.replace(/_/g, ' ')}</span>
+                              <span>{formatBudget(j.budget)}</span>
+                              <span>{new Date(j.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Jobs Worked */}
                   {selectedUser.jobsAsFreelancer?.length > 0 && (
-                    <div>
-                      <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.5rem' }}>Jobs Worked ({selectedUser.jobsAsFreelancer.length})</h4>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
-                          <thead><tr style={{ background: '#f3f4f6' }}>
-                            <th style={{ padding: '0.4rem', textAlign: 'left' }}>Title</th>
-                            <th style={{ padding: '0.4rem' }}>Budget</th>
-                            <th style={{ padding: '0.4rem' }}>Status</th>
-                          </tr></thead>
-                          <tbody>
-                            {selectedUser.jobsAsFreelancer.map(j => (
-                              <tr key={j._id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td style={{ padding: '0.4rem' }}><a href={`/jobs/${j._id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>{j.title}</a></td>
-                                <td style={{ padding: '0.4rem', textAlign: 'center' }}>{formatBudget(j.budget)}</td>
-                                <td style={{ padding: '0.4rem', textAlign: 'center' }}><span className={`status ${j.status}`}>{j.status}</span></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    <div className="aud-section">
+                      <h4>🔨 Jobs Worked ({selectedUser.jobsAsFreelancer.length})</h4>
+                      <div className="aud-job-list">
+                        {selectedUser.jobsAsFreelancer.map(j => (
+                          <div key={j._id} className="aud-job-card">
+                            <a href={`/jobs/${j._id}`} target="_blank" rel="noopener noreferrer">{j.title}</a>
+                            <div className="aud-job-meta">
+                              <span className={`status ${j.status}`}>{j.status?.replace(/_/g, ' ')}</span>
+                              <span>{formatBudget(j.budget)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Services */}
+                  {selectedUser.services?.length > 0 && (
+                    <div className="aud-section">
+                      <h4>🛍️ Services ({selectedUser.services.length})</h4>
+                      <div className="aud-job-list">
+                        {selectedUser.services.map(s => (
+                          <div key={s._id} className="aud-job-card">
+                            <span>{s.title}</span>
+                            <div className="aud-job-meta">
+                              <span className={`status ${s.isActive ? 'active' : 'inactive'}`}>{s.isActive ? 'Active' : 'Inactive'}</span>
+                              <span>{s.category?.replace(/_/g, ' ')}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
