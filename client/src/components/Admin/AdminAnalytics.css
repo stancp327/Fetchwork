@@ -1,5 +1,5 @@
 /* ── Admin Analytics — Mobile-first ─────────────────────────── */
-.admin-analytics { padding: 0; }
+.admin-analytics { padding: 0; overflow: hidden; max-width: 100%; }
 
 .aa-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-lg); }
 .aa-header h2 { margin: 0; font-size: var(--font-size-lg); }

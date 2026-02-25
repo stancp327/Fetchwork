@@ -1,5 +1,5 @@
 .error-dashboard {
-  padding: 1.5rem;
+  padding: 0; overflow: hidden; max-width: 100%;
 }
 
 .error-dashboard h2 {

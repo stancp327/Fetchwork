@@ -7,8 +7,9 @@
 
 .monitoring-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-sm);
 }
 
 .monitoring-controls label {
@@ -20,15 +21,16 @@
 
 .monitoring-sections {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
 }
 
 .online-users-section,
 .system-health-section {
   background: #f8f9fa;
-  padding: 1.5rem;
+  padding: var(--space-sm);
+  overflow: hidden;
   border-radius: var(--radius-lg);
   border: 1px solid #e9ecef;
 }

@@ -46,8 +46,9 @@
 .tab-button:hover { color: #2c3e50; background: #f8f9fa; }
 .tab-button.active { color: #3498db; border-bottom-color: #3498db; background: #f8f9fa; }
 
-/* Content */
-.dashboard-content { min-height: 300px; }
+/* Content — universal overflow guard for ALL tabs */
+.dashboard-content { min-height: 300px; overflow: hidden; }
+.dashboard-content > div { overflow: hidden; word-break: break-word; }
 
 /* Loading / Error */
 .loading-container, .error-container {
@@ -106,20 +107,24 @@
 .user-email, .job-budget, .job-status { color: #7f8c8d; font-size: var(--font-size-xs); }
 .activity-date { color: #95a5a6; font-size: 0.7rem; }
 
-/* Tab content containers */
-.users-tab, .jobs-tab, .payments-tab, .reviews-tab {
+/* Tab content containers — ALL tabs */
+.overview-tab, .users-tab, .jobs-tab, .payments-tab, .reviews-tab,
+.disputes-tab, .email-tab, .monitoring-tab, .analytics-tab {
   background: white; padding: var(--space-sm); border-radius: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  overflow: hidden; /* prevent child overflow causing page scroll */
+  overflow: hidden; max-width: 100%;
 }
-.users-tab h2, .jobs-tab h2, .payments-tab h2, .reviews-tab h2 {
+.overview-tab h2, .users-tab h2, .jobs-tab h2, .payments-tab h2, .reviews-tab h2,
+.disputes-tab h2, .email-tab h2, .monitoring-tab h2 {
   color: #2c3e50; margin-bottom: var(--space-md); font-size: var(--font-size-lg);
+  word-break: break-word;
 }
 
 /* Management containers */
-.users-management, .jobs-management, .payments-management, .reviews-management {
+.users-management, .jobs-management, .payments-management, .reviews-management,
+.disputes-management, .email-panel {
   background: white; padding: 0; border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden;
+  box-shadow: none; overflow: hidden; max-width: 100%;
 }
 
 /* Controls */
@@ -233,8 +238,10 @@
     flex-direction: row; align-items: center;
   }
   .search-input { max-width: 300px; }
-  .users-management, .jobs-management, .payments-management, .reviews-management { padding: var(--space-md); }
-  .users-tab, .jobs-tab, .payments-tab, .reviews-tab { padding: var(--space-lg); }
+  .users-management, .jobs-management, .payments-management, .reviews-management,
+  .disputes-management, .email-panel { padding: var(--space-md); }
+  .overview-tab, .users-tab, .jobs-tab, .payments-tab, .reviews-tab,
+  .disputes-tab, .email-tab, .monitoring-tab, .analytics-tab { padding: var(--space-lg); }
 
   /* Restore table layout on tablet+ */
   .users-table thead, .jobs-table thead, .payments-table thead, .reviews-table thead { display: table-header-group; }
