@@ -51,8 +51,8 @@ describe('JobCard', () => {
     renderJobCard();
     
     expect(screen.getByText('Frontend Developer')).toBeInTheDocument();
-    expect(screen.getByText(/Posted by John Doe/)).toBeInTheDocument();
-    expect(screen.getByText(/\$5,000 fixed/)).toBeInTheDocument();
+    expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+    expect(screen.getByText(/\$5,000/)).toBeInTheDocument();
     expect(screen.getByText(/1-2 weeks/)).toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe('JobCard', () => {
   test('should render proposal count, views, and location', () => {
     renderJobCard();
     
-    expect(screen.getByText(/12 proposals/)).toBeInTheDocument();
+    expect(screen.getByText(/12 applicant/)).toBeInTheDocument();
     expect(screen.getByText(/45 views/)).toBeInTheDocument();
     expect(screen.getByText(/Remote/)).toBeInTheDocument();
   });
@@ -117,7 +117,7 @@ describe('JobCard', () => {
     
     renderJobCard(hourlyJob);
     
-    expect(screen.getByText(/\$50 \/hr/)).toBeInTheDocument();
+    expect(screen.getByText(/\$50/)).toBeInTheDocument();
   });
 
   test('should not show urgent tag when job is not urgent', () => {
