@@ -10,6 +10,8 @@ import BrowseLayout, {
 } from '../common/BrowseLayout';
 import SaveButton from '../common/SaveButton';
 import AvailabilityBadge from '../common/AvailabilityBadge';
+import InviteToJob from './InviteToJob';
+import { useAuth } from '../../context/AuthContext';
 import '../common/BrowseLayout.css';
 
 const CATEGORIES = [
@@ -25,7 +27,7 @@ const SORT_OPTIONS = [
   { value: 'most_jobs', label: 'Most Jobs Completed' },
 ];
 
-const FreelancerCard = ({ freelancer }) => {
+const FreelancerCard = ({ freelancer, onInvite }) => {
   const navigate = useNavigate();
 
   return (
@@ -76,18 +78,27 @@ const FreelancerCard = ({ freelancer }) => {
           {freelancer.completedJobs || 0} jobs completed
           {freelancer.totalEarnings > 0 && ` • $${(freelancer.totalEarnings / 1000).toFixed(0)}k+ earned`}
         </span>
-        <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/freelancers/${freelancer._id}`); }}>
-          View Profile
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {onInvite && (
+            <button className="browse-card-cta" style={{ background: '#059669' }} onClick={e => { e.stopPropagation(); onInvite(freelancer); }}>
+              📩 Invite
+            </button>
+          )}
+          <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/freelancers/${freelancer._id}`); }}>
+            View Profile
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 const FreelancerDiscovery = () => {
+  const { user } = useAuth();
   const [freelancers, setFreelancers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [inviteFreelancer, setInviteFreelancer] = useState(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
     category: 'all', near: '', radius: '25', minRate: '', maxRate: '', availability: 'all', sortBy: 'rating'
@@ -172,12 +183,19 @@ const FreelancerDiscovery = () => {
           <BrowseEmpty icon="👥" title="No freelancers found" message="Try adjusting your search or filters" />
         ) : (
           <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
-            {freelancers.map(f => <FreelancerCard key={f._id} freelancer={f} />)}
+            {freelancers.map(f => <FreelancerCard key={f._id} freelancer={f} onInvite={user ? setInviteFreelancer : null} />)}
           </div>
         )}
 
         <BrowsePagination current={page} total={pagination.pages || 0} onChange={setPage} />
       </BrowseLayout>
+
+      {inviteFreelancer && (
+        <InviteToJob
+          freelancer={inviteFreelancer}
+          onClose={() => setInviteFreelancer(null)}
+        />
+      )}
     </>
   );
 };

@@ -10,6 +10,8 @@ import BrowseLayout, {
   ResultsControls, BrowsePagination, BrowseEmpty
 } from '../common/BrowseLayout';
 import SaveButton from '../common/SaveButton';
+import QuickApply from './QuickApply';
+import { useAuth } from '../../context/AuthContext';
 import '../common/BrowseLayout.css';
 
 const CATEGORIES = [
@@ -46,7 +48,7 @@ const interestLevel = (proposals, views) => {
   return { text: 'Be the first to apply', color: '#10b981' };
 };
 
-const JobCard = ({ job }) => {
+const JobCard = ({ job, onQuickApply }) => {
   const navigate = useNavigate();
   const timeAgo = (date) => {
     const d = Math.floor((Date.now() - new Date(date)) / 86400000);
@@ -98,18 +100,27 @@ const JobCard = ({ job }) => {
         <span className="browse-card-stats" style={{ color: interest.color, fontWeight: 500 }}>
           {interest.text} • {job.views || 0} views
         </span>
-        <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/jobs/${job._id}`); }}>
-          Apply Now
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {onQuickApply && (
+            <button className="browse-card-cta" style={{ background: '#059669' }} onClick={e => { e.stopPropagation(); onQuickApply(job); }}>
+              ⚡ Quick
+            </button>
+          )}
+          <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/jobs/${job._id}`); }}>
+            View Job
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 const BrowseJobs = () => {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [quickApplyJob, setQuickApplyJob] = useState(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
     category: 'all', experienceLevel: 'all', workLocation: 'all',
@@ -208,12 +219,20 @@ const BrowseJobs = () => {
           />
         ) : (
           <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
-            {jobs.map(job => <JobCard key={job._id} job={job} />)}
+            {jobs.map(job => <JobCard key={job._id} job={job} onQuickApply={user ? setQuickApplyJob : null} />)}
           </div>
         )}
 
         <BrowsePagination current={page} total={pagination.pages || 0} onChange={setPage} />
       </BrowseLayout>
+
+      {quickApplyJob && (
+        <QuickApply
+          job={quickApplyJob}
+          onClose={() => setQuickApplyJob(null)}
+          onSuccess={() => fetchJobs()}
+        />
+      )}
     </>
   );
 };

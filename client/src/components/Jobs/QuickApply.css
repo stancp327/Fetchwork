@@ -1,0 +1,46 @@
+/* ── Quick Apply Modal — Mobile-first ────────────────────────── */
+.qa-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+.qa-modal {
+  background: white; border-radius: 16px 16px 0 0; width: 100%;
+  max-height: 90vh; overflow-y: auto; padding: var(--space-lg);
+  animation: qa-slide-up 0.25s ease-out;
+}
+@keyframes qa-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.qa-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm); }
+.qa-header h3 { margin: 0; font-size: var(--font-size-lg); }
+.qa-close { background: none; border: none; font-size: 1.5rem; color: #6b7280; cursor: pointer; padding: 0.25rem; }
+.qa-job-title { color: #6b7280; font-size: var(--font-size-sm); margin: 0 0 var(--space-lg); }
+
+.qa-field { margin-bottom: var(--space-md); }
+.qa-field label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: #374151; margin-bottom: var(--space-xs); }
+.qa-field textarea, .qa-field input, .qa-field select {
+  width: 100%; padding: var(--space-md); border: 1px solid #d1d5db; border-radius: 8px;
+  font-size: 16px; transition: border-color 0.15s;
+}
+.qa-field textarea:focus, .qa-field input:focus, .qa-field select:focus {
+  outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.qa-hint { font-size: var(--font-size-xs); color: #9ca3af; }
+
+.qa-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+
+.qa-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-lg); }
+.qa-btn-primary, .qa-btn-secondary {
+  flex: 1; padding: var(--space-md); border-radius: 8px; font-weight: 600;
+  font-size: var(--font-size-base); cursor: pointer; min-height: 48px; border: none;
+}
+.qa-btn-primary { background: #2563eb; color: white; }
+.qa-btn-primary:hover { background: #1d4ed8; }
+.qa-btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+.qa-btn-secondary { background: #f3f4f6; color: #374151; }
+.qa-btn-secondary:hover { background: #e5e7eb; }
+
+@media (min-width: 768px) {
+  .qa-overlay { align-items: center; padding: var(--space-xl); }
+  .qa-modal { border-radius: 16px; max-width: 520px; }
+}

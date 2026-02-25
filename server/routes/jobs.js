@@ -188,6 +188,21 @@ router.get('/', validateQueryParams, async (req, res) => {
   }
 });
 
+// Get current user's jobs (for invite-to-job flow)
+router.get('/my-jobs', authenticateToken, async (req, res) => {
+  try {
+    const statusFilter = req.query.status || 'open';
+    const jobs = await Job.find({
+      client: req.user._id,
+      status: statusFilter,
+      isActive: true
+    }).select('title status budget createdAt').sort({ createdAt: -1 }).limit(20);
+    res.json({ jobs });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch your jobs' });
+  }
+});
+
 router.get('/:id', validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
