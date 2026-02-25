@@ -1,0 +1,97 @@
+/* ── Portfolio Wizard — Mobile-first ─────────────────────────── */
+.pw-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
+}
+.pw-modal {
+  background: white; border-radius: 16px 16px 0 0; width: 100%;
+  max-height: 90vh; display: flex; flex-direction: column;
+  animation: pw-slide-up 0.25s ease-out;
+}
+@keyframes pw-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.pw-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--space-lg); border-bottom: 1px solid #e5e7eb;
+}
+.pw-header h2 { margin: 0; font-size: var(--font-size-lg); }
+.pw-close { background: none; border: none; font-size: 1.5rem; color: #6b7280; cursor: pointer; }
+
+/* Steps */
+.pw-steps {
+  display: flex; padding: var(--space-md) var(--space-lg); gap: var(--space-xs);
+  border-bottom: 1px solid #f3f4f6; overflow-x: auto;
+}
+.pw-step {
+  display: flex; align-items: center; gap: var(--space-xs);
+  font-size: var(--font-size-xs); color: #9ca3af; flex-shrink: 0;
+}
+.pw-step.active { color: #2563eb; font-weight: 600; }
+.pw-step.done { color: #059669; }
+.pw-step-num {
+  width: 24px; height: 24px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 0.7rem;
+  border: 2px solid #d1d5db; font-weight: 700;
+}
+.pw-step.active .pw-step-num { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+.pw-step.done .pw-step-num { border-color: #059669; background: #ecfdf5; color: #059669; }
+.pw-step-label { display: none; }
+
+/* Body */
+.pw-body { flex: 1; overflow-y: auto; padding: var(--space-lg); }
+.pw-step-content h3 { margin: 0 0 var(--space-lg); font-size: var(--font-size-base); color: #1f2937; }
+
+.pw-field { margin-bottom: var(--space-lg); }
+.pw-field label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: #374151; margin-bottom: var(--space-xs); }
+.pw-field input, .pw-field select, .pw-field textarea {
+  width: 100%; padding: var(--space-md); border: 1px solid #d1d5db; border-radius: 8px;
+  font-size: 16px; transition: border-color 0.15s;
+}
+.pw-field input:focus, .pw-field select:focus, .pw-field textarea:focus {
+  outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.pw-hint { font-size: var(--font-size-xs); color: #9ca3af; margin-top: var(--space-xs); display: block; }
+
+.pw-url-row { display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.pw-url-row input { flex: 1; }
+.pw-btn-icon { background: none; border: none; font-size: 1.2rem; color: #dc2626; cursor: pointer; padding: 0.5rem; }
+.pw-btn-add {
+  background: none; border: 1px dashed #d1d5db; border-radius: 8px; padding: var(--space-sm) var(--space-md);
+  color: #2563eb; font-weight: 500; cursor: pointer; font-size: var(--font-size-sm); width: 100%; min-height: 44px;
+}
+.pw-btn-add:hover { border-color: #2563eb; background: #eff6ff; }
+
+/* Tags */
+.pw-tag-input { margin-bottom: var(--space-sm); }
+.pw-tags { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.pw-tag {
+  background: #eff6ff; color: #2563eb; padding: var(--space-xs) var(--space-sm);
+  border-radius: 6px; font-size: var(--font-size-xs); display: flex; align-items: center; gap: 0.25rem;
+}
+.pw-tag button { background: none; border: none; color: #2563eb; cursor: pointer; font-size: 0.9rem; }
+
+/* Review */
+.pw-review { display: flex; flex-direction: column; gap: var(--space-md); }
+.pw-review-item { font-size: var(--font-size-sm); color: #4b5563; line-height: 1.5; }
+.pw-review-item strong { color: #1f2937; }
+
+/* Footer */
+.pw-footer {
+  display: flex; gap: var(--space-sm); padding: var(--space-lg);
+  border-top: 1px solid #e5e7eb;
+}
+.pw-btn-primary, .pw-btn-secondary {
+  padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 600;
+  font-size: var(--font-size-base); cursor: pointer; min-height: 48px; border: none;
+}
+.pw-btn-primary { background: #2563eb; color: white; }
+.pw-btn-primary:hover { background: #1d4ed8; }
+.pw-btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+.pw-btn-secondary { background: #f3f4f6; color: #374151; }
+.pw-btn-secondary:hover { background: #e5e7eb; }
+
+@media (min-width: 768px) {
+  .pw-overlay { align-items: center; padding: var(--space-xl); }
+  .pw-modal { border-radius: 16px; max-width: 600px; max-height: 80vh; }
+  .pw-step-label { display: inline; }
+}

@@ -811,4 +811,124 @@ router.delete('/users/:userId', authenticateAdmin, requirePermission('user_manag
   }
 });
 
+// ── Promote/demote moderator ────────────────────────────────────
+router.put('/users/:userId/make-moderator', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    const customPerms = req.body.permissions || [];
+    user.role = 'moderator';
+    user.permissions = customPerms;
+    await user.save();
+    
+    res.json({ message: `${user.firstName} is now a moderator`, permissions: customPerms });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
+router.put('/users/:userId/remove-moderator', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    user.role = 'user';
+    user.permissions = [];
+    await user.save();
+    
+    res.json({ message: `${user.firstName} is no longer a moderator` });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
+// ── User detail with all their jobs ─────────────────────────────
+router.get('/users/:userId/detail', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('-password -resetPasswordToken -emailVerificationToken');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const [jobsAsClient, jobsAsFreelancer, services, reviews] = await Promise.all([
+      Job.find({ client: user._id }).select('title status budget createdAt proposalCount category').sort({ createdAt: -1 }).limit(50),
+      Job.find({ freelancer: user._id }).select('title status budget createdAt category').sort({ createdAt: -1 }).limit(50),
+      Service.find({ freelancer: user._id }).select('title status category pricing isActive createdAt').sort({ createdAt: -1 }),
+      Review.find({ $or: [{ freelancer: user._id }, { client: user._id }] }).populate('freelancer client', 'firstName lastName').sort({ createdAt: -1 }).limit(20)
+    ]);
+
+    res.json({
+      user: user.toObject(),
+      jobsAsClient,
+      jobsAsFreelancer,
+      services,
+      reviews,
+      summary: {
+        totalJobsPosted: jobsAsClient.length,
+        totalJobsWorked: jobsAsFreelancer.length,
+        totalServices: services.length,
+        totalReviews: reviews.length,
+        accountAge: Math.floor((Date.now() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24))
+      }
+    });
+  } catch (error) {
+    console.error('User detail error:', error);
+    res.status(500).json({ error: 'Failed to fetch user detail' });
+  }
+});
+
+// ── Fee waiver ──────────────────────────────────────────────────
+router.put('/users/:userId/fee-waiver', authenticateAdmin, requirePermission('fee_waiver'), validateUserIdParam, async (req, res) => {
+  try {
+    const { enabled, reason, expiresAt } = req.body;
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.feeWaiver = {
+      enabled: !!enabled,
+      reason: reason || '',
+      waivedBy: req.admin._id,
+      waivedAt: enabled ? new Date() : null,
+      expiresAt: expiresAt ? new Date(expiresAt) : null
+    };
+    await user.save();
+
+    res.json({
+      message: enabled ? `Fee waiver enabled for ${user.firstName}` : `Fee waiver removed for ${user.firstName}`,
+      feeWaiver: user.feeWaiver
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update fee waiver' });
+  }
+});
+
+// ── Admin search users (enhanced) ───────────────────────────────
+router.get('/users/search', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    const { q, role, status } = req.query;
+    const query = {};
+    
+    if (q) {
+      query.$or = [
+        { firstName: { $regex: q, $options: 'i' } },
+        { lastName: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } },
+        { username: { $regex: q, $options: 'i' } }
+      ];
+    }
+    if (role && role !== 'all') query.role = role;
+    if (status === 'suspended') query.isSuspended = true;
+    if (status === 'active') { query.isActive = true; query.isSuspended = false; }
+    if (status === 'inactive') query.isActive = false;
+
+    const users = await User.find(query)
+      .select('firstName lastName email role isActive isSuspended isVerified rating completedJobs createdAt profilePicture feeWaiver')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json({ users, total: users.length });
+  } catch (error) {
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 module.exports = router;

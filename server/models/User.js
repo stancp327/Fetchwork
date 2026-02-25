@@ -150,8 +150,22 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'moderator', 'admin'],
     default: 'user'
+  },
+  permissions: {
+    type: [String],
+    default: [],
+    // Available: user_management, job_management, content_moderation,
+    // payment_management, dispute_management, analytics_view, fee_waiver,
+    // user_impersonation, system_settings
+  },
+  feeWaiver: {
+    enabled: { type: Boolean, default: false },
+    reason: { type: String, default: '' },
+    waivedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    waivedAt: { type: Date, default: null },
+    expiresAt: { type: Date, default: null } // null = permanent
   },
   username: {
     type: String,

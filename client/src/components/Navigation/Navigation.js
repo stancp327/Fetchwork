@@ -160,7 +160,11 @@ const Navigation = () => {
                   )}
                 </div>
 
-                {user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
+                {(user?.isAdmin || user?.role === 'admin' || user?.role === 'moderator') && (
+                  <NavLink to="/admin">
+                    {user?.role === 'moderator' ? '🛡️ Mod' : '⚙️ Admin'}
+                  </NavLink>
+                )}
 
                 <div className="nav-divider" />
 
@@ -177,8 +181,8 @@ const Navigation = () => {
 
                 <div className="nav-spacer" />
 
-                <Link to="/login" className="nav-link nav-login" onClick={closeMobileMenu}>Login</Link>
-                <Link to="/register" className="nav-cta-btn" onClick={closeMobileMenu}>Get Started</Link>
+                <Link to="/login" className="nav-login-btn" onClick={closeMobileMenu}>Log In</Link>
+                <Link to="/register" className="nav-cta-btn" onClick={closeMobileMenu}>Sign Up Free</Link>
               </>
             )}
           </div>

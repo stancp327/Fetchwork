@@ -50,32 +50,44 @@ const authenticateAdmin = async (req, res, next) => {
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    if (!(decoded.isAdmin || decoded.role === 'admin')) {
-      return res.status(401).json({ error: 'Admin access required' });
-    }
-    
     const user = await User.findById(decoded.userId);
     
     if (!user) {
-      return res.status(401).json({ error: 'Invalid admin token' });
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    const isAdmin = user.isAdmin || user.role === 'admin';
+    const isModerator = user.role === 'moderator';
+    
+    if (!isAdmin && !isModerator) {
+      return res.status(401).json({ error: 'Admin or moderator access required' });
     }
     
     if (user.isSuspended) {
-      return res.status(403).json({ error: 'Admin account suspended' });
+      return res.status(403).json({ error: 'Account suspended' });
     }
     
     if (!user.isActive) {
-      return res.status(403).json({ error: 'Admin account deactivated' });
+      return res.status(403).json({ error: 'Account deactivated' });
     }
+
+    // Default permissions by role
+    const DEFAULT_PERMISSIONS = {
+      admin: ['user_management', 'job_management', 'content_moderation', 'payment_management', 'dispute_management', 'analytics_view', 'fee_waiver', 'user_impersonation', 'system_settings'],
+      moderator: ['job_management', 'content_moderation', 'dispute_management']
+    };
     
-    // Create admin-compatible object for middleware compatibility
-    // This shims the Admin model interface while using User records with isAdmin flag
-    // TODO: Implement real RBAC when adding multiple admin roles
+    const rolePerms = DEFAULT_PERMISSIONS[user.role] || DEFAULT_PERMISSIONS[isAdmin ? 'admin' : 'moderator'];
+    // Merge role defaults with any custom permissions on the user
+    const allPerms = [...new Set([...rolePerms, ...(user.permissions || [])])];
+    
     const adminUser = {
       ...user.toObject(),
-      role: 'super_admin',
+      role: isAdmin ? 'admin' : 'moderator',
+      effectivePermissions: allPerms,
       hasPermission: function(permission) {
-        return true; // Single admin for now — all permissions granted
+        if (isAdmin) return true; // Admins have all permissions
+        return allPerms.includes(permission);
       },
       getPublicProfile: function() {
         return user.getPublicProfile();

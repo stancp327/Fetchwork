@@ -26,6 +26,16 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const loadUserDetail = async (userId) => {
+    try {
+      const data = await apiRequest(`/api/admin/users/${userId}/detail`);
+      setSelectedUser(data);
+    } catch (err) {
+      console.error('Failed to load user detail:', err);
+    }
+  };
 
   const isAdminAuthenticated = user?.isAdmin;
 
@@ -437,19 +447,110 @@ const AdminDashboard = () => {
           <TracingErrorBoundary componentName="UsersTab">
             <div className="users-tab">
               <h2>User Management</h2>
+
+              {/* User Detail Panel */}
+              {selectedUser && (
+                <div className="user-detail-panel" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>{selectedUser.user?.firstName} {selectedUser.user?.lastName}</h3>
+                      <p style={{ color: '#6b7280', margin: '0.25rem 0', fontSize: '0.85rem' }}>
+                        {selectedUser.user?.email} • Role: <strong>{selectedUser.user?.role}</strong>
+                        {selectedUser.user?.feeWaiver?.enabled && <span style={{ color: '#059669', marginLeft: '0.5rem' }}>💚 Fee Waived</span>}
+                      </p>
+                      <p style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+                        {selectedUser.summary?.totalJobsPosted} jobs posted • {selectedUser.summary?.totalJobsWorked} jobs worked • {selectedUser.summary?.totalServices} services • Account age: {selectedUser.summary?.accountAge} days
+                      </p>
+                    </div>
+                    <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#6b7280' }}>×</button>
+                  </div>
+
+                  {/* Quick actions */}
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                    <button className="action-btn promote" onClick={async () => {
+                      try {
+                        await apiRequest(`/api/admin/users/${selectedUser.user._id}/make-moderator`, { method: 'PUT', body: JSON.stringify({ permissions: ['job_management', 'content_moderation', 'dispute_management'] }) });
+                        alert('User is now a moderator');
+                        loadUserDetail(selectedUser.user._id);
+                      } catch (e) { alert(e.message); }
+                    }}>🛡️ Make Moderator</button>
+                    <button className="action-btn" onClick={async () => {
+                      const reason = prompt('Reason for fee waiver:');
+                      if (reason) {
+                        try {
+                          await apiRequest(`/api/admin/users/${selectedUser.user._id}/fee-waiver`, { method: 'PUT', body: JSON.stringify({ enabled: !selectedUser.user?.feeWaiver?.enabled, reason }) });
+                          alert(selectedUser.user?.feeWaiver?.enabled ? 'Fee waiver removed' : 'Fee waiver enabled');
+                          loadUserDetail(selectedUser.user._id);
+                        } catch (e) { alert(e.message); }
+                      }
+                    }}>{selectedUser.user?.feeWaiver?.enabled ? '💔 Remove Fee Waiver' : '💚 Waive Fees'}</button>
+                  </div>
+
+                  {/* Jobs tables */}
+                  {selectedUser.jobsAsClient?.length > 0 && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.5rem' }}>Jobs Posted ({selectedUser.jobsAsClient.length})</h4>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+                          <thead><tr style={{ background: '#f3f4f6' }}>
+                            <th style={{ padding: '0.4rem', textAlign: 'left' }}>Title</th>
+                            <th style={{ padding: '0.4rem' }}>Budget</th>
+                            <th style={{ padding: '0.4rem' }}>Status</th>
+                            <th style={{ padding: '0.4rem' }}>Date</th>
+                          </tr></thead>
+                          <tbody>
+                            {selectedUser.jobsAsClient.map(j => (
+                              <tr key={j._id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '0.4rem' }}><a href={`/jobs/${j._id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>{j.title}</a></td>
+                                <td style={{ padding: '0.4rem', textAlign: 'center' }}>{formatBudget(j.budget)}</td>
+                                <td style={{ padding: '0.4rem', textAlign: 'center' }}><span className={`status ${j.status}`}>{j.status}</span></td>
+                                <td style={{ padding: '0.4rem', textAlign: 'center' }}>{new Date(j.createdAt).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  {selectedUser.jobsAsFreelancer?.length > 0 && (
+                    <div>
+                      <h4 style={{ fontSize: '0.9rem', margin: '0 0 0.5rem' }}>Jobs Worked ({selectedUser.jobsAsFreelancer.length})</h4>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+                          <thead><tr style={{ background: '#f3f4f6' }}>
+                            <th style={{ padding: '0.4rem', textAlign: 'left' }}>Title</th>
+                            <th style={{ padding: '0.4rem' }}>Budget</th>
+                            <th style={{ padding: '0.4rem' }}>Status</th>
+                          </tr></thead>
+                          <tbody>
+                            {selectedUser.jobsAsFreelancer.map(j => (
+                              <tr key={j._id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '0.4rem' }}><a href={`/jobs/${j._id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>{j.title}</a></td>
+                                <td style={{ padding: '0.4rem', textAlign: 'center' }}>{formatBudget(j.budget)}</td>
+                                <td style={{ padding: '0.4rem', textAlign: 'center' }}><span className={`status ${j.status}`}>{j.status}</span></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {usersData ? (
                 <div className="users-management">
                   <div className="users-controls">
                     <input
                       type="text"
-                      placeholder="Search users..."
+                      placeholder="🔍 Search by name, email, username..."
                       className="search-input"
-                      onChange={(e) => fetchUsersData(1, e.target.value)}
+                      onChange={(e) => {
+                        clearTimeout(window._userSearchTimeout);
+                        window._userSearchTimeout = setTimeout(() => fetchUsersData(1, e.target.value), 300);
+                      }}
                     />
-                    <select
-                      className="status-filter"
-                      onChange={(e) => fetchUsersData(1, '', e.target.value)}
-                    >
+                    <select className="status-filter" onChange={(e) => fetchUsersData(1, '', e.target.value)}>
                       <option value="all">All Users</option>
                       <option value="active">Active</option>
                       <option value="suspended">Suspended</option>
@@ -462,71 +563,59 @@ const AdminDashboard = () => {
                         <tr>
                           <th>Name</th>
                           <th>Email</th>
+                          <th>Role</th>
                           <th>Status</th>
                           <th>Joined</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {Array.isArray(usersData?.users) && usersData.users.length > 0 ? usersData.users.map((user) => (
-                          <tr key={user._id}>
-                            <td>{user.firstName} {user.lastName}</td>
-                            <td>{user.email}</td>
+                        {Array.isArray(usersData?.users) && usersData.users.length > 0 ? usersData.users.map((u) => (
+                          <tr key={u._id} style={{ cursor: 'pointer' }} onClick={() => loadUserDetail(u._id)}>
                             <td>
-                              <span className={`status ${user.isSuspended ? 'suspended' : user.isActive ? 'active' : 'inactive'}`}>
-                                {user.isSuspended ? 'Suspended' : user.isActive ? 'Active' : 'Inactive'}
+                              {u.firstName} {u.lastName}
+                              {u.feeWaiver?.enabled && <span title="Fee waived" style={{ marginLeft: '0.3rem' }}>💚</span>}
+                            </td>
+                            <td>{u.email}</td>
+                            <td>
+                              <span style={{
+                                padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600,
+                                background: u.role === 'admin' ? '#fef2f2' : u.role === 'moderator' ? '#eff6ff' : '#f3f4f6',
+                                color: u.role === 'admin' ? '#dc2626' : u.role === 'moderator' ? '#2563eb' : '#6b7280'
+                              }}>
+                                {u.role}
                               </span>
                             </td>
-                            <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                             <td>
-                              <div className="action-buttons">
-                                {user.isSuspended ? (
-                                  <button
-                                    className="action-btn unsuspend"
-                                    onClick={() => unsuspendUser(user._id)}
-                                  >
-                                    Unsuspend
-                                  </button>
+                              <span className={`status ${u.isSuspended ? 'suspended' : u.isActive ? 'active' : 'inactive'}`}>
+                                {u.isSuspended ? 'Suspended' : u.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                            <td>
+                              <div className="action-buttons" onClick={e => e.stopPropagation()}>
+                                {u.isSuspended ? (
+                                  <button className="action-btn unsuspend" onClick={() => unsuspendUser(u._id)}>Unsuspend</button>
                                 ) : (
-                                  <button
-                                    className="action-btn suspend"
-                                    onClick={() => {
-                                      const reason = prompt('Reason for suspension:');
-                                      if (reason) suspendUser(user._id, reason);
-                                    }}
-                                  >
-                                    Suspend
-                                  </button>
+                                  <button className="action-btn suspend" onClick={() => {
+                                    const reason = prompt('Reason:');
+                                    if (reason) suspendUser(u._id, reason);
+                                  }}>Suspend</button>
                                 )}
-                                {user.isAdminPromoted ? (
-                                  <button
-                                    className="action-btn demote"
-                                    onClick={() => demoteUser(user._id)}
-                                  >
-                                    Remove Admin
-                                  </button>
+                                {u.role === 'moderator' ? (
+                                  <button className="action-btn demote" onClick={async () => {
+                                    try { await apiRequest(`/api/admin/users/${u._id}/remove-moderator`, { method: 'PUT' }); fetchUsersData(); } catch(e) { alert(e.message); }
+                                  }}>Remove Mod</button>
+                                ) : u.isAdminPromoted ? (
+                                  <button className="action-btn demote" onClick={() => demoteUser(u._id)}>Remove Admin</button>
                                 ) : (
-                                  <button
-                                    className="action-btn promote"
-                                    onClick={() => promoteUser(user._id)}
-                                  >
-                                    Make Admin
-                                  </button>
+                                  <button className="action-btn promote" onClick={() => promoteUser(u._id)}>Make Admin</button>
                                 )}
-                                <button
-                                  className="action-btn delete"
-                                  onClick={() => deleteUser(user._id)}
-                                  disabled={!user.isActive}
-                                >
-                                  Delete User
-                                </button>
                               </div>
                             </td>
                           </tr>
                         )) : (
-                          <tr>
-                            <td colSpan="5" className="no-data">No users found</td>
-                          </tr>
+                          <tr><td colSpan="6" className="no-data">No users found</td></tr>
                         )}
                       </tbody>
                     </table>
