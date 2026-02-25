@@ -8,6 +8,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { validateRegister, validateLogin } = require('../middleware/validation');
 const { body } = require('express-validator');
 const { ADMIN_EMAILS, JWT_SECRET, CLIENT_URL } = require('../config/env');
+const { trackEvent } = require('../middleware/analytics');
 
 // ── Register ────────────────────────────────────────────────────
 router.post('/register', validateRegister, async (req, res) => {
@@ -49,6 +50,7 @@ router.post('/register', validateRegister, async (req, res) => {
       console.warn('Warning: Could not send verification email:', emailError.message);
     }
     
+    trackEvent('signups');
     res.status(201).json({
       message: 'Registration successful. Please check your email to verify your account.',
       requiresVerification: true
@@ -110,6 +112,7 @@ router.post('/login', validateLogin, async (req, res) => {
       });
     });
     
+    trackEvent('successfulLogins');
     res.json({
       message: 'Login successful',
       token,

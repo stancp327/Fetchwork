@@ -7,6 +7,7 @@ const { validateJobPost, validateProposal, validateQueryParams, validateMongoId 
 const { uploadJobAttachments } = require('../middleware/upload');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
+const { trackEvent } = require('../middleware/analytics');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -281,6 +282,7 @@ router.post('/', authenticateToken, validateJobPost, async (req, res) => {
     const populatedJob = await Job.findById(job._id)
       .populate('client', 'firstName lastName profilePicture rating totalJobs');
     
+    trackEvent('jobsPosted');
     res.status(201).json({
       message: 'Job posted successfully',
       job: populatedJob
@@ -459,6 +461,7 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
       await emailService.sendJobNotification(client, job, 'new_proposal');
     }
 
+    trackEvent('proposalsSent');
     res.status(201).json({
       message: 'Proposal submitted successfully',
       proposal: updatedJob.proposals[updatedJob.proposals.length - 1],
@@ -540,6 +543,7 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
     }
     
     await job.completeJob();
+    trackEvent('jobsCompleted');
     
     res.json({
       message: 'Job completed successfully',

@@ -217,7 +217,12 @@ idParamNames.forEach(paramName => {
   });
 });
 
+// ── Analytics Middleware ─────────────────────────────────────────
+const { trackPageView } = require('./middleware/analytics');
+app.use(trackPageView);
+
 // ── API Routes ──────────────────────────────────────────────────
+app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/jobs', require('./routes/jobs'));

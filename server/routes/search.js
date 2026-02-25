@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Job = require('../models/Job');
 const User = require('../models/User');
+const { trackEvent } = require('../middleware/analytics');
 
 router.get('/suggestions', async (req, res) => {
+  trackEvent('searches');
   try {
     const query = req.query.q;
     if (!query || query.length < 2) {

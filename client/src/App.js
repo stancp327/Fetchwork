@@ -6,6 +6,7 @@ import { setupGlobalErrorHandlers } from './utils/errorReporter';
 import { RoleProvider } from './context/RoleContext';
 import { MessagingProvider } from './context/MessagingContext';
 import { ToastProvider } from './components/common/Toast';
+import usePageTracker from './hooks/usePageTracker';
 import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -144,6 +145,7 @@ const LogoutHandler = () => {
 };
 
 function AppContent() {
+  usePageTracker();
   return (
     <div className="App">
       <Navigation />
