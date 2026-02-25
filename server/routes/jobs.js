@@ -172,38 +172,53 @@ router.get('/', validateQueryParams, async (req, res) => {
 
     if (geoSearchCoords) {
       // Use $geoNear aggregation for distance calculation + sorting
-      const maxDistMeters = geoSearchRadius * 1609.34; // miles to meters
-      const pipeline = [
-        {
-          $geoNear: {
-            near: { type: 'Point', coordinates: geoSearchCoords },
-            distanceField: 'distanceMeters',
-            maxDistance: maxDistMeters,
-            spherical: true,
-            query: filters
-          }
-        },
-        { $addFields: { distanceMiles: { $round: [{ $divide: ['$distanceMeters', 1609.34] }, 1] } } }
-      ];
+      try {
+        const maxDistMeters = geoSearchRadius * 1609.34; // miles to meters
+        // Exclude default [0,0] coordinates from geo query
+        const geoFilters = { ...filters, 'location.coordinates.coordinates': { $ne: [0, 0] } };
+        const pipeline = [
+          {
+            $geoNear: {
+              near: { type: 'Point', coordinates: geoSearchCoords },
+              distanceField: 'distanceMeters',
+              maxDistance: maxDistMeters,
+              spherical: true,
+              query: geoFilters,
+              key: 'location.coordinates'
+            }
+          },
+          { $addFields: { distanceMiles: { $round: [{ $divide: ['$distanceMeters', 1609.34] }, 1] } } }
+        ];
 
-      // Sort by distance by default for geo queries, unless user specified otherwise
-      if (!req.query.sortBy || req.query.sortBy === 'distance') {
-        pipeline.push({ $sort: { distanceMeters: 1 } });
-      } else {
-        pipeline.push({ $sort: sortOptions });
+        // Sort by distance by default for geo queries, unless user specified otherwise
+        if (!req.query.sortBy || req.query.sortBy === 'distance') {
+          pipeline.push({ $sort: { distanceMeters: 1 } });
+        } else {
+          pipeline.push({ $sort: sortOptions });
+        }
+
+        const countPipeline = [...pipeline, { $count: 'total' }];
+        pipeline.push({ $skip: skip }, { $limit: limit });
+
+        const [results, countResult] = await Promise.all([
+          Job.aggregate(pipeline),
+          Job.aggregate(countPipeline)
+        ]);
+
+        jobs = await Job.populate(results, { path: 'client', select: 'firstName lastName profilePicture rating totalJobs' });
+        total = countResult[0]?.total || 0;
+      } catch (geoErr) {
+        // Fallback: use $nearSphere filter (no distance in response, but works)
+        console.error('$geoNear failed, falling back to $nearSphere:', geoErr.message);
+        const { nearSphereQuery } = require('../config/geocoding');
+        filters['location.coordinates'] = nearSphereQuery(geoSearchCoords, geoSearchRadius);
+        [jobs, total] = await Promise.all([
+          Job.find(filters)
+            .populate('client', 'firstName lastName profilePicture rating totalJobs')
+            .sort(sortOptions).skip(skip).limit(limit),
+          Job.countDocuments(filters)
+        ]);
       }
-
-      const countPipeline = [...pipeline, { $count: 'total' }];
-      pipeline.push({ $skip: skip }, { $limit: limit });
-
-      const [results, countResult] = await Promise.all([
-        Job.aggregate(pipeline),
-        Job.aggregate(countPipeline)
-      ]);
-
-      // Populate client info after aggregation
-      jobs = await Job.populate(results, { path: 'client', select: 'firstName lastName profilePicture rating totalJobs' });
-      total = countResult[0]?.total || 0;
     } else {
       [jobs, total] = await Promise.all([
         Job.find(filters)
