@@ -276,6 +276,9 @@ router.get('/jobs', authenticateAdmin, requirePermission('job_management'), vali
     const limit = parseInt(req.query.limit) || 20;
     const status = req.query.status || 'all';
     const category = req.query.category || 'all';
+    const search = req.query.search || '';
+    const budgetMin = req.query.budgetMin ? parseFloat(req.query.budgetMin) : null;
+    const budgetMax = req.query.budgetMax ? parseFloat(req.query.budgetMax) : null;
     const sortBy = req.query.sortBy || 'createdAt';
     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
 
@@ -287,6 +290,20 @@ router.get('/jobs', authenticateAdmin, requirePermission('job_management'), vali
     
     if (category !== 'all') {
       query.category = category;
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { skills: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (budgetMin !== null || budgetMax !== null) {
+      query['budget.amount'] = {};
+      if (budgetMin !== null) query['budget.amount'].$gte = budgetMin;
+      if (budgetMax !== null) query['budget.amount'].$lte = budgetMax;
     }
 
     const jobs = await Job.find(query)
