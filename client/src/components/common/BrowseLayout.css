@@ -381,8 +381,17 @@
 }
 
 .browse-empty-icon { font-size: 2.5rem; margin-bottom: var(--space-md); }
-.browse-empty h3 { margin: 0 0 var(--space-sm); color: #111827; }
-.browse-empty p { color: #6b7280; margin: 0; }
+.browse-empty h3 { margin: 0 0 var(--space-sm); color: #111827; font-size: var(--font-size-lg); }
+.browse-empty p { color: #6b7280; margin: 0 0 var(--space-md); }
+.browse-empty-suggestions {
+  list-style: none; padding: 0; margin: 0 0 var(--space-md); text-align: left;
+  display: inline-block;
+}
+.browse-empty-suggestions li {
+  padding: var(--space-xs) 0; color: #6b7280; font-size: var(--font-size-sm);
+}
+.browse-empty-suggestions li::before { content: '💡 '; }
+.browse-empty-actions { margin-top: var(--space-md); }
 
 /* ── Tablet (768px+) ─────────────────────────────────────────── */
 @media (min-width: 768px) {

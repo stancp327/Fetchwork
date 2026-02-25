@@ -191,7 +191,21 @@ const BrowseJobs = () => {
         ) : error ? (
           <BrowseEmpty icon="⚠️" title="Error loading jobs" message={error} />
         ) : jobs.length === 0 ? (
-          <BrowseEmpty icon="📋" title="No jobs found" message="Try adjusting your search criteria or filters" />
+          <BrowseEmpty
+            icon="📋"
+            title="No jobs match your search"
+            message="Here are some things to try:"
+            suggestions={[
+              'Remove some filters to broaden your search',
+              'Try different keywords or skills',
+              'Check back later — new jobs are posted daily'
+            ]}
+            action={
+              <a href="/post-job" className="browse-card-cta" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+                Post a Job Instead →
+              </a>
+            }
+          />
         ) : (
           <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
             {jobs.map(job => <JobCard key={job._id} job={job} />)}

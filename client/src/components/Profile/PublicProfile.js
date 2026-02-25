@@ -142,7 +142,29 @@ const PublicProfile = () => {
           <div className="pp-stat-value">{services.length}</div>
           <div className="pp-stat-label">Services</div>
         </div>
-        {f.responseTime && (
+        {f.completionRate > 0 && (
+          <div className="pp-stat">
+            <div className="pp-stat-value" style={{ color: f.completionRate >= 90 ? '#059669' : f.completionRate >= 70 ? '#d97706' : '#dc2626' }}>
+              {f.completionRate}%
+            </div>
+            <div className="pp-stat-label">Completion</div>
+          </div>
+        )}
+        {f.avgResponseTime && (
+          <div className="pp-stat">
+            <div className="pp-stat-value">
+              {f.avgResponseTime < 60 ? `${f.avgResponseTime}m` : f.avgResponseTime < 1440 ? `${Math.round(f.avgResponseTime / 60)}h` : `${Math.round(f.avgResponseTime / 1440)}d`}
+            </div>
+            <div className="pp-stat-label">Avg Response</div>
+          </div>
+        )}
+        {f.onTimeDelivery > 0 && f.completedJobs > 2 && (
+          <div className="pp-stat">
+            <div className="pp-stat-value" style={{ color: '#059669' }}>{f.onTimeDelivery}%</div>
+            <div className="pp-stat-label">On Time</div>
+          </div>
+        )}
+        {f.responseTime && !f.avgResponseTime && (
           <div className="pp-stat">
             <div className="pp-stat-value">{f.responseTime}</div>
             <div className="pp-stat-label">Avg Response</div>

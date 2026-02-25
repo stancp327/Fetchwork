@@ -5,6 +5,7 @@ import AppErrorBoundary from './components/common/AppErrorBoundary';
 import { setupGlobalErrorHandlers } from './utils/errorReporter';
 import { RoleProvider } from './context/RoleContext';
 import { MessagingProvider } from './context/MessagingContext';
+import { ToastProvider } from './components/common/Toast';
 import Home from './components/Home/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -15,6 +16,7 @@ import OAuthCallback from './components/Auth/OAuthCallback';
 import Navigation from './components/Navigation/Navigation';
 import Footer from './components/common/Footer';
 import ChatBot from './components/ChatBot/ChatBot';
+import NotificationListener from './components/common/NotificationListener';
 import './App.css';
 
 const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
@@ -145,6 +147,7 @@ function AppContent() {
     <div className="App">
       <Navigation />
       <ChatBot />
+      <NotificationListener />
       <Suspense fallback={
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -300,9 +303,11 @@ function App() {
         <AuthProvider>
           <RoleProvider>
             <MessagingProvider>
-              <Router>
-                <AppContent />
-              </Router>
+              <ToastProvider>
+                <Router>
+                  <AppContent />
+                </Router>
+              </ToastProvider>
             </MessagingProvider>
           </RoleProvider>
         </AuthProvider>

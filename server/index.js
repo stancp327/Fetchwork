@@ -240,6 +240,7 @@ app.use('/api/errors', require('./routes/errors'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/offers', require('./routes/offers'));
 app.use('/api/saved', require('./routes/saved'));
+app.use('/api/stats', require('./routes/stats'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {

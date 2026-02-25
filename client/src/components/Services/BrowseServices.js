@@ -167,7 +167,21 @@ const BrowseServices = () => {
         ) : error ? (
           <BrowseEmpty icon="⚠️" title="Error loading services" message={error} />
         ) : services.length === 0 ? (
-          <BrowseEmpty icon="🛒" title="No services found" message="Try adjusting your search or filters" />
+          <BrowseEmpty
+            icon="🛒"
+            title="No services match your search"
+            message="Here are some things to try:"
+            suggestions={[
+              'Use broader search terms',
+              'Remove some filters',
+              'Browse a different category'
+            ]}
+            action={
+              <a href="/create-service" className="browse-card-cta" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+                Offer a Service →
+              </a>
+            }
+          />
         ) : (
           <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
             {services.map(s => <ServiceCard key={s._id} service={s} />)}

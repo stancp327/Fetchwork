@@ -208,7 +208,13 @@ const userSchema = new mongoose.Schema({
     client: { type: Boolean, default: false }
   },
   profileCompletion: { type: Number, default: 0 },
-  badges: { type: [String], default: [] }
+  badges: { type: [String], default: [] },
+  // Trust signals
+  avgResponseTime: { type: Number, default: null }, // minutes
+  completionRate: { type: Number, default: 100 }, // percentage
+  totalJobsCancelled: { type: Number, default: 0 },
+  onTimeDelivery: { type: Number, default: 100 }, // percentage
+  repeatClientRate: { type: Number, default: 0 } // percentage
 
 }, {
   timestamps: true

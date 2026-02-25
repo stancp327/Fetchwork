@@ -107,12 +107,17 @@ export const BrowsePagination = ({ current, total, onChange }) => {
 };
 
 // ── Empty State ─────────────────────────────────────────────────
-export const BrowseEmpty = ({ icon = '🔍', title, message, action }) => (
+export const BrowseEmpty = ({ icon = '🔍', title, message, action, suggestions }) => (
   <div className="browse-empty">
     <div className="browse-empty-icon">{icon}</div>
     <h3>{title || 'No results found'}</h3>
     <p>{message || 'Try adjusting your search or filters'}</p>
-    {action}
+    {suggestions && (
+      <ul className="browse-empty-suggestions">
+        {suggestions.map((s, i) => <li key={i}>{s}</li>)}
+      </ul>
+    )}
+    {action && <div className="browse-empty-actions">{action}</div>}
   </div>
 );
 
