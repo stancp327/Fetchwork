@@ -17,6 +17,7 @@ import Navigation from './components/Navigation/Navigation';
 import Footer from './components/common/Footer';
 import ChatBot from './components/ChatBot/ChatBot';
 import NotificationListener from './components/common/NotificationListener';
+import MessagePreview from './components/common/MessagePreview';
 import './App.css';
 
 const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
@@ -148,6 +149,7 @@ function AppContent() {
       <Navigation />
       <ChatBot />
       <NotificationListener />
+      <MessagePreview />
       <Suspense fallback={
         <div className="loading-container">
           <div className="loading-spinner"></div>
