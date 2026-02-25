@@ -1,6 +1,11 @@
 export const formatBudget = (budget) => {
   if (typeof budget === 'object' && budget.amount) {
-    return `$${budget.amount.toLocaleString()} ${budget.type === 'hourly' ? '/hr' : budget.type || 'fixed'}`;
+    const amt = `$${budget.amount.toLocaleString()}`;
+    if (budget.type === 'hourly') return `${amt}/hr`;
+    if (budget.type === 'range' && budget.maxAmount) {
+      return `$${budget.amount.toLocaleString()} – $${budget.maxAmount.toLocaleString()}`;
+    }
+    return amt;
   }
   if (typeof budget === 'number') {
     return `$${budget.toLocaleString()}`;

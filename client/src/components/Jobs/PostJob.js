@@ -18,6 +18,7 @@ const PostJob = () => {
     skills: '',
     budgetType: 'fixed',
     budgetAmount: '',
+    budgetMax: '',
     currency: 'USD',
     duration: '',
     experienceLevel: '',
@@ -26,6 +27,8 @@ const PostJob = () => {
     state: '',
     zipCode: '',
     deadline: '',
+    scheduledDate: '',
+    cancellationPolicy: 'flexible',
     isUrgent: false
   });
   const [errors, setErrors] = useState({});
@@ -51,6 +54,14 @@ const PostJob = () => {
 
     if (!formData.budgetAmount || parseFloat(formData.budgetAmount) < 1) {
       newErrors.budgetAmount = 'Budget must be at least $1';
+    }
+
+    if (formData.budgetType === 'range') {
+      if (!formData.budgetMax || parseFloat(formData.budgetMax) < 1) {
+        newErrors.budgetMax = 'Max budget is required for range pricing';
+      } else if (parseFloat(formData.budgetMax) <= parseFloat(formData.budgetAmount)) {
+        newErrors.budgetMax = 'Max budget must be greater than min budget';
+      }
     }
 
     if (!formData.duration) {
@@ -102,6 +113,7 @@ const PostJob = () => {
         budget: {
           type: formData.budgetType,
           amount: parseFloat(formData.budgetAmount),
+          maxAmount: formData.budgetType === 'range' && formData.budgetMax ? parseFloat(formData.budgetMax) : undefined,
           currency: formData.currency
         },
         duration: formData.duration,
@@ -116,6 +128,8 @@ const PostJob = () => {
           serviceRadius: 25
         },
         deadline: formData.deadline || null,
+        scheduledDate: formData.scheduledDate || null,
+        cancellationPolicy: formData.locationType !== 'remote' ? formData.cancellationPolicy : 'flexible',
         isUrgent: formData.isUrgent
       };
 
@@ -245,13 +259,14 @@ const PostJob = () => {
                   onChange={handleInputChange}
                 >
                   <option value="fixed">Fixed Price</option>
+                  <option value="range">Budget Range</option>
                   <option value="hourly">Hourly Rate</option>
                 </select>
               </div>
 
               <div className="form-group">
                 <label htmlFor="budgetAmount">
-                  Amount * ({formData.budgetType === 'hourly' ? '/hr' : 'total'})
+                  {formData.budgetType === 'range' ? 'Min Budget *' : `Amount * (${formData.budgetType === 'hourly' ? '/hr' : 'total'})`}
                 </label>
                 <input
                   type="number"
@@ -265,6 +280,23 @@ const PostJob = () => {
                 />
                 {errors.budgetAmount && <div className="error-text">{errors.budgetAmount}</div>}
               </div>
+
+              {formData.budgetType === 'range' && (
+                <div className="form-group">
+                  <label htmlFor="budgetMax">Max Budget *</label>
+                  <input
+                    type="number"
+                    id="budgetMax"
+                    name="budgetMax"
+                    value={formData.budgetMax}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    min={formData.budgetAmount || 1}
+                    step="0.01"
+                  />
+                  {errors.budgetMax && <div className="error-text">{errors.budgetMax}</div>}
+                </div>
+              )}
 
               <div className="form-group">
                 <label htmlFor="currency">Currency</label>
@@ -388,6 +420,39 @@ const PostJob = () => {
               </div>
             )}
           </div>
+
+          {formData.locationType !== 'remote' && (
+            <div className="form-section">
+              <div className="form-section-title">📅 Scheduling & Cancellation</div>
+
+              <div className="form-group">
+                <label htmlFor="scheduledDate">Scheduled Date & Time</label>
+                <input
+                  type="datetime-local"
+                  id="scheduledDate"
+                  name="scheduledDate"
+                  value={formData.scheduledDate}
+                  onChange={handleInputChange}
+                  min={new Date().toISOString().slice(0, 16)}
+                />
+                <span className="field-hint">When the freelancer should arrive on-site</span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="cancellationPolicy">Cancellation Policy</label>
+                <select
+                  id="cancellationPolicy"
+                  name="cancellationPolicy"
+                  value={formData.cancellationPolicy}
+                  onChange={handleInputChange}
+                >
+                  <option value="flexible">🟢 Flexible — Cancel anytime, no fee</option>
+                  <option value="moderate">🟡 Moderate — Free cancellation 1hr+ before, 10% fee under 1hr</option>
+                  <option value="strict">🔴 Strict — Free 24hr+ before, 25% under 24hr, 50% under 1hr</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="post-job-checkbox">
             <input

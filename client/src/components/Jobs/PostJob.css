@@ -67,6 +67,13 @@
   .post-job-actions { flex-direction: row; }
 }
 
+.field-hint {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: #6b7280;
+  margin-top: var(--space-xs);
+}
+
 @media (min-width: 768px) {
   .post-job-page { padding: var(--space-2xl) var(--container-padding); padding-top: calc(64px + var(--space-2xl)); }
   .post-job-form { padding: var(--space-2xl); }

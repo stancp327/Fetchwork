@@ -72,6 +72,9 @@ const JobCard = ({ job }) => {
         </div>
         <div style={{ textAlign: 'right', paddingRight: '2rem' }}>
           <div style={{ fontWeight: 700, color: '#111827', fontSize: '1rem' }}>{formatBudget(job.budget)}</div>
+          <div style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'capitalize' }}>
+            {job.budget?.type === 'range' ? 'Budget Range' : job.budget?.type === 'hourly' ? 'Hourly Rate' : 'Fixed Price'}
+          </div>
           {job.duration && <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{formatDuration(job.duration)}</div>}
         </div>
       </div>

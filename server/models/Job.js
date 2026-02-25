@@ -31,13 +31,18 @@ const jobSchema = new mongoose.Schema({
   budget: {
     type: {
       type: String,
-      enum: ['fixed', 'hourly'],
+      enum: ['fixed', 'hourly', 'range'],
       required: true
     },
     amount: {
       type: Number,
       required: true,
       min: [1, 'Budget must be at least $1']
+    },
+    maxAmount: {
+      type: Number,
+      min: [1, 'Max budget must be at least $1'],
+      default: null
     },
     currency: {
       type: String,
@@ -140,6 +145,24 @@ const jobSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  scheduledDate: {
+    type: Date,
+    default: null
+  },
+  cancellationPolicy: {
+    type: String,
+    enum: ['flexible', 'moderate', 'strict'],
+    default: 'flexible'
+    // flexible: cancel anytime (no fee)
+    // moderate: cancel 1hr+ before scheduled (no fee), <1hr = 10% fee
+    // strict: cancel 24hr+ before (no fee), <24hr = 25% fee, <1hr = 50% fee
+  },
+  cancelledAt: Date,
+  cancellationFee: {
+    type: Number,
+    default: 0
+  },
+  cancellationReason: String,
   startDate: Date,
   endDate: Date,
   completedAt: Date,
@@ -326,8 +349,27 @@ jobSchema.methods.completeJob = async function() {
 };
 
 jobSchema.methods.cancelJob = function(reason) {
+  const now = new Date();
+  let fee = 0;
+
+  // Enforce cancellation policy for scheduled local jobs
+  if (this.scheduledDate && this.status === 'in_progress') {
+    const hoursUntilScheduled = (this.scheduledDate - now) / (1000 * 60 * 60);
+    const jobAmount = this.budget?.amount || 0;
+
+    if (this.cancellationPolicy === 'moderate') {
+      if (hoursUntilScheduled < 1) fee = jobAmount * 0.10;
+    } else if (this.cancellationPolicy === 'strict') {
+      if (hoursUntilScheduled < 1) fee = jobAmount * 0.50;
+      else if (hoursUntilScheduled < 24) fee = jobAmount * 0.25;
+    }
+    // 'flexible' = no fee
+  }
+
   this.status = 'cancelled';
-  this.adminNotes = reason || 'Job cancelled';
+  this.cancelledAt = now;
+  this.cancellationFee = fee;
+  this.cancellationReason = reason || 'Job cancelled';
   return this.save();
 };
 

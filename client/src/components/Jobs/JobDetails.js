@@ -284,6 +284,18 @@ const JobDetails = () => {
                 <span className="stat-label">Experience</span>
                 <span className="stat-value">{job.experienceLevel}</span>
               </div>
+              {job.scheduledDate && (
+                <div className="job-stat-item">
+                  <span className="stat-label">Scheduled</span>
+                  <span className="stat-value">{new Date(job.scheduledDate).toLocaleString()}</span>
+                </div>
+              )}
+              {job.cancellationPolicy && job.cancellationPolicy !== 'flexible' && (
+                <div className="job-stat-item">
+                  <span className="stat-label">Cancellation</span>
+                  <span className="stat-value" style={{ textTransform: 'capitalize' }}>{job.cancellationPolicy}</span>
+                </div>
+              )}
               <div className="job-stat-item">
                 <span className="stat-label">Proposals</span>
                 <span className="stat-value">{job.proposals?.length || 0}</span>
