@@ -168,8 +168,9 @@ router.get('/verify-email', async (req, res) => {
     }
     
     await User.updateOne({ _id: user._id }, {
-      $set: { isVerified: true },
-      $unset: { emailVerificationToken: '', emailVerificationExpires: '' }
+      $set: { isVerified: true, isEmailVerified: true, verificationLevel: 'email' },
+      $unset: { emailVerificationToken: '', emailVerificationExpires: '' },
+      $addToSet: { badges: 'email_verified' }
     });
     
     res.json({ message: 'Email verified successfully. You can now log in.' });

@@ -6,6 +6,9 @@ import { getCategoryLabel, getCategoryIcon } from '../../utils/categories';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import SaveButton from '../common/SaveButton';
 import AvailabilityBadge from '../common/AvailabilityBadge';
+import { TrustBadges, ReputationStats } from '../common/TrustBadges';
+import SEO from '../common/SEO';
+import { createPersonSchema } from '../../utils/structuredData';
 import { useAuth } from '../../context/AuthContext';
 import './PublicProfile.css';
 
@@ -86,6 +89,13 @@ const PublicProfile = () => {
 
   return (
     <div className="pp-container">
+      <SEO
+        title={`${f.firstName} ${f.lastName} — Freelancer`}
+        description={f.bio?.substring(0, 160) || `${f.firstName} ${f.lastName} — freelancer on Fetchwork`}
+        path={`/freelancers/${f._id}`}
+        type="profile"
+        structuredData={createPersonSchema(f)}
+      />
       {/* ── Hero Section ────────────────────────────────────── */}
       <div className="pp-hero">
         <div className="pp-hero-bg"></div>
@@ -99,7 +109,7 @@ const PublicProfile = () => {
             {f.isVerified && <span className="pp-verified-badge" title="Verified">✓</span>}
           </div>
           <div className="pp-hero-info">
-            <h1 className="pp-name">{f.firstName} {f.lastName}</h1>
+            <h1 className="pp-name">{f.firstName} {f.lastName} <TrustBadges user={f} size="md" /></h1>
             {f.headline && <p className="pp-headline">{f.headline}</p>}
             <div className="pp-hero-meta">
               {stats.rating > 0 && <StarRating rating={stats.rating} />}

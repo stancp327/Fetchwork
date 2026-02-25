@@ -1,0 +1,41 @@
+/* Trust Badges */
+.trust-badges-row { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+.trust-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: color-mix(in srgb, var(--badge-color) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color) 25%, transparent);
+  border-radius: 4px; padding: 1px 6px; white-space: nowrap;
+}
+.trust-badge-icon { font-size: 0.7rem; }
+.trust-badge-label { font-size: 0.6rem; font-weight: 600; color: var(--badge-color); }
+
+.trust-badge-xs { padding: 0 3px; }
+.trust-badge-xs .trust-badge-icon { font-size: 0.6rem; }
+
+.trust-badge-sm .trust-badge-label { font-size: 0.6rem; }
+
+.trust-badge-md { padding: 2px 8px; }
+.trust-badge-md .trust-badge-icon { font-size: 0.85rem; }
+.trust-badge-md .trust-badge-label { font-size: 0.7rem; }
+
+.trust-badge-lg { padding: 4px 10px; }
+.trust-badge-lg .trust-badge-icon { font-size: 1rem; }
+.trust-badge-lg .trust-badge-label { font-size: 0.8rem; }
+
+/* Reputation Stats */
+.reputation-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm, 0.5rem);
+  padding: var(--space-md, 1rem) 0;
+  border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+}
+.rep-stat { text-align: center; }
+.rep-stat strong { display: block; font-size: var(--font-size-sm, 0.875rem); color: #1f2937; }
+.rep-stat span { font-size: 0.65rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.03em; }
+
+@media (min-width: 480px) {
+  .reputation-stats { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 768px) {
+  .reputation-stats { grid-template-columns: repeat(7, 1fr); }
+}

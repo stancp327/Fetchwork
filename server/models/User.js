@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
   verificationLevel: {
     type: String,
     enum: ['none', 'email', 'phone', 'identity', 'full'],
@@ -225,6 +229,24 @@ const userSchema = new mongoose.Schema({
   },
   profileCompletion: { type: Number, default: 0 },
   badges: { type: [String], default: [] },
+  // ID Verification
+  idVerification: {
+    status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+    documentType: { type: String, enum: ['drivers_license', 'passport', 'national_id', 'other', ''], default: '' },
+    documentUrl: { type: String, default: '' }, // stored securely, admin-only access
+    selfieUrl: { type: String, default: '' },
+    submittedAt: { type: Date, default: null },
+    reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    reviewedAt: { type: Date, default: null },
+    notes: { type: String, default: '' }
+  },
+  // Background check (future)
+  backgroundCheck: {
+    status: { type: String, enum: ['none', 'pending', 'passed', 'failed'], default: 'none' },
+    provider: { type: String, default: '' },
+    completedAt: { type: Date, default: null },
+    expiresAt: { type: Date, default: null }
+  },
   // Trust signals
   avgResponseTime: { type: Number, default: null }, // minutes
   completionRate: { type: Number, default: 100 }, // percentage

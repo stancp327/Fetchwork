@@ -1,10 +1,8 @@
 User-agent: *
 Allow: /
-Allow: /browse-jobs
-Allow: /browse-services
-Allow: /freelancers
 Disallow: /admin
-Disallow: /dashboard
+Disallow: /settings
 Disallow: /messages
+Disallow: /dashboard
 
 Sitemap: https://fetchwork.net/sitemap.xml

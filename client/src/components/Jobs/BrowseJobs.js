@@ -22,6 +22,7 @@ const CATEGORIES = [
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
   { value: 'oldest', label: 'Oldest First' },
+  { value: 'distance', label: '📍 Nearest First' },
   { value: 'budget_high', label: 'Highest Budget' },
   { value: 'budget_low', label: 'Lowest Budget' },
   { value: 'most_proposals', label: 'Most Proposals' },
@@ -89,6 +90,9 @@ const JobCard = ({ job, onQuickApply }) => {
           <span className="browse-tag" style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>🌐 Remote</span>
         ) : (
           <span className="browse-tag" style={{ background: '#ecfdf5', color: '#059669', fontWeight: 600 }}>📍 {getLocationDisplay(job.location)}</span>
+        )}
+        {job.distanceMiles != null && (
+          <span className="browse-tag" style={{ background: '#dbeafe', color: '#1d4ed8', fontWeight: 600 }}>📍 {job.distanceMiles} mi</span>
         )}
         {job.experienceLevel && <span className="browse-tag">{job.experienceLevel}</span>}
         {job.isUrgent && <span className="browse-tag danger">🚨 Urgent</span>}
@@ -166,6 +170,21 @@ const BrowseJobs = () => {
       <FilterSelect label="Work Type" value={filters.workLocation} onChange={v => updateFilter('workLocation', v)}
         options={[{ value: 'all', label: 'All Types' }, { value: 'remote', label: '🌐 Remote' }, { value: 'local', label: '📍 Local' }, { value: 'hybrid', label: '🔄 Hybrid' }]} />
       <FilterInput label="Near (zip or city)" value={filters.near} onChange={v => updateFilter('near', v)} placeholder="e.g. 94520 or Concord" />
+      {!filters.near && (
+        <button
+          type="button"
+          onClick={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => updateFilter('near', `${pos.coords.latitude},${pos.coords.longitude}`),
+                () => alert('Location denied. Enter a zip code instead.'),
+                { enableHighAccuracy: false, timeout: 5000 }
+              );
+            }
+          }}
+          style={{ width: '100%', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '0.6rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, color: '#2563eb', marginTop: '-0.5rem' }}
+        >📍 Use My Location</button>
+      )}
       {filters.near && (
         <FilterSelect label="Distance" value={filters.radius} onChange={v => updateFilter('radius', v)}
           options={[{ value: '5', label: '5 miles' }, { value: '10', label: '10 miles' }, { value: '25', label: '25 miles' }, { value: '50', label: '50 miles' }, { value: '100', label: '100 miles' }]} />

@@ -63,12 +63,14 @@ router.get('/', validateQueryParams, async (req, res) => {
     }
 
     // Distance-based search: ?near=94520&radius=25 or ?near=Concord,CA&radius=50
+    let geoSearchCoords = null;
+    let geoSearchRadius = 25;
     if (req.query.near && req.query.near.trim() !== '') {
-      const radius = parseInt(req.query.radius) || 25;
+      geoSearchRadius = parseInt(req.query.radius) || 25;
       const coords = await geocode(req.query.near.trim());
       if (coords) {
-        filters['location.coordinates'] = nearSphereQuery(coords, radius);
-        // Distance search implies local jobs (include hybrid too)
+        geoSearchCoords = coords;
+        // Don't add nearSphere to filters — we'll use $geoNear aggregation instead
         if (!filters['location.locationType']) {
           filters['location.locationType'] = { $in: ['local', 'hybrid'] };
         }
@@ -166,13 +168,52 @@ router.get('/', validateQueryParams, async (req, res) => {
       }
     }
     
-    const jobs = await Job.find(filters)
-      .populate('client', 'firstName lastName profilePicture rating totalJobs')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
-    
-    const total = await Job.countDocuments(filters);
+    let jobs, total;
+
+    if (geoSearchCoords) {
+      // Use $geoNear aggregation for distance calculation + sorting
+      const maxDistMeters = geoSearchRadius * 1609.34; // miles to meters
+      const pipeline = [
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: geoSearchCoords },
+            distanceField: 'distanceMeters',
+            maxDistance: maxDistMeters,
+            spherical: true,
+            query: filters
+          }
+        },
+        { $addFields: { distanceMiles: { $round: [{ $divide: ['$distanceMeters', 1609.34] }, 1] } } }
+      ];
+
+      // Sort by distance by default for geo queries, unless user specified otherwise
+      if (!req.query.sortBy || req.query.sortBy === 'distance') {
+        pipeline.push({ $sort: { distanceMeters: 1 } });
+      } else {
+        pipeline.push({ $sort: sortOptions });
+      }
+
+      const countPipeline = [...pipeline, { $count: 'total' }];
+      pipeline.push({ $skip: skip }, { $limit: limit });
+
+      const [results, countResult] = await Promise.all([
+        Job.aggregate(pipeline),
+        Job.aggregate(countPipeline)
+      ]);
+
+      // Populate client info after aggregation
+      jobs = await Job.populate(results, { path: 'client', select: 'firstName lastName profilePicture rating totalJobs' });
+      total = countResult[0]?.total || 0;
+    } else {
+      [jobs, total] = await Promise.all([
+        Job.find(filters)
+          .populate('client', 'firstName lastName profilePicture rating totalJobs')
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limit),
+        Job.countDocuments(filters)
+      ]);
+    }
     
     res.json({
       jobs,

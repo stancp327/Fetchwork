@@ -538,6 +538,78 @@ router.put('/reviews/:reviewId/moderate', authenticateAdmin, requirePermission('
   }
 });
 
+// Admin delete review
+router.delete('/reviews/:reviewId', authenticateAdmin, requirePermission('content_moderation'), validateReviewIdParam, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.reviewId).populate('reviewee', 'firstName lastName');
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+
+    const revieweeName = `${review.reviewee?.firstName} ${review.reviewee?.lastName}`;
+    const revieweeId = review.reviewee?._id;
+
+    await Review.findByIdAndDelete(req.params.reviewId);
+
+    // Recalculate reviewee's rating
+    if (revieweeId) {
+      const stats = await Review.aggregate([
+        { $match: { reviewee: revieweeId, isPublic: true, moderationStatus: { $in: ['approved', 'pending'] } } },
+        { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } }
+      ]);
+      await User.findByIdAndUpdate(revieweeId, {
+        rating: stats[0]?.avg ? Math.round(stats[0].avg * 10) / 10 : 0,
+        totalReviews: stats[0]?.count || 0
+      });
+    }
+
+    res.json({ message: `Review for ${revieweeName} deleted and rating recalculated` });
+  } catch (error) {
+    console.error('Admin delete review error:', error);
+    res.status(500).json({ error: 'Failed to delete review' });
+  }
+});
+
+// ID Verification: list pending
+router.get('/verifications', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+  try {
+    const status = req.query.status || 'pending';
+    const users = await User.find({ 'idVerification.status': status })
+      .select('firstName lastName email profilePicture idVerification verificationLevel createdAt')
+      .sort({ 'idVerification.submittedAt': -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load verifications' });
+  }
+});
+
+// ID Verification: approve/reject
+router.put('/verifications/:userId', authenticateAdmin, requirePermission('content_moderation'), validateUserIdParam, async (req, res) => {
+  try {
+    const { action, notes } = req.body; // action: 'approve' | 'reject'
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (action === 'approve') {
+      user.idVerification.status = 'approved';
+      user.idVerification.reviewedBy = req.admin._id;
+      user.idVerification.reviewedAt = new Date();
+      user.idVerification.notes = notes || '';
+      user.verificationLevel = 'identity';
+      if (!user.badges.includes('id_verified')) user.badges.push('id_verified');
+    } else if (action === 'reject') {
+      user.idVerification.status = 'rejected';
+      user.idVerification.reviewedBy = req.admin._id;
+      user.idVerification.reviewedAt = new Date();
+      user.idVerification.notes = notes || 'Verification rejected';
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Use approve or reject.' });
+    }
+    await user.save();
+    res.json({ message: `Verification ${action}d for ${user.firstName}`, user: { verificationLevel: user.verificationLevel, badges: user.badges, idVerification: user.idVerification } });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update verification' });
+  }
+});
+
 router.get('/analytics', authenticateAdmin, requirePermission('analytics_view'), validateQueryParams, async (req, res) => {
   try {
     const { period = '30d', page = 1, limit = 100 } = req.query;

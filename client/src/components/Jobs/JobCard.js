@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatBudget, formatDuration, formatCategory, formatJobStatus, getStatusClass } from '../../utils/formatters';
 import { getLocationDisplay } from '../../utils/location';
+import TrustBadges from '../common/TrustBadges';
 
 const JobCard = ({ job }) => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const JobCard = ({ job }) => {
         <div>
           <h3 className="card-title">{job.title}</h3>
           <div className="card-meta">
-            Posted by {job.client.firstName} {job.client.lastName} • {formatBudget(job.budget)} • {formatDuration(job.duration)}
+            Posted by {job.client.firstName} {job.client.lastName} <TrustBadges user={job.client} size="xs" /> • {formatBudget(job.budget)} • {formatDuration(job.duration)}
           </div>
         </div>
         <div className="tags">
@@ -40,6 +41,7 @@ const JobCard = ({ job }) => {
       <div className="card-footer">
         <div className="card-meta">
           {job.proposalCount || 0} applicant{(job.proposalCount || 0) !== 1 ? 's' : ''} • {job.views || 0} views • {getLocationDisplay(job.location)}
+          {job.distanceMiles != null && <span style={{ color: '#2563eb', fontWeight: 500 }}> • 📍 {job.distanceMiles} mi</span>}
           {job.deadline && ` • ⏰ Due ${new Date(job.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
         </div>
         <button 

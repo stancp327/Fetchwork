@@ -370,4 +370,59 @@ router.get('/jobs', authenticateToken, async (req, res) => {
   }
 });
 
+// Submit ID verification
+router.post('/verify-identity', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (user.idVerification?.status === 'pending') {
+      return res.status(400).json({ error: 'Verification already pending review' });
+    }
+    if (user.idVerification?.status === 'approved') {
+      return res.status(400).json({ error: 'Already verified' });
+    }
+
+    const { documentType, documentUrl, selfieUrl } = req.body;
+    if (!documentType || !documentUrl) {
+      return res.status(400).json({ error: 'Document type and document image are required' });
+    }
+
+    user.idVerification = {
+      status: 'pending',
+      documentType,
+      documentUrl,
+      selfieUrl: selfieUrl || '',
+      submittedAt: new Date(),
+      reviewedBy: null,
+      reviewedAt: null,
+      notes: ''
+    };
+    await user.save();
+
+    res.json({ message: 'Verification submitted. You will be notified once reviewed.', status: 'pending' });
+  } catch (error) {
+    console.error('ID verification submit error:', error);
+    res.status(500).json({ error: 'Failed to submit verification' });
+  }
+});
+
+// Get verification status
+router.get('/verification-status', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId)
+      .select('verificationLevel badges idVerification.status idVerification.submittedAt idVerification.notes isEmailVerified backgroundCheck.status');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      verificationLevel: user.verificationLevel,
+      badges: user.badges,
+      emailVerified: user.isEmailVerified,
+      idVerification: user.idVerification?.status || 'none',
+      backgroundCheck: user.backgroundCheck?.status || 'none'
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get verification status' });
+  }
+});
+
 module.exports = router;

@@ -950,6 +950,21 @@ const AdminDashboard = () => {
                                 >
                                   Reject
                                 </button>
+                                <button
+                                  className="action-btn"
+                                  style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
+                                  onClick={async () => {
+                                    if (!window.confirm(`Delete this review by ${review.reviewer?.firstName || 'unknown'}? This will recalculate the reviewee's rating.`)) return;
+                                    try {
+                                      await apiRequest(`/api/admin/reviews/${review._id}`, { method: 'DELETE' });
+                                      fetchReviewsData();
+                                    } catch (err) {
+                                      alert('Failed to delete: ' + (err.message || 'Unknown error'));
+                                    }
+                                  }}
+                                >
+                                  🗑️ Delete
+                                </button>
                               </div>
                             </td>
                           </tr>

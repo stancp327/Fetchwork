@@ -93,6 +93,51 @@ const FilterPanel = ({ filters, onFilterChange }) => {
       </div>
 
       <div className="filter-group">
+        <label>📍 Near Me</label>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            placeholder="Zip code or city..."
+            value={filters.near || ''}
+            onChange={(e) => handleFilterChange('near', e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    handleFilterChange('near', `${pos.coords.latitude},${pos.coords.longitude}`);
+                  },
+                  () => alert('Location access denied. Enter a zip code instead.'),
+                  { enableHighAccuracy: false, timeout: 5000 }
+                );
+              }
+            }}
+            style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '0 0.75rem', cursor: 'pointer', fontSize: '1rem', minHeight: '44px' }}
+            title="Use my location"
+          >📍</button>
+        </div>
+      </div>
+
+      {filters.near && (
+        <div className="filter-group">
+          <label>Distance</label>
+          <select
+            value={filters.radius || '25'}
+            onChange={(e) => handleFilterChange('radius', e.target.value)}
+          >
+            <option value="5">Within 5 miles</option>
+            <option value="10">Within 10 miles</option>
+            <option value="25">Within 25 miles</option>
+            <option value="50">Within 50 miles</option>
+            <option value="100">Within 100 miles</option>
+          </select>
+        </div>
+      )}
+
+      <div className="filter-group">
         <label>Specific Location</label>
         <input
           type="text"
@@ -137,6 +182,7 @@ const FilterPanel = ({ filters, onFilterChange }) => {
           value={filters.sortBy}
           onChange={(e) => handleFilterChange('sortBy', e.target.value)}
         >
+          {filters.near && <option value="distance">Nearest First</option>}
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
           <option value="budget_high">Highest Budget</option>

@@ -18,6 +18,16 @@ const geocodeCache = new Map();
 async function geocode(query) {
   if (!query || query.trim() === '') return null;
   
+  // Direct lat,lng input (from browser geolocation)
+  const latLngMatch = query.trim().match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+  if (latLngMatch) {
+    const lat = parseFloat(latLngMatch[1]);
+    const lng = parseFloat(latLngMatch[2]);
+    if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return [lng, lat]; // GeoJSON: [longitude, latitude]
+    }
+  }
+
   const cacheKey = query.trim().toLowerCase();
   if (geocodeCache.has(cacheKey)) {
     return geocodeCache.get(cacheKey);
