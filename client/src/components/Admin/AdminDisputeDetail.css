@@ -2,8 +2,8 @@
 .add-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
-  padding-top: calc(64px + 2rem);
+  padding: var(--space-sm);
+  padding-top: calc(64px + var(--space-sm));
 }
 
 .add-loading, .add-error {
@@ -29,7 +29,7 @@
   display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; flex-wrap: wrap;
 }
 .add-title-row h1 {
-  font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin: 0;
+  font-size: var(--font-size-lg); font-weight: 700; color: #1a1a2e; margin: 0;
 }
 .add-meta {
   display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #6b7280; flex-wrap: wrap;
@@ -73,7 +73,7 @@
 
 /* ── Detail Grid ─────────────────────────────────────────────── */
 .detail-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  display: grid; grid-template-columns: 1fr; gap: var(--space-sm);
 }
 .detail-card {
   background: white; border-radius: 12px; padding: 1.25rem;

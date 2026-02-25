@@ -39,13 +39,13 @@
 
 /* Funnel */
 .aa-funnel { display: flex; flex-direction: column; gap: var(--space-xs); }
-.aa-funnel-step { display: flex; align-items: center; gap: var(--space-sm); }
+.aa-funnel-step { display: flex; flex-direction: column; gap: 2px; }
 .aa-funnel-bar {
   background: linear-gradient(90deg, #3b82f6, #93c5fd); border-radius: 6px;
-  padding: var(--space-sm) var(--space-md); color: white; font-size: var(--font-size-xs); font-weight: 500;
-  min-width: 5%; white-space: nowrap;
+  padding: var(--space-xs) var(--space-sm); color: white; font-size: 0.65rem; font-weight: 500;
+  min-width: 20%; white-space: nowrap;
 }
-.aa-funnel-nums { display: flex; gap: var(--space-sm); font-size: var(--font-size-xs); }
+.aa-funnel-nums { display: flex; gap: var(--space-sm); font-size: var(--font-size-xs); padding-left: var(--space-xs); }
 .aa-funnel-nums strong { color: #1f2937; }
 .aa-funnel-nums span { color: #6b7280; }
 
@@ -74,6 +74,8 @@
 @media (min-width: 480px) {
   .aa-stat-grid { grid-template-columns: repeat(4, 1fr); }
   .aa-chart { height: 160px; }
+  .aa-funnel-step { flex-direction: row; align-items: center; gap: var(--space-sm); }
+  .aa-funnel-bar { padding: var(--space-sm) var(--space-md); font-size: var(--font-size-xs); }
 }
 @media (min-width: 768px) {
   .aa-stat-grid.cols-3 { grid-template-columns: repeat(5, 1fr); }
