@@ -59,7 +59,7 @@ const JobCard = ({ job }) => {
 
   return (
     <div className="browse-card" onClick={() => navigate(`/jobs/${job._id}`)} style={{ borderLeft: isRemote ? '3px solid #2563eb' : '3px solid #10b981', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem' }}>
+      <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', zIndex: 1 }}>
         <SaveButton itemId={job._id} itemType="job" size="sm" />
       </div>
       <div className="browse-card-header">
@@ -70,7 +70,7 @@ const JobCard = ({ job }) => {
             {dl && <> • <span style={{ color: dl.color, fontWeight: 600 }}>⏰ {dl.text}</span></>}
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', paddingRight: '2rem' }}>
           <div style={{ fontWeight: 700, color: '#111827', fontSize: '1rem' }}>{formatBudget(job.budget)}</div>
           {job.duration && <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{formatDuration(job.duration)}</div>}
         </div>

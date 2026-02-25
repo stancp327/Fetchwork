@@ -29,7 +29,7 @@ const ServiceCard = ({ service }) => {
 
   return (
     <div className="browse-card" onClick={() => navigate(`/services/${service._id}`)} style={{ position: 'relative' }}>
-      <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 1 }}>
+      <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', zIndex: 1 }}>
         <SaveButton itemId={service._id} itemType="service" size="sm" />
       </div>
       {service.images?.[0] && (
@@ -38,7 +38,7 @@ const ServiceCard = ({ service }) => {
           background: `url(${service.images[0]}) center/cover no-repeat`, width: 'calc(100% + 2.5rem)'
         }} />
       )}
-      <div className="browse-card-header">
+      <div className="browse-card-header" style={{ paddingRight: '2rem' }}>
         <div>
           <h3 className="browse-card-title">{service.title}</h3>
           <div className="browse-card-meta">
