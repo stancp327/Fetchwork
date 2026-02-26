@@ -283,4 +283,16 @@ app.use('*', (req, res) => {
 // ── Start Server ────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+
+  // Keep-alive self-ping every 10 minutes (prevents Render free tier sleep)
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://fetchwork-1.onrender.com`;
+    setInterval(() => {
+      const https = require('https');
+      https.get(`${SELF_URL}/health`, (res) => {
+        res.resume(); // drain response
+      }).on('error', () => {}); // silent fail
+    }, 10 * 60 * 1000); // 10 minutes
+    console.log('📡 Keep-alive ping enabled (every 10 min)');
+  }
 });
