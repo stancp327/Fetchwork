@@ -82,7 +82,39 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-split">
+      {/* Brand panel — visible on desktop only */}
+      <div className="auth-brand">
+        <div className="auth-brand-logo">
+          <span className="auth-brand-logo-icon">🐾</span>
+          <h1>FetchWork</h1>
+        </div>
+        <p className="auth-brand-tagline">Hire local talent.<br />Find freelance work.</p>
+        <p className="auth-brand-sub">The marketplace built for your community.</p>
+        <ul className="auth-brand-features">
+          <li>Local &amp; remote freelancers</li>
+          <li>Secure payments with escrow</li>
+          <li>Verified profiles &amp; reviews</li>
+          <li>100+ job categories</li>
+        </ul>
+        <div className="auth-brand-trust">
+          <div className="auth-brand-trust-item">
+            <strong>500+</strong>
+            <span>Freelancers</span>
+          </div>
+          <div className="auth-brand-trust-item">
+            <strong>1,200+</strong>
+            <span>Jobs Posted</span>
+          </div>
+          <div className="auth-brand-trust-item">
+            <strong>4.8★</strong>
+            <span>Avg Rating</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Form panel */}
+      <div className="auth-panel">
       <div className="auth-card">
         <div className="auth-header">
           <h1 className="auth-title">Welcome Back</h1>
@@ -180,6 +212,7 @@ const Login = () => {
         <div className="auth-footer">
           <p>Don't have an account? <Link to="/register" className="auth-link">Sign up</Link></p>
         </div>
+      </div>
       </div>
     </div>
   );

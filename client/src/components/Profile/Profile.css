@@ -257,6 +257,70 @@
 .portfolio-add span { font-weight: 600; color: #2563eb; }
 .portfolio-add p { font-size: 0.8rem; color: #9ca3af; margin: 0.25rem 0 0; }
 
+/* Tab content header row */
+.tab-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.tab-content-header h2 { margin: 0; }
+.tab-content-header .tab-desc { margin: 0.25rem 0 0; }
+
+/* Add project button */
+.btn-add-portfolio {
+  padding: 0.5rem 1rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-add-portfolio:hover { background: #1d4ed8; }
+
+/* Portfolio empty state */
+.portfolio-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.portfolio-empty:hover { border-color: #2563eb; }
+.portfolio-empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.portfolio-empty h3 { margin: 0 0 0.5rem; color: #111827; }
+.portfolio-empty p { color: #6b7280; margin: 0 0 1.5rem; font-size: 0.9rem; }
+
+/* Portfolio tile extras */
+.portfolio-tags {
+  display: flex; flex-wrap: wrap; gap: 4px; margin: 0.5rem 0;
+}
+.portfolio-tag {
+  padding: 2px 8px; background: #eff6ff; color: #2563eb;
+  border-radius: 4px; font-size: 0.7rem; font-weight: 600;
+}
+.portfolio-tile-edit {
+  margin-top: 0.5rem; padding: 4px 10px; background: #f3f4f6;
+  border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem;
+  cursor: pointer; transition: background 0.15s; min-height: 0;
+}
+.portfolio-tile-edit:hover { background: #e5e7eb; }
+
+@media (min-width: 480px) {
+  .portfolio-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .portfolio-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
 /* ── Rates Tab ────────────────────────────────────────────────── */
 .rates-services { margin-top: 2rem; }
 .rates-services h3 { font-size: 1rem; margin: 0 0 0.5rem; }

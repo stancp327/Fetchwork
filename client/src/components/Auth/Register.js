@@ -109,7 +109,39 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-split">
+      {/* Brand panel — visible on desktop only */}
+      <div className="auth-brand">
+        <div className="auth-brand-logo">
+          <span className="auth-brand-logo-icon">🐾</span>
+          <h1>FetchWork</h1>
+        </div>
+        <p className="auth-brand-tagline">Your next opportunity<br />is right here.</p>
+        <p className="auth-brand-sub">Join thousands of freelancers and clients in your area.</p>
+        <ul className="auth-brand-features">
+          <li>Free to sign up — no monthly fees</li>
+          <li>Get hired for local or remote work</li>
+          <li>Secure escrow payments</li>
+          <li>Build your reputation with reviews</li>
+        </ul>
+        <div className="auth-brand-trust">
+          <div className="auth-brand-trust-item">
+            <strong>Free</strong>
+            <span>To join</span>
+          </div>
+          <div className="auth-brand-trust-item">
+            <strong>500+</strong>
+            <span>Active jobs</span>
+          </div>
+          <div className="auth-brand-trust-item">
+            <strong>Local</strong>
+            <span>Community</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Form panel */}
+      <div className="auth-panel">
       <div className="auth-card">
         <div className="auth-header">
           <h1 className="auth-title">Join FetchWork</h1>
@@ -300,6 +332,7 @@ const Register = () => {
         <div className="auth-footer">
           <p>Already have an account? <Link to="/login" className="auth-link">Sign in</Link></p>
         </div>
+      </div>
       </div>
     </div>
   );

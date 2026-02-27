@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import FileUpload from '../common/FileUpload';
 import { getLocationDisplay } from '../../utils/location';
+import PortfolioWizard from '../Portfolio/PortfolioWizard';
 import './Profile.css';
 
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
@@ -230,27 +231,82 @@ const TabSkills = ({ data, onChange }) => {
 };
 
 // ── Tab: Portfolio ──────────────────────────────────────────────
-const TabPortfolio = ({ data, onChange }) => (
-  <div className="tab-content">
-    <h2>Portfolio Highlights</h2>
-    <p className="tab-desc">Showcase your best work to attract more clients.</p>
-    <div className="portfolio-grid">
-      {(data.portfolio || []).map((item, i) => (
-        <div key={i} className="portfolio-tile">
-          {item.image && <img src={item.image} alt={item.title} />}
-          <div className="portfolio-tile-body">
-            <h4>{item.title}</h4>
-            <p>{item.description}</p>
+const TabPortfolio = ({ data, onRefresh }) => {
+  const [showWizard, setShowWizard] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  const handleOpen = (item = null) => {
+    setEditItem(item);
+    setShowWizard(true);
+  };
+
+  const handleClose = () => {
+    setShowWizard(false);
+    setEditItem(null);
+  };
+
+  const handleSuccess = () => {
+    handleClose();
+    if (onRefresh) onRefresh(); // Re-fetch profile to update portfolio list
+  };
+
+  return (
+    <div className="tab-content">
+      <div className="tab-content-header">
+        <div>
+          <h2>Portfolio</h2>
+          <p className="tab-desc">Showcase your best work to attract more clients.</p>
+        </div>
+        <button className="btn-add-portfolio" onClick={() => handleOpen()}>
+          + Add Project
+        </button>
+      </div>
+
+      {(data.portfolio || []).length === 0 ? (
+        <div className="portfolio-empty" onClick={() => handleOpen()}>
+          <div className="portfolio-empty-icon">🗂️</div>
+          <h3>No projects yet</h3>
+          <p>Add your first project to showcase your skills</p>
+          <button className="btn btn-primary">+ Add Your First Project</button>
+        </div>
+      ) : (
+        <div className="portfolio-grid">
+          {(data.portfolio || []).map((item, i) => (
+            <div key={item._id || i} className="portfolio-tile">
+              {(item.mediaUrls?.[0] || item.image) && (
+                <img src={item.mediaUrls?.[0] || item.image} alt={item.title} />
+              )}
+              <div className="portfolio-tile-body">
+                <h4>{item.title}</h4>
+                {item.description && <p>{item.description.substring(0, 100)}{item.description.length > 100 ? '…' : ''}</p>}
+                {item.tags?.length > 0 && (
+                  <div className="portfolio-tags">
+                    {item.tags.slice(0, 3).map((t, ti) => <span key={ti} className="portfolio-tag">{t}</span>)}
+                  </div>
+                )}
+                <button className="portfolio-tile-edit" onClick={() => handleOpen(item)}>
+                  ✏️ Edit
+                </button>
+              </div>
+            </div>
+          ))}
+          <div className="portfolio-add" onClick={() => handleOpen()}>
+            <span style={{ fontSize: '2rem' }}>+</span>
+            <p>Add another project</p>
           </div>
         </div>
-      ))}
-      <div className="portfolio-add">
-        <span>+ Add Project</span>
-        <p>Upload images and describe your work</p>
-      </div>
+      )}
+
+      {showWizard && (
+        <PortfolioWizard
+          onClose={handleClose}
+          onSuccess={handleSuccess}
+          editItem={editItem}
+        />
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // ── Tab: Rates ──────────────────────────────────────────────────
 const TabRates = ({ data, onChange }) => (
@@ -433,7 +489,7 @@ const Profile = () => {
     <TabOverview data={data} completion={completion} onTabChange={setActiveTab} />,
     <TabAbout data={data} onChange={onChange} onFileSelect={setSelectedFile} />,
     <TabSkills data={data} onChange={onChange} />,
-    <TabPortfolio data={data} onChange={onChange} />,
+    <TabPortfolio data={data} onChange={onChange} onRefresh={fetchProfile} />,
     <TabRates data={data} onChange={onChange} />,
     <TabVerification data={data} />,
     <TabSettings data={data} onChange={onChange} />,
