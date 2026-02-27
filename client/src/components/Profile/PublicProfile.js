@@ -137,13 +137,14 @@ const PublicProfile = () => {
             {f.isVerified && <span className="pp-verified-badge" title="Verified">✓</span>}
           </div>
           <div className="pp-hero-info">
-            <h1 className="pp-name">{f.firstName} {f.lastName} <TrustBadges user={f} size="md" /></h1>
+            <h1 className="pp-name">{f.firstName} {f.lastName}</h1>
+            <TrustBadges user={f} size="sm" />
             {f.headline && <p className="pp-headline">{f.headline}</p>}
             <div className="pp-hero-meta">
               {stats.rating > 0 && <StarRating rating={stats.rating} />}
               {stats.totalReviews > 0 && <span className="pp-meta-item">({stats.totalReviews} reviews)</span>}
               <span className="pp-meta-item">📍 {getLocationDisplay(f.location)}</span>
-              {stats.memberSince && <span className="pp-meta-item">📅 Member since {new Date(stats.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
+              {stats.memberSince && <span className="pp-meta-item">📅 {new Date(stats.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
             </div>
           </div>
           <div className="pp-hero-actions">

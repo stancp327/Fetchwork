@@ -28,11 +28,13 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 1.5rem;
-  padding: 0 1rem 1.5rem;
+  gap: 1rem;
+  padding: 0 0.75rem 1.25rem;
   margin-top: -60px;
   position: relative;
   z-index: 1;
+  overflow: hidden;
+  width: 100%;
 }
 .pp-avatar-wrapper { position: relative; flex-shrink: 0; }
 .pp-avatar {
@@ -49,14 +51,28 @@
   width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
   justify-content: center; font-size: 14px; border: 3px solid white;
 }
-.pp-hero-info { flex: 1; min-width: 0; text-align: center; }
-.pp-name { margin: 0; font-size: 1.35rem; font-weight: 700; color: #111827; }
-.pp-headline { margin: 0.25rem 0 0.5rem; color: #4b5563; font-size: 1rem; }
-.pp-hero-meta {
-  display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
-  font-size: 0.85rem; color: #6b7280; justify-content: center;
+.pp-hero-info {
+  flex: 1; min-width: 0; text-align: center;
+  overflow: hidden; width: 100%;
 }
-.pp-meta-item { display: flex; align-items: center; gap: 0.25rem; }
+.pp-name {
+  margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 700; color: #111827;
+  word-break: break-word; overflow-wrap: break-word;
+}
+.pp-headline {
+  margin: 0.25rem 0 0.5rem; color: #4b5563; font-size: 0.9rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pp-hero-meta {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; align-items: center;
+  font-size: 0.8rem; color: #6b7280; justify-content: center;
+  margin-top: 0.35rem; overflow: hidden;
+}
+.pp-meta-item {
+  display: flex; align-items: center; gap: 0.25rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 100%;
+}
 .pp-stars { color: #f59e0b; font-size: 1rem; }
 .pp-rating-num { color: #374151; font-weight: 600; margin-left: 0.25rem; }
 
@@ -238,6 +254,8 @@
   }
   .pp-hero-info { text-align: left; }
   .pp-hero-meta { justify-content: flex-start; }
+  .pp-name { font-size: 1.75rem; }
+  .pp-headline { white-space: normal; overflow: visible; }
   .pp-hero-actions { align-items: flex-end; flex-direction: column; width: auto; }
   .pp-hero-actions .pp-btn-primary,
   .pp-hero-actions .pp-btn-secondary { width: auto; }
