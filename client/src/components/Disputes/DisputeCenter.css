@@ -9,7 +9,7 @@
 }
 
 .dispute-center-header h1 {
-  font-size: 1.8rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0;
@@ -261,4 +261,5 @@
 @media (min-width: 768px) {
   .dispute-filters { flex-direction: row; align-items: center; }
   .dispute-filter-tabs { flex-wrap: wrap; width: auto; }
+  .dispute-center-header h1 { font-size: 1.8rem; }
 }

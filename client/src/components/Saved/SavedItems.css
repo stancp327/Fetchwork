@@ -1,0 +1,146 @@
+/* ── Saved Items — Mobile-first ──────────────────────────────── */
+.saved-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  box-sizing: border-box;
+}
+
+.saved-page h1 {
+  margin: 0 0 1.25rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+/* Filter tabs */
+.saved-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.saved-filter-btn {
+  padding: 0 1rem;
+  height: 44px;
+  border-radius: 22px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.saved-filter-btn.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.saved-filter-btn:hover:not(.active) {
+  border-color: #9ca3af;
+}
+
+/* Item list */
+.saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.saved-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.saved-item:hover {
+  border-color: #d1d5db;
+}
+
+.saved-item-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.saved-item-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.saved-item-body {
+  min-width: 0;
+}
+
+.saved-item-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-item-meta {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Remove button */
+.saved-item-remove {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 1rem;
+  transition: color 0.15s;
+  margin-right: 0.25rem;
+}
+
+.saved-item-remove:hover {
+  color: #dc2626;
+}
+
+/* Empty state */
+.saved-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.saved-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.saved-empty p { margin: 0.35rem 0; }
+.saved-empty .saved-empty-sub { font-size: 0.85rem; color: #9ca3af; }
+
+@media (min-width: 480px) {
+  .saved-page { padding: 2rem 1.5rem; }
+  .saved-page h1 { font-size: 1.5rem; }
+}

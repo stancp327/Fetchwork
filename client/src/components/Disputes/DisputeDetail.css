@@ -17,8 +17,11 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  padding: 0;
-  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
   transition: color 0.2s;
 }
 
@@ -54,7 +57,8 @@
 }
 
 .escalate-btn {
-  padding: 0.6rem 1.2rem;
+  padding: 0 1.2rem;
+  min-height: 44px;
   background: #fff3e0;
   color: #e65100;
   border: 1px solid #ffcc80;

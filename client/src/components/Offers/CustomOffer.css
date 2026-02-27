@@ -40,7 +40,13 @@
   font-size: 1.25rem;
   cursor: pointer;
   color: #6b7280;
-  padding: 0.25rem;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .offer-modal-close:hover {
@@ -61,7 +67,7 @@
 
 .offer-form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr;   /* Mobile-first: stacked */
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -113,7 +119,8 @@
 }
 
 .btn-offer-cancel {
-  padding: 0.6rem 1.25rem;
+  padding: 0 1.25rem;
+  min-height: 44px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   background: white;
@@ -127,7 +134,8 @@
 }
 
 .btn-offer-send {
-  padding: 0.6rem 1.5rem;
+  padding: 0 1.5rem;
+  min-height: 44px;
   border: none;
   border-radius: 8px;
   background: #2563eb;
@@ -200,10 +208,11 @@
 .offer-status.expired { background: #f3f4f6; color: #6b7280; }
 
 .btn-offer-action {
-  padding: 0.4rem 0.85rem;
+  padding: 0 0.85rem;
+  min-height: 44px;
   border: none;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   margin-right: 0.5rem;
@@ -213,11 +222,14 @@
 .btn-offer-action.counter { background: #2563eb; color: white; }
 .btn-offer-action.decline { background: #f3f4f6; color: #dc2626; }
 
-/* Mobile base */
-.offer-form-row { grid-template-columns: 1fr; }
+/* Mobile adjustments */
 .offer-modal { margin: 0.5rem; max-height: 95vh; }
+.offer-actions { flex-direction: column; }
 
-@media (min-width: 640px) {
+@media (min-width: 480px) {
   .offer-form-row { grid-template-columns: 1fr 1fr 1fr; }
+  .offer-actions { flex-direction: row; }
+}
+@media (min-width: 640px) {
   .offer-modal { margin: 2rem; max-height: 85vh; }
 }
