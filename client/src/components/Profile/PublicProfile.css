@@ -4,8 +4,14 @@
   margin: 0 auto;
   padding-bottom: 3rem;
   overflow-x: hidden;
+  width: 100%;
 }
-.pp-container * { box-sizing: border-box; max-width: 100%; }
+.pp-container,
+.pp-container * {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;    /* Prevents flex children from overflowing */
+}
 
 .pp-loading, .pp-error {
   text-align: center; padding: 4rem 2rem; color: #6b7280;
@@ -18,9 +24,12 @@
 .pp-error h2 { color: #374151; margin-bottom: 1rem; }
 
 /* ── Hero ────────────────────────────────────────────────────── */
-.pp-hero { position: relative; border-radius: 0 0 16px 16px; overflow: hidden; }
+.pp-hero {
+  position: relative; border-radius: 0 0 16px 16px;
+  overflow: hidden; width: 100%; max-width: 100%;
+}
 .pp-hero-bg {
-  height: 120px;
+  height: 120px; width: 100%;
   background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #2563eb 100%);
 }
 .pp-hero-content {
@@ -35,6 +44,7 @@
   z-index: 1;
   overflow: hidden;
   width: 100%;
+  max-width: 100%;
 }
 .pp-avatar-wrapper { position: relative; flex-shrink: 0; }
 .pp-avatar {
@@ -52,8 +62,13 @@
   justify-content: center; font-size: 14px; border: 3px solid white;
 }
 .pp-hero-info {
-  flex: 1; min-width: 0; text-align: center;
-  overflow: hidden; width: 100%;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  text-align: center;
+  overflow: hidden;
+  align-self: stretch;   /* Fill full column width in flex column */
 }
 .pp-name {
   margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 700; color: #111827;

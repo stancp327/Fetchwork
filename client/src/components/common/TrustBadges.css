@@ -1,5 +1,12 @@
 /* Trust Badges */
-.trust-badges-row { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.trust-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+}
 
 .trust-badge {
   display: inline-flex; align-items: center; gap: 3px;
