@@ -20,23 +20,14 @@ const JobCard = ({ job }) => {
     if (!clientId) return;
     setMessagingLoading(true);
     try {
-      const res = await apiRequest('/api/messages/conversations', {
+      // Find or create conversation — no auto-message, user types their own
+      const res = await apiRequest('/api/messages/conversations/find-or-create', {
         method: 'POST',
-        body: JSON.stringify({
-          recipientId: clientId,
-          content: `Hi ${job.client.firstName}, I'm interested in your job "${job.title}". I'd love to discuss it with you!`
-        })
+        body: JSON.stringify({ recipientId: clientId, jobId: job._id })
       });
       navigate(`/messages?conversation=${res.conversationId}`);
     } catch {
-      // Conversation may already exist — find it
-      try {
-        const convos = await apiRequest('/api/messages/conversations');
-        const existing = (convos.conversations || []).find(c =>
-          c.participants?.some(p => (p._id || p).toString() === clientId.toString())
-        );
-        navigate(existing ? `/messages?conversation=${existing._id}` : '/messages');
-      } catch { navigate('/messages'); }
+      navigate('/messages');
     } finally {
       setMessagingLoading(false);
     }

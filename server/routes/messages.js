@@ -77,6 +77,32 @@ router.get('/conversations/:conversationId', authenticateToken, validateConversa
   }
 });
 
+// Find or create a conversation without sending a message.
+// Use this when opening a chat from a profile/card — let the user type their own first message.
+router.post('/conversations/find-or-create', authenticateToken, async (req, res) => {
+  try {
+    const { recipientId, jobId } = req.body;
+    if (!recipientId) return res.status(400).json({ error: 'recipientId is required' });
+    if (recipientId === req.user._id.toString()) {
+      return res.status(400).json({ error: 'Cannot start a conversation with yourself' });
+    }
+
+    let conversation = await Conversation.findByParticipants(req.user._id, recipientId);
+    if (!conversation) {
+      conversation = new Conversation({
+        participants: [req.user._id, recipientId],
+        job: jobId || null
+      });
+      await conversation.save();
+    }
+
+    res.status(200).json({ conversationId: conversation._id });
+  } catch (error) {
+    console.error('Error in find-or-create conversation:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.post('/conversations', authenticateToken, validateMessage, async (req, res) => {
   try {
     const { recipientId, jobId, content } = req.body;

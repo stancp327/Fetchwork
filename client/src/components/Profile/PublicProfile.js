@@ -39,24 +39,14 @@ const PublicProfile = () => {
     if (!freelancer?._id) { navigate('/messages'); return; }
     setMessagingLoading(true);
     try {
-      const res = await apiRequest('/api/messages/conversations', {
+      // Find or create conversation — no auto-message, user types their own
+      const res = await apiRequest('/api/messages/conversations/find-or-create', {
         method: 'POST',
-        body: JSON.stringify({
-          recipientId: freelancer._id,
-          content: `Hi ${freelancer.firstName}, I'd like to connect with you on Fetchwork!`
-        })
+        body: JSON.stringify({ recipientId: freelancer._id })
       });
       navigate(`/messages?conversation=${res.conversationId}`);
-    } catch (e) {
-      // Conversation may already exist — find it by participant
-      try {
-        const convos = await apiRequest('/api/messages/conversations');
-        const existing = (convos.conversations || convos).find(c =>
-          c.participants?.some(p => (p._id || p) === freelancer._id)
-        );
-        if (existing) navigate(`/messages?conversation=${existing._id}`);
-        else navigate('/messages');
-      } catch { navigate('/messages'); }
+    } catch {
+      navigate('/messages');
     } finally {
       setMessagingLoading(false);
     }
