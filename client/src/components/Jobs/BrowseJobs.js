@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { formatBudget, formatDuration, formatCategory } from '../../utils/formatters';
 import { categoryOptions } from '../../utils/categories';
@@ -121,11 +121,12 @@ const JobCard = ({ job, onQuickApply }) => {
 
 const BrowseJobs = () => {
   const { user } = useAuth();
+  const { search: urlQueryString } = useLocation();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quickApplyJob, setQuickApplyJob] = useState(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => new URLSearchParams(urlQueryString).get('search') || '');
   const [filters, setFilters] = useState({
     category: 'all', experienceLevel: 'all', workLocation: 'all',
     near: '', radius: '25', minBudget: '', maxBudget: '', sortBy: 'newest', urgentOnly: false
@@ -155,6 +156,13 @@ const BrowseJobs = () => {
   }, [search, filters, page]);
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
+
+  // Sync search when URL ?search= changes (e.g. clicking a skill tag on a job card)
+  useEffect(() => {
+    const term = new URLSearchParams(urlQueryString).get('search') || '';
+    setSearch(term);
+    setPage(1);
+  }, [urlQueryString]);
 
   const updateFilter = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));

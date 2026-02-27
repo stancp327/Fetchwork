@@ -244,11 +244,21 @@ const PublicProfile = () => {
                 </div>
               )}
 
+              {/* Skills — clickable to browse freelancers with same skill */}
               {f.skills?.length > 0 && (
                 <div className="pp-card">
                   <h2>Skills</h2>
                   <div className="pp-skills">
-                    {f.skills.map((s, i) => <span key={i} className="pp-skill-tag">{s}</span>)}
+                    {f.skills.map((s, i) => (
+                      <button
+                        key={i}
+                        className="pp-skill-tag pp-skill-tag-clickable"
+                        title={`Find freelancers skilled in ${s}`}
+                        onClick={() => navigate(`/freelancers?search=${encodeURIComponent(s)}`)}
+                      >
+                        {s}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}

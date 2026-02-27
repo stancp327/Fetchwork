@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { categoryOptions } from '../../utils/categories';
 import { getLocationDisplay } from '../../utils/location';
@@ -67,7 +67,16 @@ const FreelancerCard = ({ freelancer, onInvite }) => {
       {freelancer.bio && <p className="browse-card-desc">{freelancer.bio}</p>}
 
       <div className="browse-card-tags">
-        {freelancer.skills?.slice(0, 5).map((s, i) => <span key={i} className="browse-tag">{s}</span>)}
+        {freelancer.skills?.slice(0, 5).map((s, i) => (
+          <button
+            key={i}
+            className="browse-tag browse-tag-clickable"
+            title={`Find more freelancers skilled in ${s}`}
+            onClick={e => { e.stopPropagation(); navigate(`/freelancers?search=${encodeURIComponent(s)}`); }}
+          >
+            {s}
+          </button>
+        ))}
         {freelancer.skills?.length > 5 && <span className="browse-tag">+{freelancer.skills.length - 5}</span>}
         {freelancer.availabilityStatus && <AvailabilityBadge status={freelancer.availabilityStatus} />}
         {freelancer.isVerified && <span className="browse-tag primary">Verified</span>}
@@ -95,11 +104,14 @@ const FreelancerCard = ({ freelancer, onInvite }) => {
 
 const FreelancerDiscovery = () => {
   const { user } = useAuth();
+  const { search: urlQueryString } = useLocation();
   const [freelancers, setFreelancers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inviteFreelancer, setInviteFreelancer] = useState(null);
-  const [search, setSearch] = useState('');
+
+  // Pre-populate search from URL ?search= param (e.g. clicking a skill tag)
+  const [search, setSearch] = useState(() => new URLSearchParams(urlQueryString).get('search') || '');
   const [filters, setFilters] = useState({
     category: 'all', near: '', radius: '25', minRate: '', maxRate: '', availability: 'all', sortBy: 'rating'
   });
@@ -128,6 +140,13 @@ const FreelancerDiscovery = () => {
   }, [search, filters, page]);
 
   useEffect(() => { fetchFreelancers(); }, [fetchFreelancers]);
+
+  // Sync search box when URL ?search= changes (e.g. clicking another skill tag)
+  useEffect(() => {
+    const term = new URLSearchParams(urlQueryString).get('search') || '';
+    setSearch(term);
+    setPage(1);
+  }, [urlQueryString]);
 
   const updateFilter = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));

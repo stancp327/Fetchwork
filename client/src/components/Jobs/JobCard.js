@@ -66,7 +66,14 @@ const JobCard = ({ job }) => {
         {job.skills && job.skills.length > 0 && (
           <div className="tags">
             {job.skills.slice(0, 5).map((skill, index) => (
-              <span key={index} className="tag">{skill}</span>
+              <button
+                key={index}
+                className="tag tag-clickable"
+                title={`Find more jobs requiring ${skill}`}
+                onClick={e => { e.stopPropagation(); navigate(`/browse-jobs?search=${encodeURIComponent(skill)}`); }}
+              >
+                {skill}
+              </button>
             ))}
             {job.skills.length > 5 && <span className="tag">+{job.skills.length - 5} more</span>}
           </div>

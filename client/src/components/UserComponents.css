@@ -367,6 +367,17 @@
   font-weight: 500;
 }
 
+.tag-clickable {
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  min-height: 0;  /* Tags are intentionally compact — override global 44px */
+}
+.tag-clickable:hover {
+  background: #d1d5db;
+  color: #111827;
+}
+
 .tag.primary {
   background: #667eea;
   color: white;

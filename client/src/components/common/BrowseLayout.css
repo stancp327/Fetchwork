@@ -311,6 +311,19 @@
 .browse-tag.warning { background: #fffbeb; color: #d97706; }
 .browse-tag.danger { background: #fef2f2; color: #dc2626; }
 
+/* Clickable skill/category tags */
+.browse-tag-clickable {
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, color 0.15s;
+  min-height: 0;   /* Override global 44px — tags are intentionally compact */
+  line-height: inherit;
+}
+.browse-tag-clickable:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .browse-card-footer {
   display: flex;
   justify-content: space-between;

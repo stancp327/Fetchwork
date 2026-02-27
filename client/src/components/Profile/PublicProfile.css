@@ -165,6 +165,16 @@
   padding: 0.35rem 0.85rem; background: #eff6ff; color: #2563eb; border-radius: 20px;
   font-size: 0.85rem; font-weight: 500;
 }
+.pp-skill-tag-clickable {
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  min-height: 0;   /* Tags are intentionally compact */
+}
+.pp-skill-tag-clickable:hover {
+  background: #bfdbfe;
+  color: #1e40af;
+}
 
 /* Timeline */
 .pp-timeline-item { padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6; }
