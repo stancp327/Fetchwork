@@ -1,11 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatBudget, formatDuration, formatCategory, formatJobStatus, getStatusClass } from '../../utils/formatters';
 import { getLocationDisplay } from '../../utils/location';
 import TrustBadges from '../common/TrustBadges';
+import { useAuth } from '../../context/AuthContext';
+import { apiRequest } from '../../utils/api';
 
 const JobCard = ({ job }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [messagingLoading, setMessagingLoading] = useState(false);
+
+  const isOwnJob = user && job.client?._id && user._id === job.client._id.toString();
+
+  const handleMessage = async (e) => {
+    e.stopPropagation(); // Don't trigger card click
+    if (!user) { navigate('/login'); return; }
+    const clientId = job.client?._id;
+    if (!clientId) return;
+    setMessagingLoading(true);
+    try {
+      const res = await apiRequest('/api/messages/conversations', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipientId: clientId,
+          content: `Hi ${job.client.firstName}, I'm interested in your job "${job.title}". I'd love to discuss it with you!`
+        })
+      });
+      navigate(`/messages?conversation=${res.conversationId}`);
+    } catch {
+      // Conversation may already exist — find it
+      try {
+        const convos = await apiRequest('/api/messages/conversations');
+        const existing = (convos.conversations || []).find(c =>
+          c.participants?.some(p => (p._id || p).toString() === clientId.toString())
+        );
+        navigate(existing ? `/messages?conversation=${existing._id}` : '/messages');
+      } catch { navigate('/messages'); }
+    } finally {
+      setMessagingLoading(false);
+    }
+  };
 
   return (
     <div className="card">
@@ -44,12 +79,23 @@ const JobCard = ({ job }) => {
           {job.distanceMiles != null && <span style={{ color: '#2563eb', fontWeight: 500 }}> • 📍 {job.distanceMiles} mi</span>}
           {job.deadline && ` • ⏰ Due ${new Date(job.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
         </div>
-        <button 
-          onClick={() => navigate(`/jobs/${job._id}`)}
-          className="btn btn-primary"
-        >
-          View Details
-        </button>
+        <div className="job-card-actions">
+          {!isOwnJob && (
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handleMessage}
+              disabled={messagingLoading}
+            >
+              {messagingLoading ? '...' : '💬 Message'}
+            </button>
+          )}
+          <button
+            onClick={() => navigate(`/jobs/${job._id}`)}
+            className="btn btn-primary btn-sm"
+          >
+            View Details
+          </button>
+        </div>
       </div>
     </div>
   );
