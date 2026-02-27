@@ -364,69 +364,88 @@ const PostJob = () => {
           </div>
 
           <div className="form-section">
-            <div className="form-section-title">Location</div>
+            <div className="form-section-title">Where is the work done?</div>
 
-            <div className="form-group">
-              <label htmlFor="locationType">Work Type</label>
-              <select
-                id="locationType"
-                name="locationType"
-                value={formData.locationType}
-                onChange={handleInputChange}
-              >
-                <option value="remote">🌐 Remote</option>
-                <option value="local">📍 Local / On-site</option>
-                <option value="hybrid">🔄 Hybrid</option>
-              </select>
+            {/* Visual work-type card selector */}
+            <div className="work-type-cards">
+              {[
+                { value: 'remote', icon: '🌐', label: 'Remote', desc: 'Done online, anywhere' },
+                { value: 'local', icon: '📍', label: 'Local / On-site', desc: 'Freelancer comes to you' },
+                { value: 'hybrid', icon: '🔄', label: 'Hybrid', desc: 'Mix of remote + on-site' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`work-type-card ${formData.locationType === opt.value ? 'selected' : ''}`}
+                  onClick={() => handleInputChange({ target: { name: 'locationType', value: opt.value } })}
+                >
+                  <span className="work-type-icon">{opt.icon}</span>
+                  <span className="work-type-label">{opt.label}</span>
+                  <span className="work-type-desc">{opt.desc}</span>
+                </button>
+              ))}
             </div>
 
-            {formData.locationType !== 'remote' && (
-              <div className="post-job-grid-location">
-                <div className="form-group">
-                  <label htmlFor="city">City</label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Concord"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="state">State</label>
-                  <input
-                    type="text"
-                    id="state"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    placeholder="CA"
-                    maxLength={2}
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="zipCode">Zip Code</label>
-                  <input
-                    type="text"
-                    id="zipCode"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    placeholder="94520"
-                    maxLength={10}
-                  />
-                </div>
+            {/* Remote: nothing extra needed */}
+            {formData.locationType === 'remote' && (
+              <div className="location-info-banner">
+                🌐 Great — freelancers worldwide can apply. No location details needed.
               </div>
+            )}
+
+            {/* Local / Hybrid: show address fields */}
+            {formData.locationType !== 'remote' && (
+              <>
+                <p className="field-hint" style={{ marginBottom: '0.75rem' }}>
+                  📍 Let freelancers know where the work takes place so they can assess travel.
+                </p>
+                <div className="post-job-grid-location">
+                  <div className="form-group">
+                    <label htmlFor="city">City *</label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Concord"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="state">State *</label>
+                    <input
+                      type="text"
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      placeholder="CA"
+                      maxLength={2}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="zipCode">Zip Code</label>
+                    <input
+                      type="text"
+                      id="zipCode"
+                      name="zipCode"
+                      value={formData.zipCode}
+                      onChange={handleInputChange}
+                      placeholder="94520"
+                      maxLength={10}
+                    />
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
+          {/* Scheduling — only for local/hybrid */}
           {formData.locationType !== 'remote' && (
             <div className="form-section">
-              <div className="form-section-title">📅 Scheduling & Cancellation</div>
-
+              <div className="form-section-title">📅 Scheduling</div>
               <div className="form-group">
-                <label htmlFor="scheduledDate">Scheduled Date & Time</label>
+                <label htmlFor="scheduledDate">When do you need them? <span className="label-optional">(optional)</span></label>
                 <input
                   type="datetime-local"
                   id="scheduledDate"
@@ -435,21 +454,28 @@ const PostJob = () => {
                   onChange={handleInputChange}
                   min={new Date().toISOString().slice(0, 16)}
                 />
-                <span className="field-hint">When the freelancer should arrive on-site</span>
+                <span className="field-hint">Leave blank if you're flexible on timing</span>
               </div>
 
               <div className="form-group">
                 <label htmlFor="cancellationPolicy">Cancellation Policy</label>
-                <select
-                  id="cancellationPolicy"
-                  name="cancellationPolicy"
-                  value={formData.cancellationPolicy}
-                  onChange={handleInputChange}
-                >
-                  <option value="flexible">🟢 Flexible — Cancel anytime, no fee</option>
-                  <option value="moderate">🟡 Moderate — Free cancellation 1hr+ before, 10% fee under 1hr</option>
-                  <option value="strict">🔴 Strict — Free 24hr+ before, 25% under 24hr, 50% under 1hr</option>
-                </select>
+                <div className="cancellation-cards">
+                  {[
+                    { value: 'flexible', icon: '🟢', label: 'Flexible', desc: 'Cancel anytime, no fee' },
+                    { value: 'moderate', icon: '🟡', label: 'Moderate', desc: '10% fee if cancelled under 1 hour before' },
+                    { value: 'strict', icon: '🔴', label: 'Strict', desc: '25–50% fee depending on notice given' },
+                  ].map(p => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      className={`cancellation-card ${formData.cancellationPolicy === p.value ? 'selected' : ''}`}
+                      onClick={() => handleInputChange({ target: { name: 'cancellationPolicy', value: p.value } })}
+                    >
+                      <span>{p.icon} <strong>{p.label}</strong></span>
+                      <span className="cancellation-desc">{p.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

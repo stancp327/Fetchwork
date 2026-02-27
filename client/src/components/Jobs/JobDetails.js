@@ -113,8 +113,8 @@ const JobDetails = () => {
         throw new Error(errorData.error || 'Failed to submit proposal');
       }
 
-      alert('Proposal submitted successfully! Check your messages for updates.');
-      navigate('/dashboard');
+      alert('Proposal submitted! Check your messages for updates.');
+      navigate('/browse-jobs');
     } catch (error) {
       console.error('Error submitting proposal:', error);
       setError(error.message);

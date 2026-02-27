@@ -31,6 +31,34 @@ const PublicProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [messagingLoading, setMessagingLoading] = useState(false);
+
+  const handleMessage = async () => {
+    if (!currentUser) { navigate('/login'); return; }
+    setMessagingLoading(true);
+    try {
+      const res = await apiRequest('/api/messages/conversations', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipientId: data.user._id,
+          content: `Hi ${data.user.firstName}, I'd like to connect with you on Fetchwork!`
+        })
+      });
+      navigate(`/messages?conversation=${res.conversationId}`);
+    } catch (e) {
+      // Conversation may already exist — find it
+      try {
+        const convos = await apiRequest('/api/messages/conversations');
+        const existing = (convos.conversations || convos).find(c =>
+          c.participants?.some(p => (p._id || p) === data.user._id)
+        );
+        if (existing) navigate(`/messages?conversation=${existing._id}`);
+        else navigate(`/messages`);
+      } catch { navigate('/messages'); }
+    } finally {
+      setMessagingLoading(false);
+    }
+  };
   const [activeSection, setActiveSection] = useState('about');
   const [similar, setSimilar] = useState([]);
 
@@ -126,7 +154,9 @@ const PublicProfile = () => {
             {f.hourlyRate > 0 && <div className="pp-rate">${f.hourlyRate}<span>/hr</span></div>}
             {!isOwnProfile && (
               <>
-                <button className="pp-btn-primary" onClick={() => navigate(`/messages?to=${f._id}`)}>💬 Message</button>
+                <button className="pp-btn-primary" onClick={handleMessage} disabled={messagingLoading}>
+                  {messagingLoading ? '...' : '💬 Message'}
+                </button>
                 <button className="pp-btn-secondary" onClick={() => setShowOfferModal(true)}>📋 Make Offer</button>
               </>
             )}

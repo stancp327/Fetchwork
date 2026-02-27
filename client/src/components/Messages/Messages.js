@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
 import { getApiBaseUrl } from '../../utils/api';
@@ -74,6 +74,7 @@ const MsgBubble = ({ msg, isMine, deliveryStatus }) => (
 // ── Main Messages ───────────────────────────────────────────────
 const Messages = () => {
   const { user } = useAuth();
+  const { search: locationSearch } = useLocation();
   const userId = user?._id || user?.id || user?.userId;
   const [conversations, setConversations] = useState([]);
   const [selectedConvo, setSelectedConvo] = useState(null);
@@ -138,8 +139,10 @@ const Messages = () => {
       const res = await axios.get(`${apiBaseUrl}/api/messages/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setConversations(res.data.conversations || []);
+      const convos = res.data.conversations || [];
+      setConversations(convos);
       setError(null);
+
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load conversations');
     } finally {
@@ -223,6 +226,16 @@ const Messages = () => {
 
   useEffect(() => { if (user) fetchConversations(); }, [user, fetchConversations]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  // Auto-open conversation from URL ?conversation=ID
+  useEffect(() => {
+    const params = new URLSearchParams(locationSearch);
+    const targetId = params.get('conversation');
+    if (targetId && conversations.length > 0 && !selectedConvo) {
+      const match = conversations.find(c => c._id === targetId);
+      if (match) fetchMessages(match);
+    }
+  }, [locationSearch, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const otherParticipant = selectedConvo?.participants?.find(p => p._id !== userId);
 

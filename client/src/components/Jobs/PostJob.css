@@ -74,6 +74,50 @@
   margin-top: var(--space-xs);
 }
 
+/* Work type cards */
+.work-type-cards {
+  display: grid; grid-template-columns: 1fr; gap: var(--space-sm); margin-bottom: var(--space-md);
+}
+.work-type-card {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  padding: var(--space-md); border: 2px solid #e5e7eb; border-radius: 10px;
+  background: white; cursor: pointer; text-align: left; transition: all 0.15s;
+  min-height: 44px; width: 100%;
+}
+.work-type-card:hover { border-color: #93c5fd; background: #f8faff; }
+.work-type-card.selected { border-color: #2563eb; background: #eff6ff; }
+.work-type-icon { font-size: 1.25rem; }
+.work-type-label { font-weight: 600; font-size: var(--font-size-sm); color: #111827; }
+.work-type-desc { font-size: var(--font-size-xs); color: #6b7280; }
+.work-type-card.selected .work-type-label { color: #2563eb; }
+
+/* Location info banner */
+.location-info-banner {
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+  padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm); color: #1d4ed8;
+}
+
+/* Label optional hint */
+.label-optional { font-size: var(--font-size-xs); color: #9ca3af; font-weight: 400; }
+
+/* Cancellation policy cards */
+.cancellation-cards {
+  display: flex; flex-direction: column; gap: var(--space-xs);
+}
+.cancellation-card {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--space-sm) var(--space-md); border: 2px solid #e5e7eb; border-radius: 8px;
+  background: white; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%;
+  min-height: 44px;
+}
+.cancellation-card:hover { border-color: #d1d5db; background: #f9fafb; }
+.cancellation-card.selected { border-color: #2563eb; background: #eff6ff; }
+.cancellation-desc { font-size: var(--font-size-xs); color: #6b7280; }
+
+@media (min-width: 480px) {
+  .work-type-cards { grid-template-columns: repeat(3, 1fr); }
+}
+
 @media (min-width: 768px) {
   .post-job-page { padding: var(--space-2xl) var(--container-padding); padding-top: calc(64px + var(--space-2xl)); }
   .post-job-form { padding: var(--space-2xl); }

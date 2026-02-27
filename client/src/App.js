@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppErrorBoundary from './components/common/AppErrorBoundary';
 import { setupGlobalErrorHandlers } from './utils/errorReporter';
@@ -144,10 +144,17 @@ const LogoutHandler = () => {
   return <Navigate to="/login" />;
 };
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 function AppContent() {
   usePageTracker();
   return (
     <div className="App">
+      <ScrollToTop />
       <Navigation />
       <ChatBot />
       <NotificationListener />
