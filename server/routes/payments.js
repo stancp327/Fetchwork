@@ -317,16 +317,20 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
 
     // Look up freelancer's Stripe account
     const freelancer = await User.findById(job.freelancer?._id || job.freelancer)
-      .select('stripeAccountId email firstName lastName');
+      .select('stripeAccountId email firstName lastName feeWaiver');
     if (!freelancer?.stripeAccountId) {
       return res.status(400).json({
         error: 'Freelancer has not set up their payment account yet. Ask them to connect Stripe in their profile.'
       });
     }
 
-    const amount      = job.escrowAmount;
-    const platformFee = escrowPayment?.platformFee || calcPlatformFee(amount);
+    const amount    = job.escrowAmount;
+    const waived    = freelancer.isFeeWaived();
+    const platformFee = waived ? 0 : (escrowPayment?.platformFee || calcPlatformFee(amount));
     const payoutAmt   = amount - platformFee;
+
+    // Consume one fee-waiver job credit
+    if (waived) await freelancer.useFeeWaiverJob();
 
     // Client's card was already charged when job was funded (immediate capture).
     // Funds are sitting in Fetchwork's Stripe balance.
