@@ -172,7 +172,17 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onR
       {/* Header */}
       <div className="pm-project-header">
         <div className="pm-project-title-row">
-          <button className="pm-project-title" onClick={() => navigate(`/jobs/${job._id}`)}>
+          <button
+            className="pm-project-title"
+            onClick={() => {
+              // Client on open job → go straight to proposals review
+              if (isClient && status === 'open') {
+                navigate(`/jobs/${job._id}/proposals`);
+              } else {
+                navigate(`/jobs/${job._id}`);
+              }
+            }}
+          >
             {job.title}
           </button>
           <span className={`pm-status-badge ${status}`}>{STATUS_LABELS[status] || status}</span>

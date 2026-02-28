@@ -541,32 +541,63 @@ const JobDetails = () => {
               </div>
             )}
 
-            {isOwnJob && (
+            {isOwnJob && job.status === 'open' && (() => {
+              const pending = (job.proposals || []).filter(p => p.status === 'pending');
+              const allProposals = job.proposals || [];
+              return (
+                <div className="sidebar-card owner-proposals-panel">
+                  <div className="owner-proposals-header">
+                    <h3>
+                      {pending.length > 0
+                        ? `🔔 ${pending.length} Proposal${pending.length !== 1 ? 's' : ''} to Review`
+                        : `📋 Proposals (${allProposals.length})`}
+                    </h3>
+                  </div>
+
+                  {allProposals.length === 0 ? (
+                    <p className="owner-proposals-empty">
+                      No proposals yet. Share this job to attract freelancers.
+                    </p>
+                  ) : (
+                    <>
+                      {/* Show top 3 inline, link to full page for more */}
+                      {pending.slice(0, 3).map(p => {
+                        const fl = p.freelancer || {};
+                        const initials = `${(fl.firstName || '?')[0]}${(fl.lastName || '')[0] || ''}`.toUpperCase();
+                        return (
+                          <div key={p._id} className="owner-proposal-row">
+                            <div className="opr-avatar">{fl.profilePhoto ? <img src={fl.profilePhoto} alt="" /> : initials}</div>
+                            <div className="opr-info">
+                              <div className="opr-name">{fl.firstName} {fl.lastName}</div>
+                              <div className="opr-terms">${p.proposedBudget} · {p.proposedDuration?.replace(/_/g, ' ')}</div>
+                              {fl.rating > 0 && <div className="opr-rating">⭐ {fl.rating.toFixed(1)}</div>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button
+                        onClick={() => navigate(`/jobs/${id}/proposals`)}
+                        className="btn-full btn-primary-jd"
+                        style={{ marginTop: '0.75rem' }}
+                      >
+                        Review All Proposals →
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
+            {isOwnJob && job.status === 'in_progress' && (
               <div className="sidebar-card">
-                <h3>Your Job</h3>
-                <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>You posted this job.</p>
-                <button 
-                  onClick={() => navigate(`/jobs/${id}/proposals`)}
-                  className="btn-full btn-secondary-jd"
-                  style={{ marginBottom: '0.5rem' }}
-                >
-                  View Proposals ({job.proposals?.length || 0})
-                </button>
-                
-                {job.proposals?.length > 0 && (
-                  <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '0.5rem 0' }}>
-                    💡 Send a counter offer from the proposals page
-                  </p>
-                )}
-                
-                {job.status === 'in_progress' && job.escrowAmount === 0 && (
-                  <button className="btn-full btn-primary-jd" style={{ marginTop: '0.5rem' }} onClick={() => setShowSecurePayment(true)}>
+                <h3>💼 Job In Progress</h3>
+                {job.escrowAmount === 0 && (
+                  <button className="btn-full btn-primary-jd" style={{ marginBottom: '0.5rem' }} onClick={() => setShowSecurePayment(true)}>
                     🔒 Secure Payment ({formatBudget(job.budget)})
                   </button>
                 )}
-
-                {job.status === 'in_progress' && job.escrowAmount > 0 && (
-                  <button className="btn-full btn-success-jd" style={{ marginTop: '0.5rem' }} onClick={handleReleasePayment} disabled={releasing}>
+                {job.escrowAmount > 0 && (
+                  <button className="btn-full btn-success-jd" style={{ marginBottom: '0.5rem' }} onClick={handleReleasePayment} disabled={releasing}>
                     {releasing ? 'Releasing…' : `Release Payment ($${job.escrowAmount})`}
                   </button>
                 )}
