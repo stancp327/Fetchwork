@@ -206,7 +206,7 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onR
           {escrow > 0
             ? `🔒 ${fmt(escrow)} secured — payment ready`
             : isClient
-              ? `⚠️ Payment not secured yet — fund before work begins`
+              ? `💳 No payment secured — you can still approve & release when work is done`
               : `⏳ Awaiting client payment`
           }
           {totalPaid > 0 && ` · ${fmt(totalPaid)} released`}
@@ -317,7 +317,7 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onR
         )}
         {isClient && status === 'in_progress' && (
           <button className="pm-btn-complete client" onClick={() => onComplete(job._id)}>
-            ✓ Mark Complete & Release
+            {job.escrowAmount > 0 ? '✓ Approve & Release Payment' : '✓ Mark Job Complete'}
           </button>
         )}
       </div>
@@ -520,9 +520,13 @@ const ProjectManagement = () => {
   const handleComplete = async (jobId) => {
     const allJobs = [...clientJobs, ...freelancerJobs];
     const job = allJobs.find(j => j._id === jobId);
-    const msg = job?._userRole === 'client'
-      ? 'Mark as complete and release payment to the freelancer?'
-      : 'Mark this job as complete? The client will be notified.';
+    const isClient = job?._userRole === 'client';
+    const hasFunds = (job?.escrowAmount || 0) > 0;
+    const msg = isClient
+      ? hasFunds
+        ? `Approve this job and release $${job.escrowAmount} to the freelancer? This cannot be undone.`
+        : 'Mark this job as complete? (No payment was secured for this job.)'
+      : 'Mark this job as complete? The client will be notified to review and release payment.';
     if (!window.confirm(msg)) return;
     try {
       await apiRequest(`/api/jobs/${jobId}/complete`, { method: 'POST' });

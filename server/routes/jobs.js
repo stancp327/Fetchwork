@@ -644,17 +644,85 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
     const job = await Job.findById(req.params.id).populate('client', 'firstName lastName').populate('freelancer', 'firstName lastName');
     
     if (!job) return res.status(404).json({ error: 'Job not found' });
-    if (job.freelancer._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Only the assigned freelancer can complete this job' });
+
+    const userId = (req.user._id || req.user.userId)?.toString();
+    const isFreelancer = job.freelancer?._id?.toString() === userId;
+    const isClient     = job.client?.toString()          === userId ||
+                         job.client?._id?.toString()     === userId;
+
+    if (!isFreelancer && !isClient) {
+      return res.status(403).json({ error: 'Only the client or freelancer can complete this job' });
     }
     if (job.status !== 'in_progress') {
       return res.status(400).json({ error: 'Job must be in progress to complete' });
     }
-    
-    await job.completeJob();
-    trackEvent('jobsCompleted');
 
     const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`.trim();
+
+    // ── Client completing: approve work + release payment if funded ───
+    if (isClient) {
+      await job.completeJob();
+      trackEvent('jobsCompleted');
+
+      // Release Stripe escrow if it exists
+      if (job.stripePaymentIntentId && job.escrowAmount > 0) {
+        try {
+          const stripeService = require('../services/stripeService');
+          const Payment = require('../models/Payment');
+          const User = require('../models/User');
+          const freelancer = await User.findById(job.freelancer._id).select('stripeAccountId feeWaiver');
+          if (freelancer?.stripeAccountId) {
+            const escrowPayment = await Payment.findOne({ job: job._id, type: 'escrow' });
+            const { calcPlatformFee } = require('../services/feeEngine');
+            const waived = freelancer.isFeeWaived?.() || false;
+            const platformFee = waived ? 0 : (escrowPayment?.platformFee || await calcPlatformFee(
+              String(job.freelancer._id), 'freelancer', job, job.escrowAmount
+            ));
+            const payoutAmt = job.escrowAmount - platformFee;
+            await stripeService.releasePayment(payoutAmt, freelancer.stripeAccountId, job.stripePaymentIntentId);
+            if (escrowPayment) { escrowPayment.status = 'completed'; await escrowPayment.save(); }
+          }
+        } catch (payErr) {
+          console.error('Payment release error (non-fatal):', payErr.message);
+          // Don't block job completion if payment release fails — admin can reconcile
+        }
+      }
+
+      // Notify freelancer
+      try {
+        const conversation = await Conversation.findOne({ job: job._id });
+        if (conversation) {
+          const sysMsg = new Message({
+            conversation: conversation._id,
+            sender: job.client._id,
+            recipient: job.freelancer._id,
+            content: `✅ The client has approved the work and released payment for "${job.title}". Great job!`,
+            messageType: 'system',
+            metadata: { type: 'job_completed', jobId: job._id }
+          });
+          await sysMsg.save();
+          conversation.lastMessage = sysMsg._id;
+          await conversation.updateLastActivity();
+        }
+      } catch (msgErr) { console.error('Failed to post completion message:', msgErr.message); }
+
+      try {
+        await Notification.create({
+          recipient: job.freelancer._id,
+          type: 'job_update',
+          title: 'Job approved & payment released',
+          message: `The client approved your work on "${job.title}" and released your payment!`,
+          relatedJob: job._id,
+          actionUrl: `/jobs/${job._id}`,
+        });
+      } catch (notifErr) { console.error('Failed to create notification:', notifErr.message); }
+
+      return res.json({ message: 'Job approved and payment released', job: await Job.findById(job._id) });
+    }
+
+    // ── Freelancer completing: mark done, notify client to review ────
+    await job.completeJob();
+    trackEvent('jobsCompleted');
 
     // Post system message to the job conversation
     try {
