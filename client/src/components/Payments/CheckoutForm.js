@@ -9,7 +9,9 @@ const PAYMENT_ELEMENT_OPTIONS = {
   layout: 'tabs',
 };
 
-const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel }) => {
+const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel, showFeeBreakdown = true, returnUrl }) => {
+  const platformFee  = Math.round(amount * 0.10 * 100) / 100;
+  const freelancerGets = Math.round((amount - platformFee) * 100) / 100;
   const stripe   = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -26,7 +28,7 @@ const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel }) => {
     const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/jobs/${jobId}/progress?payment=success`,
+        return_url: returnUrl || `${window.location.origin}/jobs/${jobId}/progress?payment=success`,
       },
       // Don't redirect for card payments — stay on page and call onSuccess
       redirect: 'if_required',
@@ -48,9 +50,26 @@ const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel }) => {
     <form className="checkout-form" onSubmit={handleSubmit}>
       <div className="checkout-summary">
         <p className="checkout-job-title">{jobTitle}</p>
-        <p className="checkout-amount">${amount?.toFixed(2)}</p>
+        {showFeeBreakdown ? (
+          <div className="checkout-fee-breakdown">
+            <div className="checkout-fee-row">
+              <span>You pay</span>
+              <span>${amount?.toFixed(2)}</span>
+            </div>
+            <div className="checkout-fee-row muted">
+              <span>Fetchwork service fee (10%)</span>
+              <span>−${platformFee.toFixed(2)}</span>
+            </div>
+            <div className="checkout-fee-row total">
+              <span>Freelancer receives</span>
+              <span>${freelancerGets.toFixed(2)}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="checkout-amount">${amount?.toFixed(2)}</p>
+        )}
         <p className="checkout-note">
-          🔒 You'll be charged now. Funds are held by Fetchwork and only sent to the freelancer once you approve the work.
+          🔒 Charged now and held securely. Released to the freelancer only when you approve.
         </p>
       </div>
 

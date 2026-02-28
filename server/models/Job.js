@@ -168,25 +168,22 @@ const jobSchema = new mongoose.Schema({
   endDate: Date,
   completedAt: Date,
   milestones: [{
-    title: {
-      type: String,
-      required: true,
-      trim: true
-    },
+    title:       { type: String, required: true, trim: true },
     description: String,
-    amount: {
-      type: Number,
-      required: true,
-      min: 0
-    },
-    dueDate: Date,
+    amount:      { type: Number, required: true, min: 0 },
+    dueDate:     Date,
     status: {
       type: String,
       enum: ['pending', 'in_progress', 'completed', 'approved'],
       default: 'pending'
     },
-    completedAt: Date,
-    approvedAt: Date
+    completedAt:           Date,
+    approvedAt:            Date,
+    // Payment fields
+    stripePaymentIntentId: { type: String, default: null },
+    escrowAmount:          { type: Number, default: 0 },
+    fundedAt:              Date,
+    releasedAt:            Date,
   }],
   progressUpdates: [{
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

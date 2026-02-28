@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import EscrowModal from '../Payments/EscrowModal';
@@ -23,6 +23,9 @@ const MILESTONE_STATUS = {
 const JobProgress = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [paymentFailed,    setPaymentFailed]    = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,8 +34,11 @@ const JobProgress = () => {
   const [showAddMilestone, setShowAddMilestone] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ title: '', amount: '', description: '', dueDate: '' });
   const [showSecurePayment, setShowSecurePayment] = useState(false);
-  const [releasing, setReleasing] = useState(false);
-  const [releaseMsg, setReleaseMsg] = useState('');
+  const [releasing,    setReleasing]    = useState(false);
+  const [releaseMsg,   setReleaseMsg]   = useState('');
+  // Milestone payment state: { index, clientSecret, title, amount } or null
+  const [milestonePay, setMilestonePay] = useState(null);
+  const [msReleasing,  setMsReleasing]  = useState(null); // index being released
 
   const fetchProgress = useCallback(async () => {
     try {
@@ -47,6 +53,19 @@ const JobProgress = () => {
   }, [id]);
 
   useEffect(() => { fetchProgress(); }, [fetchProgress]);
+
+  // Handle 3DS / redirect-based payment return
+  useEffect(() => {
+    const status = searchParams.get('redirect_status') || (searchParams.get('payment') === 'success' ? 'succeeded' : null);
+    if (status === 'succeeded') {
+      setPaymentConfirmed(true);
+      fetchProgress(); // refresh to get updated escrow amount
+      setSearchParams({}, { replace: true }); // clean URL
+    } else if (status === 'failed') {
+      setPaymentFailed(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const postUpdate = async () => {
     if (!newUpdate.trim() || posting) return;
@@ -92,6 +111,49 @@ const JobProgress = () => {
     }
   };
 
+  const handleFundMilestone = async (milestoneIndex) => {
+    try {
+      const result = await apiRequest(`/api/jobs/${id}/milestones/${milestoneIndex}/fund`, { method: 'POST' });
+      setMilestonePay({
+        index:        milestoneIndex,
+        clientSecret: result.clientSecret,
+        title:        result.milestoneTitle,
+        amount:       result.amount,
+        paymentIntentId: result.paymentIntentId,
+      });
+    } catch (err) {
+      alert(err.message || 'Failed to initialize milestone payment');
+    }
+  };
+
+  const handleMilestonePaymentSuccess = async (paymentIntent) => {
+    if (!milestonePay) return;
+    try {
+      await apiRequest(`/api/jobs/${id}/milestones/${milestonePay.index}/fund/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ paymentIntentId: milestonePay.paymentIntentId || paymentIntent?.id }),
+      });
+      setMilestonePay(null);
+      fetchProgress();
+    } catch (err) {
+      alert('Payment received but confirmation failed. Contact support.');
+    }
+  };
+
+  const handleReleaseMilestone = async (milestoneIndex) => {
+    if (!window.confirm('Release payment for this milestone to the freelancer?')) return;
+    setMsReleasing(milestoneIndex);
+    try {
+      const result = await apiRequest(`/api/jobs/${id}/milestones/${milestoneIndex}/release`, { method: 'POST' });
+      setReleaseMsg(`✅ $${result.payoutAmt?.toFixed(2)} released for milestone!`);
+      fetchProgress();
+    } catch (err) {
+      alert(err.message || 'Failed to release milestone payment');
+    } finally {
+      setMsReleasing(null);
+    }
+  };
+
   const handleReleasePayment = async () => {
     if (!window.confirm('Release payment to the freelancer? This cannot be undone.')) return;
     setReleasing(true);
@@ -124,6 +186,18 @@ const JobProgress = () => {
 
   return (
     <div className="jp-container">
+      {/* 3DS / redirect-based payment return banners */}
+      {paymentConfirmed && (
+        <div className="jp-payment-banner jp-payment-funded" style={{ marginBottom: '1rem' }}>
+          ✅ Payment confirmed! Funds are secured and the freelancer has been notified.
+        </div>
+      )}
+      {paymentFailed && (
+        <div className="jp-payment-banner jp-payment-unfunded" style={{ marginBottom: '1rem', borderColor: '#ef4444' }}>
+          ❌ Payment was not completed. Please try again using the Secure Payment button below.
+        </div>
+      )}
+
       {/* Header */}
       <div className="jp-header">
         <div>
@@ -259,8 +333,17 @@ const JobProgress = () => {
                       {m.dueDate && <span>Due {new Date(m.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                     </div>
 
+                    {/* Payment status pill */}
+                    {m.escrowAmount > 0 && (
+                      <div className="jp-ms-funded-pill">🔒 ${m.escrowAmount} secured</div>
+                    )}
+                    {m.status === 'approved' && m.releasedAt && (
+                      <div className="jp-ms-funded-pill released">✅ Payment released</div>
+                    )}
+
                     {/* Actions */}
                     <div className="jp-milestone-actions">
+                      {/* Progress actions */}
                       {isFreelancer && m.status === 'pending' && (
                         <button className="jp-btn-sm primary" onClick={() => updateMilestone(i, 'in_progress')}>Start Working</button>
                       )}
@@ -275,6 +358,22 @@ const JobProgress = () => {
                             if (reason) updateMilestone(i, 'in_progress', reason);
                           }}>Request Revision</button>
                         </>
+                      )}
+
+                      {/* Payment actions */}
+                      {isClient && !m.escrowAmount && m.status !== 'approved' && (
+                        <button className="jp-btn-sm secure" onClick={() => handleFundMilestone(i)}>
+                          🔒 Fund Milestone
+                        </button>
+                      )}
+                      {isClient && m.escrowAmount > 0 && ['completed'].includes(m.status) && (
+                        <button
+                          className="jp-btn-sm release"
+                          disabled={msReleasing === i}
+                          onClick={() => handleReleaseMilestone(i)}
+                        >
+                          {msReleasing === i ? 'Releasing…' : `💸 Release $${m.escrowAmount}`}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -344,6 +443,18 @@ const JobProgress = () => {
           amount={data.job?.budget?.max || data.job?.budget?.min || 0}
           onClose={() => setShowSecurePayment(false)}
           onPaid={() => { setShowSecurePayment(false); fetchProgress(); }}
+        />
+      )}
+
+      {/* Milestone payment modal */}
+      {milestonePay && (
+        <EscrowModal
+          job={{ _id: id, title: `Milestone: ${milestonePay.title}` }}
+          amount={milestonePay.amount}
+          preloadedSecret={milestonePay.clientSecret}
+          title={`Fund Milestone — ${milestonePay.title}`}
+          onClose={() => setMilestonePay(null)}
+          onPaid={handleMilestonePaymentSuccess}
         />
       )}
     </div>

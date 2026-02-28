@@ -109,3 +109,23 @@
   .jp-timeline-dot { left: -2.5rem; width: 2rem; height: 2rem; font-size: 0.85rem; }
   .jp-header h1 { font-size: var(--font-size-2xl); }
 }
+
+/* -- Milestone payment styles ------------------------------------ */
+.jp-ms-funded-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: #d1fae5;
+  color: #065f46;
+  margin-bottom: 0.4rem;
+}
+.jp-ms-funded-pill.released {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+.jp-btn-sm.secure  { background: #2563eb; color: white; }
+.jp-btn-sm.release { background: #10b981; color: white; }

@@ -169,3 +169,26 @@
   color: white;
   border-radius: 99px;
 }
+
+/* -- Fee Breakdown ----------------------------------------------- */
+.checkout-fee-breakdown {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.75rem 0;
+}
+.checkout-fee-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  color: #374151;
+  border-bottom: 1px solid #f3f4f6;
+}
+.checkout-fee-row:last-child { border-bottom: none; }
+.checkout-fee-row.muted { color: #9ca3af; font-size: 0.8rem; }
+.checkout-fee-row.total {
+  font-weight: 700;
+  background: #f9fafb;
+  color: #111;
+}

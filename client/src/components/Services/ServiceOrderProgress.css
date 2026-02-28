@@ -265,3 +265,9 @@
     align-items: start;
   }
 }
+
+.sop-success-banner {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}

@@ -724,6 +724,172 @@ router.post('/:id/refund', authenticateToken, validateMongoId, async (req, res) 
   }
 });
 
+// ── Milestone Payments ──────────────────────────────────────────
+
+// POST /api/jobs/:id/milestones/:index/fund — client funds a specific milestone
+router.post('/:id/milestones/:index/fund', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id).populate('freelancer', '_id firstName lastName');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (String(job.client) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'Only the client can fund milestones' });
+    }
+
+    const idx = parseInt(req.params.index);
+    if (isNaN(idx) || idx < 0 || idx >= job.milestones.length) {
+      return res.status(404).json({ error: 'Milestone not found' });
+    }
+    const milestone = job.milestones[idx];
+    if (milestone.escrowAmount > 0) {
+      return res.status(400).json({ error: 'This milestone is already funded' });
+    }
+    if (milestone.status === 'approved') {
+      return res.status(400).json({ error: 'This milestone is already completed and paid' });
+    }
+
+    const paymentIntent = await stripeService.chargeForJob(milestone.amount, 'usd', {
+      jobId:          String(job._id),
+      milestoneIndex: String(idx),
+      milestoneTitle: milestone.title,
+      clientId:       String(req.user._id),
+      freelancerId:   String(job.freelancer._id),
+      type:           'milestone',
+    });
+
+    res.json({
+      clientSecret:    paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      milestoneIndex:  idx,
+      milestoneTitle:  milestone.title,
+      amount:          milestone.amount,
+    });
+  } catch (error) {
+    console.error('Error funding milestone:', error);
+    res.status(500).json({ error: 'Failed to fund milestone' });
+  }
+});
+
+// POST /api/jobs/:id/milestones/:index/fund/confirm — called after frontend confirms payment
+router.post('/:id/milestones/:index/fund/confirm', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+    if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
+
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (String(job.client) !== String(req.user._id)) return res.status(403).json({ error: 'Unauthorized' });
+
+    const idx = parseInt(req.params.index);
+    const milestone = job.milestones[idx];
+    if (!milestone) return res.status(404).json({ error: 'Milestone not found' });
+
+    milestone.stripePaymentIntentId = paymentIntentId;
+    milestone.escrowAmount          = milestone.amount;
+    milestone.fundedAt              = new Date();
+    await job.save();
+
+    await Payment.create({
+      job:           job._id,
+      client:        req.user._id,
+      freelancer:    job.freelancer,
+      amount:        milestone.amount,
+      type:          'escrow',
+      status:        'processing',
+      paymentMethod: 'stripe',
+      stripePaymentIntentId: paymentIntentId,
+      transactionId: paymentIntentId,
+      platformFee:   Math.round(milestone.amount * 0.10 * 100) / 100,
+    });
+
+    // Notify freelancer
+    await Notification.create({
+      recipient:  job.freelancer,
+      type:       'payment_received',
+      title:      'Milestone funded',
+      message:    `Milestone "${milestone.title}" has been funded ($${milestone.amount}).`,
+      relatedJob: job._id,
+      actionUrl:  `/jobs/${job._id}/progress`,
+    });
+
+    res.json({ message: 'Milestone funded', milestone: { ...milestone.toObject(), _id: String(milestone._id) } });
+  } catch (error) {
+    console.error('Error confirming milestone funding:', error);
+    res.status(500).json({ error: 'Failed to confirm milestone funding' });
+  }
+});
+
+// POST /api/jobs/:id/milestones/:index/release — client releases milestone payment
+router.post('/:id/milestones/:index/release', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('freelancer', '_id firstName lastName stripeAccountId');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (String(job.client) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'Only the client can release milestone payments' });
+    }
+
+    const idx = parseInt(req.params.index);
+    const milestone = job.milestones[idx];
+    if (!milestone) return res.status(404).json({ error: 'Milestone not found' });
+    if (milestone.escrowAmount === 0) {
+      return res.status(400).json({ error: 'This milestone has no funds to release' });
+    }
+    if (!['completed', 'approved'].includes(milestone.status)) {
+      return res.status(400).json({ error: 'Milestone must be completed before releasing payment' });
+    }
+    if (!job.freelancer.stripeAccountId) {
+      return res.status(400).json({ error: 'Freelancer has not connected their bank account yet' });
+    }
+
+    const platformFee = Math.round(milestone.amount * 0.10 * 100) / 100;
+    const payoutAmt   = milestone.amount - platformFee;
+
+    const transfer = await stripeService.releasePayment(
+      payoutAmt,
+      job.freelancer.stripeAccountId,
+      milestone.stripePaymentIntentId
+    );
+
+    milestone.status      = 'approved';
+    milestone.approvedAt  = new Date();
+    milestone.releasedAt  = new Date();
+    milestone.escrowAmount = 0;
+    await job.save();
+
+    await Payment.findOneAndUpdate(
+      { stripePaymentIntentId: milestone.stripePaymentIntentId },
+      { status: 'completed' }
+    );
+
+    await Payment.create({
+      job:           job._id,
+      client:        req.user._id,
+      freelancer:    job.freelancer._id,
+      amount:        payoutAmt,
+      type:          'release',
+      status:        'completed',
+      paymentMethod: 'stripe',
+      transactionId: transfer.id,
+      platformFee,
+    });
+
+    // Notify freelancer
+    await Notification.create({
+      recipient:  job.freelancer._id,
+      type:       'payment_received',
+      title:      'Milestone payment released',
+      message:    `$${payoutAmt.toFixed(2)} released for milestone "${milestone.title}".`,
+      relatedJob: job._id,
+      actionUrl:  `/jobs/${job._id}/progress`,
+    });
+
+    res.json({ message: 'Milestone payment released', payoutAmt, transfer: transfer.id });
+  } catch (error) {
+    console.error('Error releasing milestone payment:', error);
+    res.status(500).json({ error: 'Failed to release milestone payment' });
+  }
+});
+
 // ── Milestone Management ────────────────────────────────────────
 
 // POST /api/jobs/:id/milestones — add milestones (client only)

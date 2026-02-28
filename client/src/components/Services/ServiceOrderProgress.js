@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import './ServiceOrderProgress.css';
@@ -34,11 +34,13 @@ const ServiceOrderProgress = () => {
   const navigate = useNavigate();
   const userId = user?._id || user?.id || user?.userId;
 
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
-  const [acting,  setActing]  = useState(false);
-  const [actionMsg, setActionMsg] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [data,       setData]       = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState('');
+  const [acting,     setActing]     = useState(false);
+  const [actionMsg,  setActionMsg]  = useState('');
+  const [redirectMsg, setRedirectMsg] = useState(null); // { type: 'success'|'error', text }
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -53,6 +55,30 @@ const ServiceOrderProgress = () => {
   }, [serviceId, orderId]);
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
+
+  // Handle 3DS / redirect-based payment return
+  useEffect(() => {
+    const redirectStatus = searchParams.get('redirect_status');
+    const paymentIntent  = searchParams.get('payment_intent');
+    if (!redirectStatus) return;
+
+    setSearchParams({}, { replace: true }); // clean URL immediately
+
+    if (redirectStatus === 'succeeded' && paymentIntent) {
+      // Confirm the order now that payment went through
+      apiRequest(`/api/services/${serviceId}/orders/${orderId}/confirm`, { method: 'POST' })
+        .then(() => {
+          setRedirectMsg({ type: 'success', text: '✅ Payment confirmed! Your order is now active.' });
+          fetchOrder();
+        })
+        .catch(() => {
+          setRedirectMsg({ type: 'success', text: '✅ Payment received. Order should be active shortly.' });
+          fetchOrder();
+        });
+    } else if (redirectStatus === 'failed') {
+      setRedirectMsg({ type: 'error', text: '❌ Payment failed. Please contact support if you were charged.' });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const doAction = async (action, body = {}) => {
     setActing(true);
@@ -135,6 +161,12 @@ const ServiceOrderProgress = () => {
           );
         })}
       </div>
+
+      {redirectMsg && (
+        <div className={`sop-cancelled-banner ${redirectMsg.type === 'success' ? 'sop-success-banner' : ''}`}>
+          {redirectMsg.text}
+        </div>
+      )}
 
       {order.status === 'cancelled' && (
         <div className="sop-cancelled-banner">❌ This order has been cancelled.</div>

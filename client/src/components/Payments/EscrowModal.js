@@ -186,6 +186,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title }) =
                 amount={Number(amount)}
                 jobTitle={job.title}
                 jobId={job._id}
+                returnUrl={window.location.href}
                 onSuccess={handleSuccess}
                 onCancel={onClose}
               />
