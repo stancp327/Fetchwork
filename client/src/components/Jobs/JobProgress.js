@@ -54,16 +54,37 @@ const JobProgress = () => {
 
   useEffect(() => { fetchProgress(); }, [fetchProgress]);
 
-  // Handle 3DS / redirect-based payment return
+  // Handle 3DS / redirect-based payment return.
+  // IMPORTANT: never trust URL params alone — verify actual PI status with Stripe via backend.
   useEffect(() => {
-    const status = searchParams.get('redirect_status') || (searchParams.get('payment') === 'success' ? 'succeeded' : null);
-    if (status === 'succeeded') {
-      setPaymentConfirmed(true);
-      fetchProgress(); // refresh to get updated escrow amount
-      setSearchParams({}, { replace: true }); // clean URL
-    } else if (status === 'failed') {
+    const redirectStatus = searchParams.get('redirect_status');
+    const legacySuccess  = searchParams.get('payment') === 'success';
+    if (!redirectStatus && !legacySuccess) return;
+
+    // Clean URL immediately so a refresh doesn't re-trigger
+    setSearchParams({}, { replace: true });
+
+    if (redirectStatus === 'failed') {
       setPaymentFailed(true);
-      setSearchParams({}, { replace: true });
+      return;
+    }
+
+    if (redirectStatus === 'succeeded' || legacySuccess) {
+      // Verify actual status from Stripe — don't trust the URL param alone
+      apiRequest(`/api/payments/verify-intent/${id}`)
+        .then(verify => {
+          if (verify.funded) {
+            setPaymentConfirmed(true);
+            fetchProgress();
+          } else {
+            setPaymentFailed(true);
+          }
+        })
+        .catch(() => {
+          // Verify call failed (network/auth issue) — optimistic fallback
+          setPaymentConfirmed(true);
+          fetchProgress();
+        });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

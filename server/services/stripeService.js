@@ -220,6 +220,12 @@ class StripeService {
     });
   }
 
+  // ── PaymentIntent Lookup ─────────────────────────────────────────
+  async retrievePaymentIntent(piId) {
+    this._ensureStripe();
+    return stripe.paymentIntents.retrieve(piId);
+  }
+
   // ── Refunds ─────────────────────────────────────────────────────
   async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer') {
     this._ensureStripe();

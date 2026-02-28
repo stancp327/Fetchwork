@@ -43,6 +43,31 @@ router.get('/status', authenticateToken, async (req, res) => {
   }
 });
 
+// ── GET /api/payments/verify-intent/:jobId ─────────────────────
+// Verifies actual PaymentIntent status from Stripe (used after 3DS redirect).
+// Clients must not be trusted to self-report payment success via URL params.
+router.get('/verify-intent/:jobId', authenticateToken, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.jobId).select('stripePaymentIntentId client escrowAmount');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (String(job.client) !== String(req.user.userId)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    if (!job.stripePaymentIntentId) {
+      return res.json({ status: 'none', funded: false, escrowAmount: 0 });
+    }
+    const pi = await stripeService.retrievePaymentIntent(job.stripePaymentIntentId);
+    res.json({
+      status:       pi.status,
+      funded:       pi.status === 'succeeded',
+      escrowAmount: job.escrowAmount,
+    });
+  } catch (err) {
+    console.error('verify-intent error:', err);
+    res.status(500).json({ error: 'Failed to verify payment' });
+  }
+});
+
 // ── POST /api/payments/connect-account ─────────────────────────
 // Creates or resumes a Stripe Connect Express onboarding session
 router.post('/connect-account', authenticateToken, async (req, res) => {
@@ -220,14 +245,17 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
       paymentIntent = await stripeService.chargeForJob(amount, 'usd', metadata);
     }
 
-    // Record in Payment model
+    // Record in Payment model.
+    // Saved card path: PI is confirmed immediately → 'processing'.
+    // New card path: PI needs frontend confirmation → 'pending' until
+    // payment_intent.succeeded webhook upgrades it to 'processing'.
     const payment = await Payment.create({
       job:           jobId,
       client:        req.user.userId,
       freelancer:    job.freelancer?._id || job.freelancer,
       amount:        amount,
       type:          'escrow',
-      status:        'processing',
+      status:        paymentMethodId ? 'processing' : 'pending',
       paymentMethod: 'stripe',
       stripePaymentIntentId: paymentIntent.id,
       transactionId: paymentIntent.id,
@@ -459,11 +487,35 @@ router.webhookHandler = async (req, res) => {
 
       case 'payment_intent.payment_failed': {
         const pi = event.data.object;
+
+        // Mark payment as failed
         await Payment.findOneAndUpdate(
           { stripePaymentIntentId: pi.id },
           { status: 'failed' }
         );
-        // TODO: notify client of failed payment
+
+        // Reset job escrowAmount so client can retry (prevents stuck state)
+        const failedJob = await Job.findOneAndUpdate(
+          { stripePaymentIntentId: pi.id },
+          { escrowAmount: 0, stripePaymentIntentId: null }
+        ).populate('client', '_id firstName');
+
+        // Notify client
+        if (failedJob?.client) {
+          try {
+            await Notification.create({
+              recipient:  failedJob.client._id,
+              type:       'payment_failed',
+              title:      'Payment not completed',
+              message:    `Your payment for "${failedJob.title}" was declined or not completed. Please try again.`,
+              relatedJob: failedJob._id,
+              actionUrl:  `/jobs/${failedJob._id}/progress`,
+            });
+          } catch (notifErr) {
+            console.error('Webhook: failed-payment notification error:', notifErr.message);
+          }
+        }
+
         console.log('❌ payment_intent.payment_failed:', pi.id);
         break;
       }

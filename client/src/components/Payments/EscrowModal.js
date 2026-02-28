@@ -114,8 +114,16 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title }) =
               <div className="escrow-amount-row">
                 <span>Job:</span><span>{job.title}</span>
               </div>
+              <div className="escrow-amount-row">
+                <span>Total amount:</span><span>${Number(amount).toFixed(2)}</span>
+              </div>
+              <div className="escrow-amount-row fee">
+                <span>Platform fee (10%):</span>
+                <span>-${(Number(amount) * 0.10).toFixed(2)}</span>
+              </div>
               <div className="escrow-amount-row total">
-                <span>Amount to secure:</span><span>${Number(amount).toFixed(2)}</span>
+                <span>Freelancer receives:</span>
+                <span>${(Number(amount) * 0.90).toFixed(2)}</span>
               </div>
 
               {/* Saved cards */}

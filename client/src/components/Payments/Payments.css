@@ -84,8 +84,12 @@
   font-size: 0.9rem; padding: 0.4rem 0;
   border-bottom: 1px solid #f3f4f6;
 }
+.escrow-amount-row.fee {
+  color: #6b7280; font-size: 0.85rem;
+}
 .escrow-amount-row.total {
   font-weight: 700; font-size: 1rem; border-bottom: none; margin-top: 0.25rem;
+  color: #16a34a; /* green — what the freelancer gets */
 }
 .escrow-init-actions {
   display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;
