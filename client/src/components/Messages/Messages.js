@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
-import { getApiBaseUrl, apiRequest } from '../../utils/api';
+import { apiRequest } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import './Messages.css';
 
@@ -424,7 +423,6 @@ const Messages = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  const apiBaseUrl = getApiBaseUrl();
   const token = localStorage.getItem('token');
 
   const socketRef = useSocket({
@@ -468,30 +466,24 @@ const Messages = () => {
   const fetchConversations = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${apiBaseUrl}/api/messages/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const convos = res.data.conversations || [];
-      setConversations(convos);
+      const data = await apiRequest('/api/messages/conversations');
+      setConversations(data.conversations || []);
       setError(null);
-
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load conversations');
+      setError(err.data?.error || err.message || 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl, token]);
+  }, []);
 
   const fetchMessages = useCallback(async (convo) => {
     try {
-      const res = await axios.get(`${apiBaseUrl}/api/messages/conversations/${convo._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMessages(res.data.messages || []);
-      setSelectedConvo(res.data.conversation || convo);
+      const data = await apiRequest(`/api/messages/conversations/${convo._id}`);
+      setMessages(data.messages || []);
+      setSelectedConvo(data.conversation || convo);
       setMobileView('chat');
 
-      const unread = (res.data.messages || []).filter(m => !m.isRead && m.recipient === userId);
+      const unread = (data.messages || []).filter(m => !m.isRead && m.recipient === userId);
       if (unread.length > 0 && socketRef.current) {
         socketRef.current.emit('message:read', {
           conversationId: convo._id,
@@ -499,9 +491,9 @@ const Messages = () => {
         });
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load messages');
+      setError(err.data?.error || err.message || 'Failed to load messages');
     }
-  }, [apiBaseUrl, token, userId]);
+  }, [userId]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -529,12 +521,11 @@ const Messages = () => {
           messageType: 'text'
         });
       } else {
-        const res = await axios.post(
-          `${apiBaseUrl}/api/messages/conversations/${selectedConvo._id}/messages`,
-          { content },
-          { headers: { Authorization: `Bearer ${token}` } }
+        const res = await apiRequest(
+          `/api/messages/conversations/${selectedConvo._id}/messages`,
+          { method: 'POST', body: JSON.stringify({ content }) }
         );
-        setMessages(prev => prev.map(m => m._id === optimistic._id ? res.data.data : m));
+        setMessages(prev => prev.map(m => m._id === optimistic._id ? res.data : m));
         fetchConversations();
       }
     } catch (err) {

@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { getLocationDisplay } from '../../utils/location';
 import { useAuth } from '../../context/AuthContext';
 import { formatCategory } from '../../utils/formatters';
-import { getApiBaseUrl, apiRequest } from '../../utils/api';
+import { apiRequest } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import EscrowModal from '../Payments/EscrowModal';
 import './ServiceDetails.css';
@@ -23,21 +22,19 @@ const ServiceDetails = () => {
   const [orderConfirmed,  setOrderConfirmed]  = useState(null); // holds confirmed package details
   const [orderPayment,    setOrderPayment]    = useState(null); // { clientSecret, orderId, amount, packageName, deliveryDays }
 
-  const apiBaseUrl = getApiBaseUrl();
-
   const fetchService = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${apiBaseUrl}/api/services/${id}`);
-      setService(response.data.service);
+      const data = await apiRequest(`/api/services/${id}`);
+      setService(data.service);
       setError(null);
     } catch (error) {
       console.error('Failed to fetch service:', error);
-      setError(error.response?.data?.error || 'Failed to load service');
+      setError(error.data?.error || error.message || 'Failed to load service');
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl, id]);
+  }, [id]);
 
   useEffect(() => {
     fetchService();

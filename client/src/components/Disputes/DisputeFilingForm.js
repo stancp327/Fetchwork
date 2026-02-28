@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import FileUpload from '../common/FileUpload';
 import './DisputeFilingForm.css';
-import { getApiBaseUrl } from '../../utils/api';
+import { apiRequest } from '../../utils/api';
 
 const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -57,26 +56,16 @@ const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
     
     setLoading(true);
     try {
-      const API_BASE_URL = getApiBaseUrl();
-      
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('jobId', jobId);
       formData.append('reason', disputeData.reason);
       formData.append('description', disputeData.description);
-      
-      selectedEvidence.forEach(file => {
-        formData.append('evidence', file);
-      });
+      selectedEvidence.forEach(file => formData.append('evidence', file));
 
-      const response = await axios.post(`${API_BASE_URL}/api/disputes`, formData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      onSubmit(response.data.dispute);
+      // apiRequest auto-detects FormData: omits Content-Type (browser sets multipart boundary)
+      // and adds Authorization header from localStorage
+      const data = await apiRequest('/api/disputes', { method: 'POST', body: formData });
+      onSubmit(data.dispute);
       onClose();
     } catch (error) {
       console.error('Error filing dispute:', error);

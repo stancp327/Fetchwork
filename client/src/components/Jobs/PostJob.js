@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { getApiBaseUrl } from '../../utils/api';
+import { apiRequest } from '../../utils/api';
 import CategoryCombobox from '../common/CategoryCombobox';
 import UpgradePrompt from '../Billing/UpgradePrompt';
 import './PostJob.css';
@@ -135,12 +134,7 @@ const PostJob = () => {
         isUrgent: formData.isUrgent
       };
 
-      const token = localStorage.getItem('token');
-      await axios.post(`${getApiBaseUrl()}/api/jobs`, jobData, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      await apiRequest('/api/jobs', { method: 'POST', body: JSON.stringify(jobData) });
       
       setSuccess(true);
       setTimeout(() => {
@@ -149,11 +143,11 @@ const PostJob = () => {
 
     } catch (error) {
       console.error('Failed to post job:', error);
-      const data = error.response?.data;
+      const data = error.data;
       if (data?.reason === 'job_limit') {
         setUpgradeLimit({ reason: 'job_limit', limit: data.limit });
       } else {
-        setError(data?.error || 'Failed to post job');
+        setError(data?.error || error.message || 'Failed to post job');
       }
     } finally {
       setLoading(false);

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { getApiBaseUrl } from '../../utils/api';
+import { apiRequest } from '../../utils/api';
 
 const SearchSuggestions = ({ value, onSelect, placeholder = "Search..." }) => {
   const [suggestions, setSuggestions] = useState([]);
@@ -8,8 +7,6 @@ const SearchSuggestions = ({ value, onSelect, placeholder = "Search..." }) => {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
-
-  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -20,8 +17,8 @@ const SearchSuggestions = ({ value, onSelect, placeholder = "Search..." }) => {
 
       try {
         setLoading(true);
-        const response = await axios.get(`${apiBaseUrl}/api/search/suggestions?q=${encodeURIComponent(value)}`);
-        setSuggestions(response.data.suggestions);
+        const data = await apiRequest(`/api/search/suggestions?q=${encodeURIComponent(value)}`);
+        setSuggestions(data.suggestions);
       } catch (error) {
         console.error('Failed to fetch suggestions:', error);
         setSuggestions([]);
