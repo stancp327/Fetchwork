@@ -130,13 +130,15 @@ module.exports = (io) => {
           try {
             const senderMsgCount = await Message.countDocuments({
               conversation: conversation._id,
-              sender: senderId
+              sender: senderId,
+              messageType: 'text'    // ignore system messages (proposals, milestones, etc.)
             });
             if (senderMsgCount === 1) {
               // This is sender's first message — find oldest message from the other person
               const opener = await Message.findOne({
                 conversation: conversation._id,
-                sender: { $ne: senderId }
+                sender: { $ne: senderId },
+                messageType: 'text'
               }).sort({ createdAt: 1 });
               if (opener) {
                 const deltaMin = (Date.now() - new Date(opener.createdAt).getTime()) / 60000;

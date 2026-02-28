@@ -22,7 +22,8 @@ const ConvoItem = ({ convo, selected, userId, onClick, onlineStatus }) => {
   const other = convo.participants?.find(p => p._id !== userId);
   const unread = convo.unreadCount > 0;
   const otherId = other?._id;
-  const status = onlineStatus?.[otherId];
+  const status = onlineStatus?.[otherId];        // undefined = not yet loaded
+  const statusKnown = status !== undefined;      // only show dot when we have data
   const isOnline = status?.isOnline ?? false;
 
   return (
@@ -33,14 +34,16 @@ const ConvoItem = ({ convo, selected, userId, onClick, onlineStatus }) => {
         ) : (
           <span>{other?.firstName?.[0]}{other?.lastName?.[0]}</span>
         )}
-        <span className={`avatar-online-badge ${isOnline ? '' : 'offline'}`} />
+        {statusKnown && (
+          <span className={`avatar-online-badge ${isOnline ? '' : 'offline'}`} />
+        )}
       </div>
       <div className="convo-info">
         <div className="convo-top">
           <span className="convo-name">{other?.firstName} {other?.lastName}</span>
           <span className="convo-time">{formatTime(convo.lastActivity)}</span>
         </div>
-        {!isOnline && status?.lastSeen && (
+        {statusKnown && !isOnline && status?.lastSeen && (
           <div className="convo-last-seen">Last seen {formatLastSeen(status.lastSeen)}</div>
         )}
         {convo.job && (
@@ -716,7 +719,7 @@ const Messages = () => {
                   </div>
                   <div>
                     <h3>{otherParticipant?.firstName} {otherParticipant?.lastName}</h3>
-                    {otherParticipant?._id && (
+                    {otherParticipant?._id && onlineUsers[otherParticipant._id] !== undefined && (
                       <OnlineStatus
                         isOnline={onlineUsers[otherParticipant._id]?.isOnline ?? false}
                         lastSeen={onlineUsers[otherParticipant._id]?.lastSeen}
