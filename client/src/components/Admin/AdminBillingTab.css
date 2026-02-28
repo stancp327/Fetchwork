@@ -32,7 +32,7 @@
   box-shadow: var(--shadow-sm);
   border-top: 4px solid var(--color-border);
 }
-.abt-plan-card.abt-tier-free { border-top-color: #6c757d; }
+.abt-plan-card.abt-tier-free { border-top-color: var(--color-text-secondary); }
 .abt-plan-card.abt-tier-plus { border-top-color: var(--color-primary); }
 .abt-plan-card.abt-tier-pro  { border-top-color: #764ba2; }
 

@@ -36,7 +36,7 @@
 
 .saved-filter-btn.active {
   border-color: var(--color-primary);
-  background: #eff6ff;
+  background: var(--color-primary-light);
   color: var(--color-primary);
 }
 
@@ -89,7 +89,7 @@
 .saved-item-title {
   font-weight: 600;
   font-size: 0.95rem;
-  color: #111827;
+  color: var(--color-text-darker);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

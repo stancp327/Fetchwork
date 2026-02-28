@@ -82,7 +82,7 @@
   cursor: pointer;
   flex-wrap: wrap;
 }
-.av-card-summary:hover { background: #f9fafb; }
+.av-card-summary:hover { background: var(--color-bg-subtle); }
 
 .av-user-info {
   display: flex;
@@ -111,7 +111,7 @@
   font-size: 1rem;
   flex-shrink: 0;
 }
-.av-name  { font-weight: 600; font-size: 0.9rem; color: #111827; }
+.av-name  { font-weight: 600; font-size: 0.9rem; color: var(--color-text-darker); }
 .av-email { font-size: 0.78rem; color: var(--color-text-secondary); }
 
 .av-meta {
@@ -210,13 +210,13 @@
 .av-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .av-btn.approve { background: var(--color-success); color: white; }
 .av-btn.approve:hover:not(:disabled) { background: var(--color-success-dark); }
-.av-btn.reject  { background: var(--color-bg-muted); color: var(--color-danger); border: 1px solid #fecaca; }
+.av-btn.reject  { background: var(--color-bg-muted); color: var(--color-danger); border: 1px solid var(--color-danger-light); }
 .av-btn.reject:hover:not(:disabled)  { background: var(--color-danger-light); }
 
 .av-review-notes {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 0.6rem 0.75rem;
 }

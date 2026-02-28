@@ -1,4 +1,4 @@
-/* ── Admin Email Panel — Mobile-first ────────────────────────── */
+﻿/* ── Admin Email Panel — Mobile-first ────────────────────────── */
 .admin-email-panel {
   padding: 0;
   overflow: hidden;
@@ -8,7 +8,7 @@
 .admin-email-panel h2 {
   color: var(--color-text-primary);
   margin-bottom: 20px;
-  border-bottom: 2px solid #4285f4;
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 10px;
   font-size: var(--font-size-xl);
   word-break: break-word;
@@ -16,7 +16,7 @@
 
 /* Status */
 .email-status {
-  background: #f8f9fa;
+  background: var(--color-bg-subtle);
   padding: 16px;
   border-radius: var(--radius-lg);
   margin-bottom: 20px;
@@ -32,7 +32,7 @@
   border-left: 4px solid;
   font-size: var(--font-size-sm);
 }
-.status-indicator.configured     { background: #d4edda; border-color: #28a745; color: #155724; }
+.status-indicator.configured     { background: #d4edda; border-color: var(--color-success); color: #155724; }
 .status-indicator.not-configured { background: #f8d7da; border-color: #dc3545; color: #721c24; }
 
 /* Actions grid — single column on mobile */
@@ -93,14 +93,14 @@
 .admin-email-panel .form-group select:focus,
 .admin-email-panel .form-group textarea:focus {
   outline: none;
-  border-color: #4285f4;
+  border-color: var(--color-primary);
 }
 
 /* Submit button — scoped to this panel only */
 .admin-email-panel button[type="submit"] {
   width: 100%;
   height: 44px;
-  background: #4285f4;
+  background: var(--color-primary);
   color: white;
   padding: 0 24px;
   border: none;

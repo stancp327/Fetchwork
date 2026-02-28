@@ -19,9 +19,9 @@
   text-align: center;
   margin-bottom: var(--space-md);
   padding-bottom: var(--space-md);
-  border-bottom: 2px solid #e1e5e9;
+  border-bottom: 2px solid var(--color-border);
 }
-.dashboard-header h1 { color: #2c3e50; margin: 0; font-size: var(--font-size-xl); font-weight: 600; }
+.dashboard-header h1 { color: var(--color-text-dark); margin: 0; font-size: var(--font-size-xl); font-weight: 600; }
 .header-actions { display: flex; gap: var(--space-sm); justify-content: center; }
 .refresh-button {
   background: #3498db; color: white; border: none; padding: var(--space-sm) var(--space-lg);
@@ -37,7 +37,7 @@
                            Without this, flex-shrink:0 tab buttons sum to ~939px
                            and force the entire page to be that wide on mobile. */
   margin-bottom: var(--space-md);
-  border-bottom: 1px solid #e1e5e9;
+  border-bottom: 1px solid var(--color-border);
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   scrollbar-width: none; /* Firefox */
   padding-bottom: 0;
@@ -51,8 +51,8 @@
   transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
   min-height: 44px;
 }
-.tab-button:hover { color: #2c3e50; background: #f8f9fa; }
-.tab-button.active { color: #3498db; border-bottom-color: #3498db; background: #f8f9fa; }
+.tab-button:hover { color: var(--color-text-dark); background: var(--color-bg-subtle); }
+.tab-button.active { color: #3498db; border-bottom-color: #3498db; background: var(--color-bg-subtle); }
 
 /* Content — universal overflow guard for ALL tabs */
 .dashboard-content { min-height: 300px; overflow: hidden; }
@@ -95,7 +95,7 @@
   margin: 0 0 var(--space-xs); color: #7f8c8d; font-size: 0.65rem;
   font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
 }
-.stat-value { font-size: var(--font-size-xl); font-weight: 700; color: #2c3e50; }
+.stat-value { font-size: var(--font-size-xl); font-weight: 700; color: var(--color-text-dark); }
 .stat-subtitle { color: #95a5a6; font-size: 0.75rem; }
 
 /* Activity */
@@ -103,7 +103,7 @@
   background: white; padding: var(--space-md); border-radius: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-.recent-activity h2 { color: #2c3e50; margin-bottom: var(--space-md); font-size: var(--font-size-lg); }
+.recent-activity h2 { color: var(--color-text-dark); margin-bottom: var(--space-md); font-size: var(--font-size-lg); }
 .activity-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); }
 .activity-section h3 {
   color: #34495e; margin-bottom: var(--space-sm); font-size: var(--font-size-sm);
@@ -112,9 +112,9 @@
 .activity-list { display: flex; flex-direction: column; gap: var(--space-sm); }
 .activity-item {
   display: flex; flex-direction: column; gap: 4px;
-  padding: var(--space-sm); background: #f8f9fa; border-radius: 6px; border-left: 3px solid #3498db;
+  padding: var(--space-sm); background: var(--color-bg-subtle); border-radius: 6px; border-left: 3px solid #3498db;
 }
-.user-name, .job-title { font-weight: 600; color: #2c3e50; font-size: var(--font-size-sm); }
+.user-name, .job-title { font-weight: 600; color: var(--color-text-dark); font-size: var(--font-size-sm); }
 .user-email, .job-budget, .job-status { color: #7f8c8d; font-size: var(--font-size-xs); }
 .activity-date { color: #95a5a6; font-size: 0.7rem; }
 
@@ -128,7 +128,7 @@
 }
 .overview-tab h2, .users-tab h2, .jobs-tab h2, .payments-tab h2, .reviews-tab h2,
 .disputes-tab h2, .email-tab h2, .monitoring-tab h2, .billing-tab h2 {
-  color: #2c3e50; margin-bottom: var(--space-md); font-size: var(--font-size-lg);
+  color: var(--color-text-dark); margin-bottom: var(--space-md); font-size: var(--font-size-lg);
   word-break: break-word;
 }
 
@@ -145,7 +145,7 @@
   margin-bottom: var(--space-md);
 }
 .search-input, .status-filter {
-  padding: var(--space-sm) var(--space-md); border: 1px solid #e1e5e9;
+  padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border);
   border-radius: 6px; font-size: var(--font-size-sm); background: white;
   width: 100%; min-height: 44px; box-sizing: border-box;
 }
@@ -204,14 +204,14 @@
   display: inline-flex; align-items: center; justify-content: center;
 }
 .action-btn.suspend { background: #dc3545; color: white; }
-.action-btn.unsuspend { background: #28a745; color: white; }
-.action-btn.promote { background: #28a745; color: white; }
+.action-btn.unsuspend { background: var(--color-success); color: white; }
+.action-btn.promote { background: var(--color-success); color: white; }
 .action-btn.demote { background: #ffc107; color: #212529; }
 .action-btn.delete { background: #dc3545; color: white; }
-.action-btn.delete:disabled { background: #6c757d; cursor: not-allowed; }
+.action-btn.delete:disabled { background: var(--color-text-secondary); cursor: not-allowed; }
 .action-btn.cancel { background: #dc3545; color: white; }
 .action-btn.view { background: #007bff; color: white; }
-.action-btn.approve { background: #28a745; color: white; }
+.action-btn.approve { background: var(--color-success); color: white; }
 .action-btn.reject { background: #dc3545; color: white; }
 
 .action-buttons, .review-actions {
@@ -223,7 +223,7 @@
 /* Pagination */
 .pagination {
   display: flex; flex-direction: column; align-items: center; gap: var(--space-xs);
-  padding: var(--space-md) 0; border-top: 1px solid #e1e5e9;
+  padding: var(--space-md) 0; border-top: 1px solid var(--color-border);
   color: #7f8c8d; font-size: var(--font-size-xs);
 }
 
@@ -264,11 +264,11 @@
     display: table-row; padding: 0; margin: 0; border: none; border-radius: 0; background: none;
   }
   .users-table td, .jobs-table td, .payments-table td, .reviews-table td {
-    padding: 12px 15px; border-bottom: 1px solid #e1e5e9; font-size: var(--font-size-sm);
+    padding: 12px 15px; border-bottom: 1px solid var(--color-border); font-size: var(--font-size-sm);
   }
   .users-table th, .jobs-table th, .payments-table th, .reviews-table th {
-    padding: 12px 15px; text-align: left; border-bottom: 1px solid #e1e5e9;
-    background: #f8f9fa; font-weight: 600; color: #2c3e50;
+    padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-subtle); font-weight: 600; color: var(--color-text-dark);
   }
 }
 

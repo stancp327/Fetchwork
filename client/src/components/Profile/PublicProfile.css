@@ -66,11 +66,11 @@
   overflow: hidden;
 }
 .pp-name {
-  margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 700; color: #111827;
+  margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 700; color: var(--color-text-darker);
   word-break: break-word; overflow-wrap: break-word;
 }
 .pp-headline {
-  margin: 0.25rem 0 0.5rem; color: #4b5563; font-size: 0.9rem;
+  margin: 0.25rem 0 0.5rem; color: var(--color-text-medium); font-size: 0.9rem;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .pp-hero-meta {
@@ -94,7 +94,7 @@
 .pp-hero-actions .pp-btn-secondary {
   width: 100%; justify-content: center;
 }
-.pp-rate { font-size: 1.5rem; font-weight: 700; color: #111827; }
+.pp-rate { font-size: 1.5rem; font-weight: 700; color: var(--color-text-darker); }
 .pp-rate span { font-size: 0.9rem; font-weight: 400; color: var(--color-text-secondary); }
 .pp-btn-primary {
   padding: 0.6rem 1.5rem; border: none; border-radius: 8px; background: var(--color-primary);
@@ -107,7 +107,7 @@
   color: var(--color-text); font-size: 0.9rem; font-weight: 500; cursor: pointer; white-space: nowrap;
   min-height: 44px;
 }
-.pp-btn-secondary:hover { background: #f9fafb; border-color: var(--color-primary); color: var(--color-primary); }
+.pp-btn-secondary:hover { background: var(--color-bg-subtle); border-color: var(--color-primary); color: var(--color-primary); }
 
 /* ── Stats Bar ───────────────────────────────────────────────── */
 .pp-stats-bar {
@@ -123,7 +123,7 @@
   box-sizing: border-box;
 }
 .pp-stat:last-child { border-right: none; }
-.pp-stat-value { font-size: 1.2rem; font-weight: 700; color: #111827; }
+.pp-stat-value { font-size: 1.2rem; font-weight: 700; color: var(--color-text-darker); }
 .pp-stat-label { font-size: 0.7rem; color: var(--color-text-secondary); margin-top: 0.1rem; }
 
 /* ── Navigation ──────────────────────────────────────────────── */
@@ -153,7 +153,7 @@
 .pp-card {
   background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1.5rem;
 }
-.pp-card h2 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; color: #111827; }
+.pp-card h2 { margin: 0 0 1rem; font-size: 1.1rem; font-weight: 600; color: var(--color-text-darker); }
 .pp-bio { color: var(--color-text); line-height: 1.7; margin: 0; white-space: pre-line; }
 .pp-muted { font-size: 0.8rem; color: var(--color-text-muted); }
 .pp-link { color: var(--color-primary); font-size: 0.85rem; text-decoration: none; }
@@ -162,7 +162,7 @@
 /* Skills */
 .pp-skills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .pp-skill-tag {
-  padding: 0.35rem 0.85rem; background: #eff6ff; color: var(--color-primary); border-radius: 20px;
+  padding: 0.35rem 0.85rem; background: var(--color-primary-light); color: var(--color-primary); border-radius: 20px;
   font-size: 0.85rem; font-weight: 500;
 }
 .pp-skill-tag-clickable {
@@ -202,7 +202,7 @@
 }
 .pp-fact:last-child { border-bottom: none; }
 .pp-fact span { color: var(--color-text-secondary); }
-.pp-fact strong { color: #111827; }
+.pp-fact strong { color: var(--color-text-darker); }
 
 /* ── Portfolio Grid ──────────────────────────────────────────── */
 .pp-portfolio-grid {
@@ -217,7 +217,7 @@
 .pp-portfolio-img { width: 100%; height: 100%; object-fit: cover; }
 .pp-portfolio-video { width: 100%; height: 100%; object-fit: cover; }
 .pp-portfolio-info { padding: 1rem; }
-.pp-portfolio-info h3 { margin: 0 0 0.25rem; font-size: 1rem; color: #111827; }
+.pp-portfolio-info h3 { margin: 0 0 0.25rem; font-size: 1rem; color: var(--color-text-darker); }
 .pp-portfolio-info p { margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); }
 
 /* ── Services Grid ───────────────────────────────────────────── */
@@ -232,9 +232,9 @@
 .pp-service-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
 .pp-service-cat { font-size: 0.8rem; color: var(--color-text-secondary); }
 .pp-service-rating { font-size: 0.85rem; }
-.pp-service-card h3 { margin: 0 0 0.75rem; font-size: 1rem; color: #111827; }
+.pp-service-card h3 { margin: 0 0 0.75rem; font-size: 1rem; color: var(--color-text-darker); }
 .pp-service-footer { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--color-text-secondary); }
-.pp-service-price { font-weight: 600; color: #111827; }
+.pp-service-price { font-weight: 600; color: var(--color-text-darker); }
 
 /* ── Reviews ─────────────────────────────────────────────────── */
 .pp-reviews { display: flex; flex-direction: column; gap: 1rem; }
@@ -302,5 +302,5 @@
   font-size: 1.1rem;
   font-weight: 700;
   margin: 0 0 1.25rem;
-  color: #1f2937;
+  color: var(--color-text-heading);
 }

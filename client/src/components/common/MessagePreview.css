@@ -27,13 +27,13 @@
 
 .msg-preview-avatar {
   width: 40px; height: 40px; border-radius: 50%;
-  background: #eff6ff; color: var(--color-primary);
+  background: var(--color-primary-light); color: var(--color-primary);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
 }
 
 .msg-preview-body { flex: 1; min-width: 0; }
-.msg-preview-sender { font-weight: 600; font-size: 0.875rem; color: #1f2937; }
+.msg-preview-sender { font-weight: 600; font-size: 0.875rem; color: var(--color-text-heading); }
 .msg-preview-text { font-size: 0.8rem; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .msg-preview-close {

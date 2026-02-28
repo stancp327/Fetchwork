@@ -16,7 +16,7 @@
   gap: 1rem;
 }
 
-.wizard-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; color: #111827; }
+.wizard-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--color-text-darker); }
 .wizard-header p { color: var(--color-text-secondary); margin: 0.25rem 0 0; font-size: 0.9rem; }
 
 .preview-toggle {
@@ -30,7 +30,7 @@
   transition: all 0.15s;
 }
 
-.preview-toggle.active { border-color: var(--color-primary); color: var(--color-primary); background: #eff6ff; }
+.preview-toggle.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
 
 /* ── Stepper ──────────────────────────────────────────────────── */
 .wizard-stepper {
@@ -108,7 +108,7 @@
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0 0 0.5rem;
-  color: #111827;
+  color: var(--color-text-darker);
 }
 
 .wizard-tip {
@@ -181,7 +181,7 @@
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 1rem;
-  color: #111827;
+  color: var(--color-text-darker);
 }
 
 .pricing-card + .pricing-card,
@@ -209,7 +209,7 @@
   gap: 0.5rem;
   width: 100%;
   padding: 1rem;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border: 2px dashed var(--color-border-medium);
   border-radius: 12px;
   color: var(--color-text-secondary);
@@ -220,7 +220,7 @@
   transition: all 0.15s;
   min-height: 44px;
 }
-.pkg-add-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: #eff6ff; }
+.pkg-add-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
 .pkg-add-hint { font-size: 0.8rem; opacity: 0.7; }
 
 .pkg-remove-btn {
@@ -318,7 +318,7 @@
   font-size: 0.95rem;
   font-weight: 600;
   margin: 0 0 0.75rem;
-  color: #111827;
+  color: var(--color-text-darker);
 }
 
 .review-row {
@@ -331,7 +331,7 @@
 
 .review-row:last-child { border-bottom: none; }
 .review-row span:first-child { color: var(--color-text-secondary); font-weight: 500; }
-.review-row span:last-child { color: #111827; }
+.review-row span:last-child { color: var(--color-text-darker); }
 
 /* ── Live Preview Panel ───────────────────────────────────────── */
 .wizard-preview-panel {
@@ -381,9 +381,9 @@
 }
 
 .preview-card-body { padding: 1rem; }
-.preview-card-body h4 { margin: 0 0 0.5rem; font-size: 0.95rem; color: #111827; }
+.preview-card-body h4 { margin: 0 0 0.5rem; font-size: 0.95rem; color: var(--color-text-darker); }
 .preview-desc { font-size: 0.8rem; color: var(--color-text-secondary); margin: 0 0 0.5rem; line-height: 1.4; }
-.preview-tag { font-size: 0.7rem; background: #eff6ff; color: var(--color-primary); padding: 0.15rem 0.5rem; border-radius: 6px; }
+.preview-tag { font-size: 0.7rem; background: var(--color-primary-light); color: var(--color-primary); padding: 0.15rem 0.5rem; border-radius: 6px; }
 
 .preview-card-footer {
   padding: 0.75rem 1rem;
@@ -393,11 +393,11 @@
   align-items: center;
 }
 
-.preview-price { font-weight: 700; color: #111827; font-size: 0.9rem; }
+.preview-price { font-weight: 700; color: var(--color-text-darker); font-size: 0.9rem; }
 .preview-delivery { font-size: 0.75rem; color: var(--color-text-secondary); }
 
 .preview-package {
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border-radius: 10px;
   padding: 0.75rem;
   margin-bottom: 1rem;
@@ -407,7 +407,7 @@
 .preview-pkg-row { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-text-secondary); padding: 0.15rem 0; }
 
 .preview-skills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.preview-skill-tag { font-size: 0.7rem; background: var(--color-bg-muted); color: #4b5563; padding: 0.15rem 0.4rem; border-radius: 4px; }
+.preview-skill-tag { font-size: 0.7rem; background: var(--color-bg-muted); color: var(--color-text-medium); padding: 0.15rem 0.4rem; border-radius: 4px; }
 
 /* ── Sticky Actions ───────────────────────────────────────────── */
 .wizard-actions {
@@ -465,8 +465,8 @@
 
 .wizard-error {
   padding: 0.75rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger-light);
   border-radius: 8px;
   color: var(--color-danger);
   font-size: 0.85rem;

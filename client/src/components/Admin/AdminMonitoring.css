@@ -1,4 +1,4 @@
-/* ── Admin Monitoring — Mobile-first ────────────────────────── */
+﻿/* ── Admin Monitoring — Mobile-first ────────────────────────── */
 
 /* Header — stacks on mobile */
 .monitoring-header {
@@ -33,10 +33,10 @@
 
 .online-users-section,
 .system-health-section {
-  background: #f8f9fa;
+  background: var(--color-bg-subtle);
   padding: var(--space-sm);
   border-radius: var(--radius-lg);
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-bg-muted);
   overflow: hidden;
 }
 
@@ -54,7 +54,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 8px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-bg-muted);
   gap: var(--space-sm);
   flex-wrap: wrap;
 }
@@ -74,7 +74,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #28a745;
+  background-color: var(--color-success);
   flex-shrink: 0;
 }
 
@@ -84,7 +84,7 @@
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-bg-muted);
   gap: var(--space-sm);
 }
 .health-item:last-child { border-bottom: none; }

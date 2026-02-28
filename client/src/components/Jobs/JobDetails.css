@@ -31,7 +31,7 @@
 }
 
 .job-category {
-  background: #eff6ff;
+  background: var(--color-primary-light);
   color: var(--color-primary);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -102,7 +102,7 @@
 .job-stat-item {
   text-align: center;
   padding: 0.5rem;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border-radius: 8px;
 }
 
@@ -120,7 +120,7 @@
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text-heading);
 }
 
 /* ── Description ──────────────────────────────────────────────── */
@@ -134,7 +134,7 @@
 }
 
 .job-section p {
-  color: #4b5563;
+  color: var(--color-text-medium);
   line-height: 1.6;
   margin: 0 0 0.5rem;
 }
@@ -154,7 +154,7 @@
 
 .job-info-item {
   font-size: 0.9rem;
-  color: #4b5563;
+  color: var(--color-text-medium);
   padding: 0.5rem 0;
 }
 
@@ -183,7 +183,7 @@
   margin: 0 0 0.75rem;
 }
 
-.client-name { font-size: 1rem; font-weight: 600; color: #1f2937; margin-bottom: 0.5rem; }
+.client-name { font-size: 1rem; font-weight: 600; color: var(--color-text-heading); margin-bottom: 0.5rem; }
 .client-stats { display: flex; flex-direction: column; gap: 0.35rem; }
 .client-stat { font-size: 0.85rem; color: var(--color-text-secondary); }
 
@@ -261,11 +261,11 @@
 .btn-primary-jd { background: var(--color-primary); color: white; }
 .btn-primary-jd:hover { background: var(--color-primary-dark); }
 .btn-secondary-jd { background: white; color: var(--color-text); border: 1px solid var(--color-border-medium); }
-.btn-secondary-jd:hover { background: #f9fafb; }
+.btn-secondary-jd:hover { background: var(--color-bg-subtle); }
 .btn-success-jd { background: var(--color-success-dark); color: white; }
 .btn-success-jd:hover { background: #047857; }
-.btn-danger-jd { background: white; color: var(--color-danger); border: 1px solid #fecaca; }
-.btn-danger-jd:hover { background: #fef2f2; }
+.btn-danger-jd { background: white; color: var(--color-danger); border: 1px solid var(--color-danger-light); }
+.btn-danger-jd:hover { background: var(--color-danger-subtle); }
 
 .custom-offer-divider {
   text-align: center;
@@ -281,8 +281,8 @@
 .already-applied p { color: var(--color-text-secondary); font-size: 0.85rem; margin: 0; }
 
 .error-banner-jd {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger-light);
   color: var(--color-danger);
   padding: 0.625rem 0.75rem;
   border-radius: 8px;
@@ -301,7 +301,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.jd-state-page h2 { color: #1f2937; margin: 0 0 0.5rem; }
+.jd-state-page h2 { color: var(--color-text-heading); margin: 0 0 0.5rem; }
 .jd-state-page p { color: var(--color-text-secondary); margin: 0 0 1rem; }
 
 .jd-state-page .btn-back {
@@ -359,7 +359,7 @@
   gap: 0.5rem;
   width: 100%;
   padding: 0.875rem 1rem;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border: 2px dashed var(--color-border-medium);
   border-radius: 10px;
   color: var(--color-text-secondary);
@@ -369,11 +369,11 @@
   min-height: 44px;
   transition: all 0.15s;
 }
-.milestone-toggle-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: #eff6ff; }
+.milestone-toggle-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
 .ms-toggle-hint { font-size: 0.8rem; opacity: 0.7; }
 
 .milestone-proposal-block {
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 1rem;
@@ -422,7 +422,7 @@
 
 /* -- My Proposal Summary (job detail page) --------------------- */
 .my-proposal-summary {
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 0.75rem;
   margin-top: 0.5rem;
@@ -450,7 +450,7 @@
 }
 .my-proposal-cover p {
   margin: 0;
-  color: #4b5563;
+  color: var(--color-text-medium);
   line-height: 1.5;
 }
 
@@ -492,6 +492,6 @@
 }
 .opr-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .opr-info { min-width: 0; flex: 1; }
-.opr-name  { font-size: 0.875rem; font-weight: 600; color: #111827; }
+.opr-name  { font-size: 0.875rem; font-weight: 600; color: var(--color-text-darker); }
 .opr-terms { font-size: 0.78rem; color: var(--color-text-secondary); }
 .opr-rating { font-size: 0.75rem; color: var(--color-warning); margin-top: 1px; }

@@ -9,7 +9,7 @@
   font-size: 1rem;          /* 16px — prevents iOS zoom */
   min-height: 44px;
   background: white;
-  color: #111827;
+  color: var(--color-text-darker);
   cursor: pointer;
   box-sizing: border-box;
   transition: border-color 0.15s;

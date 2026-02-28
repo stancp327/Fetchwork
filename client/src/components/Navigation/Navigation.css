@@ -149,7 +149,7 @@
 /* ── Nav Links (mobile styles) ────────────────────────────────── */
 .nav-link {
   text-decoration: none;
-  color: #4b5563;
+  color: var(--color-text-medium);
   font-weight: 500;
   font-size: 0.95rem;
   padding: 0.75rem;
@@ -169,7 +169,7 @@
 
 .nav-link.active {
   color: var(--color-primary);
-  background: #eff6ff;
+  background: var(--color-primary-light);
   font-weight: 600;
 }
 
@@ -240,7 +240,7 @@
 .nav-logout-btn:hover {
   border-color: var(--color-danger);
   color: var(--color-danger);
-  background: #fef2f2;
+  background: var(--color-danger-subtle);
 }
 
 /* ── Hamburger (visible on mobile) ───────────────────────────── */
@@ -442,7 +442,7 @@
   border-bottom: 1px solid var(--color-bg-muted);
   font-weight: 600;
   font-size: 0.9rem;
-  color: #1f2937;
+  color: var(--color-text-heading);
 }
 
 .notif-mark-all {
@@ -456,7 +456,7 @@
   border-radius: 4px;
 }
 
-.notif-mark-all:hover { background: #eff6ff; }
+.notif-mark-all:hover { background: var(--color-primary-light); }
 
 .notif-empty {
   padding: 2rem;
@@ -472,15 +472,15 @@
 
 .notif-item {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f9fafb;
+  border-bottom: 1px solid var(--color-bg-subtle);
   cursor: pointer;
   transition: background 0.1s;
 }
 
-.notif-item:hover { background: #f9fafb; }
+.notif-item:hover { background: var(--color-bg-subtle); }
 
 .notif-item.unread {
-  background: #eff6ff;
+  background: var(--color-primary-light);
   border-left: 3px solid var(--color-primary);
 }
 
@@ -489,7 +489,7 @@
 .notif-item-title {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-heading);
   margin-bottom: 0.15rem;
 }
 

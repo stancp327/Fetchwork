@@ -28,7 +28,7 @@
 .jp-header h1 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-darker);
   margin: 0 0 0.25rem;
 }
 .jp-header-meta {
@@ -47,7 +47,7 @@
   font-weight: 600;
   text-transform: capitalize;
 }
-.jp-header-badge.open        { background: #d1fae5; color: #065f46; }
+.jp-header-badge.open        { background: var(--color-success-light); color: var(--color-success-dark); }
 .jp-header-badge.in_progress { background: var(--color-primary-bg); color: var(--color-primary-dark); }
 .jp-header-badge.completed   { background: #ede9fe; color: #6d28d9; }
 
@@ -77,7 +77,7 @@
   transition: all 0.15s;
 }
 .jp-filter-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
-.jp-filter-btn.active { border-color: var(--color-primary); background: #eff6ff; color: var(--color-primary); }
+.jp-filter-btn.active { border-color: var(--color-primary); background: var(--color-primary-light); color: var(--color-primary); }
 
 /* ── Empty / Loading ─────────────────────────────────────────── */
 .jp-loading, .jp-empty {
@@ -135,7 +135,7 @@
 .jp-freelancer-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-darker);
   margin: 0 0 0.15rem;
 }
 .jp-freelancer-meta {
@@ -155,8 +155,8 @@
   font-weight: 600;
   flex-shrink: 0;
 }
-.jp-status-badge.pending  { background: var(--color-warning-light); color: #92400e; }
-.jp-status-badge.accepted { background: #d1fae5; color: #065f46; }
+.jp-status-badge.pending  { background: var(--color-warning-light); color: var(--color-warning-dark); }
+.jp-status-badge.accepted { background: var(--color-success-light); color: var(--color-success-dark); }
 .jp-status-badge.declined { background: var(--color-danger-light); color: #991b1b; }
 
 /* Bid row */
@@ -166,11 +166,11 @@
   gap: 0.5rem 1.5rem;
   margin-bottom: 0.85rem;
   padding: 0.75rem;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border-radius: 8px;
 }
 .jp-bid-item { font-size: 0.85rem; color: var(--color-text); }
-.jp-bid-item strong { color: #111827; font-weight: 700; }
+.jp-bid-item strong { color: var(--color-text-darker); font-weight: 700; }
 .jp-bid-item.highlight strong { color: var(--color-primary); }
 
 /* Cover letter */
@@ -204,7 +204,7 @@
 }
 .jp-ms-row:last-child { border-bottom: none; }
 .jp-ms-title { color: var(--color-text); min-width: 0; }
-.jp-ms-amount { color: #111827; font-weight: 600; flex-shrink: 0; }
+.jp-ms-amount { color: var(--color-text-darker); font-weight: 600; flex-shrink: 0; }
 
 /* Action row */
 .jp-actions {
@@ -247,7 +247,7 @@
   gap: 0.35rem;
   transition: all 0.15s;
 }
-.jp-btn-message:hover { background: #eff6ff; }
+.jp-btn-message:hover { background: var(--color-primary-light); }
 
 .jp-btn-profile {
   min-height: 40px;

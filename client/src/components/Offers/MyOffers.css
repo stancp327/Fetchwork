@@ -21,7 +21,7 @@
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-darker);
 }
 
 .my-offers-alert {
@@ -64,7 +64,7 @@
 
 .offer-filter-btn.active {
   border-color: var(--color-primary);
-  background: #eff6ff;
+  background: var(--color-primary-light);
   color: var(--color-primary);
 }
 

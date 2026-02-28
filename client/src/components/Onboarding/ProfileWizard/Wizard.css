@@ -4,7 +4,7 @@
 .progress { height: 100%; background: #4f46e5; }
 .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 16px; font-size: 12px; }
 .step { background: #f7f7f7; padding: 6px; border-radius: 4px; text-align: center; }
-.step.active { background: #e0e7ff; color: #1f2937; font-weight: 600; }
+.step.active { background: #e0e7ff; color: var(--color-text-heading); font-weight: 600; }
 .section { background: #fff; border: 1px solid #eee; padding: 16px; border-radius: 8px; }
 .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .skills-input { display: flex; gap: 8px; }

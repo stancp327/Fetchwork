@@ -22,8 +22,8 @@
   background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-md);
   text-align: center;
 }
-.aa-stat-card.highlight { border-color: #bfdbfe; background: #eff6ff; }
-.aa-stat-num { display: block; font-size: 1.4rem; font-weight: 700; color: #1f2937; }
+.aa-stat-card.highlight { border-color: #bfdbfe; background: var(--color-primary-light); }
+.aa-stat-num { display: block; font-size: 1.4rem; font-weight: 700; color: var(--color-text-heading); }
 .aa-stat-label { font-size: 0.65rem; text-transform: uppercase; color: var(--color-text-muted); letter-spacing: 0.05em; }
 
 /* Chart */
@@ -46,7 +46,7 @@
   min-width: 20%; white-space: nowrap;
 }
 .aa-funnel-nums { display: flex; gap: var(--space-sm); font-size: var(--font-size-xs); padding-left: var(--space-xs); }
-.aa-funnel-nums strong { color: #1f2937; }
+.aa-funnel-nums strong { color: var(--color-text-heading); }
 .aa-funnel-nums span { color: var(--color-text-secondary); }
 
 /* Devices */

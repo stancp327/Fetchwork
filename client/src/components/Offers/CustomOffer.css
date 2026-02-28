@@ -50,7 +50,7 @@
 }
 
 .offer-modal-close:hover {
-  color: #111827;
+  color: var(--color-text-darker);
 }
 
 .offer-recipient {
@@ -104,7 +104,7 @@
 }
 
 .offer-error {
-  background: #fef2f2;
+  background: var(--color-danger-subtle);
   color: var(--color-danger);
   padding: 0.75rem;
   border-radius: 8px;
@@ -130,7 +130,7 @@
 }
 
 .btn-offer-cancel:hover {
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
 }
 
 .btn-offer-send {
@@ -188,7 +188,7 @@
 }
 
 .offer-term strong {
-  color: #111827;
+  color: var(--color-text-darker);
 }
 
 .offer-status {
@@ -201,9 +201,9 @@
 }
 
 .offer-status.pending { background: var(--color-warning-light); color: #a16207; }
-.offer-status.countered { background: #eff6ff; color: var(--color-primary); }
+.offer-status.countered { background: var(--color-primary-light); color: var(--color-primary); }
 .offer-status.accepted { background: var(--color-success-light); color: var(--color-success-dark); }
-.offer-status.declined { background: #fef2f2; color: var(--color-danger); }
+.offer-status.declined { background: var(--color-danger-subtle); color: var(--color-danger); }
 .offer-status.withdrawn { background: var(--color-bg-muted); color: var(--color-text-secondary); }
 .offer-status.expired { background: var(--color-bg-muted); color: var(--color-text-secondary); }
 

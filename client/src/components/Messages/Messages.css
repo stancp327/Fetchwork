@@ -21,7 +21,7 @@
 }
 
 .messages-header-left { display: flex; align-items: center; gap: var(--space-md); }
-.messages-header h1 { font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: #111827; }
+.messages-header h1 { font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-darker); }
 
 .mobile-back-btn {
   display: inline;
@@ -45,8 +45,8 @@
 
 .messages-error {
   padding: var(--space-sm) var(--space-lg);
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger-light);
   border-radius: 8px;
   color: var(--color-danger);
   font-size: var(--font-size-sm);
@@ -122,25 +122,25 @@
   padding: var(--space-md) var(--space-lg);
   cursor: pointer;
   transition: background 0.1s;
-  border-bottom: 1px solid #f9fafb;
+  border-bottom: 1px solid var(--color-bg-subtle);
   position: relative;
   min-height: 60px;
 }
 
-.convo-item:hover { background: #f9fafb; }
-.convo-item.selected { background: #eff6ff; }
+.convo-item:hover { background: var(--color-bg-subtle); }
+.convo-item.selected { background: var(--color-primary-light); }
 .convo-item.unread { background: #fefce8; }
 
 .convo-avatar {
   width: 44px; height: 44px; border-radius: 50%;
-  background: #eff6ff; display: flex; align-items: center; justify-content: center;
+  background: var(--color-primary-light); display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; overflow: hidden; font-size: var(--font-size-sm); font-weight: 700; color: var(--color-primary);
 }
 .convo-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .convo-info { flex: 1; min-width: 0; }
 .convo-top { display: flex; justify-content: space-between; align-items: center; }
-.convo-name { font-weight: 600; font-size: var(--font-size-sm); color: #111827; }
+.convo-name { font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-darker); }
 .convo-time { font-size: var(--font-size-xs); color: var(--color-text-muted); }
 .convo-job { font-size: var(--font-size-xs); color: var(--color-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .convo-preview { font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
@@ -173,7 +173,7 @@
 
 .chat-avatar {
   width: 40px; height: 40px; border-radius: 50%;
-  background: #eff6ff; display: flex; align-items: center; justify-content: center;
+  background: var(--color-primary-light); display: flex; align-items: center; justify-content: center;
   overflow: hidden; font-weight: 700; color: var(--color-primary); font-size: var(--font-size-sm);
   flex-shrink: 0;
 }
@@ -219,7 +219,7 @@
 }
 
 .msg-row.theirs .msg-bubble {
-  background: var(--color-bg-muted); color: #111827;
+  background: var(--color-bg-muted); color: var(--color-text-darker);
   border-bottom-left-radius: 4px;
 }
 
@@ -290,12 +290,12 @@
 
 .quick-act {
   padding: var(--space-xs) var(--space-md);
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: 20px;
   font-size: var(--font-size-xs);
   font-weight: 500;
-  color: #4b5563;
+  color: var(--color-text-medium);
   cursor: pointer;
   text-decoration: none;
   transition: all 0.15s;
@@ -305,7 +305,7 @@
   align-items: center;
 }
 
-.quick-act:hover { border-color: var(--color-primary); color: var(--color-primary); background: #eff6ff; }
+.quick-act:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
 
 /* ── Chat Placeholder ─────────────────────────────────────────── */
 .chat-placeholder {
@@ -338,7 +338,7 @@
 .context-profile { text-align: center; margin-bottom: var(--space-xl); }
 .context-avatar {
   width: 64px; height: 64px; border-radius: 50%;
-  background: #eff6ff; margin: 0 auto var(--space-md);
+  background: var(--color-primary-light); margin: 0 auto var(--space-md);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; font-size: 1.2rem; font-weight: 700; color: var(--color-primary);
 }
@@ -350,9 +350,9 @@
 .context-section { margin-bottom: var(--space-lg); }
 .context-section h4 { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 var(--space-sm); }
 .context-job-card {
-  display: block; padding: var(--space-md); background: #f9fafb;
+  display: block; padding: var(--space-md); background: var(--color-bg-subtle);
   border: 1px solid var(--color-border); border-radius: 10px; text-decoration: none;
-  color: #111827; font-size: var(--font-size-sm); font-weight: 500;
+  color: var(--color-text-darker); font-size: var(--font-size-sm); font-weight: 500;
   transition: border-color 0.15s;
 }
 .context-job-card:hover { border-color: var(--color-primary); }
@@ -509,7 +509,7 @@
 .msg-proposal-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-darker);
 }
 .msg-proposal-job {
   font-size: 0.78rem;
@@ -525,7 +525,7 @@
 .msg-proposal-term {
   display: flex;
   flex-direction: column;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 0.4rem 0.65rem;
   flex: 1;
@@ -538,16 +538,16 @@
 }
 .msg-proposal-term strong {
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--color-text-darker);
 }
 
 .msg-proposal-cover {
   font-size: 0.82rem;
-  color: #4b5563;
+  color: var(--color-text-medium);
   line-height: 1.5;
   margin-bottom: 0.75rem;
   padding: 0.5rem 0.65rem;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   border-left: 3px solid var(--color-border-medium);
 }
@@ -559,7 +559,7 @@
   border-radius: 8px;
   margin-bottom: 0.5rem;
 }
-.msg-proposal-status.accepted { background: #d1fae5; color: #065f46; }
+.msg-proposal-status.accepted { background: var(--color-success-light); color: var(--color-success-dark); }
 .msg-proposal-status.declined { background: var(--color-danger-light); color: #991b1b; }
 
 .msg-proposal-actions {
@@ -596,7 +596,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-.msg-pa-counter:hover { background: #eff6ff; }
+.msg-pa-counter:hover { background: var(--color-primary-light); }
 
 .msg-pa-decline {
   min-height: 36px;
@@ -609,7 +609,7 @@
   font-weight: 500;
   cursor: pointer;
 }
-.msg-pa-decline:hover { background: #fef2f2; }
+.msg-pa-decline:hover { background: var(--color-danger-subtle); }
 
 .msg-pa-view {
   min-height: 36px;

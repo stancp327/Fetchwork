@@ -18,7 +18,7 @@
 .browse-header h1 {
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text-darker);
   margin: 0;
 }
 
@@ -131,7 +131,7 @@
   border-radius: 8px;
   font-size: var(--font-size-sm);
   background: white;
-  color: #111827;
+  color: var(--color-text-darker);
   transition: border-color 0.15s;
   min-height: 44px;
 }
@@ -268,7 +268,7 @@
 .browse-card-title {
   font-size: var(--font-size-base);
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text-darker);
   margin: 0;
   line-height: 1.4;
 }
@@ -281,7 +281,7 @@
 
 .browse-card-desc {
   font-size: var(--font-size-sm);
-  color: #4b5563;
+  color: var(--color-text-medium);
   line-height: var(--line-height-relaxed);
   margin: 0 0 var(--space-md);
   display: -webkit-box;
@@ -303,13 +303,13 @@
   font-size: var(--font-size-xs);
   font-weight: 600;
   background: var(--color-bg-muted);
-  color: #4b5563;
+  color: var(--color-text-medium);
 }
 
-.browse-tag.primary { background: #eff6ff; color: var(--color-primary); }
+.browse-tag.primary { background: var(--color-primary-light); color: var(--color-primary); }
 .browse-tag.success { background: var(--color-success-light); color: var(--color-success-dark); }
 .browse-tag.warning { background: #fffbeb; color: var(--color-warning-dark); }
-.browse-tag.danger { background: #fef2f2; color: var(--color-danger); }
+.browse-tag.danger { background: var(--color-danger-subtle); color: var(--color-danger); }
 
 /* Clickable skill/category tags */
 .browse-tag-clickable {
@@ -394,7 +394,7 @@
 }
 
 .browse-empty-icon { font-size: 2.5rem; margin-bottom: var(--space-md); }
-.browse-empty h3 { margin: 0 0 var(--space-sm); color: #111827; font-size: var(--font-size-lg); }
+.browse-empty h3 { margin: 0 0 var(--space-sm); color: var(--color-text-darker); font-size: var(--font-size-lg); }
 .browse-empty p { color: var(--color-text-secondary); margin: 0 0 var(--space-md); }
 .browse-empty-suggestions {
   list-style: none; padding: 0; margin: 0 0 var(--space-md); text-align: left;

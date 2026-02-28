@@ -35,7 +35,7 @@
 .toast-warning { border-left-color: var(--color-warning-dark); }
 
 .toast-icon { font-size: 1.1rem; flex-shrink: 0; }
-.toast-message { flex: 1; font-size: 0.875rem; color: #1f2937; line-height: 1.4; }
+.toast-message { flex: 1; font-size: 0.875rem; color: var(--color-text-heading); line-height: 1.4; }
 .toast-close {
   background: none; border: none; font-size: 1.2rem; color: var(--color-text-muted);
   cursor: pointer; padding: 0 0.25rem; flex-shrink: 0;

@@ -3,7 +3,7 @@
 .jp-loading, .jp-error { text-align: center; padding: var(--space-3xl); color: var(--color-text-secondary); }
 .jp-back { color: var(--color-primary); text-decoration: none; font-size: var(--font-size-sm); min-height: 44px; display: inline-flex; align-items: center; }
 .jp-back:hover { text-decoration: underline; }
-.jp-header h1 { margin: var(--space-sm) 0 var(--space-xs); font-size: var(--font-size-xl); color: #111827; }
+.jp-header h1 { margin: var(--space-sm) 0 var(--space-xs); font-size: var(--font-size-xl); color: var(--color-text-darker); }
 .jp-meta { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 
 /* Secure Payment Banner */
@@ -19,9 +19,9 @@
 }
 .jp-payment-banner p { margin: 0.25rem 0 0; font-size: 0.84rem; }
 .jp-payment-banner strong { font-size: 0.95rem; }
-.jp-payment-unfunded { background: #fefce8; border: 1px solid #fde68a; }
+.jp-payment-unfunded { background: #fefce8; border: 1px solid var(--color-warning-light); }
 .jp-payment-funded   { background: #f0fdf4; border: 1px solid #a7f3d0; }
-.jp-payment-released { background: #eff6ff; border: 1px solid #bfdbfe; font-size: 0.9rem; font-weight: 500; }
+.jp-payment-released { background: var(--color-primary-light); border: 1px solid #bfdbfe; font-size: 0.9rem; font-weight: 500; }
 
 .jp-btn-secure {
   min-height: 44px; padding: 0 1.25rem;
@@ -72,7 +72,7 @@
 .jp-milestone-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); flex-wrap: wrap; }
 
 /* Add Milestone */
-.jp-add-milestone { background: #f9fafb; border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-lg); margin-bottom: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-sm); }
+.jp-add-milestone { background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-lg); margin-bottom: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-sm); }
 .jp-add-milestone input, .jp-add-milestone textarea { padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border-medium); border-radius: 6px; font-size: 16px; min-height: 44px; width: 100%; }
 
 /* Timeline */
@@ -119,8 +119,8 @@
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 99px;
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
   margin-bottom: 0.4rem;
 }
 .jp-ms-funded-pill.released {

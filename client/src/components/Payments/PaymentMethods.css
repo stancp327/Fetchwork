@@ -44,13 +44,13 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem 1rem;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   flex-wrap: wrap;
 }
 .pm-card-row.default {
-  background: #eff6ff;
+  background: var(--color-primary-light);
   border-color: #bfdbfe;
 }
 
@@ -95,13 +95,13 @@
   min-width: 32px;
   padding: 0 0.5rem;
   background: white;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-danger-light);
   border-radius: 7px;
   font-size: 0.85rem;
   color: var(--color-danger);
   cursor: pointer;
 }
-.pm-btn-delete:hover { background: #fef2f2; }
+.pm-btn-delete:hover { background: var(--color-danger-subtle); }
 .pm-btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Add Card Form ─────────────────────────────────────────────── */
@@ -148,7 +148,7 @@
   font-size: 0.82rem;
   margin-bottom: 0.75rem;
   padding: 0.5rem 0.75rem;
-  background: #fef2f2;
+  background: var(--color-danger-subtle);
   border-radius: 6px;
 }
 .pm-add-actions {
@@ -202,8 +202,8 @@
 }
 .pm-loading { padding: 1.5rem; color: var(--color-text-muted); font-size: 0.85rem; }
 .pm-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger-light);
   border-radius: 8px;
   padding: 0.65rem 0.9rem;
   color: var(--color-danger);

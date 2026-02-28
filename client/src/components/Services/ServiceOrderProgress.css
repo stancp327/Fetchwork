@@ -94,7 +94,7 @@
   border: 2px solid var(--color-border);
   transition: all 0.2s;
 }
-.sop-step.done   .sop-step-icon { background: #d1fae5; border-color: var(--color-success); }
+.sop-step.done   .sop-step-icon { background: var(--color-success-light); border-color: var(--color-success); }
 .sop-step.active .sop-step-icon { background: var(--color-primary-bg); border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 
 .sop-step-label {
@@ -104,7 +104,7 @@
   text-align: center;
   white-space: nowrap;
 }
-.sop-step.done   .sop-step-label { color: #065f46; }
+.sop-step.done   .sop-step-label { color: var(--color-success-dark); }
 .sop-step.active .sop-step-label { color: var(--color-primary-dark); }
 
 .sop-step-line {
@@ -119,8 +119,8 @@
 
 /* ── Cancelled banner ───────────────────────────────────────── */
 .sop-cancelled-banner {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger-light);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   color: var(--color-danger);
@@ -180,7 +180,7 @@
   margin: 0 0 0.25rem;
   line-height: 1.5;
 }
-.sop-success-text { color: #065f46; font-weight: 500; }
+.sop-success-text { color: var(--color-success-dark); font-weight: 500; }
 
 .sop-action-msg {
   padding: 0.5rem 0.75rem;
@@ -188,8 +188,8 @@
   font-size: 0.82rem;
   margin-bottom: 0.5rem;
 }
-.sop-action-msg.success { background: #d1fae5; color: #065f46; }
-.sop-action-msg.error   { background: #fef2f2; color: var(--color-danger); }
+.sop-action-msg.success { background: var(--color-success-light); color: var(--color-success-dark); }
+.sop-action-msg.error   { background: var(--color-danger-subtle); color: var(--color-danger); }
 
 /* ── Action buttons ─────────────────────────────────────────── */
 .sop-btn {
@@ -224,7 +224,7 @@
   font-weight: 500;
   margin-top: 0.25rem;
 }
-.sop-btn-cancel:hover:not(:disabled) { color: var(--color-danger); border-color: #fecaca; opacity: 1; }
+.sop-btn-cancel:hover:not(:disabled) { color: var(--color-danger); border-color: var(--color-danger-light); opacity: 1; }
 
 .sop-messages-link {
   display: flex;
@@ -232,7 +232,7 @@
   justify-content: center;
   gap: 0.4rem;
   min-height: 40px;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: 9px;
   color: var(--color-text);
@@ -267,7 +267,7 @@
 }
 
 .sop-success-banner {
-  background: #d1fae5;
+  background: var(--color-success-light);
   border-color: #6ee7b7;
-  color: #065f46;
+  color: var(--color-success-dark);
 }

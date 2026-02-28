@@ -13,8 +13,8 @@
   background: white;
 }
 .sc-card.connected  { border-color: #a7f3d0; background: #f0fdf4; }
-.sc-card.incomplete { border-color: #fde68a; background: #fefce8; }
-.sc-card.unconnected { border-color: var(--color-primary-bg); background: #eff6ff; }
+.sc-card.incomplete { border-color: var(--color-warning-light); background: #fefce8; }
+.sc-card.unconnected { border-color: var(--color-primary-bg); background: var(--color-primary-light); }
 
 .sc-icon { font-size: 1.5rem; flex-shrink: 0; }
 .sc-card strong { display: block; font-size: 0.95rem; margin-bottom: 0.25rem; }
@@ -104,7 +104,7 @@
   background: var(--color-bg-subtle); border-radius: 10px; padding: 1rem;
 }
 .checkout-job-title { font-weight: 600; margin: 0 0 0.25rem; font-size: 0.95rem; }
-.checkout-amount    { font-size: 1.4rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem; }
+.checkout-amount    { font-size: 1.4rem; font-weight: 700; color: var(--color-text-darker); margin: 0 0 0.5rem; }
 .checkout-note      { font-size: 0.78rem; color: var(--color-text-secondary); margin: 0; }
 
 .checkout-payment-element label {
@@ -116,7 +116,7 @@
 }
 
 .checkout-error {
-  background: #fef2f2; color: var(--color-danger);
+  background: var(--color-danger-subtle); color: var(--color-danger);
   padding: 0.65rem 0.75rem; border-radius: 8px; font-size: 0.85rem;
 }
 .checkout-actions {
@@ -158,7 +158,7 @@
 .escrow-card-option input[type=radio] { accent-color: var(--color-primary); }
 .escrow-card-option.selected {
   border-color: var(--color-primary);
-  background: #eff6ff;
+  background: var(--color-primary-light);
 }
 .escrow-card-option.new-card { color: var(--color-primary); }
 .escrow-card-brand { font-weight: 600; }
@@ -193,6 +193,6 @@
 .checkout-fee-row.muted { color: var(--color-text-muted); font-size: 0.8rem; }
 .checkout-fee-row.total {
   font-weight: 700;
-  background: #f9fafb;
+  background: var(--color-bg-subtle);
   color: #111;
 }
