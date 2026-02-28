@@ -72,8 +72,7 @@ export const useNotifications = () => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Real-time: when NotificationListener receives a socket push,
-  // immediately update bell count + prepend to items list
+  // Real-time: new in-app notification pushed via socket
   useEffect(() => {
     const onNew = (e) => {
       const notif = e.detail;
@@ -86,6 +85,18 @@ export const useNotifications = () => {
     };
     window.addEventListener('fetchwork:notification', onNew);
     return () => window.removeEventListener('fetchwork:notification', onNew);
+  }, []);
+
+  // Real-time: new message received (updates the Messages nav badge instantly)
+  useEffect(() => {
+    const onMsg = () => {
+      setNotifications(prev => ({
+        ...prev,
+        unreadMessages: prev.unreadMessages + 1
+      }));
+    };
+    window.addEventListener('fetchwork:unread-message', onMsg);
+    return () => window.removeEventListener('fetchwork:unread-message', onMsg);
   }, []);
 
   return { notifications, loading, refetch: fetchNotifications, markAsRead, markAllRead };

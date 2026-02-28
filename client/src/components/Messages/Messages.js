@@ -425,44 +425,7 @@ const Messages = () => {
 
   const token = localStorage.getItem('token');
 
-  const socketRef = useSocket({
-    token,
-    onEvent: (event, data) => {
-      switch (event) {
-        case 'message:receive':
-          setMessages(prev => {
-            if (prev.some(m => m._id === data.message._id)) return prev;
-            return [...prev, data.message];
-          });
-          fetchConversations();
-          break;
-        case 'message:read':
-          setMessages(prev => prev.map(m =>
-            data.messageIds?.includes(m._id) ? { ...m, isRead: true } : m
-          ));
-          break;
-        case 'conversation:update':
-          fetchConversations();
-          break;
-        case 'typing:start':
-          if (data.conversationId === selectedConvo?._id) {
-            setTypingUsers(prev => new Set([...prev, data.userId]));
-          }
-          break;
-        case 'typing:stop':
-          if (data.conversationId === selectedConvo?._id) {
-            setTypingUsers(prev => { const s = new Set(prev); s.delete(data.userId); return s; });
-          }
-          break;
-        case 'message:delivered':
-          setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
-          break;
-        default:
-          break;
-      }
-    }
-  });
-
+  // ── Data fetchers (defined first — used by socket handler) ───
   const fetchConversations = useCallback(async () => {
     try {
       setLoading(true);
@@ -475,6 +438,60 @@ const Messages = () => {
       setLoading(false);
     }
   }, []);
+
+  // ── Stable ref so socket handler always sees latest selectedConvo
+  //    without causing reconnects on every state change ─────────
+  const selectedConvoRef = useRef(selectedConvo);
+  useEffect(() => { selectedConvoRef.current = selectedConvo; }, [selectedConvo]);
+
+  const handleSocketEvent = useCallback((event, data) => {
+    const convo = selectedConvoRef.current;
+    switch (event) {
+      case 'message:receive': {
+        const msg = data?.message;
+        if (!msg) break;
+        const msgConvoId = msg.conversation?.toString() || msg.conversation;
+        const currentConvoId = convo?._id?.toString();
+        // Only append if the message belongs to the currently open conversation
+        if (msgConvoId && currentConvoId && msgConvoId === currentConvoId) {
+          setMessages(prev => {
+            if (prev.some(m => m._id === msg._id)) return prev;
+            return [...prev, msg];
+          });
+        }
+        // Always refresh conversation list (updates last-message preview + unread counts)
+        fetchConversations();
+        break;
+      }
+      case 'message:read':
+        setMessages(prev => prev.map(m =>
+          data.messageIds?.includes(m._id) ? { ...m, isRead: true } : m
+        ));
+        break;
+      case 'conversation:update':
+        fetchConversations();
+        break;
+      case 'typing:start':
+        if (data.conversationId === convo?._id) {
+          setTypingUsers(prev => new Set([...prev, data.userId]));
+        }
+        break;
+      case 'typing:stop':
+        if (data.conversationId === convo?._id) {
+          setTypingUsers(prev => { const s = new Set(prev); s.delete(data.userId); return s; });
+        }
+        break;
+      case 'message:delivered':
+        setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
+        break;
+      default:
+        break;
+    }
+  // selectedConvoRef is a ref (never a dep); fetchConversations is stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchConversations]);
+
+  const socketRef = useSocket({ token, onEvent: handleSocketEvent });
 
   const fetchMessages = useCallback(async (convo) => {
     try {

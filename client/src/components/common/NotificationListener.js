@@ -1,12 +1,13 @@
 import { useCallback } from 'react';
 import { useSocket } from '../../hooks/useSocket';
 import { useToast } from './Toast';
+import { useAuth } from '../../context/AuthContext';
 
-// Toast labels per notification type
+// Toast text per notification type
 const TYPE_TOAST = {
   job_proposal_received: (d) => `📩 New proposal on "${d?.title || 'your job'}"`,
   job_proposal_accepted: ()  => `🎉 Your proposal was accepted!`,
-  job_start_requested:   (d) => `🚀 ${d?.title || 'A freelancer'} is ready to start`,
+  job_start_requested:   (d) => `🚀 "${d?.title || 'A job'}" — freelancer is ready to start`,
   job_started:           (d) => `✅ Job "${d?.title || ''}" is now in progress`,
   job_completed:         (d) => `✅ Job "${d?.title || ''}" marked as complete`,
   job_cancelled:         (d) => `❌ Job "${d?.title || ''}" was cancelled`,
@@ -22,34 +23,55 @@ const TYPE_TOAST = {
   account_warning:       ()  => `⚠️ Account notice`,
 };
 
+const SUCCESS_TYPES = new Set([
+  'payment_received', 'payment_released', 'job_proposal_accepted',
+  'job_started', 'new_order', 'booking_confirmed', 'escrow_funded',
+]);
+
 const NotificationListener = () => {
+  const { user } = useAuth();
   const { addToast } = useToast();
 
   const handleEvent = useCallback((event, data) => {
+    const onMessagesPage = window.location.pathname.startsWith('/messages');
+
     switch (event) {
-      case 'message:receive':
-        // Only toast if message came from someone else (not own sent message)
-        if (data?.message?.sender?.firstName) {
-          addToast(`💬 New message from ${data.message.sender.firstName}`, 'info');
+      case 'message:receive': {
+        const msg = data?.message;
+        if (!msg) break;
+        const senderId = msg.sender?._id || msg.sender;
+        const currentUserId = user?._id || user?.id || user?.userId;
+        // Skip if we sent it, or if user is already on the messages page
+        if (!senderId || String(senderId) === String(currentUserId)) break;
+        if (onMessagesPage) {
+          // Still update unread badge — user may be in a different thread
+          window.dispatchEvent(new CustomEvent('fetchwork:unread-message'));
+        } else {
+          window.dispatchEvent(new CustomEvent('fetchwork:unread-message'));
+          addToast(`💬 New message from ${msg.sender?.firstName || 'someone'}`, 'info', 4000);
         }
         break;
+      }
 
       case 'notification:new': {
-        // Notify bell via custom window event (useNotifications listens for this)
+        // Let useNotifications update the bell count immediately
         window.dispatchEvent(new CustomEvent('fetchwork:notification', { detail: data }));
 
-        // Show a toast
+        // Show toast (suppress if notification is about a message and user is on messages page)
+        if (data?.type === 'new_message' && onMessagesPage) break;
+
         const toastFn = TYPE_TOAST[data?.type];
         const text = toastFn ? toastFn(data) : (data?.title || '🔔 New notification');
-        const duration = ['payment_received', 'payment_released', 'job_proposal_accepted'].includes(data?.type) ? 6000 : 4000;
-        addToast(text, data?.type?.startsWith('payment') || data?.type === 'job_proposal_accepted' ? 'success' : 'info', duration);
+        const variant = SUCCESS_TYPES.has(data?.type) ? 'success' : 'info';
+        const duration = SUCCESS_TYPES.has(data?.type) ? 6000 : 4000;
+        addToast(text, variant, duration);
         break;
       }
 
       default:
         break;
     }
-  }, [addToast]);
+  }, [addToast, user]);
 
   useSocket({ onEvent: handleEvent });
 
