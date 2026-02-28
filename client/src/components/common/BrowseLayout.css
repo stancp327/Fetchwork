@@ -53,7 +53,7 @@
 .search-input {
   width: 100%;
   padding: var(--space-md) var(--space-2xl) var(--space-md) 2.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 10px;
   font-size: var(--font-size-sm);
   transition: border-color 0.15s;
@@ -127,7 +127,7 @@
 .filter-select, .filter-input {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   font-size: var(--font-size-sm);
   background: white;
@@ -162,7 +162,7 @@
   width: 100%;
   padding: var(--space-md);
   background: white;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 10px;
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -195,7 +195,7 @@
 
 .results-sort {
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   font-size: var(--font-size-xs);
   background: white;
@@ -307,9 +307,9 @@
 }
 
 .browse-tag.primary { background: #eff6ff; color: var(--color-primary); }
-.browse-tag.success { background: #ecfdf5; color: #059669; }
-.browse-tag.warning { background: #fffbeb; color: #d97706; }
-.browse-tag.danger { background: #fef2f2; color: #dc2626; }
+.browse-tag.success { background: var(--color-success-light); color: var(--color-success-dark); }
+.browse-tag.warning { background: #fffbeb; color: var(--color-warning-dark); }
+.browse-tag.danger { background: #fef2f2; color: var(--color-danger); }
 
 /* Clickable skill/category tags */
 .browse-tag-clickable {
@@ -320,7 +320,7 @@
   line-height: inherit;
 }
 .browse-tag-clickable:hover {
-  background: #dbeafe;
+  background: var(--color-primary-bg);
   color: var(--color-primary-dark);
 }
 
@@ -364,7 +364,7 @@
 
 .page-btn {
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   background: white;
   font-size: var(--font-size-sm);

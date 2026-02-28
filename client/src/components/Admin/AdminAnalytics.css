@@ -5,7 +5,7 @@
 .aa-header h2 { margin: 0; font-size: var(--font-size-lg); }
 .aa-period-btns { display: flex; gap: var(--space-xs); }
 .aa-period-btn {
-  background: white; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 var(--space-md);
+  background: white; border: 1px solid var(--color-border-medium); border-radius: 6px; padding: 0 var(--space-md);
   font-size: var(--font-size-xs); cursor: pointer; min-height: 44px; font-weight: 500;
 }
 .aa-period-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
@@ -41,7 +41,7 @@
 .aa-funnel { display: flex; flex-direction: column; gap: var(--space-xs); }
 .aa-funnel-step { display: flex; flex-direction: column; gap: 2px; }
 .aa-funnel-bar {
-  background: linear-gradient(90deg, #3b82f6, #93c5fd); border-radius: 6px;
+  background: linear-gradient(90deg, #3b82f6, var(--color-primary-disabled)); border-radius: 6px;
   padding: var(--space-xs) var(--space-sm); color: white; font-size: 0.65rem; font-weight: 500;
   min-width: 20%; white-space: nowrap;
 }
@@ -69,7 +69,7 @@
 .aa-page-unique { color: var(--color-text-muted); }
 
 .aa-loading, .aa-error { text-align: center; padding: var(--space-2xl); color: var(--color-text-secondary); }
-.aa-error { color: #dc2626; }
+.aa-error { color: var(--color-danger); }
 
 @media (min-width: 480px) {
   .aa-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }

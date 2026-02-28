@@ -20,7 +20,7 @@
   width: 100%;
   padding: 0 12px;
   height: 44px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 6px;
   font-size: var(--font-size-sm);
   background: white;
@@ -104,7 +104,7 @@
 
 .action-btn.review   { background: #ff9800; color: white; }
 .action-btn.view     { background: #3b82f6; color: white; }
-.action-btn.resolve  { background: #10b981; color: white; }
+.action-btn.resolve  { background: var(--color-success); color: white; }
 .action-btn.escalate { background: #8b5cf6; color: white; }
 .action-btn.close    { background: var(--color-text-secondary); color: white; }
 
@@ -148,7 +148,7 @@
   .admin-panel-table th {
     padding: 12px;
     text-align: left;
-    border-bottom: 2px solid #d1d5db;
+    border-bottom: 2px solid var(--color-border-medium);
     background: #f8f9fa;
     font-weight: 600;
     color: #1f2937;

@@ -176,7 +176,7 @@
 .nav-link.active::after { display: none; }
 
 .nav-badge-inline {
-  background: #ef4444;
+  background: var(--color-danger);
   color: white;
   font-size: 0.65rem;
   font-weight: 700;
@@ -238,8 +238,8 @@
 }
 
 .nav-logout-btn:hover {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
   background: #fef2f2;
 }
 
@@ -405,7 +405,7 @@
   position: absolute;
   top: 4px;
   right: 2px;
-  background: #dc2626;
+  background: var(--color-danger);
   color: white;
   font-size: 0.6rem;
   font-weight: 700;

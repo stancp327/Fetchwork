@@ -27,14 +27,14 @@
   font-size: var(--font-size-xs); color: var(--color-text-muted); flex-shrink: 0;
 }
 .pw-step.active { color: var(--color-primary); font-weight: 600; }
-.pw-step.done { color: #059669; }
+.pw-step.done { color: var(--color-success-dark); }
 .pw-step-num {
   width: 24px; height: 24px; border-radius: 50%; display: flex;
   align-items: center; justify-content: center; font-size: 0.7rem;
-  border: 2px solid #d1d5db; font-weight: 700;
+  border: 2px solid var(--color-border-medium); font-weight: 700;
 }
 .pw-step.active .pw-step-num { border-color: var(--color-primary); background: #eff6ff; color: var(--color-primary); }
-.pw-step.done .pw-step-num { border-color: #059669; background: #ecfdf5; color: #059669; }
+.pw-step.done .pw-step-num { border-color: var(--color-success-dark); background: var(--color-success-light); color: var(--color-success-dark); }
 .pw-step-label { display: none; }
 
 /* Body */
@@ -44,7 +44,7 @@
 .pw-field { margin-bottom: var(--space-lg); }
 .pw-field label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text); margin-bottom: var(--space-xs); }
 .pw-field input, .pw-field select, .pw-field textarea {
-  width: 100%; padding: var(--space-md); border: 1px solid #d1d5db; border-radius: 8px;
+  width: 100%; padding: var(--space-md); border: 1px solid var(--color-border-medium); border-radius: 8px;
   font-size: 16px; transition: border-color 0.15s;
 }
 .pw-field input:focus, .pw-field select:focus, .pw-field textarea:focus {
@@ -54,9 +54,9 @@
 
 .pw-url-row { display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm); }
 .pw-url-row input { flex: 1; }
-.pw-btn-icon { background: none; border: none; font-size: 1.2rem; color: #dc2626; cursor: pointer; padding: 0.5rem; }
+.pw-btn-icon { background: none; border: none; font-size: 1.2rem; color: var(--color-danger); cursor: pointer; padding: 0.5rem; }
 .pw-btn-add {
-  background: none; border: 1px dashed #d1d5db; border-radius: 8px; padding: var(--space-sm) var(--space-md);
+  background: none; border: 1px dashed var(--color-border-medium); border-radius: 8px; padding: var(--space-sm) var(--space-md);
   color: var(--color-primary); font-weight: 500; cursor: pointer; font-size: var(--font-size-sm); width: 100%; min-height: 44px;
 }
 .pw-btn-add:hover { border-color: var(--color-primary); background: #eff6ff; }
@@ -86,7 +86,7 @@
 }
 .pw-btn-primary { background: var(--color-primary); color: white; }
 .pw-btn-primary:hover { background: var(--color-primary-dark); }
-.pw-btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+.pw-btn-primary:disabled { background: var(--color-primary-disabled); cursor: not-allowed; }
 .pw-btn-secondary { background: var(--color-bg-muted); color: var(--color-text); }
 .pw-btn-secondary:hover { background: var(--color-border); }
 

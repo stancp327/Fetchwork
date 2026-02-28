@@ -39,7 +39,7 @@
   color: var(--color-text-secondary);
 }
 .sop-meta span { display: flex; align-items: center; gap: 0.3rem; }
-.sop-secured { color: #10b981; font-weight: 600; }
+.sop-secured { color: var(--color-success); font-weight: 600; }
 .sop-btn-view-service {
   min-height: 36px;
   padding: 0 1rem;
@@ -94,8 +94,8 @@
   border: 2px solid var(--color-border);
   transition: all 0.2s;
 }
-.sop-step.done   .sop-step-icon { background: #d1fae5; border-color: #10b981; }
-.sop-step.active .sop-step-icon { background: #dbeafe; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+.sop-step.done   .sop-step-icon { background: #d1fae5; border-color: var(--color-success); }
+.sop-step.active .sop-step-icon { background: var(--color-primary-bg); border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 
 .sop-step-label {
   font-size: 0.7rem;
@@ -115,7 +115,7 @@
   margin-top: -18px; /* align with icon center */
   transition: background 0.2s;
 }
-.sop-step-line.done { background: #10b981; }
+.sop-step-line.done { background: var(--color-success); }
 
 /* ── Cancelled banner ───────────────────────────────────────── */
 .sop-cancelled-banner {
@@ -123,7 +123,7 @@
   border: 1px solid #fecaca;
   border-radius: 8px;
   padding: 0.75rem 1rem;
-  color: #dc2626;
+  color: var(--color-danger);
   font-weight: 600;
   margin-bottom: 1.5rem;
   font-size: 0.9rem;
@@ -163,7 +163,7 @@
   margin: 0.5rem 0 0;
 }
 .sop-delivery-card { border-left: 3px solid #8b5cf6; }
-.sop-complete-card  { border-left: 3px solid #10b981; }
+.sop-complete-card  { border-left: 3px solid var(--color-success); }
 
 /* ── Actions panel ──────────────────────────────────────────── */
 .sop-actions-panel { }
@@ -189,7 +189,7 @@
   margin-bottom: 0.5rem;
 }
 .sop-action-msg.success { background: #d1fae5; color: #065f46; }
-.sop-action-msg.error   { background: #fef2f2; color: #dc2626; }
+.sop-action-msg.error   { background: #fef2f2; color: var(--color-danger); }
 
 /* ── Action buttons ─────────────────────────────────────────── */
 .sop-btn {
@@ -212,9 +212,9 @@
 .sop-btn:hover:not(:disabled) { opacity: 0.88; }
 
 .sop-btn-deliver  { background: var(--color-primary); color: white; }
-.sop-btn-complete { background: #10b981; color: white; }
-.sop-btn-revision { background: #f59e0b; color: white; }
-.sop-btn-remind   { background: #f59e0b; color: white; }
+.sop-btn-complete { background: var(--color-success); color: white; }
+.sop-btn-revision { background: var(--color-warning); color: white; }
+.sop-btn-remind   { background: var(--color-warning); color: white; }
 .sop-btn-review   { background: #8b5cf6; color: white; }
 .sop-btn-cancel   {
   background: none;
@@ -224,7 +224,7 @@
   font-weight: 500;
   margin-top: 0.25rem;
 }
-.sop-btn-cancel:hover:not(:disabled) { color: #dc2626; border-color: #fecaca; opacity: 1; }
+.sop-btn-cancel:hover:not(:disabled) { color: var(--color-danger); border-color: #fecaca; opacity: 1; }
 
 .sop-messages-link {
   display: flex;
@@ -250,7 +250,7 @@
   color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
-.sop-error { color: #dc2626; }
+.sop-error { color: var(--color-danger); }
 
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (min-width: 480px) {

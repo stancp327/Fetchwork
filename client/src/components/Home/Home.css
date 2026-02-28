@@ -320,7 +320,7 @@
   border-radius: 10px;
   margin-top: 2px;
 }
-.cat-type-local { background: #fef3c7; color: #92400e; }
+.cat-type-local { background: var(--color-warning-light); color: #92400e; }
 .cat-type-remote { background: #eff6ff; color: var(--color-primary-dark); }
 
 /* ── Features / Trust ────────────────────────────────────────── */
@@ -434,7 +434,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #d1d5db;
+  background: var(--color-border-medium);
   border: none;
   cursor: pointer;
   padding: 0;

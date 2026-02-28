@@ -89,7 +89,7 @@
 .offer-field select {
   width: 100%;
   padding: 0.6rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   font-size: 0.9rem;
   transition: border-color 0.15s;
@@ -105,7 +105,7 @@
 
 .offer-error {
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--color-danger);
   padding: 0.75rem;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -121,7 +121,7 @@
 .btn-offer-cancel {
   padding: 0 1.25rem;
   min-height: 44px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   background: white;
   color: var(--color-text);
@@ -165,7 +165,7 @@
 }
 
 .offer-card:hover {
-  border-color: #d1d5db;
+  border-color: var(--color-border-medium);
 }
 
 .offer-card-header {
@@ -200,10 +200,10 @@
   text-transform: uppercase;
 }
 
-.offer-status.pending { background: #fef3c7; color: #a16207; }
+.offer-status.pending { background: var(--color-warning-light); color: #a16207; }
 .offer-status.countered { background: #eff6ff; color: var(--color-primary); }
-.offer-status.accepted { background: #ecfdf5; color: #059669; }
-.offer-status.declined { background: #fef2f2; color: #dc2626; }
+.offer-status.accepted { background: var(--color-success-light); color: var(--color-success-dark); }
+.offer-status.declined { background: #fef2f2; color: var(--color-danger); }
 .offer-status.withdrawn { background: var(--color-bg-muted); color: var(--color-text-secondary); }
 .offer-status.expired { background: var(--color-bg-muted); color: var(--color-text-secondary); }
 
@@ -218,9 +218,9 @@
   margin-right: 0.5rem;
 }
 
-.btn-offer-action.accept { background: #10b981; color: white; }
+.btn-offer-action.accept { background: var(--color-success); color: white; }
 .btn-offer-action.counter { background: var(--color-primary); color: white; }
-.btn-offer-action.decline { background: var(--color-bg-muted); color: #dc2626; }
+.btn-offer-action.decline { background: var(--color-bg-muted); color: var(--color-danger); }
 
 /* Mobile adjustments */
 .offer-modal { margin: 0.5rem; max-height: 95vh; }

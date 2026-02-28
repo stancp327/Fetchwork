@@ -18,7 +18,7 @@
   gap: 0.5rem;
 }
 .av-badge {
-  background: #dc2626;
+  background: var(--color-danger);
   color: white;
   border-radius: 20px;
   padding: 0.1rem 0.55rem;
@@ -38,7 +38,7 @@
   padding: 0 1rem;
   height: 44px;
   border-radius: 22px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   background: white;
   color: var(--color-text);
   font-size: 0.85rem;
@@ -58,7 +58,7 @@
   padding: 3rem 1rem;
   color: var(--color-text-secondary);
 }
-.av-error  { color: #dc2626; }
+.av-error  { color: var(--color-danger); }
 .av-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
 
 /* Card list */
@@ -102,7 +102,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #dbeafe;
+  background: var(--color-primary-bg);
   color: var(--color-primary-dark);
   display: flex;
   align-items: center;
@@ -183,7 +183,7 @@
 .av-notes-field textarea {
   width: 100%;
   padding: 0.6rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   font-size: 0.88rem;
   resize: vertical;
@@ -208,10 +208,10 @@
   transition: opacity 0.15s;
 }
 .av-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.av-btn.approve { background: #10b981; color: white; }
-.av-btn.approve:hover:not(:disabled) { background: #059669; }
-.av-btn.reject  { background: var(--color-bg-muted); color: #dc2626; border: 1px solid #fecaca; }
-.av-btn.reject:hover:not(:disabled)  { background: #fee2e2; }
+.av-btn.approve { background: var(--color-success); color: white; }
+.av-btn.approve:hover:not(:disabled) { background: var(--color-success-dark); }
+.av-btn.reject  { background: var(--color-bg-muted); color: var(--color-danger); border: 1px solid #fecaca; }
+.av-btn.reject:hover:not(:disabled)  { background: var(--color-danger-light); }
 
 .av-review-notes {
   font-size: 0.85rem;

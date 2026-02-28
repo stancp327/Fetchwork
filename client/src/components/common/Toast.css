@@ -30,9 +30,9 @@
 .toast:hover { transform: translateX(-2px); }
 
 .toast-info { border-left-color: var(--color-primary); }
-.toast-success { border-left-color: #059669; }
-.toast-error { border-left-color: #dc2626; }
-.toast-warning { border-left-color: #d97706; }
+.toast-success { border-left-color: var(--color-success-dark); }
+.toast-error { border-left-color: var(--color-danger); }
+.toast-warning { border-left-color: var(--color-warning-dark); }
 
 .toast-icon { font-size: 1.1rem; flex-shrink: 0; }
 .toast-message { flex: 1; font-size: 0.875rem; color: #1f2937; line-height: 1.4; }

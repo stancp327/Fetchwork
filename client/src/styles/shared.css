@@ -61,7 +61,7 @@
 }
 .btn-secondary:hover:not(:disabled) {
   background: var(--color-bg-muted);
-  border-color: #d1d5db;
+  border-color: var(--color-border-medium);
 }
 
 /* Danger */
@@ -177,8 +177,8 @@
 }
 
 /* Status badges (used for job/order/proposal status) */
-.status-open        { background: #dbeafe; color: var(--color-primary-dark); }
-.status-in_progress { background: #fef3c7; color: #d97706; }
+.status-open        { background: var(--color-primary-bg); color: var(--color-primary-dark); }
+.status-in_progress { background: var(--color-warning-light); color: var(--color-warning-dark); }
 .status-completed   { background: var(--color-success-light); color: var(--color-success-dark); }
 .status-cancelled   { background: var(--color-danger-light);  color: var(--color-danger); }
 .status-pending     { background: var(--color-bg-muted); color: var(--color-text-secondary); }

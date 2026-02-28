@@ -374,7 +374,7 @@
   min-height: 0;  /* Tags are intentionally compact — override global 44px */
 }
 .tag-clickable:hover {
-  background: #d1d5db;
+  background: var(--color-border-medium);
   color: #111827;
 }
 

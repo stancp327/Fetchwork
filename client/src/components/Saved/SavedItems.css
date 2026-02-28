@@ -24,7 +24,7 @@
   padding: 0 1rem;
   height: 44px;
   border-radius: 22px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   background: white;
   color: var(--color-text);
   font-size: 0.85rem;
@@ -63,7 +63,7 @@
 }
 
 .saved-item:hover {
-  border-color: #d1d5db;
+  border-color: var(--color-border-medium);
 }
 
 .saved-item-link {
@@ -122,7 +122,7 @@
 }
 
 .saved-item-remove:hover {
-  color: #dc2626;
+  color: var(--color-danger);
 }
 
 /* Empty state */

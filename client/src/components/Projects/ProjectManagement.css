@@ -156,10 +156,10 @@
 }
 .pm-status-badge.draft       { background: var(--color-bg-muted); color: var(--color-text-secondary); }
 .pm-status-badge.open        { background: #d1fae5; color: #065f46; }
-.pm-status-badge.in_progress { background: #dbeafe; color: var(--color-primary-dark); }
+.pm-status-badge.in_progress { background: var(--color-primary-bg); color: var(--color-primary-dark); }
 .pm-status-badge.completed   { background: #ede9fe; color: #6d28d9; }
-.pm-status-badge.cancelled   { background: #fee2e2; color: #991b1b; }
-.pm-status-badge.disputed    { background: #fef3c7; color: #92400e; }
+.pm-status-badge.cancelled   { background: var(--color-danger-light); color: #991b1b; }
+.pm-status-badge.disputed    { background: var(--color-warning-light); color: #92400e; }
 
 .pm-project-meta {
   display: flex;
@@ -180,7 +180,7 @@
   margin-bottom: 0.75rem;
 }
 .pm-payment-pill.funded   { background: #d1fae5; color: #065f46; }
-.pm-payment-pill.unfunded { background: #fef3c7; color: #92400e; }
+.pm-payment-pill.unfunded { background: var(--color-warning-light); color: #92400e; }
 
 /* ── Milestones ─────────────────────────────────────────────── */
 .pm-milestones-section {
@@ -242,7 +242,7 @@
   height: 22px;
   min-width: 22px;
   border-radius: 50%;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--color-border-medium);
   background: white;
   display: flex;
   align-items: center;
@@ -253,8 +253,8 @@
   padding: 0;
 }
 .pm-ms-check.done {
-  background: #10b981;
-  border-color: #10b981;
+  background: var(--color-success);
+  border-color: var(--color-success);
   color: white;
   cursor: default;
 }
@@ -312,10 +312,10 @@
   transition: opacity 0.15s;
 }
 .pm-ms-action:disabled { opacity: 0.6; cursor: not-allowed; }
-.pm-ms-action.start    { background: #dbeafe; color: var(--color-primary-dark); }
-.pm-ms-action.complete { background: #10b981; color: white; }
-.pm-ms-action.approve  { background: #10b981; color: white; }
-.pm-ms-action.revision { background: #fef3c7; color: #92400e; }
+.pm-ms-action.start    { background: var(--color-primary-bg); color: var(--color-primary-dark); }
+.pm-ms-action.complete { background: var(--color-success); color: white; }
+.pm-ms-action.approve  { background: var(--color-success); color: white; }
+.pm-ms-action.revision { background: var(--color-warning-light); color: #92400e; }
 .pm-ms-action:hover:not(:disabled) { opacity: 0.85; }
 
 /* ── Quick Update ───────────────────────────────────────────── */
@@ -339,7 +339,7 @@
 .pm-quick-update-form textarea {
   width: 100%;
   padding: 0.6rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 8px;
   font-size: 0.85rem;
   resize: none;
@@ -361,7 +361,7 @@
   min-height: 34px;
   padding: 0 0.8rem;
   background: none;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 7px;
   font-size: 0.8rem;
   cursor: pointer;
@@ -403,11 +403,11 @@
   display: inline-flex;
   align-items: center;
 }
-.pm-btn-track:hover { background: #dbeafe; }
+.pm-btn-track:hover { background: var(--color-primary-bg); }
 .pm-btn-complete {
   min-height: 36px;
   padding: 0 0.9rem;
-  background: #10b981;
+  background: var(--color-success);
   color: white;
   border: none;
   border-radius: 8px;
@@ -467,7 +467,7 @@
 .btn-accept {
   min-height: 32px;
   padding: 0 0.75rem;
-  background: #10b981;
+  background: var(--color-success);
   color: white;
   border: none;
   border-radius: 7px;
@@ -475,7 +475,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-.btn-accept:hover { background: #059669; }
+.btn-accept:hover { background: var(--color-success-dark); }
 
 /* ── Card Footer ────────────────────────────────────────────── */
 .pm-project-footer {
@@ -516,7 +516,7 @@
   border: 1px solid #fecaca;
   border-radius: 8px;
   padding: 0.75rem 1rem;
-  color: #dc2626;
+  color: var(--color-danger);
   font-size: 0.85rem;
   margin-bottom: 1rem;
 }
@@ -559,7 +559,7 @@
 }
 
 .pm-role-badge {
-  background: #ef4444;
+  background: var(--color-danger);
   color: white;
   font-size: 0.65rem;
   font-weight: 700;
@@ -571,9 +571,9 @@
 
 /* ── Attention Banner ─────────────────────────────────────────── */
 .pm-attention-banner {
-  background: #fef3c7;
+  background: var(--color-warning-light);
   border: 1px solid #fde68a;
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid var(--color-warning);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
@@ -594,7 +594,7 @@
 }
 .pm-stat-active {
   box-shadow: 0 2px 10px rgba(37,99,235,0.15);
-  border-color: #93c5fd !important;
+  border-color: var(--color-primary-disabled) !important;
 }
 
 /* ── Proposal CTA ────────────────────────────────────────────── */
@@ -618,7 +618,7 @@
 
 .pm-proposals-badge {
   display: inline-block;
-  background: #ef4444;
+  background: var(--color-danger);
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
@@ -696,9 +696,9 @@
   padding: 2px 10px;
   border-radius: 99px;
 }
-.pm-proposal-status-badge.pending  { background: #fef3c7; color: #92400e; }
+.pm-proposal-status-badge.pending  { background: var(--color-warning-light); color: #92400e; }
 .pm-proposal-status-badge.accepted { background: #d1fae5; color: #065f46; }
-.pm-proposal-status-badge.declined { background: #fee2e2; color: #991b1b; }
+.pm-proposal-status-badge.declined { background: var(--color-danger-light); color: #991b1b; }
 .pm-my-proposal-terms {
   display: flex;
   gap: 1rem;
@@ -710,7 +710,7 @@
   font-size: 0.8rem;
   color: var(--color-text-secondary);
   line-height: 1.45;
-  border-left: 2px solid #d1d5db;
+  border-left: 2px solid var(--color-border-medium);
   padding-left: 0.5rem;
 }
 
@@ -724,7 +724,7 @@
 
 .pm-applicants-header {
   padding: 0.6rem 0.85rem;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
   border-bottom: 1px solid var(--color-border);
   font-size: 0.8rem;
   color: var(--color-text-secondary);
@@ -753,7 +753,7 @@
 }
 
 .pm-applicant-card:hover {
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .pm-applicant-avatar {
@@ -819,7 +819,7 @@
   display: block;
   font-size: 0.9rem;
   font-weight: 700;
-  color: #059669;
+  color: var(--color-success-dark);
 }
 
 .pm-applicant-duration {
@@ -833,7 +833,7 @@
   padding: 0.4rem 0.85rem;
   font-size: 0.78rem;
   color: var(--color-text-muted);
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
   border-top: 1px solid var(--color-bg-muted);
 }
 
@@ -862,7 +862,7 @@
   border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .pm-hired-row {
@@ -949,7 +949,7 @@
   padding: 0.3rem 0.65rem;
   border-radius: 6px;
   background: #fff;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   color: var(--color-text);
   text-decoration: none;
   font-weight: 500;
@@ -994,7 +994,7 @@
   margin-top: 0.1rem;
 }
 
-.pm-pay-sum-val.green { color: #059669; }
+.pm-pay-sum-val.green { color: var(--color-success-dark); }
 .pm-pay-sum-val.blue  { color: var(--color-primary); }
 
 /* Milestone payment tag */
@@ -1005,14 +1005,14 @@
   font-weight: 500;
 }
 
-.pm-ms-pay-tag.funded   { color: #059669; }
+.pm-ms-pay-tag.funded   { color: var(--color-success-dark); }
 .pm-ms-pay-tag.released { color: var(--color-primary); }
 .pm-ms-pay-tag.unfunded { color: var(--color-text-muted); }
 
 /* Milestone action buttons � fund/release */
 .pm-ms-action.fund {
   background: #f0fdf4;
-  color: #059669;
+  color: var(--color-success-dark);
   border: 1px solid #86efac;
 }
 
@@ -1023,11 +1023,11 @@
 .pm-ms-action.release {
   background: #eff6ff;
   color: var(--color-primary);
-  border: 1px solid #93c5fd;
+  border: 1px solid var(--color-primary-disabled);
 }
 
 .pm-ms-action.release:hover {
-  background: #dbeafe;
+  background: var(--color-primary-bg);
 }
 
 /* -- Freelancer In-Progress Job Header ------------------------- */
@@ -1036,7 +1036,7 @@
   border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .pm-fl-client-row {
@@ -1069,7 +1069,7 @@
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  background: #fef3c7;
+  background: var(--color-warning-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1084,7 +1084,7 @@
 .pm-fl-client-initials {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #d97706;
+  color: var(--color-warning-dark);
   text-transform: uppercase;
 }
 
@@ -1115,7 +1115,7 @@
   padding: 0.3rem 0.65rem;
   border-radius: 6px;
   background: #fff;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   color: var(--color-text);
   text-decoration: none;
   font-weight: 500;
@@ -1150,7 +1150,7 @@
   border-right: none;
 }
 
-.pm-fl-status-text.funded { color: #059669; font-weight: 600; }
+.pm-fl-status-text.funded { color: var(--color-success-dark); font-weight: 600; }
 .pm-fl-status-text.muted  { color: var(--color-text-muted); }
 
 .pm-fl-deadline {
@@ -1160,7 +1160,7 @@
 }
 
 .pm-fl-deadline.urgent {
-  color: #dc2626;
+  color: var(--color-danger);
   font-weight: 700;
 }
 
@@ -1273,7 +1273,7 @@
 .pm-ms-input {
   width: 100%;
   padding: 0.45rem 0.6rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 7px;
   font-size: 0.85rem;
   color: var(--color-text-dark);
@@ -1295,19 +1295,19 @@
   flex-shrink: 0;
   background: none;
   border: 1px solid #fca5a5;
-  color: #ef4444;
+  color: var(--color-danger);
   border-radius: 6px;
   padding: 0.3rem 0.5rem;
   cursor: pointer;
   font-size: 0.78rem;
 }
 
-.pm-ms-remove:hover { background: #fee2e2; }
+.pm-ms-remove:hover { background: var(--color-danger-light); }
 
 .pm-ms-add-btn {
   align-self: flex-start;
   background: none;
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--color-border-medium);
   color: var(--color-text-secondary);
   border-radius: 7px;
   padding: 0.4rem 0.85rem;
@@ -1322,7 +1322,7 @@
   display: flex;
   justify-content: space-between;
   padding: 0.45rem 0.5rem;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
   border-radius: 7px;
   font-size: 0.85rem;
   color: var(--color-text);
@@ -1341,7 +1341,7 @@
 .pm-ms-note-input {
   width: 100%;
   padding: 0.5rem 0.65rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   border-radius: 7px;
   font-size: 0.85rem;
   resize: vertical;
@@ -1349,11 +1349,11 @@
 }
 
 .pm-modal-error {
-  color: #dc2626;
+  color: var(--color-danger);
   font-size: 0.82rem;
   margin-top: 0.5rem;
   padding: 0.4rem 0.6rem;
-  background: #fee2e2;
+  background: var(--color-danger-light);
   border-radius: 6px;
 }
 
@@ -1368,7 +1368,7 @@
 .pm-modal-cancel {
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-medium);
   background: #fff;
   color: var(--color-text-secondary);
   font-size: 0.85rem;
@@ -1439,7 +1439,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #dbeafe;
+  background: var(--color-primary-bg);
   color: var(--color-primary);
   font-size: 0.68rem;
   font-weight: 700;
@@ -1450,13 +1450,13 @@
 
 .msg-ms-req-title { flex: 1; color: var(--color-text-dark); }
 
-.msg-ms-req-amount { font-weight: 700; color: #059669; flex-shrink: 0; }
+.msg-ms-req-amount { font-weight: 700; color: var(--color-success-dark); flex-shrink: 0; }
 
 .msg-milestone-req-total {
   display: flex;
   justify-content: space-between;
   padding: 0.4rem 0.75rem;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--color-text);

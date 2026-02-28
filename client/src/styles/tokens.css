@@ -2,8 +2,10 @@
   /* ── Brand Colors ──────────────────────────────────────────── */
   --color-primary:       #2563eb;   /* Tailwind blue-600 — canonical primary */
   --color-primary-dark:  #1d4ed8;   /* Tailwind blue-700 — hover/active state */
-  --color-primary-light: #eff6ff;   /* Tailwind blue-50  — tinted bg */
-  --color-primary-ring:  rgba(37, 99, 235, 0.2); /* focus ring */
+  --color-primary-light:    #eff6ff;   /* Tailwind blue-50  — tinted bg */
+  --color-primary-bg:       #dbeafe;   /* Tailwind blue-100 — chip/tag bg */
+  --color-primary-disabled: #93c5fd;   /* Tailwind blue-300 — disabled btn */
+  --color-primary-ring:     rgba(37, 99, 235, 0.2); /* focus ring */
 
   /* ── Semantic Colors ───────────────────────────────────────── */
   --color-success:       #10b981;   /* Tailwind emerald-500 — was #28a745 */
@@ -32,13 +34,15 @@
   /* ── Background Colors ─────────────────────────────────────── */
   --color-bg-primary:   #ffffff;
   --color-bg-secondary: #f8fafc;    /* page background */
-  --color-bg-muted:     #f3f4f6;    /* light card, input bg — was #e9ecef */
+  --color-bg-subtle:    #f8fafc;    /* alias — near-white surface */
+  --color-bg-muted:     #f3f4f6;    /* light card, input bg */
   --color-bg-hover:     #f1f5f9;    /* hover state bg */
 
   /* ── Border Colors ─────────────────────────────────────────── */
-  --color-border:       #e5e7eb;    /* default border — was #e1e5e9 */
-  --color-border-light: #f3f4f6;    /* subtle divider */
-  --color-border-focus: var(--color-primary);
+  --color-border:        #e5e7eb;   /* default border — was #e1e5e9 */
+  --color-border-medium: #d1d5db;   /* input borders, table dividers (gray-300) */
+  --color-border-light:  #f3f4f6;   /* subtle divider */
+  --color-border-focus:  var(--color-primary);
 
   /* ── Surface / Glassmorphism ───────────────────────────────── */
   --color-surface-glass:      rgba(255, 255, 255, 0.85);

@@ -26,7 +26,7 @@
 .post-job-form input[type="date"],
 .post-job-form select,
 .post-job-form textarea {
-  width: 100%; padding: var(--space-md); border: 1px solid #d1d5db; border-radius: 8px;
+  width: 100%; padding: var(--space-md); border: 1px solid var(--color-border-medium); border-radius: 8px;
   font-size: 16px; color: #1f2937; background: #fff; transition: border-color 0.15s; min-height: 44px;
 }
 
@@ -36,8 +36,8 @@
 
 .post-job-form textarea { resize: vertical; min-height: 120px; }
 .post-job-form .char-count { font-size: var(--font-size-xs); color: var(--color-text-muted); text-align: right; margin-top: var(--space-xs); }
-.post-job-form .error-text { color: #ef4444; font-size: var(--font-size-xs); margin-top: var(--space-xs); }
-.post-job-form .error-banner { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: var(--space-md) var(--space-lg); border-radius: 8px; font-size: var(--font-size-sm); margin-bottom: var(--space-lg); }
+.post-job-form .error-text { color: var(--color-danger); font-size: var(--font-size-xs); margin-top: var(--space-xs); }
+.post-job-form .error-banner { background: #fef2f2; border: 1px solid #fecaca; color: var(--color-danger); padding: var(--space-md) var(--space-lg); border-radius: 8px; font-size: var(--font-size-sm); margin-bottom: var(--space-lg); }
 
 /* Grids — single column on mobile */
 .post-job-grid-3, .post-job-grid-location { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); }
@@ -51,13 +51,13 @@
 .post-job-actions { display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-2xl); padding-top: var(--space-xl); border-top: 1px solid var(--color-bg-muted); }
 .post-job-actions .btn-primary { background: var(--color-primary); color: white; border: none; padding: var(--space-md) var(--space-2xl); border-radius: 8px; font-weight: 600; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
 .post-job-actions .btn-primary:hover { background: var(--color-primary-dark); }
-.post-job-actions .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
-.post-job-actions .btn-secondary { background: white; color: var(--color-text); border: 1px solid #d1d5db; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 500; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
+.post-job-actions .btn-primary:disabled { background: var(--color-primary-disabled); cursor: not-allowed; }
+.post-job-actions .btn-secondary { background: white; color: var(--color-text); border: 1px solid var(--color-border-medium); padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 500; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
 .post-job-actions .btn-secondary:hover { background: #f9fafb; }
 
 /* Success */
 .post-job-success { text-align: center; padding: var(--space-3xl) var(--space-xl); background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); max-width: 500px; margin: calc(64px + 3rem) auto 0; }
-.post-job-success h3 { color: #059669; font-size: var(--font-size-xl); margin: 0 0 var(--space-sm); }
+.post-job-success h3 { color: var(--color-success-dark); font-size: var(--font-size-xl); margin: 0 0 var(--space-sm); }
 .post-job-success p { color: var(--color-text-secondary); margin: 0; }
 
 /* Tablet+ */
@@ -84,7 +84,7 @@
   background: white; cursor: pointer; text-align: left; transition: all 0.15s;
   min-height: 44px; width: 100%;
 }
-.work-type-card:hover { border-color: #93c5fd; background: #f8faff; }
+.work-type-card:hover { border-color: var(--color-primary-disabled); background: #f8faff; }
 .work-type-card.selected { border-color: var(--color-primary); background: #eff6ff; }
 .work-type-icon { font-size: 1.25rem; }
 .work-type-label { font-weight: 600; font-size: var(--font-size-sm); color: #111827; }
@@ -110,7 +110,7 @@
   background: white; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%;
   min-height: 44px;
 }
-.cancellation-card:hover { border-color: #d1d5db; background: #f9fafb; }
+.cancellation-card:hover { border-color: var(--color-border-medium); background: #f9fafb; }
 .cancellation-card.selected { border-color: var(--color-primary); background: #eff6ff; }
 .cancellation-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
 
