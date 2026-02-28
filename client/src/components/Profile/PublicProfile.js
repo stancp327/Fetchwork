@@ -11,6 +11,7 @@ import { TrustBadges, ReputationStats } from '../common/TrustBadges';
 import SEO from '../common/SEO';
 import { createPersonSchema } from '../../utils/structuredData';
 import { useAuth } from '../../context/AuthContext';
+import OnlineStatus, { formatResponseTime } from '../common/OnlineStatus';
 import './PublicProfile.css';
 
 const StarRating = ({ rating }) => {
@@ -142,8 +143,9 @@ const PublicProfile = () => {
             </div>
           </div>
           <div className="pp-hero-actions">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               <AvailabilityBadge status={f.availabilityStatus} />
+              <OnlineStatus isOnline={f.isOnline} lastSeen={f.lastSeen} size="sm" />
               {!isOwnProfile && <SaveButton itemId={f._id} itemType="freelancer" size="lg" />}
             </div>
             {f.hourlyRate > 0 && <div className="pp-rate">${f.hourlyRate}<span>/hr</span></div>}
@@ -188,9 +190,7 @@ const PublicProfile = () => {
         )}
         {f.avgResponseTime && (
           <div className="pp-stat">
-            <div className="pp-stat-value">
-              {f.avgResponseTime < 60 ? `${f.avgResponseTime}m` : f.avgResponseTime < 1440 ? `${Math.round(f.avgResponseTime / 60)}h` : `${Math.round(f.avgResponseTime / 1440)}d`}
-            </div>
+            <div className="pp-stat-value">{formatResponseTime(f.avgResponseTime)}</div>
             <div className="pp-stat-label">Avg Response</div>
           </div>
         )}

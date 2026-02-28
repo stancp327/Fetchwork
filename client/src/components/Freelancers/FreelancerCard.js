@@ -3,29 +3,38 @@ import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
 import { getLocationDisplay } from '../../utils/location';
 import PlanBadge from '../Billing/PlanBadge';
+import OnlineStatus, { formatResponseTime } from '../common/OnlineStatus';
 
 const FreelancerCard = ({ freelancer }) => {
   const profilePath = `/freelancer/${freelancer.username || freelancer._id}`;
+  const responseTime = formatResponseTime(freelancer.avgResponseTime);
   return (
     <div className="freelancer-card">
       <div className="freelancer-header">
-        <img 
-          src={freelancer.profilePicture || '/default-avatar.png'} 
-          alt={`${freelancer.firstName} ${freelancer.lastName}`}
-          className="freelancer-avatar"
-        />
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <img 
+            src={freelancer.profilePicture || '/default-avatar.png'} 
+            alt={`${freelancer.firstName} ${freelancer.lastName}`}
+            className="freelancer-avatar"
+          />
+          {freelancer.isOnline && <span className="avatar-online-badge" title="Available now" />}
+        </div>
         <div className="freelancer-info">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {freelancer.firstName} {freelancer.lastName}
             <PlanBadge planSlug={freelancer.planSlug} tier={freelancer.planTier} />
           </h3>
-          <div className="freelancer-rating">
-            <span className="rating">★ {Number(freelancer.rating || 0).toFixed(1)}</span>
-            <span className="reviews">({freelancer.totalReviews || 0} reviews)</span>
-          </div>
+          <OnlineStatus
+            isOnline={freelancer.isOnline}
+            lastSeen={freelancer.lastSeen}
+            size="sm"
+          />
           <div className="freelancer-card-stats">
             <span className="stat-badge">⭐ {Number(freelancer.rating || 0).toFixed(1)}</span>
             <span className="stat-badge">✓ {freelancer.completedJobs || 0} jobs</span>
+            {responseTime && (
+              <span className="stat-badge" title="Avg. response time">⚡ {responseTime}</span>
+            )}
           </div>
         </div>
       </div>

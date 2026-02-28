@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
 import { apiRequest } from '../../utils/api';
+import OnlineStatus, { formatLastSeen } from '../common/OnlineStatus';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import './Messages.css';
 
@@ -17,24 +18,31 @@ const formatTime = (ts) => {
 };
 
 // ── Conversation Item ───────────────────────────────────────────
-const ConvoItem = ({ convo, selected, userId, onClick }) => {
+const ConvoItem = ({ convo, selected, userId, onClick, onlineStatus }) => {
   const other = convo.participants?.find(p => p._id !== userId);
   const unread = convo.unreadCount > 0;
+  const otherId = other?._id;
+  const status = onlineStatus?.[otherId];
+  const isOnline = status?.isOnline ?? false;
 
   return (
     <div className={`convo-item ${selected ? 'selected' : ''} ${unread ? 'unread' : ''}`} onClick={onClick}>
-      <div className="convo-avatar">
+      <div className="convo-avatar" style={{ position: 'relative' }}>
         {other?.profilePicture ? (
           <img src={other.profilePicture} alt="" />
         ) : (
           <span>{other?.firstName?.[0]}{other?.lastName?.[0]}</span>
         )}
+        <span className={`avatar-online-badge ${isOnline ? '' : 'offline'}`} />
       </div>
       <div className="convo-info">
         <div className="convo-top">
           <span className="convo-name">{other?.firstName} {other?.lastName}</span>
           <span className="convo-time">{formatTime(convo.lastActivity)}</span>
         </div>
+        {!isOnline && status?.lastSeen && (
+          <div className="convo-last-seen">Last seen {formatLastSeen(status.lastSeen)}</div>
+        )}
         {convo.job && (
           <Link to={`/jobs/${convo.job._id}`} className="convo-job" onClick={e => e.stopPropagation()}>
             📋 {convo.job.title}
@@ -420,6 +428,7 @@ const Messages = () => {
   const [deliveryStatus, setDeliveryStatus] = useState(new Map());
   const [showContext, setShowContext] = useState(false);
   const [mobileView, setMobileView] = useState('inbox');
+  const [onlineUsers, setOnlineUsers] = useState({}); // userId → { isOnline, lastSeen }
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -438,6 +447,18 @@ const Messages = () => {
       setLoading(false);
     }
   }, []);
+
+  // Fetch online status for all conversation participants
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    const ids = [...new Set(
+      conversations.flatMap(c => (c.participants || []).map(p => p._id).filter(Boolean))
+    )].filter(id => id !== userId);
+    if (ids.length === 0) return;
+    apiRequest(`/api/users/online-status?ids=${ids.join(',')}`)
+      .then(data => setOnlineUsers(data.statuses || {}))
+      .catch(() => {});
+  }, [conversations, userId]);
 
   // ── Stable refs — socket handler always gets latest values
   //    without causing reconnects on every state change ─────────
@@ -500,6 +521,22 @@ const Messages = () => {
         break;
       case 'message:delivered':
         setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
+        break;
+      case 'user:online':
+        if (data?.userId) {
+          setOnlineUsers(prev => ({
+            ...prev,
+            [data.userId]: { isOnline: true, lastSeen: null }
+          }));
+        }
+        break;
+      case 'user:offline':
+        if (data?.userId) {
+          setOnlineUsers(prev => ({
+            ...prev,
+            [data.userId]: { isOnline: false, lastSeen: data.lastSeen || new Date().toISOString() }
+          }));
+        }
         break;
       default:
         break;
@@ -649,6 +686,7 @@ const Messages = () => {
                   key={c._id} convo={c} userId={userId}
                   selected={selectedConvo?._id === c._id}
                   onClick={() => fetchMessages(c)}
+                  onlineStatus={onlineUsers}
                 />
               ))
             )}
@@ -678,6 +716,13 @@ const Messages = () => {
                   </div>
                   <div>
                     <h3>{otherParticipant?.firstName} {otherParticipant?.lastName}</h3>
+                    {otherParticipant?._id && (
+                      <OnlineStatus
+                        isOnline={onlineUsers[otherParticipant._id]?.isOnline ?? false}
+                        lastSeen={onlineUsers[otherParticipant._id]?.lastSeen}
+                        size="sm"
+                      />
+                    )}
                     {selectedConvo.job && (
                       <Link
                         to={`/jobs/${selectedConvo.job._id}`}

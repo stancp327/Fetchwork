@@ -124,6 +124,33 @@ module.exports = (io) => {
           conversation.lastMessage = newMessage._id;
           await conversation.updateLastActivity();
 
+          // ── Avg response time (EMA, fire-and-forget) ─────────────────
+          // Only calc on first reply — when sender responds for the first time
+          // to a conversation opened by someone else
+          try {
+            const senderMsgCount = await Message.countDocuments({
+              conversation: conversation._id,
+              sender: senderId
+            });
+            if (senderMsgCount === 1) {
+              // This is sender's first message — find oldest message from the other person
+              const opener = await Message.findOne({
+                conversation: conversation._id,
+                sender: { $ne: senderId }
+              }).sort({ createdAt: 1 });
+              if (opener) {
+                const deltaMin = (Date.now() - new Date(opener.createdAt).getTime()) / 60000;
+                const sender = await User.findById(senderId).select('avgResponseTime');
+                if (sender) {
+                  const prev = sender.avgResponseTime;
+                  const newAvg = prev == null ? Math.round(deltaMin) : Math.round(prev * 0.8 + deltaMin * 0.2);
+                  User.updateOne({ _id: senderId }, { avgResponseTime: newAvg }).exec().catch(() => {});
+                }
+              }
+            }
+          } catch (_) {}
+          // ─────────────────────────────────────────────────────────────
+
           await newMessage.populate('sender', 'firstName lastName profilePicture');
           await conversation.populate('participants', 'firstName lastName profilePicture');
 
@@ -397,8 +424,10 @@ module.exports = (io) => {
         
         if (userSockets.size === 0) {
           activeUsers.delete(userId);
-          socket.broadcast.emit('user:offline', { userId });
+          socket.broadcast.emit('user:offline', { userId: userId.toString(), lastSeen: new Date() });
           console.log(`👁️ User ${userId} is now offline`);
+          // Persist lastSeen — fire and forget
+          User.updateOne({ _id: userId }, { lastSeen: new Date() }).exec().catch(() => {});
         }
       }
       socketToUser.delete(socket.id);

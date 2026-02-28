@@ -324,6 +324,30 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
   }
 });
 
+// ── Batch online status — used by Messages sidebar ─────────────────────────
+// GET /api/users/online-status?ids=id1,id2,id3
+router.get('/online-status', authenticateToken, async (req, res) => {
+  try {
+    const ids = (req.query.ids || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 50);
+    if (ids.length === 0) return res.json({ statuses: {} });
+
+    const users = await User.find({ _id: { $in: ids } }).select('_id lastSeen').lean();
+
+    const statuses = {};
+    users.forEach(u => {
+      const id = u._id.toString();
+      statuses[id] = {
+        isOnline: global.io?.isUserOnline(id) ?? false,
+        lastSeen: u.lastSeen || null
+      };
+    });
+
+    res.json({ statuses });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch online status' });
+  }
+});
+
 router.get('/jobs', authenticateToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;

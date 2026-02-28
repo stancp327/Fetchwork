@@ -259,7 +259,8 @@ const userSchema = new mongoose.Schema({
     expiresAt: { type: Date, default: null }
   },
   // Trust signals
-  avgResponseTime: { type: Number, default: null }, // minutes
+  lastSeen: { type: Date, default: null },           // set on socket disconnect
+  avgResponseTime: { type: Number, default: null }, // minutes (rolling EMA)
   completionRate: { type: Number, default: 100 }, // percentage
   totalJobsCancelled: { type: Number, default: 0 },
   onTimeDelivery: { type: Number, default: 100 }, // percentage

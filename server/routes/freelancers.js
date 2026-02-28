@@ -107,8 +107,14 @@ router.get('/', validateQueryParams, async (req, res) => {
     
     const total = await User.countDocuments(filters);
     
+    const withStatus = freelancers.map(f => {
+      const obj = f.toObject();
+      obj.isOnline = global.io?.isUserOnline(f._id.toString()) ?? false;
+      return obj;
+    });
+
     res.json({
-      freelancers,
+      freelancers: withStatus,
       pagination: {
         page,
         limit,
@@ -176,8 +182,11 @@ router.get('/:id', async (req, res) => {
     const Job = require('../models/Job');
     const completedJobs = await Job.countDocuments({ freelancer: user._id, status: 'completed' });
 
+    const freelancerObj = user.toObject();
+    freelancerObj.isOnline = global.io?.isUserOnline(user._id.toString()) ?? false;
+
     res.json({
-      freelancer: user,
+      freelancer: freelancerObj,
       services,
       reviews,
       stats: {
