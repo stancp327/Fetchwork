@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 
 const participantSchema = new mongoose.Schema(
   {
@@ -52,7 +52,7 @@ const bookingSchema = new mongoose.Schema(
       enum:    ['pending', 'synced', 'failed', 'unlinked'],
       default: 'pending',
     },
-    icalUid: { type: String, default: uuidv4 },
+    icalUid: { type: String, default: randomUUID },
 
     // Reminders
     reminder24hSent: { type: Boolean, default: false },
