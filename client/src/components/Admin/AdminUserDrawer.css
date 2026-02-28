@@ -195,9 +195,15 @@
 }
 .aud-audit-list { display: flex; flex-direction: column; gap: 6px; }
 .aud-audit-row {
-  display: grid; grid-template-columns: 1fr 2fr auto;
-  gap: 8px; font-size: var(--font-size-xs); color: var(--color-text-secondary);
-  padding: 4px 0; border-bottom: 1px solid var(--color-bg-secondary);
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: var(--font-size-xs); color: var(--color-text-secondary);
+  padding: 6px 0; border-bottom: 1px solid var(--color-bg-secondary);
 }
 .aud-audit-action { font-weight: var(--font-weight-medium); color: var(--color-text-primary); text-transform: capitalize; }
-.aud-audit-date   { color: var(--color-text-muted); white-space: nowrap; }
+.aud-audit-note   { color: var(--color-text-muted); }
+.aud-audit-date   { color: var(--color-text-muted); }
+
+@media (min-width: 480px) {
+  .aud-audit-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; }
+  .aud-audit-date { white-space: nowrap; }
+}

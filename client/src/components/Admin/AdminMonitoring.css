@@ -1,8 +1,12 @@
+/* ── Admin Monitoring — Mobile-first ────────────────────────── */
+
+/* Header — stacks on mobile */
 .monitoring-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .monitoring-controls {
@@ -11,54 +15,58 @@
   align-items: center;
   gap: var(--space-sm);
 }
-
 .monitoring-controls label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: var(--font-size-base);
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  min-height: 44px;
+  cursor: pointer;
 }
 
+/* Sections — single column on mobile */
 .monitoring-sections {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-md);
-  margin-top: var(--space-md);
 }
 
 .online-users-section,
 .system-health-section {
   background: #f8f9fa;
   padding: var(--space-sm);
-  overflow: hidden;
   border-radius: var(--radius-lg);
   border: 1px solid #e9ecef;
+  overflow: hidden;
 }
 
-.online-users-list {
-  max-height: 400px;
-  overflow-y: auto;
+.online-users-section h3,
+.system-health-section h3 {
+  margin: 0 0 12px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
 }
+
+.online-users-list { max-height: 400px; overflow-y: auto; }
 
 .online-user-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem;
+  padding: 10px 8px;
   border-bottom: 1px solid #e9ecef;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
 }
-
-.online-user-item:last-child {
-  border-bottom: none;
-}
+.online-user-item:last-child { border-bottom: none; }
 
 .user-info .user-name {
   font-weight: 500;
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
 }
-
 .user-info .user-email {
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
@@ -67,39 +75,34 @@
   height: 10px;
   border-radius: 50%;
   background-color: #28a745;
+  flex-shrink: 0;
 }
 
-.health-metrics {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+.health-metrics { display: flex; flex-direction: column; gap: 8px; }
 
 .health-item {
   display: flex;
   justify-content: space-between;
-  padding: 0.5rem 0;
+  padding: 8px 0;
   border-bottom: 1px solid #e9ecef;
+  gap: var(--space-sm);
 }
-
-.health-item:last-child {
-  border-bottom: none;
-}
+.health-item:last-child { border-bottom: none; }
 
 .metric-label {
   font-weight: 500;
+  font-size: var(--font-size-sm);
   color: var(--color-text-primary);
 }
-
 .metric-value {
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-/* Mobile base */
-.monitoring-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-.monitoring-sections { grid-template-columns: 1fr; }
-
+/* ── 768px+ ── */
 @media (min-width: 768px) {
-  .monitoring-header { flex-direction: row; align-items: center; }
+  .monitoring-header   { flex-direction: row; align-items: center; }
   .monitoring-sections { grid-template-columns: 1fr 1fr; }
+  .online-users-section,
+  .system-health-section { padding: var(--space-md); }
 }

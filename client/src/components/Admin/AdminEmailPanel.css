@@ -1,135 +1,132 @@
+/* ── Admin Email Panel — Mobile-first ────────────────────────── */
 .admin-email-panel {
-  padding: 0; overflow: hidden; max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .admin-email-panel h2 {
   color: var(--color-text-primary);
-  margin-bottom: var(--space-px-30);
+  margin-bottom: 20px;
   border-bottom: 2px solid #4285f4;
   padding-bottom: 10px;
+  font-size: var(--font-size-xl);
+  word-break: break-word;
 }
 
+/* Status */
 .email-status {
   background: #f8f9fa;
-  padding: var(--space-px-20);
+  padding: 16px;
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-px-30);
+  margin-bottom: 20px;
 }
-
 .email-status h3 {
-  margin-top: 0;
+  margin: 0 0 12px;
   color: var(--color-text-primary);
+  font-size: var(--font-size-base);
 }
-
 .status-indicator {
-  padding: 15px;
+  padding: 12px 16px;
   border-radius: 6px;
   border-left: 4px solid;
+  font-size: var(--font-size-sm);
 }
+.status-indicator.configured     { background: #d4edda; border-color: #28a745; color: #155724; }
+.status-indicator.not-configured { background: #f8d7da; border-color: #dc3545; color: #721c24; }
 
-.status-indicator.configured {
-  background: #d4edda;
-  border-color: #28a745;
-  color: #155724;
-}
-
-.status-indicator.not-configured {
-  background: #f8d7da;
-  border-color: #dc3545;
-  color: #721c24;
-}
-
+/* Actions grid — single column on mobile */
 .email-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
+  grid-template-columns: 1fr;
+  gap: 20px;
 }
 
 .broadcast-section,
 .test-section {
   background: white;
-  padding: 25px;
+  padding: 20px;
   border-radius: var(--radius-lg);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
 }
-
 .broadcast-section h3,
 .test-section h3 {
-  margin-top: 0;
+  margin: 0 0 16px;
   color: var(--color-text-primary);
   border-bottom: 1px solid #eee;
   padding-bottom: 10px;
+  font-size: var(--font-size-base);
 }
 
-.form-group {
-  margin-bottom: var(--space-px-20);
-}
-
-.form-group label {
+/* Form fields */
+.admin-email-panel .form-group { margin-bottom: 16px; }
+.admin-email-panel .form-group label {
   display: block;
   margin-bottom: 5px;
   font-weight: 600;
+  font-size: var(--font-size-sm);
   color: #555;
 }
-
-.form-group input,
-.form-group select,
-.form-group textarea {
+.admin-email-panel .form-group input,
+.admin-email-panel .form-group select {
   width: 100%;
-  padding: 10px;
+  padding: 0 12px;
+  height: 44px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
+  box-sizing: border-box;
+  background: white;
 }
-
-.form-group textarea {
+.admin-email-panel .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
   resize: vertical;
   min-height: 120px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.admin-email-panel .form-group input:focus,
+.admin-email-panel .form-group select:focus,
+.admin-email-panel .form-group textarea:focus {
+  outline: none;
+  border-color: #4285f4;
 }
 
-button[type="submit"] {
+/* Submit button — scoped to this panel only */
+.admin-email-panel button[type="submit"] {
+  width: 100%;
+  height: 44px;
   background: #4285f4;
   color: white;
-  padding: 12px 24px;
+  padding: 0 24px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   transition: background-color 0.2s;
+  box-sizing: border-box;
 }
+.admin-email-panel button[type="submit"]:hover:not(:disabled) { background: #3367d6; }
+.admin-email-panel button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
 
-button[type="submit"]:hover:not(:disabled) {
-  background: #3367d6;
-}
-
-button[type="submit"]:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.message {
-  margin-top: 20px;
-  padding: 15px;
-  border-radius: 4px;
+/* Result messages */
+.admin-email-panel .message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }
+.admin-email-panel .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.admin-email-panel .message.error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
-.message.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.message.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-/* Mobile base */
-.email-actions { grid-template-columns: 1fr; }
-
+/* ── 768px+ ── */
 @media (min-width: 768px) {
   .email-actions { grid-template-columns: 1fr 1fr; }
+  .admin-email-panel button[type="submit"] { width: auto; }
 }

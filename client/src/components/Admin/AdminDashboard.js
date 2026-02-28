@@ -1130,19 +1130,25 @@ const AdminDashboard = () => {
         )}
 
         {activeTab === 'analytics' && (
-          <TracingErrorBoundary componentName="AnalyticsTab">
-            <AnalyticsTab />
-          </TracingErrorBoundary>
+          <div className="analytics-tab">
+            <TracingErrorBoundary componentName="AnalyticsTab">
+              <AnalyticsTab />
+            </TracingErrorBoundary>
+          </div>
         )}
         {activeTab === 'errors' && (
-          <TracingErrorBoundary componentName="ErrorDashboard">
-            <ErrorDashboard />
-          </TracingErrorBoundary>
+          <div className="errors-tab">
+            <TracingErrorBoundary componentName="ErrorDashboard">
+              <ErrorDashboard />
+            </TracingErrorBoundary>
+          </div>
         )}
         {activeTab === 'billing' && (
-          <TracingErrorBoundary componentName="AdminBillingTab">
-            <AdminBillingTab />
-          </TracingErrorBoundary>
+          <div className="billing-tab">
+            <TracingErrorBoundary componentName="AdminBillingTab">
+              <AdminBillingTab />
+            </TracingErrorBoundary>
+          </div>
         )}
       </div>
     </div>

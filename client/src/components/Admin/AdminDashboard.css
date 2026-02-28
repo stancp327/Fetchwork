@@ -4,9 +4,12 @@
   max-width: 1200px;
   margin: 0 auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  overflow-x: hidden; /* nuclear option: never allow horizontal scroll */
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
-.admin-dashboard * { max-width: 100%; box-sizing: border-box; }
+/* Target only direct children — never use * selector (breaks grids + min-widths) */
+.admin-dashboard > * { box-sizing: border-box; }
+.dashboard-content { box-sizing: border-box; width: 100%; }
 
 /* Header */
 .dashboard-header {
@@ -109,13 +112,14 @@
 
 /* Tab content containers — ALL tabs */
 .overview-tab, .users-tab, .jobs-tab, .payments-tab, .reviews-tab,
-.disputes-tab, .email-tab, .monitoring-tab, .analytics-tab {
+.disputes-tab, .email-tab, .monitoring-tab, .analytics-tab, .billing-tab,
+.errors-tab, .verifications-tab {
   background: white; padding: var(--space-sm); border-radius: 10px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  overflow: hidden; max-width: 100%;
+  overflow: hidden; max-width: 100%; width: 100%; box-sizing: border-box;
 }
 .overview-tab h2, .users-tab h2, .jobs-tab h2, .payments-tab h2, .reviews-tab h2,
-.disputes-tab h2, .email-tab h2, .monitoring-tab h2 {
+.disputes-tab h2, .email-tab h2, .monitoring-tab h2, .billing-tab h2 {
   color: #2c3e50; margin-bottom: var(--space-md); font-size: var(--font-size-lg);
   word-break: break-word;
 }
@@ -241,7 +245,8 @@
   .users-management, .jobs-management, .payments-management, .reviews-management,
   .disputes-management, .email-panel { padding: var(--space-md); }
   .overview-tab, .users-tab, .jobs-tab, .payments-tab, .reviews-tab,
-  .disputes-tab, .email-tab, .monitoring-tab, .analytics-tab { padding: var(--space-lg); }
+  .disputes-tab, .email-tab, .monitoring-tab, .analytics-tab,
+  .billing-tab, .errors-tab, .verifications-tab { padding: var(--space-lg); }
 
   /* Restore table layout on tablet+ */
   .users-table thead, .jobs-table thead, .payments-table thead, .reviews-table thead { display: table-header-group; }

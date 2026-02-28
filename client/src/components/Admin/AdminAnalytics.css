@@ -5,8 +5,8 @@
 .aa-header h2 { margin: 0; font-size: var(--font-size-lg); }
 .aa-period-btns { display: flex; gap: var(--space-xs); }
 .aa-period-btn {
-  background: white; border: 1px solid #d1d5db; border-radius: 6px; padding: var(--space-xs) var(--space-md);
-  font-size: var(--font-size-xs); cursor: pointer; min-height: 36px; font-weight: 500;
+  background: white; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 var(--space-md);
+  font-size: var(--font-size-xs); cursor: pointer; min-height: 44px; font-weight: 500;
 }
 .aa-period-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
 
