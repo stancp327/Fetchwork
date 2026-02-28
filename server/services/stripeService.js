@@ -4,7 +4,9 @@ if (!STRIPE_SECRET_KEY) {
   console.warn('⚠️ Stripe not configured - missing STRIPE_SECRET_KEY. Payment features will be disabled.');
 }
 
-const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
+const stripe = STRIPE_SECRET_KEY
+  ? require('stripe')(STRIPE_SECRET_KEY, { apiVersion: '2026-01-28.clover' })
+  : null;
 
 class StripeService {
   _ensureStripe() {
@@ -81,8 +83,9 @@ class StripeService {
       amount:   Math.round(amount * 100), // cents
       currency,
       metadata,
-      // No capture_method: 'manual' — charge immediately on confirmation.
-      // Funds land in platform balance, transferred to freelancer on release.
+      // Stripe chooses the best payment methods per user (cards, Apple Pay,
+      // Google Pay, bank transfers, etc.) — no hardcoded payment_method_types.
+      automatic_payment_methods: { enabled: true },
     });
   }
 

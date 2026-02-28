@@ -103,14 +103,13 @@
 .checkout-amount    { font-size: 1.4rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem; }
 .checkout-note      { font-size: 0.78rem; color: #6b7280; margin: 0; }
 
-.checkout-card-field label {
+.checkout-payment-element label {
   display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;
 }
-.card-element-wrapper {
-  padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 8px;
-  background: white; transition: border-color 0.15s;
+.payment-element-wrapper {
+  /* PaymentElement renders its own iframe — just needs a container */
+  min-height: 44px;
 }
-.card-element-wrapper:focus-within { border-color: #2563eb; }
 
 .checkout-error {
   background: #fef2f2; color: #dc2626;

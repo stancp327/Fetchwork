@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
-import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import './Payments.css';
 
-const CARD_STYLE = {
-  style: {
-    base: {
-      fontSize: '16px',
-      color: '#111827',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      '::placeholder': { color: '#9ca3af' },
-    },
-    invalid: { color: '#dc2626' },
-  }
+// PaymentElement automatically renders the best payment method for each user:
+// cards, Apple Pay, Google Pay, bank transfers, etc. — no config needed.
+
+const PAYMENT_ELEMENT_OPTIONS = {
+  layout: 'tabs',
 };
 
-const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) => {
+const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel }) => {
   const stripe   = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -26,18 +21,26 @@ const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) =
     setProcessing(true);
     setError('');
 
-    const card = elements.getElement(CardElement);
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: { card }
+    // confirmPayment handles all payment methods — cards charge immediately,
+    // redirect-based methods use return_url, wallets confirm in one step.
+    const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/jobs/${jobId}/progress?payment=success`,
+      },
+      // Don't redirect for card payments — stay on page and call onSuccess
+      redirect: 'if_required',
     });
 
-    if (result.error) {
-      setError(result.error.message);
+    if (stripeError) {
+      setError(stripeError.message);
       setProcessing(false);
+    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+      setProcessing(false);
+      if (onSuccess) onSuccess(paymentIntent);
     } else {
-      // payment_intent.status === 'requires_capture' (manual hold — not charged yet)
+      // Payment requires redirect (e.g. bank transfer) — return_url handles it
       setProcessing(false);
-      if (onSuccess) onSuccess(result.paymentIntent);
     }
   };
 
@@ -51,10 +54,10 @@ const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) =
         </p>
       </div>
 
-      <div className="checkout-card-field">
-        <label>Card Details</label>
-        <div className="card-element-wrapper">
-          <CardElement options={CARD_STYLE} />
+      <div className="checkout-payment-element">
+        <label>Payment Details</label>
+        <div className="payment-element-wrapper">
+          <PaymentElement options={PAYMENT_ELEMENT_OPTIONS} />
         </div>
       </div>
 
@@ -69,7 +72,7 @@ const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) =
         </button>
       </div>
 
-      <p className="checkout-secure">🔒 Secured by Stripe. Card details never touch our servers.</p>
+      <p className="checkout-secure">🔒 Secured by Stripe. We never store your payment details.</p>
     </form>
   );
 };

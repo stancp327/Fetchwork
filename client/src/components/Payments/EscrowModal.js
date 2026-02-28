@@ -83,11 +83,20 @@ const EscrowModal = ({ job, amount, onClose, onPaid }) => {
           {loading && <div className="escrow-loading">Setting up payment…</div>}
 
           {clientSecret && (
-            <Elements stripe={stripePromise} options={{ clientSecret }}>
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret,
+                appearance: {
+                  theme: 'stripe',
+                  variables: { colorPrimary: '#2563eb', borderRadius: '8px' }
+                }
+              }}
+            >
               <CheckoutForm
-                clientSecret={clientSecret}
                 amount={Number(amount)}
                 jobTitle={job.title}
+                jobId={job._id}
                 onSuccess={handleSuccess}
                 onCancel={onClose}
               />
