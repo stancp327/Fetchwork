@@ -1,6 +1,7 @@
 /* ── Admin Dashboard — Mobile-first ─────────────────────────── */
 .admin-dashboard {
   padding: var(--space-sm);
+  padding-top: calc(64px + var(--space-sm)); /* 64px = fixed nav height */
   width: 100%;        /* Explicit width needed — flex items don't auto-fill without it */
   min-width: 0;       /* CRITICAL: flex items default to min-width:auto which locks them
                          at content size (~955px). min-width:0 allows shrinking to viewport. */

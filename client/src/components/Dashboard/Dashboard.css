@@ -1,9 +1,11 @@
 /* ── Dashboard — Mobile-first ─────────────────────────────────── */
 .dash-container {
   width: 100%;
+  min-width: 0;
   max-width: var(--container-max);
   margin: 0 auto;
   padding: var(--space-lg) var(--container-padding);
+  padding-top: calc(64px + var(--space-lg)); /* 64px = fixed nav height */
 }
 
 /* ── Loading Skeletons ────────────────────────────────────────── */
