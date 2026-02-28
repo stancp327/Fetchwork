@@ -442,3 +442,26 @@
 
   .dash-welcome h1 { font-size: var(--font-size-2xl); }
 }
+
+/* -- Action Required Banner ----------------------------------- */
+.dash-action-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.dash-action-bell { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+.dash-action-items { display: flex; flex-direction: column; gap: 0.35rem; }
+.dash-action-item {
+  font-size: 0.85rem;
+  color: #92400e;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.dash-action-item strong { color: #78350f; }
+.dash-action-item:hover { text-decoration: underline; }

@@ -140,7 +140,8 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
         totalEarnings: totalEarnings[0]?.total || 0,
         totalSpent: totalSpent[0]?.total || 0,
         unreadMessages,
-        pendingProposals: pendingProposals.length
+        pendingProposals:      pendingProposals.length,      // proposals I submitted (freelancer view)
+        proposalsReceived:     proposalsReceived.length,     // proposals on my jobs (client view)
       },
       recentActivity: {
         jobsAsClient: recentJobsAsClient,

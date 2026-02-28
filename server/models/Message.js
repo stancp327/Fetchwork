@@ -96,6 +96,12 @@ const messageSchema = new mongoose.Schema({
     enum: ['text', 'file', 'system'],
     default: 'text'
   },
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+    // e.g. { type: 'service_order', serviceId, serviceTitle }
+    //      { type: 'job_proposal',  jobId, jobTitle }
+  },
   attachments: [{
     filename: String,
     url: String,

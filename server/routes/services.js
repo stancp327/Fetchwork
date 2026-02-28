@@ -201,7 +201,15 @@ router.post('/:id/order', authenticateToken, async (req, res) => {
       sender: req.user._id,
       recipient: service.freelancer,
       content: `🛒 New Service Order: "${service.title}"\n\nPackage: ${selectedPackage.title}\nPrice: $${selectedPackage.price}\nDelivery: ${selectedPackage.deliveryTime} days\nOrdered: ${new Date().toLocaleString()}\n\n${requirements ? `Requirements:\n${requirements}` : ''}`,
-      messageType: 'system'
+      messageType: 'system',
+      metadata: {
+        type:         'service_order',
+        serviceId:    service._id,
+        serviceTitle: service.title,
+        package:      selectedPackage.title,
+        price:        selectedPackage.price,
+        deliveryDays: selectedPackage.deliveryTime,
+      }
     });
     
     await systemMessage.save();

@@ -35,7 +35,11 @@ const ConvoItem = ({ convo, selected, userId, onClick }) => {
           <span className="convo-name">{other?.firstName} {other?.lastName}</span>
           <span className="convo-time">{formatTime(convo.lastActivity)}</span>
         </div>
-        {convo.job && <div className="convo-job">Re: {convo.job.title}</div>}
+        {convo.job && (
+          <Link to={`/jobs/${convo.job._id}`} className="convo-job" onClick={e => e.stopPropagation()}>
+            📋 {convo.job.title}
+          </Link>
+        )}
         {convo.lastMessage && (
           <div className="convo-preview">{convo.lastMessage.content?.substring(0, 60)}{convo.lastMessage.content?.length > 60 ? '...' : ''}</div>
         )}
@@ -46,30 +50,48 @@ const ConvoItem = ({ convo, selected, userId, onClick }) => {
 };
 
 // ── Message Bubble ──────────────────────────────────────────────
-const MsgBubble = ({ msg, isMine, deliveryStatus }) => (
-  <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>
-    <div className="msg-bubble">
-      <div className="msg-content">{msg.content}</div>
-      {msg.attachments?.length > 0 && (
-        <div className="msg-attachments">
-          {msg.attachments.map((a, i) => (
-            <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="msg-attach-link">
-              📎 {a.filename || 'Attachment'}
-            </a>
-          ))}
-        </div>
-      )}
-      <div className="msg-meta">
-        <span>{formatTime(msg.createdAt)}</span>
-        {isMine && (
-          <span className="msg-status">
-            {msg.isRead ? '✓✓' : deliveryStatus?.has(msg._id) ? '✓✓' : '✓'}
-          </span>
+const MsgBubble = ({ msg, isMine, deliveryStatus }) => {
+  const meta = msg.metadata;
+  return (
+    <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>
+      <div className={`msg-bubble ${msg.messageType === 'system' ? 'msg-system' : ''}`}>
+        <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+
+        {/* Service order link */}
+        {meta?.type === 'service_order' && meta.serviceId && (
+          <Link to={`/services/${meta.serviceId}`} className="msg-job-link">
+            View Service →
+          </Link>
         )}
+
+        {/* Job proposal/activity link */}
+        {meta?.type === 'job_proposal' && meta.jobId && (
+          <Link to={`/jobs/${meta.jobId}`} className="msg-job-link">
+            View Job →
+          </Link>
+        )}
+
+        {msg.attachments?.length > 0 && (
+          <div className="msg-attachments">
+            {msg.attachments.map((a, i) => (
+              <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="msg-attach-link">
+                📎 {a.filename || 'Attachment'}
+              </a>
+            ))}
+          </div>
+        )}
+        <div className="msg-meta">
+          <span>{formatTime(msg.createdAt)}</span>
+          {isMine && (
+            <span className="msg-status">
+              {msg.isRead ? '✓✓' : deliveryStatus?.has(msg._id) ? '✓✓' : '✓'}
+            </span>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Main Messages ───────────────────────────────────────────────
 const Messages = () => {
@@ -313,7 +335,14 @@ const Messages = () => {
                   </div>
                   <div>
                     <h3>{otherParticipant?.firstName} {otherParticipant?.lastName}</h3>
-                    {selectedConvo.job && <p className="chat-job-link">Re: {selectedConvo.job.title}</p>}
+                    {selectedConvo.job && (
+                      <Link
+                        to={`/jobs/${selectedConvo.job._id}`}
+                        className="chat-job-link"
+                      >
+                        📋 {selectedConvo.job.title} →
+                      </Link>
+                    )}
                   </div>
                 </div>
                 <button className="context-toggle" onClick={() => setShowContext(!showContext)}>

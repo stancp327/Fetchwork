@@ -244,10 +244,10 @@ const Dashboard = () => {
       <div className="dash-stats-row">
         {isClientMode ? (
           <>
-            <StatCard icon="📋" label="Active Jobs" value={stats.activeJobsAsClient || 0} color="#2563eb" to="/projects" />
-            <StatCard icon="📨" label="Proposals" value={stats.pendingProposals || 0} color="#f59e0b" to="/projects" />
-            <StatCard icon="💰" label="Total Spent" value={formatCurrency(stats.totalSpent || 0)} color="#10b981" />
-            <StatCard icon="💬" label="Messages" value={stats.unreadMessages || 0} sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" to="/messages" />
+            <StatCard icon="📋" label="Active Jobs"   value={stats.activeJobsAsClient || 0}  color="#2563eb" to="/projects" />
+            <StatCard icon="📨" label="New Proposals" value={stats.proposalsReceived || 0}    color={stats.proposalsReceived > 0 ? '#ef4444' : '#f59e0b'} sub={stats.proposalsReceived > 0 ? 'needs review' : ''} to="/projects" />
+            <StatCard icon="💰" label="Total Spent"   value={formatCurrency(stats.totalSpent || 0)} color="#10b981" />
+            <StatCard icon="💬" label="Messages"      value={stats.unreadMessages || 0}       sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" to="/messages" />
           </>
         ) : (
           <>
@@ -261,7 +261,31 @@ const Dashboard = () => {
 
       {/* ── Main Content Grid ──────────────────────────────────── */}
       <div className="dash-grid">
-        {/* Recent Activity */}
+        {/* ── Action Required Banner ─────────────────────────── */}
+      {(stats.proposalsReceived > 0 || stats.unreadMessages > 0 || stats.pendingProposals > 0) && (
+        <div className="dash-action-banner">
+          <span className="dash-action-bell">🔔</span>
+          <div className="dash-action-items">
+            {isClientMode && stats.proposalsReceived > 0 && (
+              <Link to="/projects" className="dash-action-item">
+                <strong>{stats.proposalsReceived} proposal{stats.proposalsReceived !== 1 ? 's' : ''}</strong> waiting for your review →
+              </Link>
+            )}
+            {isFreelancerMode && stats.pendingProposals > 0 && (
+              <Link to="/projects" className="dash-action-item">
+                <strong>{stats.pendingProposals} proposal{stats.pendingProposals !== 1 ? 's' : ''}</strong> pending response →
+              </Link>
+            )}
+            {stats.unreadMessages > 0 && (
+              <Link to="/messages" className="dash-action-item">
+                <strong>{stats.unreadMessages} unread message{stats.unreadMessages !== 1 ? 's' : ''}</strong> →
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Activity */}
         <div className="dash-main">
           <div className="dash-section-header">
             <h2>Recent Activity</h2>

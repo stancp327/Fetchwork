@@ -391,3 +391,51 @@
     grid-template-columns: 320px 1fr 280px;
   }
 }
+
+/* -- Job/Service links in messages ------------------------------- */
+.msg-job-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 20px;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.msg-row.theirs .msg-job-link {
+  background: rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.25);
+  color: #2563eb;
+}
+.msg-job-link:hover { opacity: 0.85; }
+
+.msg-system .msg-content { font-size: 0.85rem; }
+
+/* -- Job link in chat header ------------------------------------ */
+.chat-job-link {
+  display: inline-block;
+  font-size: 0.78rem;
+  color: #2563eb;
+  text-decoration: none;
+  margin-top: 0.1rem;
+  font-weight: 500;
+}
+.chat-job-link:hover { text-decoration: underline; }
+
+/* -- Job link in convo list ------------------------------------- */
+.convo-job {
+  font-size: 0.72rem;
+  color: #2563eb;
+  display: block;
+  margin-bottom: 0.1rem;
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.convo-job:hover { text-decoration: underline; }

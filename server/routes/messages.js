@@ -12,7 +12,7 @@ router.get('/conversations', authenticateToken, validateQueryParams, async (req,
     })
     .populate('participants', 'firstName lastName profilePicture')
     .populate('lastMessage')
-    .populate('job', 'title')
+    .populate('job', '_id title status')
     .sort({ lastActivity: -1 });
     
     res.json({ conversations });
