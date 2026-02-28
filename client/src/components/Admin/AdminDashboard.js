@@ -11,6 +11,7 @@ import AnalyticsTab from './AnalyticsTab';
 import TracingErrorBoundary from '../common/TracingErrorBoundary';
 import ErrorDashboard from './ErrorDashboard';
 import AdminUserDrawer from './AdminUserDrawer';
+import AdminVerifications from './AdminVerifications';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -345,6 +346,12 @@ const AdminDashboard = () => {
           id="disputes"
           label="Disputes"
           active={activeTab === 'disputes'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="verifications"
+          label="Verifications"
+          active={activeTab === 'verifications'}
           onClick={setActiveTab}
         />
         <TabButton
@@ -997,6 +1004,12 @@ const AdminDashboard = () => {
               <h2>Dispute Management</h2>
               <AdminDisputePanel />
             </div>
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'verifications' && (
+          <TracingErrorBoundary componentName="AdminVerifications">
+            <AdminVerifications />
           </TracingErrorBoundary>
         )}
 

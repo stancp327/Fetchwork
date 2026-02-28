@@ -41,6 +41,16 @@ const cloudinaryStorage = new CloudinaryStorage({
   }
 });
 
+// Verification docs — no cropping, private folder
+const verifyStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'fetchwork/verifications',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'pdf'],
+    resource_type: 'auto'
+  }
+});
+
 function ensureDir(dir) {
   try {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -83,9 +93,19 @@ const uploadDisputeEvidence = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 }).array('evidence', 3);
 
+const uploadVerificationDocs = multer({
+  storage: process.env.CLOUDINARY_URL ? verifyStorage : localStorage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }
+}).fields([
+  { name: 'document', maxCount: 1 },
+  { name: 'selfie',   maxCount: 1 }
+]);
+
 module.exports = {
   uploadProfilePicture,
   uploadJobAttachments,
   uploadDisputeEvidence,
-  uploadPortfolio
+  uploadPortfolio,
+  uploadVerificationDocs
 };

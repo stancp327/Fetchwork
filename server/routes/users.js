@@ -5,7 +5,7 @@ const Job = require('../models/Job');
 const Payment = require('../models/Payment');
 const { Message } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
-const { uploadProfilePicture } = require('../middleware/upload');
+const { uploadProfilePicture, uploadVerificationDocs } = require('../middleware/upload');
 const { validateProfilePictureUpdate } = require('../middleware/validation');
 const { normalize, isValid } = require('../utils/username');
 const multer = require('multer');
@@ -371,7 +371,7 @@ router.get('/jobs', authenticateToken, async (req, res) => {
 });
 
 // Submit ID verification
-router.post('/verify-identity', authenticateToken, async (req, res) => {
+router.post('/verify-identity', authenticateToken, uploadVerificationDocs, async (req, res) => {
   try {
     const user = await User.findById(req.user._id || req.user.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -383,16 +383,30 @@ router.post('/verify-identity', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Already verified' });
     }
 
-    const { documentType, documentUrl, selfieUrl } = req.body;
-    if (!documentType || !documentUrl) {
-      return res.status(400).json({ error: 'Document type and document image are required' });
+    const { documentType } = req.body;
+    if (!documentType) {
+      return res.status(400).json({ error: 'Document type is required' });
+    }
+
+    // Resolve document URL — uploaded file takes priority over URL string
+    const docFile = req.files?.document?.[0];
+    const selfieFile = req.files?.selfie?.[0];
+    const documentUrl = docFile
+      ? (docFile.secure_url || docFile.path || '')
+      : (req.body.documentUrl || '');
+    const selfieUrl = selfieFile
+      ? (selfieFile.secure_url || selfieFile.path || '')
+      : (req.body.selfieUrl || '');
+
+    if (!documentUrl) {
+      return res.status(400).json({ error: 'A document image or file is required' });
     }
 
     user.idVerification = {
       status: 'pending',
       documentType,
       documentUrl,
-      selfieUrl: selfieUrl || '',
+      selfieUrl,
       submittedAt: new Date(),
       reviewedBy: null,
       reviewedAt: null,

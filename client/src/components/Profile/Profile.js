@@ -326,29 +326,179 @@ const TabRates = ({ data, onChange }) => (
 );
 
 // ── Tab: Verification ───────────────────────────────────────────
-const TabVerification = ({ data }) => (
-  <div className="tab-content">
-    <h2>Safety & Trust</h2>
-    <div className="verify-list">
-      <div className={`verify-item ${data.isVerified ? 'verified' : ''}`}>
-        <span className="verify-icon">{data.isVerified ? '✅' : '⬜'}</span>
-        <div><strong>Email Verified</strong><p>{data.isVerified ? 'Your email is verified' : 'Verify your email to build trust'}</p></div>
+// ── Tab: Verification ──────────────────────────────────────────
+const DOC_TYPES = [
+  { value: 'drivers_license', label: "Driver's License" },
+  { value: 'passport',        label: 'Passport' },
+  { value: 'national_id',     label: 'National ID' },
+  { value: 'other',           label: 'Other Government ID' },
+];
+
+const TabVerification = ({ data, onRefresh }) => {
+  const verif  = data.idVerification || {};
+  const status = verif.status || 'none';
+
+  const [showForm,    setShowForm]    = useState(false);
+  const [docType,     setDocType]     = useState('drivers_license');
+  const [docFile,     setDocFile]     = useState(null);
+  const [selfieFile,  setSelfieFile]  = useState(null);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [formError,   setFormError]   = useState('');
+
+  const canSubmit = status === 'none' || status === 'rejected';
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!docFile) { setFormError('Please upload your ID document.'); return; }
+    setFormError('');
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append('documentType', docType);
+      fd.append('document', docFile);
+      if (selfieFile) fd.append('selfie', selfieFile);
+      const token = localStorage.getItem('token');
+      const base  = process.env.REACT_APP_API_URL || '';
+      const res   = await fetch(`${base}/api/users/verify-identity`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Submission failed');
+      setShowForm(false);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setFormError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="tab-content">
+      <h2>Safety & Trust</h2>
+
+      {/* Email + phone checks */}
+      <div className="verify-list">
+        <div className={`verify-item ${data.isEmailVerified || data.isVerified ? 'verified' : ''}`}>
+          <span className="verify-icon">{data.isEmailVerified || data.isVerified ? '✅' : '⬜'}</span>
+          <div>
+            <strong>Email Verified</strong>
+            <p>{data.isEmailVerified || data.isVerified ? 'Your email is verified' : 'Verify your email to build trust'}</p>
+          </div>
+        </div>
+        <div className={`verify-item ${data.phone ? 'verified' : ''}`}>
+          <span className="verify-icon">{data.phone ? '✅' : '⬜'}</span>
+          <div>
+            <strong>Phone Number</strong>
+            <p>{data.phone ? 'Phone number added' : 'Add a phone number for extra security'}</p>
+          </div>
+        </div>
       </div>
-      <div className={`verify-item ${data.phone ? 'verified' : ''}`}>
-        <span className="verify-icon">{data.phone ? '✅' : '⬜'}</span>
-        <div><strong>Phone Number</strong><p>{data.phone ? 'Phone number added' : 'Add a phone number for extra security'}</p></div>
+
+      {/* ID Verification */}
+      <div className="verify-id-section">
+        <div className="verify-id-header">
+          <div>
+            <h3>🪪 ID Verification</h3>
+            <p>Submit a government-issued ID to earn your <strong>ID Verified</strong> badge.</p>
+          </div>
+          {status === 'approved' && <span className="verify-badge-pill approved">✅ Verified</span>}
+          {status === 'pending'  && <span className="verify-badge-pill pending">⏳ Under Review</span>}
+          {status === 'rejected' && <span className="verify-badge-pill rejected">❌ Not Approved</span>}
+        </div>
+
+        {status === 'approved' && (
+          <div className="verify-status-card approved">
+            <p>🎉 You have the <strong>ID Verified</strong> badge. Your profile now shows a trust badge to clients.</p>
+            {verif.reviewedAt && <p className="verify-date">Approved {new Date(verif.reviewedAt).toLocaleDateString()}</p>}
+          </div>
+        )}
+
+        {status === 'pending' && (
+          <div className="verify-status-card pending">
+            <p>Your ID is being reviewed by our team. This usually takes 1–2 business days.</p>
+            {verif.submittedAt && <p className="verify-date">Submitted {new Date(verif.submittedAt).toLocaleDateString()}</p>}
+          </div>
+        )}
+
+        {status === 'rejected' && (
+          <div className="verify-status-card rejected">
+            <p><strong>Your submission was not approved.</strong></p>
+            {verif.notes && <p className="verify-reason">Reason: {verif.notes}</p>}
+            <button className="btn btn-primary" style={{ marginTop: '0.75rem' }} onClick={() => setShowForm(true)}>
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {status === 'none' && !showForm && (
+          <div className="verify-cta">
+            <p>Takes about 2 minutes. Your documents are only seen by our moderation team.</p>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              Start Verification
+            </button>
+          </div>
+        )}
+
+        {canSubmit && showForm && (
+          <form className="verify-form" onSubmit={handleSubmit}>
+            <div className="verify-form-field">
+              <label>Document Type</label>
+              <select value={docType} onChange={e => setDocType(e.target.value)}>
+                {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
+            </div>
+            <div className="verify-form-field">
+              <label>ID Document <span className="required">*</span></label>
+              <p className="verify-form-hint">Clear photo or scan of the front of your ID (JPG, PNG, or PDF, max 10MB)</p>
+              <FileUpload
+                label="Choose document file"
+                accept="image/*,application/pdf"
+                maxSize={10 * 1024 * 1024}
+                preview={true}
+                onFileSelect={files => setDocFile(files[0] || null)}
+              />
+            </div>
+            <div className="verify-form-field">
+              <label>Selfie <span className="optional">(optional but recommended)</span></label>
+              <p className="verify-form-hint">A clear photo of your face to help us match against your ID</p>
+              <FileUpload
+                label="Choose selfie photo"
+                accept="image/*"
+                maxSize={5 * 1024 * 1024}
+                preview={true}
+                onFileSelect={files => setSelfieFile(files[0] || null)}
+              />
+            </div>
+            {formError && <div className="verify-form-error">{formError}</div>}
+            <div className="verify-form-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => { setShowForm(false); setFormError(''); }}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
+                {submitting ? 'Submitting…' : 'Submit for Review'}
+              </button>
+            </div>
+            <p className="verify-privacy-note">🔒 Your documents are encrypted and only accessible to our trust & safety team.</p>
+          </form>
+        )}
       </div>
-      <div className="verify-item">
-        <span className="verify-icon">⬜</span>
-        <div><strong>ID Verification</strong><p>Coming soon — verify your identity for a trust badge</p></div>
-      </div>
-      <div className={`verify-item ${data.stripeConnected ? 'verified' : ''}`}>
-        <span className="verify-icon">{data.stripeConnected ? '✅' : '⬜'}</span>
-        <div><strong>Payment Setup</strong><p>{data.stripeConnected ? 'Stripe connected' : 'Connect Stripe to receive payments'}</p></div>
+
+      {/* Payment */}
+      <div className="verify-list" style={{ marginTop: '1.5rem' }}>
+        <div className={`verify-item ${data.stripeConnected ? 'verified' : ''}`}>
+          <span className="verify-icon">{data.stripeConnected ? '✅' : '⬜'}</span>
+          <div>
+            <strong>Payment Setup</strong>
+            <p>{data.stripeConnected ? 'Stripe connected' : 'Connect Stripe to receive payments'}</p>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Tab: Settings ───────────────────────────────────────────────
 const TabSettings = ({ data, onChange }) => (
@@ -491,7 +641,7 @@ const Profile = () => {
     <TabSkills data={data} onChange={onChange} />,
     <TabPortfolio data={data} onChange={onChange} onRefresh={fetchProfile} />,
     <TabRates data={data} onChange={onChange} />,
-    <TabVerification data={data} />,
+    <TabVerification data={data} onRefresh={fetchProfile} />,
     <TabSettings data={data} onChange={onChange} />,
   ];
 
