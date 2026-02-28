@@ -247,12 +247,19 @@ const ApplicantPreview = ({ proposals = [], jobId }) => {
 
 // ── Milestone Change Modal (client proposes new milestones) ────
 const MilestoneChangeModal = ({ job, onClose, onSent }) => {
-  const existing = (job.milestones || []).map(m => ({
-    title:       m.title || '',
-    description: m.description || '',
-    amount:      m.amount || '',
-    dueDate:     m.dueDate ? m.dueDate.substring(0, 10) : '',
-  }));
+  // Only pre-fill editable milestones — funded/completed ones are locked on the server
+  const existing = (job.milestones || [])
+    .filter(m => m.status !== 'completed' && m.status !== 'approved' && !(m.escrowAmount > 0))
+    .map(m => ({
+      title:       m.title || '',
+      description: m.description || '',
+      amount:      m.amount || '',
+      dueDate:     m.dueDate ? new Date(m.dueDate).toISOString().substring(0, 10) : '',
+    }));
+
+  const lockedCount = (job.milestones || []).filter(
+    m => m.status === 'completed' || m.status === 'approved' || m.escrowAmount > 0
+  ).length;
 
   const [milestones, setMilestones] = useState(
     existing.length > 0 ? existing : [{ title: '', description: '', amount: '', dueDate: '' }]
@@ -306,7 +313,9 @@ const MilestoneChangeModal = ({ job, onClose, onSent }) => {
         <div className="pm-modal-body">
           <p className="pm-modal-hint">
             The freelancer will receive this proposal in Messages and can accept or decline.
-            Milestones already completed or funded will not be replaced.
+            {lockedCount > 0
+              ? ` ${lockedCount} milestone${lockedCount !== 1 ? 's' : ''} already funded or completed — those are locked and will be kept.`
+              : ' Proposing new milestones replaces any pending ones.'}
           </p>
 
           <div className="pm-ms-editor">
@@ -591,7 +600,7 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
         <div className="pm-milestones-section">
           <div className="pm-ms-header">
             <span className="pm-ms-heading">Milestones</span>
-            <span className="pm-ms-count">{msDone}/{msTotal}</span>
+            {msTotal > 0 && <span className="pm-ms-count">{msDone}/{msTotal}</span>}
             {msPct !== null && (
               <div className="pm-ms-progress">
                 <div className="pm-ms-progress-fill" style={{ width: `${msPct}%` }} />
@@ -609,7 +618,7 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
           </div>
           {msTotal === 0 && isClient && (
             <div className="pm-ms-empty-hint">
-              No milestones set — click {msTotal === 0 ? '"+ Add Milestones"' : '"Edit"'} to propose them to the freelancer.
+              No milestones yet — click "+ Add Milestones" to propose them to the freelancer.
             </div>
           )}
           {milestones.map((m, i) => (

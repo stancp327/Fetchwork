@@ -10,6 +10,7 @@ const { geocode, nearSphereQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
 const { trackEvent } = require('../middleware/analytics');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 const Payment = require('../models/Payment');
 
@@ -959,8 +960,11 @@ router.post('/:id/milestones/request/accept', authenticateToken, validateMongoId
     msg.markModified('metadata');
     await msg.save();
 
-    // Notify client
-    const freelancerName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Freelancer';
+    // Notify client (fetch freelancer name from DB — JWT token doesn't carry name)
+    const freelancerUser = await User.findById(req.user.userId || req.user._id).select('firstName lastName');
+    const freelancerName = freelancerUser
+      ? `${freelancerUser.firstName} ${freelancerUser.lastName}`.trim()
+      : 'Freelancer';
     await Notification.create({
       recipient:  job.client._id,
       type:       'job_update',
@@ -1002,7 +1006,10 @@ router.post('/:id/milestones/request/decline', authenticateToken, validateMongoI
     msg.markModified('metadata');
     await msg.save();
 
-    const freelancerName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Freelancer';
+    const freelancerUser2 = await User.findById(req.user.userId || req.user._id).select('firstName lastName');
+    const freelancerName = freelancerUser2
+      ? `${freelancerUser2.firstName} ${freelancerUser2.lastName}`.trim()
+      : 'Freelancer';
     await Notification.create({
       recipient:  job.client._id,
       type:       'job_update',
