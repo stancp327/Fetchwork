@@ -131,7 +131,7 @@
 /* ── Stats Row ────────────────────────────────────────────────── */
 .dash-stats-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-xl);
 }
@@ -333,7 +333,7 @@
 /* Quick Actions */
 .quick-actions-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-sm);
 }
 
@@ -421,8 +421,8 @@
   .dash-mode-toggle { width: auto; }
   .btn-dash-primary { width: auto; }
 
-  .dash-stats-row { grid-template-columns: repeat(4, 1fr); }
-  .dash-skeleton-row { grid-template-columns: repeat(4, 1fr); }
+  .dash-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .dash-skeleton-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
   .dash-stat-icon { width: 48px; height: 48px; font-size: 1.3rem; }
   .dash-stat-value { font-size: var(--font-size-2xl); }
@@ -439,7 +439,7 @@
 @media (min-width: 1024px) {
   .dash-grid {
     display: grid;
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: minmax(0, 1fr) 340px;
   }
 
   .dash-welcome h1 { font-size: var(--font-size-2xl); }
