@@ -166,6 +166,15 @@ const conversationSchema = new mongoose.Schema({
     ref: 'Job',
     default: null
   },
+  service: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service',
+    default: null
+  },
+  serviceOrderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null  // embedded order _id within Service.orders array
+  },
   lastMessage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message',

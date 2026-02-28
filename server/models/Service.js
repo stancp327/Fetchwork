@@ -81,12 +81,18 @@ const serviceSchema = new mongoose.Schema({
     default: 'draft'
   },
   orders: [{
-    client: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    package: { type: String, enum: ['basic', 'standard', 'premium'] },
-    status: { type: String, enum: ['pending', 'in_progress', 'delivered', 'completed', 'cancelled'] },
-    orderDate: { type: Date, default: Date.now },
-    deliveryDate: Date,
-    price: Number
+    client:                { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    package:               { type: String, enum: ['basic', 'standard', 'premium'] },
+    status:                { type: String, enum: ['pending', 'in_progress', 'delivered', 'completed', 'cancelled', 'revision_requested'], default: 'pending' },
+    orderDate:             { type: Date, default: Date.now },
+    deliveryDate:          Date,
+    completedDate:         Date,
+    price:                 Number,
+    requirements:          String,
+    stripePaymentIntentId: { type: String, default: null },
+    escrowAmount:          { type: Number, default: 0 },
+    revisionCount:         { type: Number, default: 0 },
+    deliveryNote:          String,
   }],
   rating: {
     type: Number,

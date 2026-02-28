@@ -4,8 +4,9 @@ import axios from 'axios';
 import { getLocationDisplay } from '../../utils/location';
 import { useAuth } from '../../context/AuthContext';
 import { formatCategory } from '../../utils/formatters';
-import { getApiBaseUrl } from '../../utils/api';
+import { getApiBaseUrl, apiRequest } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
+import EscrowModal from '../Payments/EscrowModal';
 import './ServiceDetails.css';
 
 const ServiceDetails = () => {
@@ -18,8 +19,9 @@ const ServiceDetails = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState('basic');
   const [requirements, setRequirements] = useState('');
-  const [showOfferModal, setShowOfferModal] = useState(false);
-  const [orderConfirmed, setOrderConfirmed] = useState(null); // holds confirmed package details
+  const [showOfferModal,  setShowOfferModal]  = useState(false);
+  const [orderConfirmed,  setOrderConfirmed]  = useState(null); // holds confirmed package details
+  const [orderPayment,    setOrderPayment]    = useState(null); // { clientSecret, orderId, amount, packageName, deliveryDays }
 
   const apiBaseUrl = getApiBaseUrl();
 
@@ -43,41 +45,46 @@ const ServiceDetails = () => {
 
 
   const handleOrder = async () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
+    if (!isAuthenticated) { navigate('/login'); return; }
     setOrderLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${apiBaseUrl}/api/services/${id}/order`,
-        {
-          package: selectedPackage,
-          requirements: requirements.trim()
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      const pkg = service.packages?.[selectedPackage] || {};
-      setOrderConfirmed({
-        serviceName: service.title,
-        freelancerName: `${service.user?.firstName} ${service.user?.lastName}`,
-        packageName: pkg.name || selectedPackage,
-        price: pkg.price,
-        delivery: pkg.deliveryDays,
+      const data = await apiRequest(`/api/services/${id}/order`, {
+        method: 'POST',
+        body: JSON.stringify({ package: selectedPackage, requirements: requirements.trim() })
       });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Show payment modal with pre-fetched clientSecret
+      setOrderPayment({
+        clientSecret: data.clientSecret,
+        orderId:      data.orderId,
+        amount:       data.amount,
+        packageName:  data.packageName,
+        deliveryDays: data.deliveryDays,
+        serviceName:  data.serviceName,
+      });
     } catch (error) {
-      console.error('Failed to order service:', error);
-      alert(error.response?.data?.error || 'Failed to order service');
+      alert(error.message || 'Failed to create order. Please try again.');
     } finally {
       setOrderLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentIntent) => {
+    if (!orderPayment) return;
+    try {
+      await apiRequest(`/api/services/${id}/orders/${orderPayment.orderId}/confirm`, {
+        method: 'POST'
+      });
+      setOrderPayment(null);
+      setOrderConfirmed({
+        serviceName:    orderPayment.serviceName || service?.title,
+        freelancerName: service?.user ? `${service.user.firstName} ${service.user.lastName}` : 'Freelancer',
+        packageName:    orderPayment.packageName,
+        price:          orderPayment.amount,
+        delivery:       orderPayment.deliveryDays,
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      alert('Payment received but order confirmation failed. Please contact support.');
     }
   };
 
@@ -356,6 +363,17 @@ const ServiceDetails = () => {
             description: `Custom request for: ${service.title}`
           }}
           onSuccess={() => alert('Offer sent! Check your offers page.')}
+        />
+      )}
+
+      {orderPayment && (
+        <EscrowModal
+          job={{ _id: orderPayment.orderId, title: orderPayment.serviceName || service?.title }}
+          amount={orderPayment.amount}
+          preloadedSecret={orderPayment.clientSecret}
+          title="Complete Your Order"
+          onClose={() => setOrderPayment(null)}
+          onPaid={handlePaymentSuccess}
         />
       )}
     </div>

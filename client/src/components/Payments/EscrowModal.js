@@ -8,15 +8,18 @@ import './Payments.css';
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
 /**
- * EscrowModal
+ * EscrowModal — Secure Payment modal for jobs AND service orders
+ *
  * Props:
- *   job     — { _id, title, budget }
- *   amount  — number (agreed amount from proposal)
- *   onClose — fn
- *   onPaid  — fn called after successful escrow hold
+ *   job               — { _id, title, budget }  (job flow)
+ *   amount            — number
+ *   onClose           — fn
+ *   onPaid            — fn(paymentIntent) called after successful payment
+ *   preloadedSecret   — if provided, skips the init step (service order flow)
+ *   title             — optional override for the modal title
  */
-const EscrowModal = ({ job, amount, onClose, onPaid }) => {
-  const [clientSecret, setClientSecret] = useState(null);
+const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title }) => {
+  const [clientSecret, setClientSecret] = useState(preloadedSecret || null);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
 
@@ -45,7 +48,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid }) => {
     <div className="escrow-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="escrow-modal">
         <div className="escrow-modal-header">
-          <h2>Secure Payment</h2>
+          <h2>{title || 'Secure Payment'}</h2>
           <button className="escrow-modal-close" onClick={onClose}>✕</button>
         </div>
 

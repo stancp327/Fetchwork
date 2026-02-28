@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
-import { getApiBaseUrl } from '../../utils/api';
+import { getApiBaseUrl, apiRequest } from '../../utils/api';
 import './Messages.css';
 
 // ── Time Formatting ─────────────────────────────────────────────
@@ -88,6 +88,89 @@ const MsgBubble = ({ msg, isMine, deliveryStatus }) => {
             </span>
           )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Service Order Status Bar ────────────────────────────────────
+const OrderStatusBar = ({ serviceId, orderId, userId, onAction }) => {
+  const [order, setOrder] = useState(null);
+  const [acting, setActing] = useState(false);
+
+  useEffect(() => {
+    if (!serviceId || !orderId) return;
+    apiRequest(`/api/services/${serviceId}/orders/${orderId}`)
+      .then(d => setOrder(d.order))
+      .catch(() => {});
+  }, [serviceId, orderId]);
+
+  if (!order) return null;
+
+  const isClient     = String(order.client) === String(userId);
+  const statusLabels = {
+    pending:            { label: '⏳ Awaiting Payment',    color: '#f59e0b' },
+    in_progress:        { label: '🔨 In Progress',          color: '#2563eb' },
+    delivered:          { label: '📦 Delivered — Review!',  color: '#8b5cf6' },
+    revision_requested: { label: '🔄 Revision Requested',   color: '#f59e0b' },
+    completed:          { label: '✅ Completed',             color: '#10b981' },
+    cancelled:          { label: '❌ Cancelled',             color: '#ef4444' },
+  };
+  const s = statusLabels[order.status] || { label: order.status, color: '#6b7280' };
+
+  const doAction = async (action, body = {}) => {
+    setActing(true);
+    try {
+      await apiRequest(`/api/services/${serviceId}/orders/${orderId}/${action}`, {
+        method: 'PUT', body: JSON.stringify(body)
+      });
+      const d = await apiRequest(`/api/services/${serviceId}/orders/${orderId}`);
+      setOrder(d.order);
+      if (onAction) onAction();
+    } catch (err) {
+      alert(err.message || 'Action failed');
+    } finally { setActing(false); }
+  };
+
+  return (
+    <div className="order-status-bar" style={{ borderColor: s.color }}>
+      <span className="order-status-label" style={{ color: s.color }}>{s.label}</span>
+      <div className="order-status-actions">
+        {!isClient && order.status === 'in_progress' && (
+          <button className="osb-btn osb-deliver" disabled={acting}
+            onClick={() => {
+              const note = window.prompt('Add a delivery note (optional):');
+              doAction('deliver', { deliveryNote: note || '' });
+            }}>
+            📦 Mark Delivered
+          </button>
+        )}
+        {!isClient && order.status === 'revision_requested' && (
+          <button className="osb-btn osb-deliver" disabled={acting}
+            onClick={() => doAction('deliver', {})}>
+            📦 Resubmit Delivery
+          </button>
+        )}
+        {isClient && order.status === 'delivered' && (
+          <>
+            <button className="osb-btn osb-complete" disabled={acting}
+              onClick={() => { if (window.confirm('Release payment to the freelancer?')) doAction('complete'); }}>
+              ✅ Accept & Release Payment
+            </button>
+            <button className="osb-btn osb-revision" disabled={acting}
+              onClick={() => {
+                const note = window.prompt('Describe what needs to change:');
+                if (note) doAction('revision', { note });
+              }}>
+              🔄 Request Revision
+            </button>
+          </>
+        )}
+        {order.status === 'completed' && (
+          <Link to={`/services/${serviceId}`} className="osb-btn osb-review">
+            ⭐ Leave a Review
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -324,6 +407,14 @@ const Messages = () => {
         <div className={`messages-chat ${mobileView === 'chat' ? 'mobile-show' : 'mobile-hide'}`}>
           {selectedConvo ? (
             <>
+              {selectedConvo.service && selectedConvo.serviceOrderId && (
+                <OrderStatusBar
+                  serviceId={selectedConvo.service._id || selectedConvo.service}
+                  orderId={String(selectedConvo.serviceOrderId)}
+                  userId={userId}
+                  onAction={() => fetchMessages(selectedConvo)}
+                />
+              )}
               <div className="chat-header">
                 <div className="chat-header-info">
                   <div className="chat-avatar">
