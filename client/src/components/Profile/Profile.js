@@ -487,8 +487,8 @@ const TabVerification = ({ data, onRefresh }) => {
       <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
         <div className="verify-id-header">
           <div>
-            <h3>💳 Payment Setup</h3>
-            <p>Connect Stripe to receive payments directly to your bank account.</p>
+            <h3>🏦 Bank Account</h3>
+            <p>Add your bank account to receive payments when clients release them.</p>
           </div>
         </div>
         <StripeConnect onStatusChange={(s) => {

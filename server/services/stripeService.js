@@ -13,184 +13,143 @@ class StripeService {
     }
   }
 
+  // ── Connect Onboarding ──────────────────────────────────────────
   async createConnectAccount(email, country = 'US') {
     this._ensureStripe();
-    try {
-      const account = await stripe.accounts.create({
-        type: 'express',
-        country: country,
-        email: email,
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-      });
-      
-      return account;
-    } catch (error) {
-      console.error('Error creating Stripe Connect account:', error);
-      throw error;
-    }
+    const account = await stripe.accounts.create({
+      type: 'express',
+      country,
+      email,
+      capabilities: {
+        card_payments: { requested: true },
+        transfers:     { requested: true },
+      },
+    });
+    return account;
   }
 
   async createAccountLink(accountId, refreshUrl, returnUrl) {
     this._ensureStripe();
-    try {
-      const accountLink = await stripe.accountLinks.create({
-        account: accountId,
-        refresh_url: refreshUrl,
-        return_url: returnUrl,
-        type: 'account_onboarding',
-      });
-      
-      return accountLink;
-    } catch (error) {
-      console.error('Error creating account link:', error);
-      throw error;
-    }
+    return stripe.accountLinks.create({
+      account:     accountId,
+      refresh_url: refreshUrl,
+      return_url:  returnUrl,
+      type:        'account_onboarding',
+    });
   }
 
   async getAccountStatus(accountId) {
     this._ensureStripe();
-    try {
-      const account = await stripe.accounts.retrieve(accountId);
-      
-      return {
-        id: account.id,
-        charges_enabled: account.charges_enabled,
-        payouts_enabled: account.payouts_enabled,
-        details_submitted: account.details_submitted,
-        requirements: account.requirements,
-      };
-    } catch (error) {
-      console.error('Error retrieving account status:', error);
-      throw error;
-    }
+    const account = await stripe.accounts.retrieve(accountId);
+    return {
+      id:               account.id,
+      charges_enabled:  account.charges_enabled,
+      payouts_enabled:  account.payouts_enabled,
+      details_submitted: account.details_submitted,
+      requirements:     account.requirements,
+    };
   }
 
-  async createPaymentIntent(amount, currency = 'usd', applicationFeeAmount, stripeAccount) {
+  // ── Core Payment Flow ───────────────────────────────────────────
+  //
+  // Architecture: Separate charges + transfers (immediate capture)
+  //
+  // Why not manual capture?
+  //   Card authorization holds expire in 7 days. Jobs can run weeks or
+  //   months. Silent expiry = client never charged = freelancer not paid.
+  //
+  // How the "hold" works:
+  //   1. Client's card is charged immediately (chargeForJob)
+  //   2. Funds sit in Fetchwork's Stripe balance
+  //   3. On client approval, Transfer sends (amount - fee) to freelancer
+  //   4. Platform keeps the fee automatically
+  //
+  // Refund path: if client disputes before release, refundPayment()
+  // returns funds to client's card from the platform balance.
+
+  /**
+   * Charge client for a job. Funds sit in platform balance until release.
+   * Returns a PaymentIntent clientSecret for frontend confirmation.
+   *
+   * @param {number} amount       - Job amount in dollars
+   * @param {string} currency     - Default 'usd'
+   * @param {object} metadata     - jobId, clientId, freelancerId etc.
+   */
+  async chargeForJob(amount, currency = 'usd', metadata = {}) {
     this._ensureStripe();
-    try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
-        currency: currency,
-        application_fee_amount: applicationFeeAmount ? Math.round(applicationFeeAmount * 100) : undefined,
-        transfer_data: stripeAccount ? {
-          destination: stripeAccount,
-        } : undefined,
-      });
-      
-      return paymentIntent;
-    } catch (error) {
-      console.error('Error creating payment intent:', error);
-      throw error;
-    }
+    return stripe.paymentIntents.create({
+      amount:   Math.round(amount * 100), // cents
+      currency,
+      metadata,
+      // No capture_method: 'manual' — charge immediately on confirmation.
+      // Funds land in platform balance, transferred to freelancer on release.
+    });
   }
 
-  async createTransfer(amount, destination, currency = 'usd') {
+  /**
+   * Release payment to freelancer after client approves work.
+   * Transfers (amount - platformFee) to the freelancer's Connect account.
+   *
+   * @param {number} amount           - Net payout in dollars
+   * @param {string} destinationAccountId - Freelancer's stripeAccountId
+   * @param {string} transferGroup    - payment intent ID (links charge to transfer)
+   */
+  async releasePayment(amount, destinationAccountId, transferGroup) {
     this._ensureStripe();
-    try {
-      const transfer = await stripe.transfers.create({
-        amount: Math.round(amount * 100), // Convert to cents
-        currency: currency,
-        destination: destination,
-      });
-      
-      return transfer;
-    } catch (error) {
-      console.error('Error creating transfer:', error);
-      throw error;
-    }
+    return stripe.transfers.create({
+      amount:        Math.round(amount * 100), // cents
+      currency:      'usd',
+      destination:   destinationAccountId,
+      transfer_group: transferGroup,
+    });
   }
 
-  async holdFundsInEscrow(amount, currency = 'usd', metadata = {}) {
-    this._ensureStripe();
-    try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100),
-        currency: currency,
-        capture_method: 'manual',
-        metadata: metadata,
-      });
-      
-      return paymentIntent;
-    } catch (error) {
-      console.error('Error holding funds in escrow:', error);
-      throw error;
-    }
-  }
-
-  async releaseFundsFromEscrow(paymentIntentId, amountToCapture) {
-    this._ensureStripe();
-    try {
-      const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId, {
-        amount_to_capture: amountToCapture ? Math.round(amountToCapture * 100) : undefined,
-      });
-      
-      return paymentIntent;
-    } catch (error) {
-      console.error('Error releasing funds from escrow:', error);
-      throw error;
-    }
-  }
-
+  // ── Refunds ─────────────────────────────────────────────────────
   async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer') {
     this._ensureStripe();
-    try {
-      const refund = await stripe.refunds.create({
-        payment_intent: paymentIntentId,
-        amount: amount ? Math.round(amount * 100) : undefined,
-        reason: reason,
-      });
-      
-      return refund;
-    } catch (error) {
-      console.error('Error processing refund:', error);
-      throw error;
-    }
+    return stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      amount: amount ? Math.round(amount * 100) : undefined,
+      reason,
+    });
   }
 
-  async constructWebhookEvent(payload, signature, endpointSecret) {
+  // ── Webhooks ─────────────────────────────────────────────────────
+  constructWebhookEvent(payload, signature, endpointSecret) {
     this._ensureStripe();
-    try {
-      const event = stripe.webhooks.constructEvent(payload, signature, endpointSecret);
-      return event;
-    } catch (error) {
-      console.error('Error constructing webhook event:', error);
-      throw error;
-    }
+    return stripe.webhooks.constructEvent(payload, signature, endpointSecret);
   }
 
+  // ── Balance & Reporting ──────────────────────────────────────────
   async getBalance(stripeAccountId = null) {
     this._ensureStripe();
-    try {
-      const balance = await stripe.balance.retrieve(
-        stripeAccountId ? { stripeAccount: stripeAccountId } : {}
-      );
-      
-      return balance;
-    } catch (error) {
-      console.error('Error retrieving balance:', error);
-      throw error;
-    }
+    const opts = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
+    return stripe.balance.retrieve(opts);
   }
 
   async listTransactions(limit = 10, startingAfter = null) {
     this._ensureStripe();
-    try {
-      const transactions = await stripe.balanceTransactions.list({
-        limit: limit,
-        starting_after: startingAfter,
-      });
-      
-      return transactions;
-    } catch (error) {
-      console.error('Error listing transactions:', error);
-      throw error;
-    }
+    return stripe.balanceTransactions.list({
+      limit,
+      ...(startingAfter && { starting_after: startingAfter }),
+    });
+  }
+
+  // ── Legacy aliases (kept for any indirect callers) ───────────────
+  /** @deprecated Use chargeForJob() instead */
+  async holdFundsInEscrow(amount, currency = 'usd', metadata = {}) {
+    return this.chargeForJob(amount, currency, metadata);
+  }
+
+  /** @deprecated releasePayment() handles release now — no capture needed */
+  async releaseFundsFromEscrow() {
+    throw new Error('releaseFundsFromEscrow is deprecated. Use releasePayment() instead.');
+  }
+
+  /** @deprecated Use releasePayment() instead */
+  async createTransfer(amount, destination) {
+    return this.releasePayment(amount, destination);
   }
 }
 
 module.exports = new StripeService();
-
-

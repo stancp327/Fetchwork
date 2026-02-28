@@ -55,8 +55,8 @@ const StripeConnect = ({ onStatusChange }) => {
       <div className="sc-card incomplete">
         <div className="sc-icon">⚠️</div>
         <div>
-          <strong>Finish your Stripe setup</strong>
-          <p>Your account is created but setup isn't complete. You won't receive payments until you finish.</p>
+          <strong>Finish your bank account setup</strong>
+          <p>Your account was created but setup isn't complete. You won't receive payments until you finish.</p>
           <button className="sc-btn" onClick={handleConnect} disabled={starting}>
             {starting ? 'Loading…' : 'Finish Setup →'}
           </button>
@@ -69,14 +69,14 @@ const StripeConnect = ({ onStatusChange }) => {
   // Not connected at all
   return (
     <div className="sc-card unconnected">
-      <div className="sc-icon">💳</div>
+      <div className="sc-icon">🏦</div>
       <div>
-        <strong>Connect Stripe to get paid</strong>
-        <p>Fetchwork uses Stripe to send payments directly to your bank account. Setup takes about 2 minutes.</p>
+        <strong>Add your bank account to get paid</strong>
+        <p>Connect your bank account so Fetchwork can send payments directly when clients release them. Takes about 2 minutes.</p>
         <button className="sc-btn" onClick={handleConnect} disabled={starting}>
-          {starting ? 'Loading…' : 'Connect Stripe →'}
+          {starting ? 'Loading…' : 'Add Bank Account →'}
         </button>
-        <p className="sc-sub">You'll be redirected to Stripe's secure onboarding. Come back when done.</p>
+        <p className="sc-sub">Secured by Stripe. Your bank details are never stored on our servers.</p>
       </div>
       {error && <p className="sc-error">{error}</p>}
     </div>

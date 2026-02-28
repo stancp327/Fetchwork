@@ -47,7 +47,7 @@ const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) =
         <p className="checkout-job-title">{jobTitle}</p>
         <p className="checkout-amount">${amount?.toFixed(2)}</p>
         <p className="checkout-note">
-          🔒 Your payment is protected — funds are only released to the freelancer once you approve the work.
+          🔒 You'll be charged now. Funds are held by Fetchwork and only sent to the freelancer once you approve the work.
         </p>
       </div>
 
@@ -65,7 +65,7 @@ const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) =
           Cancel
         </button>
         <button type="submit" className="btn btn-primary" disabled={processing || !stripe}>
-          {processing ? 'Processing…' : `Secure $${amount?.toFixed(2)} →`}
+          {processing ? 'Processing…' : `Pay & Protect $${amount?.toFixed(2)} →`}
         </button>
       </div>
 

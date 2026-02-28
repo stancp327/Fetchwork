@@ -55,10 +55,10 @@ const EscrowModal = ({ job, amount, onClose, onPaid }) => {
               <div className="escrow-how-it-works">
                 <h3>How Secure Payment works</h3>
                 <ol>
-                  <li>💳 Your card is authorized but <strong>not charged yet</strong></li>
-                  <li>🔒 Funds are held securely while work is in progress</li>
-                  <li>✅ You release payment when the job is done to your satisfaction</li>
-                  <li>💸 Freelancer gets paid instantly on release</li>
+                  <li>💳 Your card is <strong>charged now</strong> and funds are held by Fetchwork</li>
+                  <li>🔒 The freelancer cannot access the funds until you approve</li>
+                  <li>✅ Once you're happy with the work, release payment with one click</li>
+                  <li>💸 Freelancer is paid instantly — you can request a refund if there's a dispute</li>
                 </ol>
               </div>
 

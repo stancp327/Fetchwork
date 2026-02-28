@@ -120,12 +120,13 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
 
     const platformFee = calcPlatformFee(amount);
 
-    // Create manual-capture PaymentIntent (hold funds, don't charge yet)
-    const paymentIntent = await stripeService.holdFundsInEscrow(amount, 'usd', {
-      jobId:     jobId,
-      clientId:  String(req.user.userId),
+    // Charge client immediately — funds land in Fetchwork's Stripe balance.
+    // No manual-capture hold (7-day expiry risk). Transfer to freelancer on release.
+    const paymentIntent = await stripeService.chargeForJob(amount, 'usd', {
+      jobId:        jobId,
+      clientId:     String(req.user.userId),
       freelancerId: String(job.freelancer?._id || job.freelancer),
-      platformFee: String(platformFee)
+      platformFee:  String(platformFee)
     });
 
     // Record in Payment model
@@ -208,11 +209,14 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
     const platformFee = escrowPayment?.platformFee || calcPlatformFee(amount);
     const payoutAmt   = amount - platformFee;
 
-    // 1. Capture the PaymentIntent (charge the client's card)
-    await stripeService.releaseFundsFromEscrow(job.stripePaymentIntentId);
-
-    // 2. Transfer net amount to freelancer's Connect account
-    const transfer = await stripeService.createTransfer(payoutAmt, freelancer.stripeAccountId);
+    // Client's card was already charged when job was funded (immediate capture).
+    // Funds are sitting in Fetchwork's Stripe balance.
+    // Now transfer net amount to the freelancer's Connect account.
+    const transfer = await stripeService.releasePayment(
+      payoutAmt,
+      freelancer.stripeAccountId,
+      job.stripePaymentIntentId   // transfer_group links charge to transfer
+    );
 
     // 3. Update Payment record
     if (escrowPayment) {
@@ -280,12 +284,14 @@ router.webhookHandler = async (req, res) => {
     switch (event.type) {
 
       case 'payment_intent.succeeded': {
+        // Client's card has been charged. Funds are in platform balance.
+        // Job is now "funded" — freelancer can start work.
         const pi = event.data.object;
         await Payment.findOneAndUpdate(
           { stripePaymentIntentId: pi.id },
-          { status: 'completed' }
+          { status: 'processing' }  // processing = funded, awaiting release
         );
-        console.log('✅ payment_intent.succeeded:', pi.id);
+        console.log('✅ payment_intent.succeeded (funded):', pi.id);
         break;
       }
 
