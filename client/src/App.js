@@ -41,6 +41,7 @@ const AdminDisputeDetail = React.lazy(() => import('./components/Admin/AdminDisp
 const ProjectManagement = React.lazy(() => import('./components/Projects/ProjectManagement'));
 const MyOffers = React.lazy(() => import('./components/Offers/MyOffers'));
 const JobProgress = React.lazy(() => import('./components/Jobs/JobProgress'));
+const JobProposals = React.lazy(() => import('./components/Jobs/JobProposals'));
 const ServiceOrderProgress = React.lazy(() => import('./components/Services/ServiceOrderProgress'));
 const SavedItems = React.lazy(() => import('./components/Saved/SavedItems'));
 const Security = React.lazy(() => import('./components/Security/Security'));
@@ -225,6 +226,11 @@ function AppContent() {
           <Route path="/jobs/:id" element={
             <ProtectedRoute>
               <JobDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/jobs/:id/proposals" element={
+            <ProtectedRoute>
+              <JobProposals />
             </ProtectedRoute>
           } />
           <Route path="/post-job" element={

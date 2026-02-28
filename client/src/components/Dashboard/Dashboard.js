@@ -244,15 +244,15 @@ const Dashboard = () => {
       <div className="dash-stats-row">
         {isClientMode ? (
           <>
-            <StatCard icon="📋" label="Active Jobs"   value={stats.activeJobsAsClient || 0}  color="#2563eb" to="/projects" />
-            <StatCard icon="📨" label="New Proposals" value={stats.proposalsReceived || 0}    color={stats.proposalsReceived > 0 ? '#ef4444' : '#f59e0b'} sub={stats.proposalsReceived > 0 ? 'needs review' : ''} to="/projects" />
+            <StatCard icon="📋" label="Open Jobs"     value={stats.activeJobsAsClient || 0}  color="#2563eb" to="/projects?view=client" />
+            <StatCard icon="📨" label="New Proposals" value={stats.proposalsReceived || 0}    color={stats.proposalsReceived > 0 ? '#ef4444' : '#f59e0b'} sub={stats.proposalsReceived > 0 ? 'needs review' : ''} to="/projects?view=client" />
             <StatCard icon="💰" label="Total Spent"   value={formatCurrency(stats.totalSpent || 0)} color="#10b981" />
             <StatCard icon="💬" label="Messages"      value={stats.unreadMessages || 0}       sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" to="/messages" />
           </>
         ) : (
           <>
-            <StatCard icon="💼" label="Active Jobs" value={stats.activeJobsAsFreelancer || 0} color="#2563eb" to="/projects" />
-            <StatCard icon="📨" label="Proposals" value={stats.pendingProposals || 0} color="#f59e0b" to="/projects" />
+            <StatCard icon="💼" label="Active Jobs" value={stats.activeJobsAsFreelancer || 0} color="#2563eb" to="/projects?view=freelancer" />
+            <StatCard icon="📨" label="Proposals" value={stats.pendingProposals || 0} color="#f59e0b" to="/projects?view=freelancer" />
             <StatCard icon="💰" label="Earnings" value={formatCurrency(stats.totalEarnings || 0)} color="#10b981" />
             <StatCard icon="💬" label="Messages" value={stats.unreadMessages || 0} sub={stats.unreadMessages > 0 ? 'unread' : ''} color="#8b5cf6" to="/messages" />
           </>
@@ -267,12 +267,12 @@ const Dashboard = () => {
           <span className="dash-action-bell">🔔</span>
           <div className="dash-action-items">
             {isClientMode && stats.proposalsReceived > 0 && (
-              <Link to="/projects" className="dash-action-item">
+              <Link to="/projects?view=client" className="dash-action-item">
                 <strong>{stats.proposalsReceived} proposal{stats.proposalsReceived !== 1 ? 's' : ''}</strong> waiting for your review →
               </Link>
             )}
             {isFreelancerMode && stats.pendingProposals > 0 && (
-              <Link to="/projects" className="dash-action-item">
+              <Link to="/projects?view=freelancer" className="dash-action-item">
                 <strong>{stats.pendingProposals} proposal{stats.pendingProposals !== 1 ? 's' : ''}</strong> pending response →
               </Link>
             )}
@@ -289,7 +289,7 @@ const Dashboard = () => {
         <div className="dash-main">
           <div className="dash-section-header">
             <h2>Recent Activity</h2>
-            {activityItems.length > 0 && <Link to="/projects" className="dash-view-all">View All Jobs →</Link>}
+            {activityItems.length > 0 && <Link to={`/projects?view=${isClientMode ? 'client' : 'freelancer'}`} className="dash-view-all">View All Jobs →</Link>}
           </div>
           {activityItems.length > 0 ? (
             <div className="activity-list">
@@ -311,7 +311,7 @@ const Dashboard = () => {
               {isClientMode ? (
                 <>
                   <QuickAction icon="📝" label="Post Job" to="/post-job" primary />
-                  <QuickAction icon="📋" label="My Jobs" to="/projects" />
+                  <QuickAction icon="📋" label="My Jobs" to="/projects?view=client" />
                   <QuickAction icon="🔍" label="Find Freelancers" to="/freelancers" />
                   <QuickAction icon="🛒" label="Browse Services" to="/browse-services" />
                   <QuickAction icon="📋" label="Offers" to="/offers" />
@@ -321,7 +321,7 @@ const Dashboard = () => {
               ) : (
                 <>
                   <QuickAction icon="🔍" label="Browse Jobs" to="/browse-jobs" primary />
-                  <QuickAction icon="💼" label="My Jobs" to="/projects" />
+                  <QuickAction icon="💼" label="My Jobs" to="/projects?view=freelancer" />
                   <QuickAction icon="📋" label="Offers" to="/offers" />
                   <QuickAction icon="❤️" label="Saved" to="/saved" />
                   <QuickAction icon="➕" label="Create Service" to="/create-service" />

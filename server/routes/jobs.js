@@ -600,6 +600,29 @@ router.post('/:id/proposals/:proposalId/accept', authenticateToken, validateMong
   }
 });
 
+// Decline a proposal
+router.post('/:id/proposals/:proposalId/decline', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    if (job.client.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the client can decline proposals' });
+    }
+
+    const proposal = job.proposals.id(req.params.proposalId);
+    if (!proposal) return res.status(404).json({ error: 'Proposal not found' });
+
+    proposal.status = 'declined';
+    await job.save();
+
+    res.json({ message: 'Proposal declined' });
+  } catch (error) {
+    console.error('Error declining proposal:', error);
+    res.status(500).json({ error: 'Failed to decline proposal' });
+  }
+});
+
 router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id).populate('client', 'firstName lastName').populate('freelancer', 'firstName lastName');

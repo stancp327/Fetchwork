@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import { categoryLabelMap } from '../../utils/categories';
@@ -226,31 +226,27 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onR
         </div>
       )}
 
-      {/* Proposal list (client only) */}
-      {isClient && status === 'open' && (job.proposals || []).filter(p => p.status === 'pending').length > 0 && (
-        <div className="pm-proposals">
-          <h4>Pending Proposals ({job.proposals.filter(p => p.status === 'pending').length})</h4>
-          {job.proposals.filter(p => p.status === 'pending').map(p => {
-            const fl = p.freelancer || {};
-            return (
-              <div key={p._id} className="pm-proposal-item">
-                <div className="pm-proposal-info">
-                  <div className="pm-proposal-avatar">
-                    {(fl.firstName || '?')[0]}{(fl.lastName || '?')[0]}
-                  </div>
-                  <div className="pm-proposal-details">
-                    <div className="proposal-name">{fl.firstName} {fl.lastName}</div>
-                    <div className="proposal-meta">{fmt(p.proposedBudget)} · {p.proposedDuration?.replace(/_/g, ' ')}</div>
-                  </div>
-                </div>
-                <button className="btn-accept" onClick={() => onAcceptProposal(job._id, p._id)}>
-                  Accept
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Proposals CTA (client only) — sends to full review page */}
+      {isClient && status === 'open' && (() => {
+        const pending = (job.proposals || []).filter(p => p.status === 'pending').length;
+        const total   = (job.proposals || []).length;
+        if (total === 0) return (
+          <div className="pm-no-proposals">No proposals yet — share your job to attract freelancers.</div>
+        );
+        return (
+          <div className="pm-proposals-cta">
+            <div className="pm-proposals-cta-text">
+              <span className="pm-proposals-badge">{pending > 0 ? `${pending} new` : `${total}`}</span>
+              {pending > 0
+                ? ` proposal${pending !== 1 ? 's' : ''} waiting for your review`
+                : ` proposal${total !== 1 ? 's' : ''} received`}
+            </div>
+            <Link to={`/jobs/${job._id}/proposals`} className="pm-btn-review">
+              Review Proposals →
+            </Link>
+          </div>
+        );
+      })()}
 
       {/* Footer actions */}
       <div className="pm-card-actions">
@@ -380,24 +376,42 @@ const ServiceOrderCard = ({ item, onAction }) => {
   );
 };
 
-// ── Main ─────────────────────────────────────────────────────────
-const TABS = [
-  { key: 'in_progress', label: 'Active' },
-  { key: 'open',        label: 'Open' },
-  { key: 'proposals',   label: 'Proposals' },
-  { key: 'service_orders', label: 'Service Orders' },
+// ── Tab definitions per role ──────────────────────────────────────
+const CLIENT_TABS = [
+  { key: 'open',        label: 'Open Jobs' },      // posted, collecting proposals
+  { key: 'in_progress', label: 'In Progress' },    // hired, work underway
   { key: 'completed',   label: 'Completed' },
-  { key: 'all',         label: 'All' },
 ];
 
+const FREELANCER_TABS = [
+  { key: 'in_progress',   label: 'Active Work' },  // jobs I'm working on
+  { key: 'proposals',     label: 'Proposals Sent' },
+  { key: 'service_orders', label: 'Service Orders' },
+  { key: 'completed',     label: 'Completed' },
+];
+
+// ── Main ─────────────────────────────────────────────────────────
 const ProjectManagement = () => {
   const { user } = useAuth();
-  const [jobs, setJobs] = useState([]);
-  const [proposalJobs, setProposalJobs] = useState([]);
-  const [serviceOrders, setServiceOrders] = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Role split
+  const [clientJobs,     setClientJobs]     = useState([]);
+  const [freelancerJobs, setFreelancerJobs] = useState([]);
+  const [proposalJobs,   setProposalJobs]   = useState([]);
+  const [serviceOrders,  setServiceOrders]  = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [tab, setTab] = useState('in_progress');
+  const [error,   setError]   = useState('');
+
+  // viewMode driven by ?view= URL param so dashboard links land correctly
+  const rawView   = searchParams.get('view');
+  const viewMode  = rawView === 'freelancer' ? 'freelancer' : 'client';
+  const setViewMode = (v) => {
+    setSearchParams({ view: v });
+    setTab(v === 'client' ? 'open' : 'in_progress');
+  };
+
+  const [tab, setTab] = useState(viewMode === 'client' ? 'open' : 'in_progress');
 
   const userId = user?._id || user?.id || user?.userId;
 
@@ -411,28 +425,26 @@ const ProjectManagement = () => {
         apiRequest(`/api/jobs?freelancer=${userId}&limit=100`),
       ]);
 
-      const clientJobs     = (clientData.jobs     || clientData     || []).map(j => ({ ...j, _userRole: 'client' }));
-      const freelancerJobs = (freelancerData.jobs || freelancerData || []).map(j => ({ ...j, _userRole: 'freelancer' }));
+      const cJobs = (clientData.jobs     || clientData     || [])
+        .map(j => ({ ...j, _userRole: 'client' }))
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 
-      let myProposalJobs = [];
+      const fJobs = (freelancerData.jobs || freelancerData || [])
+        .map(j => ({ ...j, _userRole: 'freelancer' }))
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+      setClientJobs(cJobs);
+      setFreelancerJobs(fJobs);
+
+      // Proposals I submitted (freelancer side)
       try {
         const pd = await apiRequest(`/api/jobs?proposer=${userId}&limit=100`);
-        myProposalJobs = (pd.jobs || pd || []).map(j => ({ ...j, _userRole: 'proposer' }));
+        const pJobs = (pd.jobs || pd || []).map(j => ({ ...j, _userRole: 'proposer' }));
+        pJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setProposalJobs(pJobs);
       } catch (_) {}
 
-      const seen = new Set();
-      const all = [...freelancerJobs, ...clientJobs].filter(j => {
-        if (seen.has(j._id)) return false;
-        seen.add(j._id);
-        return true;
-      });
-      all.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
-      myProposalJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-      setJobs(all);
-      setProposalJobs(myProposalJobs);
-
-      // Fetch service orders where user is the freelancer
+      // Service orders (freelancer role)
       try {
         const soData = await apiRequest('/api/services/orders/my?role=freelancer');
         setServiceOrders(soData.orders || []);
@@ -446,6 +458,7 @@ const ProjectManagement = () => {
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
+  // ── Handlers ───────────────────────────────────────────────────
   const handleAcceptProposal = async (jobId, proposalId) => {
     try {
       await apiRequest(`/api/jobs/${jobId}/proposals/${proposalId}/accept`, { method: 'POST' });
@@ -454,7 +467,8 @@ const ProjectManagement = () => {
   };
 
   const handleComplete = async (jobId) => {
-    const job = jobs.find(j => j._id === jobId);
+    const allJobs = [...clientJobs, ...freelancerJobs];
+    const job = allJobs.find(j => j._id === jobId);
     const msg = job?._userRole === 'client'
       ? 'Mark as complete and release payment to the freelancer?'
       : 'Mark this job as complete? The client will be notified.';
@@ -475,59 +489,127 @@ const ProjectManagement = () => {
     } catch (err) { alert(err.message || 'Failed to update milestone'); }
   };
 
+  // ── Per-view data ──────────────────────────────────────────────
+  const isClientView     = viewMode === 'client';
+  const displayJobs      = isClientView ? clientJobs : freelancerJobs;
+  const activeTabs       = isClientView ? CLIENT_TABS : FREELANCER_TABS;
+
+  const pendingProposalsCount = clientJobs.reduce(
+    (acc, j) => acc + (j.proposals || []).filter(p => p.status === 'pending').length, 0
+  );
+
+  const clientCounts = {
+    open:        clientJobs.filter(j => j.status === 'open').length,
+    in_progress: clientJobs.filter(j => j.status === 'in_progress').length,
+    completed:   clientJobs.filter(j => j.status === 'completed').length,
+  };
+
+  const freelancerCounts = {
+    in_progress:   freelancerJobs.filter(j => j.status === 'in_progress').length,
+    proposals:     proposalJobs.length,
+    service_orders: serviceOrders.filter(s => !['completed', 'cancelled'].includes(s.order.status)).length,
+    completed:     freelancerJobs.filter(j => j.status === 'completed').length,
+  };
+
+  const counts = isClientView ? clientCounts : freelancerCounts;
+
   const filteredJobs = tab === 'proposals'
     ? proposalJobs
     : tab === 'service_orders'
-      ? []   // handled separately
-      : tab === 'all'
-        ? jobs
-        : jobs.filter(j => j.status === tab);
+      ? []
+      : displayJobs.filter(j => j.status === tab);
 
-  const activeServiceOrders = serviceOrders.filter(
-    s => ['in_progress', 'delivered', 'revision_requested'].includes(s.order.status)
-  );
+  const hasContent = isClientView
+    ? (clientJobs.length > 0)
+    : (freelancerJobs.length > 0 || proposalJobs.length > 0 || serviceOrders.length > 0);
 
-  const counts = {
-    in_progress:    jobs.filter(j => j.status === 'in_progress').length,
-    open:           jobs.filter(j => j.status === 'open').length,
-    completed:      jobs.filter(j => j.status === 'completed').length,
-    proposals:      proposalJobs.length,
-    service_orders: serviceOrders.filter(s => s.order.status !== 'completed' && s.order.status !== 'cancelled').length,
-    all:            jobs.length,
-  };
+  const hasBothRoles = clientJobs.length > 0 && (freelancerJobs.length > 0 || proposalJobs.length > 0);
+
+  // ── Stat definitions per view ─────────────────────────────────
+  const clientStats = [
+    { label: 'Open Jobs',    value: clientCounts.open,        color: '#f59e0b', tab: 'open' },
+    { label: 'In Progress',  value: clientCounts.in_progress, color: '#2563eb', tab: 'in_progress' },
+    { label: 'Proposals In', value: pendingProposalsCount,    color: '#ef4444', tab: 'open' },
+    { label: 'Completed',    value: clientCounts.completed,   color: '#10b981', tab: 'completed' },
+  ];
+
+  const freelancerStats = [
+    { label: 'Active Work',     value: freelancerCounts.in_progress,   color: '#2563eb', tab: 'in_progress' },
+    { label: 'Proposals Sent',  value: freelancerCounts.proposals,      color: '#8b5cf6', tab: 'proposals' },
+    { label: 'Service Orders',  value: freelancerCounts.service_orders, color: '#f59e0b', tab: 'service_orders' },
+    { label: 'Completed',       value: freelancerCounts.completed,      color: '#10b981', tab: 'completed' },
+  ];
+
+  const activeStats = isClientView ? clientStats : freelancerStats;
 
   if (loading) return <div className="pm-container"><div className="pm-loading">Loading projects…</div></div>;
 
   return (
     <div className="pm-container">
+      {/* ── Page header ──────────────────────────────────────── */}
       <div className="pm-page-header">
         <div>
-          <h1>My Projects</h1>
-          <p className="pm-subtitle">Manage your active jobs, milestones, and proposals</p>
+          <h1>{isClientView ? 'Jobs I Posted' : 'My Work'}</h1>
+          <p className="pm-subtitle">
+            {isClientView
+              ? 'Review proposals, track progress, manage your posted jobs'
+              : 'Jobs you\'re working on, proposals you\'ve sent, service orders'}
+          </p>
         </div>
-        <Link to="/jobs/post" className="pm-btn-post">+ Post Job</Link>
+        {isClientView
+          ? <Link to="/jobs/post" className="pm-btn-post">+ Post a Job</Link>
+          : <Link to="/browse-jobs" className="pm-btn-post">Browse Jobs</Link>
+        }
       </div>
 
       {error && <div className="pm-error">{error}</div>}
 
-      {/* Stats strip */}
+      {/* ── Role toggle (only shown if user has both roles) ─── */}
+      {hasBothRoles && (
+        <div className="pm-role-toggle">
+          <button
+            className={`pm-role-btn ${isClientView ? 'active' : ''}`}
+            onClick={() => setViewMode('client')}
+          >
+            📋 Jobs I Posted
+            {clientCounts.open > 0 && <span className="pm-role-badge">{clientCounts.open}</span>}
+          </button>
+          <button
+            className={`pm-role-btn ${!isClientView ? 'active' : ''}`}
+            onClick={() => setViewMode('freelancer')}
+          >
+            💼 My Work
+            {freelancerCounts.in_progress > 0 && <span className="pm-role-badge">{freelancerCounts.in_progress}</span>}
+          </button>
+        </div>
+      )}
+
+      {/* ── Attention banner (client: pending proposals) ───── */}
+      {isClientView && pendingProposalsCount > 0 && (
+        <div className="pm-attention-banner">
+          🔔 <strong>{pendingProposalsCount} proposal{pendingProposalsCount !== 1 ? 's' : ''}</strong> waiting for your review
+          — click any job below to see applicants.
+        </div>
+      )}
+
+      {/* ── Stats strip ──────────────────────────────────────── */}
       <div className="pm-stats">
-        {[
-          { label: 'Active',    value: counts.in_progress, color: '#2563eb' },
-          { label: 'Open',      value: counts.open,        color: '#f59e0b' },
-          { label: 'Proposals', value: counts.proposals,   color: '#8b5cf6' },
-          { label: 'Completed', value: counts.completed,   color: '#10b981' },
-        ].map(s => (
-          <div key={s.label} className="pm-stat-card" style={{ borderTopColor: s.color }}>
+        {activeStats.map(s => (
+          <button
+            key={s.label}
+            className={`pm-stat-card pm-stat-btn ${tab === s.tab ? 'pm-stat-active' : ''}`}
+            style={{ borderTopColor: s.color }}
+            onClick={() => setTab(s.tab)}
+          >
             <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
             <div className="stat-label">{s.label}</div>
-          </div>
+          </button>
         ))}
       </div>
 
-      {/* Tabs */}
+      {/* ── Tabs ─────────────────────────────────────────────── */}
       <div className="pm-tabs">
-        {TABS.map(t => (
+        {activeTabs.map(t => (
           <button
             key={t.key}
             className={`pm-tab ${tab === t.key ? 'active' : ''}`}
@@ -539,12 +621,13 @@ const ProjectManagement = () => {
         ))}
       </div>
 
-      {/* Job list */}
+      {/* ── Content ──────────────────────────────────────────── */}
       {tab === 'service_orders' ? (
         serviceOrders.length === 0 ? (
           <div className="pm-empty">
             <div className="empty-icon">📦</div>
-            <p>No service orders yet</p>
+            <p><strong>No service orders yet</strong></p>
+            <p>Service orders appear here when clients order your services directly.</p>
           </div>
         ) : (
           <div className="pm-job-list">
@@ -555,10 +638,41 @@ const ProjectManagement = () => {
         )
       ) : filteredJobs.length === 0 ? (
         <div className="pm-empty">
-          <div className="empty-icon">📋</div>
-          <p>{tab === 'in_progress' ? "No active jobs right now" : `No ${STATUS_LABELS[tab] || tab} projects`}</p>
-          {tab === 'in_progress' && (
-            <Link to="/browse-jobs" className="pm-btn-browse">Browse Jobs</Link>
+          <div className="empty-icon">{isClientView ? '📋' : '💼'}</div>
+          {tab === 'open' && isClientView && (
+            <>
+              <p><strong>No open jobs yet</strong></p>
+              <p>Post a job to start receiving proposals from freelancers.</p>
+              <Link to="/jobs/post" className="pm-btn-browse">Post a Job</Link>
+            </>
+          )}
+          {tab === 'in_progress' && isClientView && (
+            <>
+              <p><strong>No jobs in progress</strong></p>
+              <p>Accept a proposal on one of your open jobs to get started.</p>
+              {clientCounts.open > 0 && (
+                <button className="pm-btn-browse" onClick={() => setTab('open')}>
+                  View Open Jobs ({clientCounts.open})
+                </button>
+              )}
+            </>
+          )}
+          {tab === 'in_progress' && !isClientView && (
+            <>
+              <p><strong>No active work right now</strong></p>
+              <p>Browse available jobs and submit a proposal to get hired.</p>
+              <Link to="/browse-jobs" className="pm-btn-browse">Browse Jobs</Link>
+            </>
+          )}
+          {tab === 'proposals' && !isClientView && (
+            <>
+              <p><strong>No proposals sent yet</strong></p>
+              <p>Find jobs that match your skills and submit a proposal.</p>
+              <Link to="/browse-jobs" className="pm-btn-browse">Browse Jobs</Link>
+            </>
+          )}
+          {(tab === 'completed') && (
+            <p><strong>No completed {isClientView ? 'jobs' : 'work'} yet</strong></p>
           )}
         </div>
       ) : (

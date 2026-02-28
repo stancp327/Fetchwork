@@ -1,0 +1,288 @@
+/* ── Job Proposals Page — Mobile-first ──────────────────────── */
+.jp-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+  padding-top: calc(64px + 1.25rem);
+  box-sizing: border-box;
+}
+
+/* ── Back nav ────────────────────────────────────────────────── */
+.jp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-decoration: none;
+  margin-bottom: 1.25rem;
+}
+.jp-back:hover { color: #2563eb; }
+
+/* ── Header ──────────────────────────────────────────────────── */
+.jp-header {
+  margin-bottom: 1.5rem;
+}
+.jp-header h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.25rem;
+}
+.jp-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+  align-items: center;
+}
+.jp-header-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.jp-header-badge.open        { background: #d1fae5; color: #065f46; }
+.jp-header-badge.in_progress { background: #dbeafe; color: #1d4ed8; }
+.jp-header-badge.completed   { background: #ede9fe; color: #6d28d9; }
+
+/* ── Filter bar ──────────────────────────────────────────────── */
+.jp-filter-bar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.jp-filter-bar::-webkit-scrollbar { display: none; }
+
+.jp-filter-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 36px;
+  transition: all 0.15s;
+}
+.jp-filter-btn:hover { border-color: #2563eb; color: #2563eb; }
+.jp-filter-btn.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+
+/* ── Empty / Loading ─────────────────────────────────────────── */
+.jp-loading, .jp-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+.jp-empty .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.jp-empty p { margin: 0.25rem 0; }
+.jp-empty p:first-of-type { font-weight: 600; color: #374151; }
+
+/* ── Proposal Card ───────────────────────────────────────────── */
+.jp-proposal-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 0.75rem;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.jp-proposal-card:hover { border-color: #c7d2fe; box-shadow: 0 2px 10px rgba(37,99,235,0.07); }
+.jp-proposal-card.accepted { border-left: 4px solid #10b981; }
+.jp-proposal-card.declined { opacity: 0.65; }
+
+/* Freelancer identity row */
+.jp-freelancer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.jp-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.jp-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.jp-freelancer-info { min-width: 0; flex: 1; }
+.jp-freelancer-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.15rem;
+}
+.jp-freelancer-meta {
+  font-size: 0.8rem;
+  color: #6b7280;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.75rem;
+  align-items: center;
+}
+.jp-rating { color: #f59e0b; font-weight: 600; }
+
+.jp-status-badge {
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.jp-status-badge.pending  { background: #fef3c7; color: #92400e; }
+.jp-status-badge.accepted { background: #d1fae5; color: #065f46; }
+.jp-status-badge.declined { background: #fee2e2; color: #991b1b; }
+
+/* Bid row */
+.jp-bid-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+.jp-bid-item { font-size: 0.85rem; color: #374151; }
+.jp-bid-item strong { color: #111827; font-weight: 700; }
+.jp-bid-item.highlight strong { color: #2563eb; }
+
+/* Cover letter */
+.jp-cover-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.35rem;
+}
+.jp-cover-text {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+
+/* Milestones preview */
+.jp-milestones-preview {
+  margin-bottom: 1rem;
+}
+.jp-ms-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.82rem;
+  gap: 0.5rem;
+}
+.jp-ms-row:last-child { border-bottom: none; }
+.jp-ms-title { color: #374151; min-width: 0; }
+.jp-ms-amount { color: #111827; font-weight: 600; flex-shrink: 0; }
+
+/* Action row */
+.jp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.jp-btn-accept {
+  min-height: 40px;
+  padding: 0 1.25rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.jp-btn-accept:hover:not(:disabled) { background: #059669; }
+.jp-btn-accept:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.jp-btn-message {
+  min-height: 40px;
+  padding: 0 1.1rem;
+  background: white;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s;
+}
+.jp-btn-message:hover { background: #eff6ff; }
+
+.jp-btn-profile {
+  min-height: 40px;
+  padding: 0 1.1rem;
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s;
+}
+.jp-btn-profile:hover { border-color: #9ca3af; }
+
+.jp-accepted-note {
+  font-size: 0.82rem;
+  color: #059669;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* ── Tablet+ ─────────────────────────────────────────────────── */
+@media (min-width: 480px) {
+  .jp-container { padding: 1.5rem 1.25rem; padding-top: calc(64px + 1.5rem); }
+}
+@media (min-width: 768px) {
+  .jp-container { padding: 2rem 1.5rem; padding-top: calc(64px + 2rem); }
+  .jp-header h1 { font-size: 1.6rem; }
+  .jp-freelancer-row { gap: 1.1rem; }
+  .jp-avatar { width: 56px; height: 56px; }
+  .jp-actions { flex-wrap: nowrap; }
+  .jp-bid-row { flex-wrap: nowrap; }
+}
