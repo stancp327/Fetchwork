@@ -19,7 +19,7 @@
 
 /* Steps */
 .pw-steps {
-  display: flex; padding: var(--space-md) var(--space-lg); gap: var(--space-xs);
+  display: flex; width: 100%; padding: var(--space-md) var(--space-lg); gap: var(--space-xs);
   border-bottom: 1px solid #f3f4f6; overflow-x: auto;
 }
 .pw-step {

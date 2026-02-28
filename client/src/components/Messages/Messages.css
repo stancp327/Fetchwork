@@ -83,6 +83,7 @@
 
 .inbox-filters {
   display: flex;
+  width: 100%;
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   border-bottom: 1px solid #f3f4f6;
@@ -279,6 +280,7 @@
 /* ── Quick Actions ────────────────────────────────────────────── */
 .chat-quick-actions {
   display: flex;
+  width: 100%;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-lg);
   border-top: 1px solid #f3f4f6;

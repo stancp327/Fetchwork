@@ -35,6 +35,7 @@
 /* ── Stepper ──────────────────────────────────────────────────── */
 .wizard-stepper {
   display: flex;
+  width: 100%;
   gap: 0;
   margin-bottom: 2rem;
   overflow-x: auto;

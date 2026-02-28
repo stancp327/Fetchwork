@@ -65,7 +65,7 @@
 
 /* Section tabs — horizontal scroll */
 .aud-section-tabs {
-  display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  display: flex; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid #e5e7eb; padding: 0;
   gap: 0; position: sticky; top: 48px; background: white; z-index: 1;
   scrollbar-width: none;

@@ -35,6 +35,9 @@
 /* Tabs — horizontal scroll on mobile */
 .dashboard-tabs {
   display: flex; gap: 2px;
+  width: 100%;          /* CRITICAL: constrain the flex container to viewport width.
+                           Without this, flex-shrink:0 tab buttons sum to ~939px
+                           and force the entire page to be that wide on mobile. */
   margin-bottom: var(--space-md);
   border-bottom: 1px solid #e1e5e9;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
