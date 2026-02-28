@@ -315,7 +315,11 @@ const ServiceOrderCard = ({ item, onAction }) => {
   return (
     <div className="pm-project-card freelancer-card">
       <div className="pm-project-title-row">
-        <Link to={`/services/${service._id}/orders/${order._id}`} className="pm-project-title" style={{ textDecoration: 'none' }}>
+        <Link
+          to={order._id ? `/services/${service._id}/orders/${order._id}` : `/services/${service._id}`}
+          className="pm-project-title"
+          style={{ textDecoration: 'none' }}
+        >
           {service.title}
         </Link>
         <span className="pm-ms-badge" style={{ color: sm.color, background: sm.bg, fontSize: '0.78rem', padding: '3px 10px' }}>

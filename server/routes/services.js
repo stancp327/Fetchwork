@@ -590,7 +590,9 @@ router.get('/:id/orders/:orderId', authenticateToken, async (req, res) => {
     const isParty = String(order.client) === String(req.user._id) ||
                     String(service.freelancer._id) === String(req.user._id);
     if (!isParty) return res.status(403).json({ error: 'Unauthorized' });
-    res.json({ order, service: { _id: service._id, title: service.title, freelancer: service.freelancer } });
+    // Convert subdocument to plain object so _id serialises as a string
+    const orderPlain = { ...order.toObject(), _id: String(order._id) };
+    res.json({ order: orderPlain, service: { _id: String(service._id), title: service.title, freelancer: service.freelancer } });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch order' });
   }
@@ -603,13 +605,23 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
     const userId = req.user._id;
     const { role = 'client' } = req.query;
 
+    // Helper: flatten subdocument to plain object with _id as string
+    const flatOrder = (o) => ({
+      ...o.toObject(),
+      _id:    String(o._id),
+      client: String(o.client),
+    });
+
     let orders = [];
     if (role === 'client') {
       const services = await Service.find({ 'orders.client': userId })
         .populate('freelancer', 'firstName lastName profilePicture');
       services.forEach(s => {
         s.orders.filter(o => String(o.client) === String(userId)).forEach(o => {
-          orders.push({ service: { _id: s._id, title: s.title, freelancer: s.freelancer }, order: o });
+          orders.push({
+            service: { _id: String(s._id), title: s.title, freelancer: s.freelancer },
+            order:   flatOrder(o),
+          });
         });
       });
     } else {
@@ -617,7 +629,10 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
         .populate('orders.client', 'firstName lastName profilePicture');
       services.forEach(s => {
         s.orders.forEach(o => {
-          orders.push({ service: { _id: s._id, title: s.title }, order: o });
+          orders.push({
+            service: { _id: String(s._id), title: s.title },
+            order:   flatOrder(o),
+          });
         });
       });
     }
