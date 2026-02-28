@@ -27,6 +27,11 @@ export const useSocket = (options) => {
   const { token: providedToken, onEvent } = options || {};
   const socketRef = useRef(null);
 
+  // Always-current ref — lets the handler update without triggering
+  // a socket disconnect/reconnect cycle every time onEvent changes
+  const onEventRef = useRef(onEvent);
+  useEffect(() => { onEventRef.current = onEvent; }, [onEvent]);
+
   useEffect(() => {
     const resolvedToken = providedToken || localStorage.getItem('token');
     if (!resolvedToken) return;
@@ -58,9 +63,10 @@ export const useSocket = (options) => {
         console.error('[SOCKET] Socket error:', error);
       });
 
+      // Use ref so changing onEvent never causes a socket reconnect
       SOCKET_EVENTS.forEach((event) => {
         socket.on(event, (data) => {
-          if (typeof onEvent === 'function') onEvent(event, data);
+          if (typeof onEventRef.current === 'function') onEventRef.current(event, data);
         });
       });
     });
@@ -73,7 +79,8 @@ export const useSocket = (options) => {
         socketRef.current = null;
       }
     };
-  }, [providedToken, onEvent]);
+  // Only reconnect when the token changes — NOT when onEvent changes
+  }, [providedToken]);
 
   return socketRef;
 };

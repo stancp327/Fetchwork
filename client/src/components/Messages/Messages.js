@@ -439,10 +439,12 @@ const Messages = () => {
     }
   }, []);
 
-  // ── Stable ref so socket handler always sees latest selectedConvo
+  // ── Stable refs — socket handler always gets latest values
   //    without causing reconnects on every state change ─────────
   const selectedConvoRef = useRef(selectedConvo);
   useEffect(() => { selectedConvoRef.current = selectedConvo; }, [selectedConvo]);
+  const userIdRef = useRef(userId);
+  useEffect(() => { userIdRef.current = userId; }, [userId]);
 
   const handleSocketEvent = useCallback((event, data) => {
     const convo = selectedConvoRef.current;
@@ -452,14 +454,29 @@ const Messages = () => {
         if (!msg) break;
         const msgConvoId = msg.conversation?.toString() || msg.conversation;
         const currentConvoId = convo?._id?.toString();
-        // Only append if the message belongs to the currently open conversation
         if (msgConvoId && currentConvoId && msgConvoId === currentConvoId) {
           setMessages(prev => {
+            // Already have this real message — skip
             if (prev.some(m => m._id === msg._id)) return prev;
+
+            const senderId = msg.sender?._id?.toString() || msg.sender?.toString();
+            const me = userIdRef.current?.toString();
+
+            // If this is our own echo-back, replace the optimistic temp message
+            // (server echoes message:receive to sender after socket send)
+            if (senderId === me) {
+              const tempIdx = prev.findIndex(
+                m => String(m._id).startsWith('temp-') && m.content === msg.content
+              );
+              if (tempIdx !== -1) {
+                return prev.map((m, i) => i === tempIdx ? msg : m);
+              }
+            }
+
             return [...prev, msg];
           });
         }
-        // Always refresh conversation list (updates last-message preview + unread counts)
+        // Always refresh conversation list (last-message preview + unread badge)
         fetchConversations();
         break;
       }

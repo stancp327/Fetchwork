@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useSocket } from '../../hooks/useSocket';
 import { useToast } from './Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -32,6 +32,11 @@ const NotificationListener = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
 
+  // Ref so user changes never cause handleEvent to recreate (which would
+  // trigger a socket reconnect via useSocket's onEvent dep)
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
   const handleEvent = useCallback((event, data) => {
     const onMessagesPage = window.location.pathname.startsWith('/messages');
 
@@ -40,24 +45,25 @@ const NotificationListener = () => {
         const msg = data?.message;
         if (!msg) break;
         const senderId = msg.sender?._id || msg.sender;
-        const currentUserId = user?._id || user?.id || user?.userId;
-        // Skip if we sent it, or if user is already on the messages page
+        const currentUserId = userRef.current?._id || userRef.current?.id || userRef.current?.userId;
+        // Skip own sent messages
         if (!senderId || String(senderId) === String(currentUserId)) break;
-        if (onMessagesPage) {
-          // Still update unread badge — user may be in a different thread
-          window.dispatchEvent(new CustomEvent('fetchwork:unread-message'));
-        } else {
-          window.dispatchEvent(new CustomEvent('fetchwork:unread-message'));
+
+        // Always update unread badge
+        window.dispatchEvent(new CustomEvent('fetchwork:unread-message'));
+
+        // Toast only if not already on messages page
+        if (!onMessagesPage) {
           addToast(`💬 New message from ${msg.sender?.firstName || 'someone'}`, 'info', 4000);
         }
         break;
       }
 
       case 'notification:new': {
-        // Let useNotifications update the bell count immediately
+        // Let useNotifications update bell count immediately
         window.dispatchEvent(new CustomEvent('fetchwork:notification', { detail: data }));
 
-        // Show toast (suppress if notification is about a message and user is on messages page)
+        // Suppress toast if it's a message-type notification and user is on /messages
         if (data?.type === 'new_message' && onMessagesPage) break;
 
         const toastFn = TYPE_TOAST[data?.type];
@@ -71,7 +77,9 @@ const NotificationListener = () => {
       default:
         break;
     }
-  }, [addToast, user]);
+  // addToast is stable from useToast; userRef is a ref (not a dep)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addToast]);
 
   useSocket({ onEvent: handleEvent });
 
