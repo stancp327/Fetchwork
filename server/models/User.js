@@ -137,6 +137,15 @@ const userSchema = new mongoose.Schema({
   },
   paypalEmail: String,
   stripeAccountId:  String,           // Connect account (freelancer payouts)
+
+  // ── Calendar integration ──────────────────────────────────────────────
+  icalSecret:            { type: String, select: false, default: () => require('crypto').randomUUID() }, // rotatable UUID for iCal feed URL
+  googleCalConnected:    { type: Boolean, default: false },
+  googleCalendarId:      { type: String,  default: 'primary' },
+  googleCalTokenExpiry:  Date,
+  googleCalRefreshToken: { type: String,  select: false }, // AES-256 encrypted
+  googleCalAccessToken:  { type: String,  select: false }, // AES-256 encrypted
+
   stripeConnected:  { type: Boolean, default: false },
   stripeCustomerId: String,           // Customer ID (client saved payment methods)
   resetPasswordToken: String,
@@ -321,6 +330,9 @@ userSchema.methods.getPublicProfile = function() {
   delete userObject.paypalEmail;
   delete userObject.stripeAccountId;
   delete userObject.stripeCustomerId;  // never expose Stripe internal IDs
+  delete userObject.icalSecret;
+  delete userObject.googleCalRefreshToken;
+  delete userObject.googleCalAccessToken;
   return userObject;
 };
 

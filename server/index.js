@@ -248,7 +248,10 @@ app.use('/api/errors', require('./routes/errors'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/offers', require('./routes/offers'));
 app.use('/api/saved', require('./routes/saved'));
-app.use('/api/stats', require('./routes/stats'));
+app.use('/api/stats',        require('./routes/stats'));
+app.use('/api/availability', require('./routes/availability'));
+app.use('/api/bookings',     require('./routes/bookings'));
+app.use('/api/calendar',     require('./routes/calendar'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {
@@ -281,6 +284,10 @@ app.use('*', (req, res) => {
 });
 
 // ── Start Server ────────────────────────────────────────────────
+// ── Booking crons ───────────────────────────────────────────────
+const { initBookingCrons } = require('./crons/bookingCrons');
+initBookingCrons();
+
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 

@@ -5,6 +5,7 @@ import { getLocationDisplay } from '../../utils/location';
 import { getCategoryLabel, getCategoryIcon } from '../../utils/categories';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import SaveButton from '../common/SaveButton';
+import BookingCalendar from '../Booking/BookingCalendar';
 import AvailabilityBadge from '../common/AvailabilityBadge';
 import { TrustBadges, ReputationStats } from '../common/TrustBadges';
 import SEO from '../common/SEO';
@@ -31,6 +32,7 @@ const PublicProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showBooking,    setShowBooking]    = useState(false);
   const [messagingLoading, setMessagingLoading] = useState(false);
 
   const handleMessage = async () => {
@@ -151,6 +153,7 @@ const PublicProfile = () => {
                   {messagingLoading ? '...' : '💬 Message'}
                 </button>
                 <button className="pp-btn-secondary" onClick={() => setShowOfferModal(true)}>📋 Make Offer</button>
+                <button className="pp-btn-secondary" onClick={() => setShowBooking(b => !b)}>📅 Book Session</button>
               </>
             )}
           </div>
@@ -461,6 +464,18 @@ const PublicProfile = () => {
               </Link>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── Book a Session ─────────────────────────────────── */}
+      {showBooking && !isOwnProfile && (
+        <div className="pp-booking-section">
+          <h3>📅 Book a Session</h3>
+          <BookingCalendar
+            freelancerId={f._id}
+            freelancerName={`${f.firstName} ${f.lastName}`}
+            onBooked={() => setShowBooking(false)}
+          />
         </div>
       )}
 

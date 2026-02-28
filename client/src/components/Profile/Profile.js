@@ -7,6 +7,7 @@ import PortfolioWizard from '../Portfolio/PortfolioWizard';
 import CategoryCombobox from '../common/CategoryCombobox';
 import StripeConnect from '../Payments/StripeConnect';
 import PaymentMethods from '../Payments/PaymentMethods';
+import CalendarConnect from '../Booking/CalendarConnect';
 import './Profile.css';
 
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
@@ -500,6 +501,17 @@ const TabVerification = ({ data, onRefresh }) => {
       {/* Saved Payment Methods (client side — for paying jobs/services) */}
       <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
         <PaymentMethods />
+      </div>
+
+      {/* Calendar Integration */}
+      <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginBottom: '1rem' }}>
+          <h3>📅 Calendar Sync</h3>
+          <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0' }}>
+            Sync your bookings with Google Calendar, Apple Calendar, or Outlook.
+          </p>
+        </div>
+        <CalendarConnect />
       </div>
     </div>
   );

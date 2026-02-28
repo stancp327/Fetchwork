@@ -289,3 +289,18 @@
   .pp-portfolio-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.25rem; }
   .pp-services-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.25rem; }
 }
+
+/* -- Booking section on profile ------------------------------ */
+.pp-booking-section {
+  margin: 1.5rem var(--container-padding, 1rem);
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+}
+.pp-booking-section h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem;
+  color: #1f2937;
+}
