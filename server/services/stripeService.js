@@ -298,6 +298,31 @@ class StripeService {
     });
   }
 
+  /**
+   * Create a one-time payment Checkout Session (e.g. wallet top-up).
+   * @param {string} customerId   Stripe Customer ID
+   * @param {number} amountCents  Amount in cents
+   * @param {string} description  Line item description
+   * @param {string} successUrl
+   * @param {string} cancelUrl
+   * @param {object} metadata     Passed to session.metadata
+   */
+  async createPaymentSession(customerId, amountCents, description, successUrl, cancelUrl, metadata = {}) {
+    this._ensureStripe();
+    return stripe.checkout.sessions.create({
+      customer:    customerId,
+      mode:        'payment',
+      line_items:  [{ price_data: {
+        currency:    'usd',
+        unit_amount: amountCents,
+        product_data: { name: description },
+      }, quantity: 1 }],
+      success_url: successUrl,
+      cancel_url:  cancelUrl,
+      metadata,
+    });
+  }
+
   /** Create a Stripe Customer Portal session for managing subscription. */
   async createBillingPortalSession(customerId, returnUrl) {
     this._ensureStripe();

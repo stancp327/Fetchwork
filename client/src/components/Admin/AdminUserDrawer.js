@@ -14,11 +14,11 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
   const [creditAmount, setCreditAmount] = useState('');
   const [creditReason, setCreditReason] = useState('');
   const u = data?.user;
-  if (!u) return null;
 
-  const initials = `${u.firstName?.[0] || ''}${u.lastName?.[0] || ''}`.toUpperCase();
-  const isWaived = u.feeWaiver?.enabled;
-  const accountAge = data.summary?.accountAge || 0;
+  // Derive these safely (u may be null before early return below)
+  const initials   = u ? `${u.firstName?.[0] || ''}${u.lastName?.[0] || ''}`.toUpperCase() : '';
+  const isWaived   = u?.feeWaiver?.enabled;
+  const accountAge = data?.summary?.accountAge || 0;
 
   const doAction = async (label, fn) => {
     setActionLoading(label);
@@ -81,13 +81,13 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
   );
 
   useEffect(() => {
-    if (activeSection !== 'billing') return;
+    if (!u || activeSection !== 'billing') return;
     setBillingLoading(true);
     apiRequest(`/api/admin/users/${u._id}/billing`)
       .then(d => setBillingData(d))
       .catch(() => {})
       .finally(() => setBillingLoading(false));
-  }, [activeSection, u._id]);
+  }, [activeSection, u?._id]);
 
   const handleGrantPlan = async () => {
     if (!grantPlanSlug || !grantReason) return;
@@ -126,6 +126,8 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     { id: 'actions', label: '⚡ Actions' },
     { id: 'billing', label: '💳 Billing' },
   ];
+
+  if (!u) return null;
 
   return (
     <div className="aud-overlay" onClick={onClose}>

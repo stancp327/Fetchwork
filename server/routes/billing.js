@@ -14,8 +14,7 @@
 const express        = require('express');
 const router         = express.Router();
 const stripeService  = require('../services/stripeService');
-const { authenticateToken } = require('../middleware/auth');
-const { authenticateAdmin } = require('../middleware/adminAuth');
+const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 const User             = require('../models/User');
 const Plan             = require('../models/Plan');
 const UserSubscription = require('../models/UserSubscription');
@@ -515,18 +514,14 @@ router.post('/wallet/add', authenticateToken, async (req, res) => {
     const amountCents = Math.round(amount * 100);
 
     // One-time payment checkout session
-    const session = await stripeService.stripe.checkout.sessions.create({
-      customer:    user.stripeCustomerId,
-      mode:        'payment',
-      line_items:  [{ price_data: {
-        currency:    'usd',
-        unit_amount: amountCents,
-        product_data: { name: `Fetchwork Wallet — $${amount.toFixed(2)} credit` },
-      }, quantity: 1 }],
-      success_url: `${CLIENT_URL}/wallet?funded=1&amount=${amount}`,
-      cancel_url:  `${CLIENT_URL}/wallet?cancelled=1`,
-      metadata:    { type: 'wallet_topup', userId: String(req.user.userId), amount: String(amount) },
-    });
+    const session = await stripeService.createPaymentSession(
+      user.stripeCustomerId,
+      amountCents,
+      `Fetchwork Wallet — $${amount.toFixed(2)} credit`,
+      `${CLIENT_URL}/wallet?funded=1&amount=${amount}`,
+      `${CLIENT_URL}/wallet?cancelled=1`,
+      { type: 'wallet_topup', userId: String(req.user.userId), amount: String(amount) }
+    );
 
     res.json({ checkoutUrl: session.url });
   } catch (err) {
