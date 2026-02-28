@@ -157,21 +157,127 @@ const ProposalActionCard = ({ meta, isMine, userId, onAction }) => {
   );
 };
 
+// ── Milestone Request Card ──────────────────────────────────────
+const MilestoneRequestCard = ({ meta, isMine, onAction }) => {
+  const [acting, setActing] = useState(false);
+  const [status, setStatus] = useState(meta.status || 'pending');
+  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+  const milestones = meta.proposedMilestones || [];
+  const total = milestones.reduce((s, m) => s + (Number(m.amount) || 0), 0);
+
+  const doAccept = async () => {
+    if (!window.confirm(`Accept these ${milestones.length} milestone${milestones.length !== 1 ? 's' : ''} (${fmt(total)} total)?`)) return;
+    setActing(true);
+    try {
+      await apiRequest(`/api/jobs/${meta.jobId}/milestones/request/accept`, {
+        method: 'POST',
+        body: JSON.stringify({ messageId: meta.messageId }),
+      });
+      setStatus('accepted');
+      if (onAction) onAction();
+    } catch (err) {
+      alert(err.message || 'Failed to accept');
+    } finally { setActing(false); }
+  };
+
+  const doDecline = async () => {
+    const reason = window.prompt('Reason for declining (optional):');
+    if (reason === null) return; // cancelled
+    setActing(true);
+    try {
+      await apiRequest(`/api/jobs/${meta.jobId}/milestones/request/decline`, {
+        method: 'POST',
+        body: JSON.stringify({ messageId: meta.messageId, reason }),
+      });
+      setStatus('declined');
+      if (onAction) onAction();
+    } catch (err) {
+      alert(err.message || 'Failed to decline');
+    } finally { setActing(false); }
+  };
+
+  const statusLabel = {
+    accepted: '✅ Milestones accepted — job updated',
+    declined: '❌ Milestone proposal declined',
+  };
+
+  return (
+    <div className="msg-proposal-card">
+      <div className="msg-proposal-header">
+        <span className="msg-proposal-title">📋 Milestone Proposal</span>
+        {meta.jobTitle && <span className="msg-proposal-job">for "{meta.jobTitle}"</span>}
+      </div>
+
+      {meta.note && (
+        <div className="msg-proposal-cover" style={{ marginBottom: '0.5rem' }}>
+          {meta.note}
+        </div>
+      )}
+
+      <div className="msg-milestone-req-list">
+        {milestones.map((m, i) => (
+          <div key={i} className="msg-milestone-req-row">
+            <span className="msg-ms-req-num">{i + 1}</span>
+            <span className="msg-ms-req-title">{m.title}</span>
+            <span className="msg-ms-req-amount">{fmt(m.amount)}</span>
+          </div>
+        ))}
+        <div className="msg-milestone-req-total">
+          <span>Total</span>
+          <span>{fmt(total)}</span>
+        </div>
+      </div>
+
+      {status !== 'pending' && (
+        <div className={`msg-proposal-status ${status}`}>
+          {statusLabel[status] || status}
+        </div>
+      )}
+
+      {/* Freelancer: Accept / Decline */}
+      {!isMine && status === 'pending' && (
+        <div className="msg-proposal-actions">
+          <button className="msg-pa-accept" disabled={acting} onClick={doAccept}>
+            ✓ Accept
+          </button>
+          <button className="msg-pa-decline" disabled={acting} onClick={doDecline}>
+            ✕ Decline
+          </button>
+        </div>
+      )}
+
+      {/* Client: shows they sent it */}
+      {isMine && status === 'pending' && (
+        <div className="msg-proposal-sent-note">
+          Awaiting freelancer response
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Message Bubble ──────────────────────────────────────────────
 const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) => {
   const meta = msg.metadata;
-  const isProposal = meta?.type === 'job_proposal';
+  const isProposal          = meta?.type === 'job_proposal';
+  const isMilestoneRequest  = meta?.type === 'milestone_change_request';
 
   return (
     <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>
-      <div className={`msg-bubble ${msg.messageType === 'system' ? 'msg-system' : ''} ${isProposal ? 'msg-bubble-proposal' : ''}`}>
+      <div className={`msg-bubble ${msg.messageType === 'system' ? 'msg-system' : ''} ${isProposal || isMilestoneRequest ? 'msg-bubble-proposal' : ''}`}>
 
-        {/* Proposal: render structured card instead of raw text */}
+        {/* Proposal action card */}
         {isProposal ? (
           <ProposalActionCard
             meta={meta}
             isMine={isMine}
             userId={userId}
+            onAction={onProposalAction}
+          />
+        ) : isMilestoneRequest ? (
+          <MilestoneRequestCard
+            meta={{ ...meta, messageId: msg._id }}
+            isMine={isMine}
             onAction={onProposalAction}
           />
         ) : (

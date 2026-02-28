@@ -846,6 +846,179 @@ router.post('/:id/refund', authenticateToken, validateMongoId, async (req, res) 
   }
 });
 
+// ── Milestone Change Requests ──────────────────────────────────
+
+// POST /api/jobs/:id/milestones/request — client proposes milestone changes
+router.post('/:id/milestones/request', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('client',     'firstName lastName')
+      .populate('freelancer', 'firstName lastName');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = (req.user._id || req.user.userId)?.toString();
+    if (job.client._id.toString() !== userId) {
+      return res.status(403).json({ error: 'Only the client can propose milestone changes' });
+    }
+    if (job.status !== 'in_progress') {
+      return res.status(400).json({ error: 'Job must be in progress' });
+    }
+
+    const { proposedMilestones, note } = req.body;
+    if (!Array.isArray(proposedMilestones) || proposedMilestones.length === 0) {
+      return res.status(400).json({ error: 'At least one milestone is required' });
+    }
+
+    const conversation = await Conversation.findOne({ job: job._id });
+    if (!conversation) return res.status(404).json({ error: 'No conversation found for this job' });
+
+    const clientName = `${job.client.firstName} ${job.client.lastName}`.trim();
+    const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`.trim();
+    const totalAmount = proposedMilestones.reduce((s, m) => s + (Number(m.amount) || 0), 0);
+
+    const sysMsg = new Message({
+      conversation: conversation._id,
+      sender:    job.client._id,
+      recipient: job.freelancer._id,
+      content:   `📋 ${clientName} is proposing a milestone update for "${job.title}"\n${note ? `\nNote: ${note}` : ''}\n\n${proposedMilestones.map((m, i) => `${i + 1}. ${m.title} — $${m.amount}`).join('\n')}`,
+      messageType: 'system',
+      metadata: {
+        type: 'milestone_change_request',
+        jobId:   job._id,
+        jobTitle: job.title,
+        proposedMilestones,
+        totalAmount,
+        requestedBy: job.client._id,
+        clientName,
+        note: note || '',
+        status: 'pending',
+      }
+    });
+    await sysMsg.save();
+    conversation.lastMessage = sysMsg._id;
+    await conversation.updateLastActivity();
+
+    // Notify freelancer
+    await Notification.create({
+      recipient:  job.freelancer._id,
+      type:       'job_update',
+      title:      'Milestone update proposed',
+      message:    `${clientName} has proposed new milestones for "${job.title}". Review and accept or decline in Messages.`,
+      relatedJob: job._id,
+      actionUrl:  '/messages',
+    });
+
+    res.json({ message: 'Milestone change request sent', messageId: sysMsg._id });
+  } catch (err) {
+    console.error('Error proposing milestones:', err);
+    res.status(500).json({ error: 'Failed to send milestone request' });
+  }
+});
+
+// POST /api/jobs/:id/milestones/request/accept — freelancer accepts
+router.post('/:id/milestones/request/accept', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { messageId } = req.body;
+    if (!messageId) return res.status(400).json({ error: 'messageId required' });
+
+    const job = await Job.findById(req.params.id)
+      .populate('client', 'firstName lastName');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = (req.user._id || req.user.userId)?.toString();
+    if (job.freelancer.toString() !== userId) {
+      return res.status(403).json({ error: 'Only the freelancer can accept milestone changes' });
+    }
+
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ error: 'Request not found' });
+    if (msg.metadata?.status !== 'pending') {
+      return res.status(400).json({ error: 'This request has already been actioned' });
+    }
+
+    const proposed = msg.metadata.proposedMilestones || [];
+
+    // Apply proposed milestones — replace any pending milestones, keep funded/completed ones
+    const kept = (job.milestones || []).filter(m =>
+      m.status === 'completed' || m.status === 'approved' || (m.escrowAmount || 0) > 0
+    );
+    job.milestones = [
+      ...kept,
+      ...proposed.map(m => ({
+        title:       m.title,
+        description: m.description || '',
+        amount:      Number(m.amount) || 0,
+        dueDate:     m.dueDate ? new Date(m.dueDate) : undefined,
+        status:      'pending',
+      }))
+    ];
+    await job.save();
+
+    // Update message status
+    msg.metadata = { ...msg.metadata, status: 'accepted' };
+    msg.markModified('metadata');
+    await msg.save();
+
+    // Notify client
+    const freelancerName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Freelancer';
+    await Notification.create({
+      recipient:  job.client._id,
+      type:       'job_update',
+      title:      'Milestone changes accepted',
+      message:    `${freelancerName} accepted your proposed milestones for "${job.title}".`,
+      relatedJob: job._id,
+      actionUrl:  '/projects?view=client',
+    });
+
+    res.json({ message: 'Milestones updated', milestones: job.milestones });
+  } catch (err) {
+    console.error('Error accepting milestones:', err);
+    res.status(500).json({ error: 'Failed to accept milestone changes' });
+  }
+});
+
+// POST /api/jobs/:id/milestones/request/decline — freelancer declines
+router.post('/:id/milestones/request/decline', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { messageId, reason } = req.body;
+    if (!messageId) return res.status(400).json({ error: 'messageId required' });
+
+    const job = await Job.findById(req.params.id)
+      .populate('client', 'firstName lastName');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = (req.user._id || req.user.userId)?.toString();
+    if (job.freelancer.toString() !== userId) {
+      return res.status(403).json({ error: 'Only the freelancer can decline milestone changes' });
+    }
+
+    const msg = await Message.findById(messageId);
+    if (!msg) return res.status(404).json({ error: 'Request not found' });
+    if (msg.metadata?.status !== 'pending') {
+      return res.status(400).json({ error: 'This request has already been actioned' });
+    }
+
+    msg.metadata = { ...msg.metadata, status: 'declined', declineReason: reason || '' };
+    msg.markModified('metadata');
+    await msg.save();
+
+    const freelancerName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Freelancer';
+    await Notification.create({
+      recipient:  job.client._id,
+      type:       'job_update',
+      title:      'Milestone changes declined',
+      message:    `${freelancerName} declined your proposed milestones for "${job.title}".${reason ? ` Reason: ${reason}` : ''}`,
+      relatedJob: job._id,
+      actionUrl:  '/messages',
+    });
+
+    res.json({ message: 'Milestone request declined' });
+  } catch (err) {
+    console.error('Error declining milestones:', err);
+    res.status(500).json({ error: 'Failed to decline milestone request' });
+  }
+});
+
 // ── Milestone Payments ──────────────────────────────────────────
 
 // POST /api/jobs/:id/milestones/:index/fund — client funds a specific milestone
