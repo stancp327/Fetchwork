@@ -12,6 +12,7 @@ import TracingErrorBoundary from '../common/TracingErrorBoundary';
 import ErrorDashboard from './ErrorDashboard';
 import AdminUserDrawer from './AdminUserDrawer';
 import AdminVerifications from './AdminVerifications';
+import AdminBillingTab from './AdminBillingTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -376,6 +377,12 @@ const AdminDashboard = () => {
           id="errors"
           label="Errors"
           active={activeTab === 'errors'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="billing"
+          label="Billing"
+          active={activeTab === 'billing'}
           onClick={setActiveTab}
         />
       </div>
@@ -1130,6 +1137,11 @@ const AdminDashboard = () => {
         {activeTab === 'errors' && (
           <TracingErrorBoundary componentName="ErrorDashboard">
             <ErrorDashboard />
+          </TracingErrorBoundary>
+        )}
+        {activeTab === 'billing' && (
+          <TracingErrorBoundary componentName="AdminBillingTab">
+            <AdminBillingTab />
           </TracingErrorBoundary>
         )}
       </div>

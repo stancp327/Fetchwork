@@ -1011,4 +1011,242 @@ router.get('/users/search', authenticateAdmin, requirePermission('user_managemen
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// 💳 BILLING ADMIN ROUTES
+// ═══════════════════════════════════════════════════════════════
+const Plan             = require('../models/Plan');
+const UserSubscription = require('../models/UserSubscription');
+const BillingCredit    = require('../models/BillingCredit');
+const BillingAuditLog  = require('../models/BillingAuditLog');
+const PromoRule        = require('../models/PromoRule');
+const { logBillingAction } = require('../utils/billingUtils');
+
+// ── GET /api/admin/billing/plans ────────────────────────────────
+// List all plans with live subscriber counts
+router.get('/billing/plans', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const plans = await Plan.find().sort('sortOrder').lean();
+    // Attach subscriber counts
+    const counts = await UserSubscription.aggregate([
+      { $match: { status: { $in: ['active', 'trialing'] } } },
+      { $group: { _id: '$plan', count: { $sum: 1 } } },
+    ]);
+    const countMap = Object.fromEntries(counts.map(c => [String(c._id), c.count]));
+    const enriched = plans.map(p => ({ ...p, subscriberCount: countMap[String(p._id)] || 0 }));
+    res.json({ plans: enriched });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch plans' });
+  }
+});
+
+// ── POST /api/admin/billing/plans ───────────────────────────────
+// Create a new plan
+router.post('/billing/plans', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const plan = await Plan.create(req.body);
+    res.status(201).json({ plan });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Failed to create plan' });
+  }
+});
+
+// ── PUT /api/admin/billing/plans/:planId ────────────────────────
+// Edit a plan (price changes don't cascade to existing subscribers — grandfathered)
+router.put('/billing/plans/:planId', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const plan = await Plan.findByIdAndUpdate(req.params.planId, { $set: req.body }, { new: true, runValidators: true });
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    res.json({ plan });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Failed to update plan' });
+  }
+});
+
+// ── GET /api/admin/users/:userId/billing ────────────────────────
+// Full billing history for a user: subscription, credits, audit log
+router.get('/users/:userId/billing', authenticateAdmin, requirePermission('payment_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const [sub, credits, auditLog, promos] = await Promise.all([
+      UserSubscription.findOne({ user: userId }).populate('plan grantedBy', 'firstName lastName email slug name').lean(),
+      BillingCredit.find({ user: userId }).sort({ createdAt: -1 }).lean(),
+      BillingAuditLog.find({ user: userId }).sort({ createdAt: -1 }).limit(50).lean(),
+      PromoRule.find({ specificUsers: userId, active: true }).lean(),
+    ]);
+    res.json({ subscription: sub, credits, auditLog, promos });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch billing history' });
+  }
+});
+
+// ── POST /api/admin/users/:userId/billing/grant ─────────────────
+// Manually grant a plan to a user (with optional custom price + expiry)
+router.post('/users/:userId/billing/grant', authenticateAdmin, requirePermission('payment_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { planSlug, customPrice, expiresAt, reason } = req.body;
+    if (!planSlug || !reason) return res.status(400).json({ error: 'planSlug and reason are required' });
+
+    const plan = await Plan.findOne({ slug: planSlug, active: true });
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+
+    const existing = await UserSubscription.findOne({ user: userId });
+    const before = existing ? { planSlug: String(existing.plan) } : null;
+
+    const sub = await UserSubscription.findOneAndUpdate(
+      { user: userId },
+      {
+        plan:          plan._id,
+        status:        'active',
+        customPrice:   customPrice ?? null,
+        grantedBy:     req.user.userId,
+        grantReason:   reason,
+        grantExpiresAt: expiresAt ? new Date(expiresAt) : null,
+        source:        'admin_grant',
+        stripeSubscriptionId: null,
+      },
+      { upsert: true, new: true }
+    );
+
+    await logBillingAction({
+      userId,
+      action:  'plan_granted',
+      before,
+      after:   { planSlug: plan.slug, customPrice, expiresAt },
+      adminId: req.user.userId,
+      note:    reason,
+    });
+
+    res.json({ subscription: sub, message: `${plan.name} granted to user` });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to grant plan' });
+  }
+});
+
+// ── POST /api/admin/users/:userId/billing/fee-override ──────────
+// Set custom fee rates for a user (overrides plan defaults)
+router.post('/users/:userId/billing/fee-override', authenticateAdmin, requirePermission('payment_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { feeRateOverrides, reason } = req.body;
+    if (!feeRateOverrides || !reason) return res.status(400).json({ error: 'feeRateOverrides and reason are required' });
+
+    const sub = await UserSubscription.findOne({ user: userId });
+    const before = sub?.feeRateOverrides || null;
+
+    const updated = await UserSubscription.findOneAndUpdate(
+      { user: userId },
+      { $set: { feeRateOverrides } },
+      { upsert: true, new: true }
+    );
+
+    await logBillingAction({
+      userId,
+      action:  'fee_override_set',
+      before,
+      after:   feeRateOverrides,
+      adminId: req.user.userId,
+      note:    reason,
+    });
+
+    res.json({ subscription: updated, message: 'Fee override applied' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to set fee override' });
+  }
+});
+
+// ── POST /api/admin/users/:userId/billing/fee-override/remove ───
+// Remove custom fee rate overrides (revert to plan defaults)
+router.post('/users/:userId/billing/fee-override/remove', authenticateAdmin, requirePermission('payment_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    const sub = await UserSubscription.findOne({ user: userId });
+    const before = sub?.feeRateOverrides || null;
+
+    await UserSubscription.findOneAndUpdate(
+      { user: userId },
+      { $unset: { feeRateOverrides: '' } }
+    );
+
+    await logBillingAction({
+      userId,
+      action:  'fee_override_removed',
+      before,
+      after:   null,
+      adminId: req.user.userId,
+      note:    reason || 'Fee override removed by admin',
+    });
+
+    res.json({ message: 'Fee overrides removed — plan defaults restored' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to remove fee override' });
+  }
+});
+
+// ── POST /api/admin/users/:userId/billing/credit ────────────────
+// Add a billing credit (goodwill gesture, refund credit, promo)
+router.post('/users/:userId/billing/credit', authenticateAdmin, requirePermission('payment_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { amount, reason, expiresAt } = req.body;
+    if (!amount || !reason) return res.status(400).json({ error: 'amount and reason are required' });
+    if (amount <= 0) return res.status(400).json({ error: 'amount must be positive' });
+
+    const credit = await BillingCredit.create({
+      user:      userId,
+      amount,
+      reason,
+      appliedBy: req.user.userId,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    });
+
+    await logBillingAction({
+      userId,
+      action:  'credit_added',
+      before:  null,
+      after:   { amount, reason, expiresAt },
+      adminId: req.user.userId,
+      note:    reason,
+    });
+
+    res.status(201).json({ credit, message: `$${amount} credit added` });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add credit' });
+  }
+});
+
+// ── GET /api/admin/billing/promos ───────────────────────────────
+router.get('/billing/promos', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const promos = await PromoRule.find().sort({ createdAt: -1 }).lean();
+    res.json({ promos });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch promo rules' });
+  }
+});
+
+// ── POST /api/admin/billing/promo ───────────────────────────────
+// Create a promo rule (cohort fee override, seasonal discount, retention offer)
+router.post('/billing/promo', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const promo = await PromoRule.create({ ...req.body, createdBy: req.user.userId });
+    res.status(201).json({ promo });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Failed to create promo rule' });
+  }
+});
+
+// ── PUT /api/admin/billing/promo/:promoId ───────────────────────
+router.put('/billing/promo/:promoId', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const promo = await PromoRule.findByIdAndUpdate(req.params.promoId, { $set: req.body }, { new: true });
+    if (!promo) return res.status(404).json({ error: 'Promo not found' });
+    res.json({ promo });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Failed to update promo' });
+  }
+});
+
 module.exports = router;

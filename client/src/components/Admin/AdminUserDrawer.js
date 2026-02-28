@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../../utils/api';
 import { formatBudget } from '../../utils/formatters';
 import './AdminUserDrawer.css';
@@ -6,6 +6,13 @@ import './AdminUserDrawer.css';
 const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
   const [activeSection, setActiveSection] = useState('overview');
   const [actionLoading, setActionLoading] = useState('');
+  const [billingData, setBillingData]   = useState(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingMsg, setBillingMsg]     = useState('');
+  const [grantPlanSlug, setGrantPlanSlug] = useState('');
+  const [grantReason, setGrantReason]   = useState('');
+  const [creditAmount, setCreditAmount] = useState('');
+  const [creditReason, setCreditReason] = useState('');
   const u = data?.user;
   if (!u) return null;
 
@@ -73,13 +80,51 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     apiRequest(`/api/admin/users/${u._id}/promote`, { method: 'PUT' })
   );
 
+  useEffect(() => {
+    if (activeSection !== 'billing') return;
+    setBillingLoading(true);
+    apiRequest(`/api/admin/users/${u._id}/billing`)
+      .then(d => setBillingData(d))
+      .catch(() => {})
+      .finally(() => setBillingLoading(false));
+  }, [activeSection, u._id]);
+
+  const handleGrantPlan = async () => {
+    if (!grantPlanSlug || !grantReason) return;
+    setActionLoading('grant');
+    try {
+      await apiRequest(`/api/admin/users/${u._id}/billing/grant`, {
+        method: 'POST', body: JSON.stringify({ planSlug: grantPlanSlug, reason: grantReason }),
+      });
+      setBillingMsg('Plan granted ✅'); setGrantPlanSlug(''); setGrantReason('');
+      const d = await apiRequest(`/api/admin/users/${u._id}/billing`);
+      setBillingData(d);
+    } catch (err) { setBillingMsg(err.message || 'Failed'); }
+    finally { setActionLoading(''); setTimeout(() => setBillingMsg(''), 3000); }
+  };
+
+  const handleAddCredit = async () => {
+    if (!creditAmount || !creditReason) return;
+    setActionLoading('credit');
+    try {
+      await apiRequest(`/api/admin/users/${u._id}/billing/credit`, {
+        method: 'POST', body: JSON.stringify({ amount: Number(creditAmount), reason: creditReason }),
+      });
+      setBillingMsg(`$${creditAmount} credit added ✅`); setCreditAmount(''); setCreditReason('');
+      const d = await apiRequest(`/api/admin/users/${u._id}/billing`);
+      setBillingData(d);
+    } catch (err) { setBillingMsg(err.message || 'Failed'); }
+    finally { setActionLoading(''); setTimeout(() => setBillingMsg(''), 3000); }
+  };
+
   const sections = [
     { id: 'overview', label: '👤 Overview' },
     { id: 'jobs', label: `📋 Jobs (${(data.jobsAsClient?.length || 0) + (data.jobsAsFreelancer?.length || 0)})` },
     { id: 'portfolio', label: `📁 Portfolio (${u.portfolio?.length || 0})` },
     { id: 'services', label: `🛍️ Services (${data.services?.length || 0})` },
     { id: 'reviews', label: `⭐ Reviews (${data.reviews?.length || 0})` },
-    { id: 'actions', label: '⚡ Actions' }
+    { id: 'actions', label: '⚡ Actions' },
+    { id: 'billing', label: '💳 Billing' },
   ];
 
   return (
@@ -303,6 +348,82 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
               <a href={`/messages?to=${u._id}`} className="aud-action-btn primary" target="_blank" rel="noopener noreferrer">
                 💬 Send Message
               </a>
+            </div>
+          )}
+          {activeSection === 'billing' && (
+            <div className="aud-billing-section">
+              {billingLoading && <p className="aud-empty">Loading billing data…</p>}
+              {billingMsg && <div className={`aud-billing-msg ${billingMsg.includes('✅') ? 'success' : 'error'}`}>{billingMsg}</div>}
+
+              {billingData && (
+                <>
+                  {/* Current plan */}
+                  <div className="aud-billing-card">
+                    <h4>Current Plan</h4>
+                    <div className="aud-billing-row">
+                      <span>Plan</span>
+                      <strong>{billingData.subscription?.plan?.name || 'Free (default)'}</strong>
+                    </div>
+                    <div className="aud-billing-row">
+                      <span>Status</span>
+                      <strong>{billingData.subscription?.status || 'active'}</strong>
+                    </div>
+                    {billingData.subscription?.currentPeriodEnd && (
+                      <div className="aud-billing-row">
+                        <span>Renews</span>
+                        <strong>{new Date(billingData.subscription.currentPeriodEnd).toLocaleDateString()}</strong>
+                      </div>
+                    )}
+                    {billingData.subscription?.grandfathered && (
+                      <div className="aud-billing-badge">🔒 Grandfathered pricing</div>
+                    )}
+                  </div>
+
+                  {/* Grant plan */}
+                  <div className="aud-billing-card">
+                    <h4>Grant Plan</h4>
+                    <select value={grantPlanSlug} onChange={e => setGrantPlanSlug(e.target.value)} className="aud-billing-input">
+                      <option value="">Select plan…</option>
+                      <option value="freelancer_free">Freelancer Free</option>
+                      <option value="freelancer_plus">Freelancer Plus</option>
+                      <option value="freelancer_pro">Freelancer Pro</option>
+                      <option value="client_free">Client Free</option>
+                      <option value="client_plus">Client Plus</option>
+                      <option value="client_business">Client Business</option>
+                    </select>
+                    <input className="aud-billing-input" placeholder="Reason (required)" value={grantReason} onChange={e => setGrantReason(e.target.value)} />
+                    <button className="aud-action-btn primary" onClick={handleGrantPlan} disabled={!grantPlanSlug || !grantReason || actionLoading === 'grant'}>
+                      {actionLoading === 'grant' ? 'Granting…' : 'Grant Plan'}
+                    </button>
+                  </div>
+
+                  {/* Add credit */}
+                  <div className="aud-billing-card">
+                    <h4>Add Billing Credit</h4>
+                    <input className="aud-billing-input" type="number" placeholder="Amount ($)" value={creditAmount} onChange={e => setCreditAmount(e.target.value)} min="0.01" step="0.01" />
+                    <input className="aud-billing-input" placeholder="Reason (required)" value={creditReason} onChange={e => setCreditReason(e.target.value)} />
+                    <button className="aud-action-btn success" onClick={handleAddCredit} disabled={!creditAmount || !creditReason || actionLoading === 'credit'}>
+                      {actionLoading === 'credit' ? 'Adding…' : 'Add Credit'}
+                    </button>
+                  </div>
+
+                  {/* Audit log */}
+                  {billingData.auditLog?.length > 0 && (
+                    <div className="aud-billing-card">
+                      <h4>Audit Log</h4>
+                      <div className="aud-audit-list">
+                        {billingData.auditLog.slice(0, 10).map(log => (
+                          <div key={log._id} className="aud-audit-row">
+                            <span className="aud-audit-action">{log.action.replace(/_/g, ' ')}</span>
+                            <span className="aud-audit-note">{log.note || '—'}</span>
+                            <span className="aud-audit-date">{new Date(log.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
