@@ -315,13 +315,15 @@ const ServiceOrderCard = ({ item, onAction }) => {
   return (
     <div className="pm-project-card freelancer-card">
       <div className="pm-project-title-row">
-        <span className="pm-project-title">{service.title}</span>
+        <Link to={`/services/${service._id}`} className="pm-project-title" style={{ textDecoration: 'none' }}>
+          {service.title}
+        </Link>
         <span className="pm-ms-badge" style={{ color: sm.color, background: sm.bg, fontSize: '0.78rem', padding: '3px 10px' }}>
           {sm.label}
         </span>
       </div>
       <div className="pm-project-meta">
-        <span className="meta-item">📦 Package: {order.package}</span>
+        <span className="meta-item">📦 {order.package}</span>
         <span className="meta-item">💰 {fmt(order.price)}</span>
         {order.escrowAmount > 0 && <span className="meta-item" style={{ color: '#10b981' }}>🔒 Secured</span>}
       </div>
@@ -330,6 +332,14 @@ const ServiceOrderCard = ({ item, onAction }) => {
           📋 {order.requirements.slice(0, 120)}{order.requirements.length > 120 ? '…' : ''}
         </div>
       )}
+
+      {/* Pending: client hasn't paid yet — show waiting state */}
+      {order.status === 'pending' && (
+        <div className="pm-payment-pill unfunded" style={{ marginBottom: '0.5rem' }}>
+          ⏳ Waiting for client to complete payment before you can start work.
+        </div>
+      )}
+
       <div className="pm-card-actions">
         {order.status === 'in_progress' && (
           <button className="pm-btn-complete" disabled={acting}
@@ -348,6 +358,16 @@ const ServiceOrderCard = ({ item, onAction }) => {
         )}
         {order.status === 'completed' && (
           <Link to={`/services/${service._id}`} className="pm-btn-track">⭐ Leave Review</Link>
+        )}
+        {order.status === 'pending' && (
+          <button className="pm-btn-complete" disabled={acting}
+            style={{ background: '#f59e0b' }}
+            onClick={() => {
+              const msg = window.prompt("Send a reminder to the client (optional message):");
+              if (msg !== null) doAction('remind', { message: msg });
+            }}>
+            🔔 Remind Client
+          </button>
         )}
         <Link to="/messages" className="pm-btn-track">💬 Messages</Link>
       </div>

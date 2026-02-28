@@ -532,6 +532,53 @@ router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) =>
   }
 });
 
+// ── PUT /api/services/:id/orders/:orderId/remind ───────────────
+// Freelancer sends a payment reminder to the client
+router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+    if (String(service.freelancer) !== String(req.user._id)) {
+      return res.status(403).json({ error: 'Only the freelancer can send a reminder' });
+    }
+    const order = service.orders.id(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.status !== 'pending') {
+      return res.status(400).json({ error: 'Order is not awaiting payment' });
+    }
+
+    const conv = await Conversation.findOne({ service: service._id }) ||
+                 await Conversation.findOne({ participants: { $all: [service.freelancer, order.client] } });
+    if (conv) {
+      const note = req.body.message?.trim();
+      const msg = new Message({
+        conversation: conv._id,
+        sender:       req.user._id,
+        recipient:    order.client,
+        content:      `🔔 Payment Reminder\n\nHi! Just a friendly reminder that your order for "${service.title}" is awaiting payment to get started.${note ? `\n\n${note}` : ''}`,
+        messageType:  'system',
+        metadata: { type: 'payment_reminder', serviceId: service._id, orderId: order._id }
+      });
+      await msg.save();
+      conv.lastMessage = msg._id;
+      await conv.updateLastActivity();
+    }
+
+    await Notification.create({
+      recipient:  order.client,
+      type:       'new_order',
+      title:      'Payment reminder',
+      message:    `Your order for "${service.title}" is awaiting payment.`,
+      actionUrl:  `/services/${service._id}`,
+    });
+
+    res.json({ message: 'Reminder sent' });
+  } catch (err) {
+    console.error('Error sending reminder:', err);
+    res.status(500).json({ error: 'Failed to send reminder' });
+  }
+});
+
 // ── GET /api/services/:id/orders/:orderId ──────────────────────
 router.get('/:id/orders/:orderId', authenticateToken, async (req, res) => {
   try {
