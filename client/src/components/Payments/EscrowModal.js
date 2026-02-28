@@ -23,7 +23,7 @@ const CARD_BRANDS = {
  *   preloadedSecret — if provided, skips the init step (service order flow)
  *   title           — optional modal title override
  */
-const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title }) => {
+const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, returnUrl }) => {
   const [clientSecret,  setClientSecret]  = useState(preloadedSecret || null);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState('');
@@ -194,7 +194,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title }) =
                 amount={Number(amount)}
                 jobTitle={job.title}
                 jobId={job._id}
-                returnUrl={window.location.href}
+                returnUrl={returnUrl || window.location.href}
                 onSuccess={handleSuccess}
                 onCancel={onClose}
               />

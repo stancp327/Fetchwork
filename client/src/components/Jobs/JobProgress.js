@@ -55,10 +55,14 @@ const JobProgress = () => {
   useEffect(() => { fetchProgress(); }, [fetchProgress]);
 
   // Handle 3DS / redirect-based payment return.
-  // IMPORTANT: never trust URL params alone — verify actual PI status with Stripe via backend.
+  // Covers both main job payment AND per-milestone payments.
+  // IMPORTANT: never trust URL params alone — verify with Stripe via backend.
   useEffect(() => {
     const redirectStatus = searchParams.get('redirect_status');
     const legacySuccess  = searchParams.get('payment') === 'success';
+    const msIndex        = searchParams.get('ms_index'); // milestone index (3DS path)
+    const msPi           = searchParams.get('ms_pi');   // milestone payment intent ID
+
     if (!redirectStatus && !legacySuccess) return;
 
     // Clean URL immediately so a refresh doesn't re-trigger
@@ -70,7 +74,18 @@ const JobProgress = () => {
     }
 
     if (redirectStatus === 'succeeded' || legacySuccess) {
-      // Verify actual status from Stripe — don't trust the URL param alone
+      // ── Milestone 3DS path ───────────────────────────────────
+      if (msIndex !== null && msPi) {
+        apiRequest(`/api/jobs/${id}/milestones/${msIndex}/fund/confirm`, {
+          method: 'POST',
+          body: JSON.stringify({ paymentIntentId: msPi }),
+        })
+          .then(() => { setPaymentConfirmed(true); fetchProgress(); })
+          .catch(() => { setPaymentConfirmed(true); fetchProgress(); }); // optimistic
+        return;
+      }
+
+      // ── Main job payment path ────────────────────────────────
       apiRequest(`/api/payments/verify-intent/${id}`)
         .then(verify => {
           if (verify.funded) {
@@ -81,7 +96,6 @@ const JobProgress = () => {
           }
         })
         .catch(() => {
-          // Verify call failed (network/auth issue) — optimistic fallback
           setPaymentConfirmed(true);
           fetchProgress();
         });
@@ -136,11 +150,13 @@ const JobProgress = () => {
     try {
       const result = await apiRequest(`/api/jobs/${id}/milestones/${milestoneIndex}/fund`, { method: 'POST' });
       setMilestonePay({
-        index:        milestoneIndex,
-        clientSecret: result.clientSecret,
-        title:        result.milestoneTitle,
-        amount:       result.amount,
+        index:           milestoneIndex,
+        clientSecret:    result.clientSecret,
+        title:           result.milestoneTitle,
+        amount:          result.amount,
         paymentIntentId: result.paymentIntentId,
+        // Encode milestone index + PI ID into return URL so 3DS redirects can confirm
+        returnUrl: `${window.location.origin}/jobs/${id}/progress?ms_index=${milestoneIndex}&ms_pi=${result.paymentIntentId}&redirect_status=succeeded`,
       });
     } catch (err) {
       alert(err.message || 'Failed to initialize milestone payment');
@@ -245,6 +261,8 @@ const JobProgress = () => {
           );
         }
         if (isClient && escrow === 0 && job?.freelancer) {
+          // Jobs with milestones use per-milestone payments — skip the top-level banner
+          if (milestones.length > 0) return null;
           return (
             <div className="jp-payment-banner jp-payment-unfunded">
               <div>
@@ -382,12 +400,12 @@ const JobProgress = () => {
                       )}
 
                       {/* Payment actions */}
-                      {isClient && !m.escrowAmount && m.status !== 'approved' && (
+                      {isClient && !m.escrowAmount && !m.releasedAt && m.status !== 'approved' && (
                         <button className="jp-btn-sm secure" onClick={() => handleFundMilestone(i)}>
                           🔒 Fund Milestone
                         </button>
                       )}
-                      {isClient && m.escrowAmount > 0 && ['completed'].includes(m.status) && (
+                      {isClient && m.escrowAmount > 0 && ['completed', 'approved'].includes(m.status) && !m.releasedAt && (
                         <button
                           className="jp-btn-sm release"
                           disabled={msReleasing === i}
@@ -474,6 +492,7 @@ const JobProgress = () => {
           amount={milestonePay.amount}
           preloadedSecret={milestonePay.clientSecret}
           title={`Fund Milestone — ${milestonePay.title}`}
+          returnUrl={milestonePay.returnUrl}
           onClose={() => setMilestonePay(null)}
           onPaid={handleMilestonePaymentSuccess}
         />
