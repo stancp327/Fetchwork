@@ -9,6 +9,7 @@ const { validateRegister, validateLogin } = require('../middleware/validation');
 const { body } = require('express-validator');
 const { ADMIN_EMAILS, JWT_SECRET, CLIENT_URL } = require('../config/env');
 const { trackEvent } = require('../middleware/analytics');
+const { assignDefaultPlan } = require('../utils/billingUtils');
 
 // ── Register ────────────────────────────────────────────────────
 router.post('/register', validateRegister, async (req, res) => {
@@ -40,7 +41,11 @@ router.post('/register', validateRegister, async (req, res) => {
       }
       throw error;
     }
-    
+
+    // Assign default (free) billing plan — non-fatal if plans not seeded yet
+    const planAudience = (accountType === 'client') ? 'client' : 'freelancer';
+    assignDefaultPlan(user._id, planAudience).catch(() => {});
+
     try {
       const emailService = require('../services/emailService');
       const emailWorkflowService = require('../services/emailWorkflowService');

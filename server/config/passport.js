@@ -2,6 +2,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const User = require('../models/User');
+const { assignDefaultPlan } = require('../utils/billingUtils');
 
 function configurePassport() {
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
@@ -41,6 +42,7 @@ function configurePassport() {
         });
         
         await user.save();
+        assignDefaultPlan(user._id, 'freelancer').catch(() => {});
         return done(null, user);
       } catch (error) {
         return done(error, null);
@@ -89,6 +91,7 @@ function configurePassport() {
         });
         
         await user.save();
+        assignDefaultPlan(user._id, 'freelancer').catch(() => {});
         return done(null, user);
       } catch (error) {
         return done(error, null);

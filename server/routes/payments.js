@@ -11,10 +11,24 @@ const Service = require('../models/Service');
 const { Message, Conversation } = require('../models/Message');
 const Notification = require('../models/Notification');
 
-// ── Helper: calculate platform fee ─────────────────────────────
-function calcPlatformFee(amount) {
-  // 10% remote commission — will be plan-aware once monetization is built
-  return Math.round(amount * 0.10 * 100) / 100;
+const { getFee } = require('../services/feeEngine');
+
+// ── Helper: calculate platform fee (plan-aware) ─────────────────
+// role: 'client' | 'freelancer'
+// jobType derived from job.location.locationType
+function resolveJobType(job) {
+  const t = job?.location?.locationType;
+  return (t === 'remote') ? 'remote' : 'local';
+}
+
+async function calcPlatformFee(userId, role, job, amount) {
+  try {
+    const result = await getFee({ userId, role, jobType: resolveJobType(job), amount });
+    return result.fee;
+  } catch {
+    // Fallback to flat 10% if fee engine errors
+    return Math.round(amount * 0.10 * 100) / 100;
+  }
 }
 
 // ── GET /api/payments/status ────────────────────────────────────
@@ -220,7 +234,7 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Secure Payment already active for this job' });
     }
 
-    const platformFee = calcPlatformFee(amount);
+    const platformFee = await calcPlatformFee(req.user.userId, 'client', job, amount);
     const metadata = {
       jobId:        String(jobId),
       clientId:     String(req.user.userId),
@@ -326,7 +340,9 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
 
     const amount    = job.escrowAmount;
     const waived    = freelancer.isFeeWaived();
-    const platformFee = waived ? 0 : (escrowPayment?.platformFee || calcPlatformFee(amount));
+    const platformFee = waived ? 0 : (escrowPayment?.platformFee || await calcPlatformFee(
+      String(job.freelancer?._id || job.freelancer), 'freelancer', job, amount
+    ));
     const payoutAmt   = amount - platformFee;
 
     // Consume one fee-waiver job credit
