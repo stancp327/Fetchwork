@@ -31,16 +31,17 @@ class AppErrorBoundary extends React.Component {
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', minHeight: '50vh', padding: '2rem', textAlign: 'center'
         }}>
-          <h2 style={{ marginBottom: '1rem', color: '#333' }}>Something went wrong</h2>
-          <p style={{ color: '#666', marginBottom: '1.5rem', maxWidth: '400px' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💥</div>
+          <h2 style={{ marginBottom: '0.75rem', color: 'var(--color-text-dark, #1e293b)' }}>Something went wrong</h2>
+          <p style={{ color: 'var(--color-text-secondary, #6b7280)', marginBottom: '1.5rem', maxWidth: '400px', lineHeight: 1.6 }}>
             An unexpected error occurred. Our team has been notified.
           </p>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               onClick={this.handleRetry}
               style={{
-                padding: '0.6rem 1.5rem', background: '#2196f3', color: 'white',
-                border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 500
+                padding: '0.55rem 1.25rem', background: 'var(--color-primary, #2563eb)', color: 'white',
+                border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem'
               }}
             >
               Try Again
@@ -48,8 +49,8 @@ class AppErrorBoundary extends React.Component {
             <button
               onClick={() => window.location.href = '/dashboard'}
               style={{
-                padding: '0.6rem 1.5rem', background: '#f5f5f5', color: '#333',
-                border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontWeight: 500
+                padding: '0.55rem 1.25rem', background: 'var(--color-bg-muted, #f3f4f6)', color: 'var(--color-text, #374151)',
+                border: '1px solid var(--color-border, #e5e7eb)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, fontSize: '0.875rem'
               }}
             >
               Go to Dashboard

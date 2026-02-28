@@ -2,6 +2,7 @@ import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppErrorBoundary from './components/common/AppErrorBoundary';
+import RouteErrorBoundary from './components/common/RouteErrorBoundary';
 import { setupGlobalErrorHandlers } from './utils/errorReporter';
 import { RoleProvider } from './context/RoleContext';
 import { MessagingProvider } from './context/MessagingContext';
@@ -174,6 +175,7 @@ function AppContent() {
           <p>Loading...</p>
         </div>
       }>
+        <RouteErrorBoundary>
         <Routes>
           <Route path="/login" element={
             <PublicRoute>
@@ -323,6 +325,7 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>
+        </RouteErrorBoundary>
       </Suspense>
       <Footer />
     </div>
