@@ -1,7 +1,9 @@
 /**
- * archiveCrons.js — Automated archiving of stale jobs and services.
+ * archiveCrons.js — Automated archiving of stale jobs and services,
+ *                   plus auto-advancing of pending_start jobs after 24hrs.
  *
- * Runs daily at 02:00 server time.
+ * Archive cron runs daily at 02:00 server time.
+ * Pending-start auto-advance runs every hour.
  *
  * Rules:
  *   Jobs:
@@ -9,6 +11,8 @@
  *        but this cron catches any that slipped through.
  *     2. Deadline more than 14 days ago AND status is not completed/cancelled
  *        — archived as 'past_deadline'.
+ *     3. Status 'pending_start' AND pendingStartAt > 24hrs ago
+ *        — auto-advance to 'in_progress' (client didn't act in time).
  *
  *   Services:
  *     1. Not updated in 90+ days AND not already archived — archived as 'inactive'.
@@ -82,6 +86,23 @@ async function archiveStaleServices() {
   return { inactive: result.modifiedCount };
 }
 
+// ── Auto-advance pending_start jobs after 24hrs ──────────────────────────────
+async function advanceStalePendingStarts() {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const result = await Job.updateMany(
+    {
+      status:         'pending_start',
+      pendingStartAt: { $lt: cutoff }
+    },
+    {
+      $set: { status: 'in_progress', startDate: new Date() }
+    }
+  );
+
+  return { advanced: result.modifiedCount };
+}
+
 function initArchiveCrons() {
   // Run daily at 02:00
   cron.schedule('0 2 * * *', async () => {
@@ -97,7 +118,20 @@ function initArchiveCrons() {
     }
   });
 
+  // Auto-advance pending_start → in_progress every hour
+  cron.schedule('0 * * * *', async () => {
+    try {
+      const stats = await advanceStalePendingStarts();
+      if (stats.advanced > 0) {
+        console.log(`[pending-start-cron] Auto-advanced ${stats.advanced} job(s) to in_progress`);
+      }
+    } catch (err) {
+      console.error('[pending-start-cron] Error:', err.message);
+    }
+  });
+
   console.log('[archive-cron] Scheduled — daily at 02:00');
+  console.log('[pending-start-cron] Scheduled — hourly');
 }
 
-module.exports = { initArchiveCrons, archiveStaleJobs, archiveStaleServices };
+module.exports = { initArchiveCrons, archiveStaleJobs, archiveStaleServices, advanceStalePendingStarts };

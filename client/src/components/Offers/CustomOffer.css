@@ -233,3 +233,66 @@
 @media (min-width: 640px) {
   .offer-modal { margin: 2rem; max-height: 85vh; }
 }
+
+/* ── Milestone builder in CustomOfferModal ─────────────── */
+.offer-ms-toggle {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  text-align: left;
+  min-height: 44px;
+}
+.offer-ms-builder {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.offer-ms-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.offer-ms-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.82rem;
+}
+.offer-ms-amount {
+  width: 80px;
+  flex-shrink: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.82rem;
+}
+.offer-ms-remove {
+  padding: 0.25rem 0.5rem;
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm, 4px);
+  min-width: 32px;
+  min-height: 32px;
+}
+.offer-ms-add {
+  align-self: flex-start;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: none;
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  min-height: 32px;
+}

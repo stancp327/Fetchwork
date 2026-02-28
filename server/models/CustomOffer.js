@@ -25,6 +25,10 @@ const offerTermsSchema = {
     required: true,
     maxlength: [3000, 'Description cannot exceed 3000 characters']
   },
+  milestones: [{
+    title:  { type: String, trim: true },
+    amount: { type: Number, min: 0 },
+  }],
   revisions: {
     type: Number,
     default: 1,

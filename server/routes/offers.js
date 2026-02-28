@@ -131,7 +131,8 @@ router.post('/', authenticateToken, async (req, res) => {
         deliveryTime: terms.deliveryTime,
         deadline: terms.deadline || null,
         description: terms.description,
-        revisions: terms.revisions || 1
+        revisions: terms.revisions || 1,
+        milestones: terms.milestones || []
       },
       awaitingResponseFrom: recipientId,
       revisionHistory: [{
@@ -142,7 +143,8 @@ router.post('/', authenticateToken, async (req, res) => {
           deliveryTime: terms.deliveryTime,
           deadline: terms.deadline || null,
           description: terms.description,
-          revisions: terms.revisions || 1
+          revisions: terms.revisions || 1,
+          milestones: terms.milestones || []
         },
         message: message || '',
         action: 'created'
@@ -213,7 +215,8 @@ router.post('/:id/counter', authenticateToken, async (req, res) => {
       deliveryTime: terms.deliveryTime,
       deadline: terms.deadline || offer.terms.deadline,
       description: terms.description,
-      revisions: terms.revisions ?? offer.terms.revisions
+      revisions: terms.revisions ?? offer.terms.revisions,
+      milestones: terms.milestones || offer.terms.milestones || []
     }, message);
 
     const populated = await CustomOffer.findById(offer._id)

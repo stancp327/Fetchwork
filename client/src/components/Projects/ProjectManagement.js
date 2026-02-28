@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
 import { categoryLabelMap } from '../../utils/categories';
 import EscrowModal from '../Payments/EscrowModal';
@@ -8,7 +9,9 @@ import './ProjectManagement.css';
 
 // ── Helpers ─────────────────────────────────────────────────────
 const STATUS_LABELS = {
-  draft: 'Draft', open: 'Open', in_progress: 'In Progress',
+  draft: 'Draft', open: 'Open',
+  accepted: 'Accepted', pending_start: 'Awaiting Start',
+  in_progress: 'In Progress',
   completed: 'Completed', cancelled: 'Cancelled', disputed: 'Disputed',
 };
 
@@ -533,7 +536,7 @@ const FreelancerInProgressHeader = ({ job }) => {
 };
 
 // ── Project Card ────────────────────────────────────────────────
-const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onFundMilestone, onReleaseMilestone, onProposeMilestones, onRefresh }) => {
+const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onFundMilestone, onReleaseMilestone, onProposeMilestones, onStartJob, onBeginJob, onRefresh }) => {
   const navigate = useNavigate();
   const budget       = job.budget || {};
   const status       = job.status || 'draft';
@@ -556,6 +559,23 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
 
   const escrow   = job.escrowAmount || 0;
   const totalPaid = job.totalPaid || 0;
+
+  // ── Pending-start inline milestone editor (client only) ──
+  const [pendingMilestones, setPendingMilestones] = useState(
+    milestones.length > 0
+      ? milestones.map(m => ({ title: m.title, amount: m.amount, description: m.description || '' }))
+      : [{ title: '', amount: '' }]
+  );
+  const addPendingMs = () => setPendingMilestones(prev => [...prev, { title: '', amount: '' }]);
+  const removePendingMs = (i) => setPendingMilestones(prev => prev.filter((_, idx) => idx !== i));
+  const updatePendingMs = (i, field, val) =>
+    setPendingMilestones(prev => prev.map((m, idx) => idx === i ? { ...m, [field]: val } : m));
+
+  // Countdown for pending_start
+  const pendingStartAt = job.pendingStartAt ? new Date(job.pendingStartAt) : null;
+  const hoursLeft = pendingStartAt
+    ? Math.max(0, Math.round((pendingStartAt.getTime() + 24 * 3600 * 1000 - Date.now()) / 3600000))
+    : null;
 
   return (
     <div className={`pm-project-card ${isFreelancer ? 'freelancer-card' : ''} ${isArchived ? 'pm-archived' : ''}`}>
@@ -685,6 +705,92 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
       {/* Applicant preview (client only, open jobs) */}
       {isClient && status === 'open' && (
         <ApplicantPreview proposals={job.proposals || []} jobId={job._id} />
+      )}
+
+      {/* ── Accepted: freelancer ready to start ────────────── */}
+      {isFreelancer && status === 'accepted' && (
+        <div className="pm-pending-start-box freelancer">
+          <div className="pm-pending-start-icon">🎉</div>
+          <div>
+            <strong>Proposal accepted!</strong>
+            <p className="pm-pending-start-hint">Click "Start Job" when you're ready. The client will have 24 hours to review milestones and approve.</p>
+          </div>
+          <button className="pm-btn-start-job" onClick={() => onStartJob && onStartJob(job._id)}>
+            🚀 Start Job
+          </button>
+        </div>
+      )}
+
+      {/* ── Pending start: client approves, may add milestones ── */}
+      {isClient && status === 'pending_start' && (
+        <div className="pm-pending-start-box client">
+          <div className="pm-pending-start-header">
+            <span className="pm-pending-start-icon">⏳</span>
+            <div>
+              <strong>Freelancer is ready to start</strong>
+              {hoursLeft !== null && (
+                <span className="pm-pending-start-countdown">
+                  {hoursLeft > 0 ? ` — ${hoursLeft}h left to approve` : ' — Auto-starting soon'}
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="pm-pending-start-hint">Review or add milestones below, then approve to kick off the work.</p>
+
+          {/* Inline milestone editor */}
+          <div className="pm-pending-ms-editor">
+            <div className="pm-pending-ms-label">Milestones <span className="pm-pending-ms-optional">(optional)</span></div>
+            {pendingMilestones.map((m, i) => (
+              <div key={i} className="pm-pending-ms-row">
+                <input
+                  className="pm-pending-ms-title"
+                  placeholder="Milestone title"
+                  value={m.title}
+                  onChange={e => updatePendingMs(i, 'title', e.target.value)}
+                />
+                <input
+                  className="pm-pending-ms-amount"
+                  type="number"
+                  placeholder="$"
+                  min="0"
+                  value={m.amount}
+                  onChange={e => updatePendingMs(i, 'amount', e.target.value)}
+                />
+                {pendingMilestones.length > 1 && (
+                  <button className="pm-pending-ms-remove" onClick={() => removePendingMs(i)}>✕</button>
+                )}
+              </div>
+            ))}
+            <button className="pm-pending-ms-add" onClick={addPendingMs}>+ Add milestone</button>
+          </div>
+
+          <button
+            className="pm-btn-begin-job"
+            onClick={() => {
+              const validMilestones = pendingMilestones.filter(m => m.title.trim());
+              onBeginJob && onBeginJob(job._id, validMilestones.length > 0 ? validMilestones : []);
+            }}
+          >
+            ✅ Approve & Start Job
+          </button>
+        </div>
+      )}
+
+      {/* ── Pending start: freelancer waiting ───────────────── */}
+      {isFreelancer && status === 'pending_start' && (
+        <div className="pm-pending-start-box freelancer waiting">
+          <span className="pm-pending-start-icon">⏳</span>
+          <div>
+            <strong>Waiting for client approval</strong>
+            {hoursLeft !== null && (
+              <p className="pm-pending-start-hint">
+                {hoursLeft > 0
+                  ? `Client has ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''} to approve or add milestones.`
+                  : 'Auto-approving shortly — job will begin very soon.'}
+              </p>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Footer actions */}
@@ -817,21 +923,24 @@ const ServiceOrderCard = ({ item, onAction }) => {
 
 // ── Tab definitions per role ──────────────────────────────────────
 const CLIENT_TABS = [
-  { key: 'open',        label: 'Open Jobs' },      // posted, collecting proposals
-  { key: 'in_progress', label: 'In Progress' },    // hired, work underway
-  { key: 'completed',   label: 'Completed' },
+  { key: 'open',           label: 'Open Jobs' },       // posted, collecting proposals
+  { key: 'awaiting_start', label: 'Awaiting Start' },  // freelancer accepted, start approval window
+  { key: 'in_progress',    label: 'In Progress' },     // hired, work underway
+  { key: 'completed',      label: 'Completed' },
 ];
 
 const FREELANCER_TABS = [
-  { key: 'in_progress',   label: 'Active Work' },  // jobs I'm working on
-  { key: 'proposals',     label: 'Proposals Sent' },
+  { key: 'awaiting_start', label: 'Accepted' },       // proposal accepted, pending start
+  { key: 'in_progress',    label: 'Active Work' },    // jobs I'm working on
+  { key: 'proposals',      label: 'Proposals Sent' },
   { key: 'service_orders', label: 'Service Orders' },
-  { key: 'completed',     label: 'Completed' },
+  { key: 'completed',      label: 'Completed' },
 ];
 
 // ── Main ─────────────────────────────────────────────────────────
 const ProjectManagement = () => {
   const { user } = useAuth();
+  const { currentRole, switchRole } = useRole();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Role split
@@ -842,13 +951,23 @@ const ProjectManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
 
-  // viewMode driven by ?view= URL param so dashboard links land correctly
-  const rawView   = searchParams.get('view');
-  const viewMode  = rawView === 'freelancer' ? 'freelancer' : 'client';
+  // viewMode — URL param takes priority for deep-linking, syncs to RoleContext
+  const rawView = searchParams.get('view');
+  const viewMode = rawView === 'freelancer' ? 'freelancer'
+    : rawView === 'client' ? 'client'
+    : currentRole; // fall back to global role if no URL param
   const setViewMode = (v) => {
+    switchRole(v);              // persist globally
     setSearchParams({ view: v });
     setTab(v === 'client' ? 'open' : 'in_progress');
   };
+
+  // Sync global role changes (e.g. nav toggle) to the local tab
+  useEffect(() => {
+    if (!rawView) return; // URL param in charge
+    setTab(currentRole === 'client' ? 'open' : 'in_progress');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRole]);
 
   const [tab, setTab] = useState(viewMode === 'client' ? 'open' : 'in_progress');
 
@@ -936,6 +1055,27 @@ const ProjectManagement = () => {
     } catch (err) { alert(err.message || 'Failed to update milestone'); }
   };
 
+  // ── Start Job (freelancer: accepted → pending_start) ───────
+  const handleStartJob = async (jobId) => {
+    if (!window.confirm('Signal to the client that you\'re ready to start?\nThey\'ll have 24 hours to review milestones and approve.')) return;
+    try {
+      await apiRequest(`/api/jobs/${jobId}/start`, { method: 'POST' });
+      fetchJobs();
+    } catch (err) { setError(err.message || 'Failed to start job'); }
+  };
+
+  // ── Begin Job (client: pending_start → in_progress) ────────
+  const handleBeginJob = async (jobId, milestones) => {
+    if (!window.confirm('Approve the start of this job? Work will begin immediately.')) return;
+    try {
+      await apiRequest(`/api/jobs/${jobId}/begin`, {
+        method: 'POST',
+        body: JSON.stringify({ milestones: milestones || [] })
+      });
+      fetchJobs();
+    } catch (err) { setError(err.message || 'Failed to begin job'); }
+  };
+
   // ── Milestone change modal ─────────────────────────────────
   const [msModalJob, setMsModalJob] = useState(null);
 
@@ -985,16 +1125,18 @@ const ProjectManagement = () => {
   );
 
   const clientCounts = {
-    open:        clientJobs.filter(j => j.status === 'open').length,
-    in_progress: clientJobs.filter(j => j.status === 'in_progress').length,
-    completed:   clientJobs.filter(j => j.status === 'completed').length,
+    open:           clientJobs.filter(j => j.status === 'open').length,
+    awaiting_start: clientJobs.filter(j => ['accepted', 'pending_start'].includes(j.status)).length,
+    in_progress:    clientJobs.filter(j => j.status === 'in_progress').length,
+    completed:      clientJobs.filter(j => j.status === 'completed').length,
   };
 
   const freelancerCounts = {
-    in_progress:   freelancerJobs.filter(j => j.status === 'in_progress').length,
-    proposals:     proposalJobs.length,
+    awaiting_start: freelancerJobs.filter(j => ['accepted', 'pending_start'].includes(j.status)).length,
+    in_progress:    freelancerJobs.filter(j => j.status === 'in_progress').length,
+    proposals:      proposalJobs.length,
     service_orders: serviceOrders.filter(s => !['completed', 'cancelled'].includes(s.order.status)).length,
-    completed:     freelancerJobs.filter(j => j.status === 'completed').length,
+    completed:      freelancerJobs.filter(j => j.status === 'completed').length,
   };
 
   const counts = isClientView ? clientCounts : freelancerCounts;
@@ -1003,7 +1145,9 @@ const ProjectManagement = () => {
     ? proposalJobs
     : tab === 'service_orders'
       ? []
-      : displayJobs.filter(j => j.status === tab);
+      : tab === 'awaiting_start'
+        ? displayJobs.filter(j => ['accepted', 'pending_start'].includes(j.status))
+        : displayJobs.filter(j => j.status === tab);
 
   const hasContent = isClientView
     ? (clientJobs.length > 0)
@@ -1013,17 +1157,17 @@ const ProjectManagement = () => {
 
   // ── Stat definitions per view ─────────────────────────────────
   const clientStats = [
-    { label: 'Open Jobs',    value: clientCounts.open,        color: '#f59e0b', tab: 'open' },
-    { label: 'In Progress',  value: clientCounts.in_progress, color: '#2563eb', tab: 'in_progress' },
-    { label: 'Proposals In', value: pendingProposalsCount,    color: '#ef4444', tab: 'open' },
-    { label: 'Completed',    value: clientCounts.completed,   color: '#10b981', tab: 'completed' },
+    { label: 'Open Jobs',      value: clientCounts.open,           color: '#f59e0b', tab: 'open' },
+    { label: 'Awaiting Start', value: clientCounts.awaiting_start, color: '#8b5cf6', tab: 'awaiting_start' },
+    { label: 'In Progress',    value: clientCounts.in_progress,    color: '#2563eb', tab: 'in_progress' },
+    { label: 'Completed',      value: clientCounts.completed,      color: '#10b981', tab: 'completed' },
   ];
 
   const freelancerStats = [
-    { label: 'Active Work',     value: freelancerCounts.in_progress,   color: '#2563eb', tab: 'in_progress' },
-    { label: 'Proposals Sent',  value: freelancerCounts.proposals,      color: '#8b5cf6', tab: 'proposals' },
-    { label: 'Service Orders',  value: freelancerCounts.service_orders, color: '#f59e0b', tab: 'service_orders' },
-    { label: 'Completed',       value: freelancerCounts.completed,      color: '#10b981', tab: 'completed' },
+    { label: 'Accepted',        value: freelancerCounts.awaiting_start, color: '#8b5cf6', tab: 'awaiting_start' },
+    { label: 'Active Work',     value: freelancerCounts.in_progress,    color: '#2563eb', tab: 'in_progress' },
+    { label: 'Proposals Sent',  value: freelancerCounts.proposals,       color: '#7c3aed', tab: 'proposals' },
+    { label: 'Service Orders',  value: freelancerCounts.service_orders,  color: '#f59e0b', tab: 'service_orders' },
   ];
 
   const activeStats = isClientView ? clientStats : freelancerStats;
@@ -1133,6 +1277,18 @@ const ProjectManagement = () => {
               <Link to="/jobs/post" className="pm-btn-browse">Post a Job</Link>
             </>
           )}
+          {tab === 'awaiting_start' && isClientView && (
+            <>
+              <p><strong>No jobs awaiting start</strong></p>
+              <p>When a freelancer signals they're ready to start, it'll appear here for your approval.</p>
+            </>
+          )}
+          {tab === 'awaiting_start' && !isClientView && (
+            <>
+              <p><strong>No accepted jobs yet</strong></p>
+              <p>When a client accepts your proposal, you'll see it here. Hit "Start Job" to begin.</p>
+            </>
+          )}
           {tab === 'in_progress' && isClientView && (
             <>
               <p><strong>No jobs in progress</strong></p>
@@ -1174,6 +1330,8 @@ const ProjectManagement = () => {
               onFundMilestone={handleFundMilestone}
               onReleaseMilestone={handleReleaseMilestone}
               onProposeMilestones={setMsModalJob}
+              onStartJob={handleStartJob}
+              onBeginJob={handleBeginJob}
               onRefresh={fetchJobs}
             />
           ))}

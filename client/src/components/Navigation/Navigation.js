@@ -79,7 +79,7 @@ const Navigation = () => {
           <div className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
             {/* Mobile-only: role switcher + close */}
             <div className="mobile-nav-header">
-              {isAuthenticated && (user?.accountType === 'freelancer' || user?.accountType === 'both') && (
+              {isAuthenticated && (
                 <div className="mobile-role-switcher">
                   <button
                     className={`role-pill ${currentRole === 'freelancer' ? 'active' : ''}`}
@@ -191,7 +191,7 @@ const Navigation = () => {
           </div>
 
           {/* Desktop role switcher */}
-          {isAuthenticated && (user?.accountType === 'freelancer' || user?.accountType === 'both') && (
+          {isAuthenticated && (
             <div className="desktop-role-switcher">
               <div className="role-toggle">
                 <button

@@ -641,6 +641,101 @@ router.post('/:id/proposals/:proposalId/decline', authenticateToken, validateMon
   }
 });
 
+// POST /api/jobs/:id/start — freelancer signals ready to start (accepted → pending_start)
+router.post('/:id/start', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('client', 'firstName lastName')
+      .populate('freelancer', 'firstName lastName');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = (req.user._id || req.user.userId)?.toString();
+    const freelancerId = job.freelancer?._id?.toString() || job.freelancer?.toString();
+    if (freelancerId !== userId) {
+      return res.status(403).json({ error: 'Only the assigned freelancer can start this job' });
+    }
+    if (job.status !== 'accepted') {
+      return res.status(400).json({ error: 'Job must be in accepted state to start' });
+    }
+
+    job.status = 'pending_start';
+    job.pendingStartAt = new Date();
+    await job.save();
+
+    // Notify client
+    const Notification = require('../models/Notification');
+    const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`;
+    await Notification.create({
+      recipient: job.client._id,
+      title: 'Freelancer is ready to start',
+      message: `${freelancerName} is ready to begin "${job.title}". You have 24 hours to review milestones and approve the start.`,
+      type: 'job_started',
+      link: `/projects?view=client`
+    });
+
+    res.json({ message: 'Job start requested. Client has 24 hours to approve.', job });
+  } catch (err) {
+    console.error('Error starting job:', err);
+    res.status(500).json({ error: 'Failed to start job' });
+  }
+});
+
+// POST /api/jobs/:id/begin — client approves start (pending_start → in_progress)
+router.post('/:id/begin', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('client', 'firstName lastName')
+      .populate('freelancer', 'firstName lastName');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = (req.user._id || req.user.userId)?.toString();
+    const clientId = job.client?._id?.toString() || job.client?.toString();
+    if (clientId !== userId) {
+      return res.status(403).json({ error: 'Only the client can approve the job start' });
+    }
+    if (job.status !== 'pending_start') {
+      return res.status(400).json({ error: 'Job is not waiting for start approval' });
+    }
+
+    // Apply any new milestones from the request body (client may have added some)
+    const { milestones } = req.body;
+    if (Array.isArray(milestones) && milestones.length > 0) {
+      const existing = job.milestones || [];
+      if (existing.length === 0) {
+        milestones.forEach(m => {
+          job.milestones.push({
+            title: m.title,
+            description: m.description || '',
+            amount: Number(m.amount) || 0,
+            dueDate: m.dueDate || undefined,
+            status: 'pending'
+          });
+        });
+      }
+    }
+
+    job.status = 'in_progress';
+    job.startDate = new Date();
+    await job.save();
+
+    // Notify freelancer
+    const Notification = require('../models/Notification');
+    const clientName = `${job.client.firstName} ${job.client.lastName}`;
+    await Notification.create({
+      recipient: job.freelancer._id,
+      title: 'Job approved — time to get to work!',
+      message: `${clientName} approved the start of "${job.title}". The job is now in progress.`,
+      type: 'job_started',
+      link: `/projects?view=freelancer`
+    });
+
+    res.json({ message: 'Job is now in progress.', job });
+  } catch (err) {
+    console.error('Error beginning job:', err);
+    res.status(500).json({ error: 'Failed to begin job' });
+  }
+});
+
 router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id).populate('client', 'firstName lastName').populate('freelancer', 'firstName lastName');

@@ -26,6 +26,20 @@ const CustomOfferModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Milestone builder
+  const [showMilestones, setShowMilestones] = useState(
+    !!(prefillTerms.milestones && prefillTerms.milestones.length > 0)
+  );
+  const [milestones, setMilestones] = useState(
+    prefillTerms.milestones?.length > 0
+      ? prefillTerms.milestones
+      : [{ title: '', amount: '' }]
+  );
+  const addMs = () => setMilestones(prev => [...prev, { title: '', amount: '' }]);
+  const removeMs = (i) => setMilestones(prev => prev.filter((_, idx) => idx !== i));
+  const updateMs = (i, field, val) =>
+    setMilestones(prev => prev.map((m, idx) => idx === i ? { ...m, [field]: val } : m));
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
@@ -39,6 +53,10 @@ const CustomOfferModal = ({
     setError(null);
 
     try {
+      const validMilestones = showMilestones
+        ? milestones.filter(m => m.title.trim())
+        : [];
+
       await apiRequest('/api/offers', {
         method: 'POST',
         body: JSON.stringify({
@@ -53,7 +71,8 @@ const CustomOfferModal = ({
             deadline: terms.deadline || null,
             description: terms.description,
             revisions: parseInt(terms.revisions) || 1,
-            currency: terms.currency
+            currency: terms.currency,
+            milestones: validMilestones.length > 0 ? validMilestones : undefined
           },
           message
         })
@@ -136,6 +155,43 @@ const CustomOfferModal = ({
               maxLength={3000}
               required
             />
+          </div>
+
+          {/* Milestone builder */}
+          <div className="offer-field">
+            <button
+              type="button"
+              className="offer-ms-toggle"
+              onClick={() => setShowMilestones(v => !v)}
+            >
+              {showMilestones ? '▾' : '▸'} {showMilestones ? 'Hide milestones' : '+ Propose milestones (optional)'}
+            </button>
+            {showMilestones && (
+              <div className="offer-ms-builder">
+                {milestones.map((m, i) => (
+                  <div key={i} className="offer-ms-row">
+                    <input
+                      className="offer-ms-title"
+                      placeholder="Milestone title"
+                      value={m.title}
+                      onChange={e => updateMs(i, 'title', e.target.value)}
+                    />
+                    <input
+                      className="offer-ms-amount"
+                      type="number"
+                      placeholder="$"
+                      min="0"
+                      value={m.amount}
+                      onChange={e => updateMs(i, 'amount', e.target.value)}
+                    />
+                    {milestones.length > 1 && (
+                      <button type="button" className="offer-ms-remove" onClick={() => removeMs(i)}>✕</button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" className="offer-ms-add" onClick={addMs}>+ Add milestone</button>
+              </div>
+            )}
           </div>
 
           <div className="offer-field">

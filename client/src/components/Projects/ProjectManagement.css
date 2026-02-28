@@ -1485,3 +1485,139 @@
   color: var(--color-text-muted);
   white-space: nowrap;
 }
+
+/* ── Pending/Accepted Start UI ─────────────────────────── */
+.pm-pending-start-box {
+  margin: 0.75rem 0;
+  padding: 1rem;
+  border-radius: var(--radius-md, 8px);
+  border: 1.5px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.pm-pending-start-box.freelancer {
+  background: #f0fdf4;
+  border-color: var(--color-success);
+}
+.pm-pending-start-box.freelancer.waiting {
+  background: #faf5ff;
+  border-color: #a78bfa;
+}
+.pm-pending-start-box.client {
+  background: #eff6ff;
+  border-color: var(--color-primary);
+}
+.pm-pending-start-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pm-pending-start-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.pm-pending-start-countdown {
+  font-size: 0.82rem;
+  color: var(--color-warning, #f59e0b);
+  font-weight: 600;
+}
+.pm-pending-start-hint {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 0.25rem 0 0;
+}
+
+/* Inline milestone editor */
+.pm-pending-ms-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.pm-pending-ms-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.pm-pending-ms-optional {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+.pm-pending-ms-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.pm-pending-ms-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.82rem;
+  background: var(--color-bg);
+}
+.pm-pending-ms-amount {
+  width: 80px;
+  flex-shrink: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.82rem;
+  background: var(--color-bg);
+}
+.pm-pending-ms-remove {
+  padding: 0.25rem 0.5rem;
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm, 4px);
+  min-width: 32px;
+  min-height: 32px;
+}
+.pm-pending-ms-add {
+  align-self: flex-start;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: none;
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  min-height: 32px;
+}
+
+/* Action buttons */
+.pm-btn-start-job {
+  align-self: flex-start;
+  padding: 0.55rem 1.1rem;
+  background: var(--color-success, #10b981);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.pm-btn-start-job:hover {
+  filter: brightness(0.92);
+}
+.pm-btn-begin-job {
+  padding: 0.55rem 1.1rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  align-self: flex-start;
+}
+.pm-btn-begin-job:hover {
+  background: var(--color-primary-dark, #1d4ed8);
+}
