@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from '../context/AuthContext';
 import JobCard from '../components/Jobs/JobCard';
 
 const mockNavigate = jest.fn();
@@ -36,9 +37,11 @@ const mockJob = {
 
 const renderJobCard = (job = mockJob) => {
   return render(
-    <BrowserRouter>
-      <JobCard job={job} />
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <JobCard job={job} />
+      </BrowserRouter>
+    </AuthProvider>
   );
 };
 
