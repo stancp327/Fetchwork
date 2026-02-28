@@ -130,40 +130,93 @@ const StepDetails = ({ data, onChange, errors }) => (
   </div>
 );
 
-const StepPricing = ({ data, onChange, errors }) => (
-  <div className="wizard-step-content">
-    <h2>Pricing</h2>
-    <p className="wizard-tip">💡 Start with a basic package. You can add more tiers later.</p>
-
-    <div className="pricing-card">
-      <h3>Basic Package</h3>
+const PackageTierForm = ({ prefix, label, data, onChange, errors, required, badge }) => (
+  <div className={`pricing-card pricing-card-${prefix}`}>
+    <div className="pkg-card-header">
+      <h3>{label} {badge && <span className="pkg-badge">{badge}</span>}</h3>
+    </div>
+    <div className="wiz-field">
+      <label>Package Title {required && '*'}</label>
+      <input
+        type="text"
+        value={data[`${prefix}Title`]}
+        onChange={e => onChange(`${prefix}Title`, e.target.value)}
+        placeholder={prefix === 'basic' ? 'e.g. Starter Package' : prefix === 'standard' ? 'e.g. Standard Package' : 'e.g. Premium Package'}
+      />
+      {errors[`${prefix}Title`] && <span className="wiz-error">{errors[`${prefix}Title`]}</span>}
+    </div>
+    <div className="wiz-field">
+      <label>What's Included {required && '*'}</label>
+      <textarea
+        rows={3}
+        value={data[`${prefix}Description`]}
+        onChange={e => onChange(`${prefix}Description`, e.target.value)}
+        placeholder="Describe what's included in this package..."
+      />
+      {errors[`${prefix}Description`] && <span className="wiz-error">{errors[`${prefix}Description`]}</span>}
+    </div>
+    <div className="wiz-row wiz-row-3">
       <div className="wiz-field">
-        <label>Package Title *</label>
-        <input type="text" value={data.basicTitle} onChange={e => onChange('basicTitle', e.target.value)} placeholder="e.g. Starter Website" />
-        {errors.basicTitle && <span className="wiz-error">{errors.basicTitle}</span>}
+        <label>Price ($) {required && '*'}</label>
+        <input type="number" value={data[`${prefix}Price`]} onChange={e => onChange(`${prefix}Price`, e.target.value)} placeholder="25" min="5" step="0.01" />
+        {errors[`${prefix}Price`] && <span className="wiz-error">{errors[`${prefix}Price`]}</span>}
       </div>
       <div className="wiz-field">
-        <label>What's Included *</label>
-        <textarea rows={3} value={data.basicDescription} onChange={e => onChange('basicDescription', e.target.value)} placeholder="Describe what's included in this package..." />
-        {errors.basicDescription && <span className="wiz-error">{errors.basicDescription}</span>}
+        <label>Delivery (days) {required && '*'}</label>
+        <input type="number" value={data[`${prefix}DeliveryTime`]} onChange={e => onChange(`${prefix}DeliveryTime`, e.target.value)} placeholder="3" min="1" />
+        {errors[`${prefix}DeliveryTime`] && <span className="wiz-error">{errors[`${prefix}DeliveryTime`]}</span>}
       </div>
-      <div className="wiz-row wiz-row-3">
-        <div className="wiz-field">
-          <label>Price ($) *</label>
-          <input type="number" value={data.basicPrice} onChange={e => onChange('basicPrice', e.target.value)} placeholder="25" min="5" step="0.01" />
-          {errors.basicPrice && <span className="wiz-error">{errors.basicPrice}</span>}
-        </div>
-        <div className="wiz-field">
-          <label>Delivery (days) *</label>
-          <input type="number" value={data.basicDeliveryTime} onChange={e => onChange('basicDeliveryTime', e.target.value)} placeholder="3" min="1" />
-          {errors.basicDeliveryTime && <span className="wiz-error">{errors.basicDeliveryTime}</span>}
-        </div>
-        <div className="wiz-field">
-          <label>Revisions</label>
-          <input type="number" value={data.basicRevisions} onChange={e => onChange('basicRevisions', e.target.value)} min="0" max="10" />
-        </div>
+      <div className="wiz-field">
+        <label>Revisions</label>
+        <input type="number" value={data[`${prefix}Revisions`]} onChange={e => onChange(`${prefix}Revisions`, e.target.value)} min="0" max="20" />
       </div>
     </div>
+  </div>
+);
+
+const StepPricing = ({ data, onChange, errors }) => (
+  <div className="wizard-step-content">
+    <h2>Pricing &amp; Packages</h2>
+    <p className="wizard-tip">💡 The Basic package is required. Standard and Premium are optional but help you earn more by offering tiers.</p>
+
+    <PackageTierForm
+      prefix="basic" label="Basic Package" badge="Required"
+      data={data} onChange={onChange} errors={errors} required
+    />
+
+    {/* Standard toggle */}
+    {!data.standardEnabled ? (
+      <button type="button" className="pkg-add-btn" onClick={() => onChange('standardEnabled', true)}>
+        ✨ Add Standard Package <span className="pkg-add-hint">— offer more features at a higher price</span>
+      </button>
+    ) : (
+      <div style={{ position: 'relative' }}>
+        <PackageTierForm
+          prefix="standard" label="Standard Package" badge="Optional"
+          data={data} onChange={onChange} errors={errors}
+        />
+        <button type="button" className="pkg-remove-btn" onClick={() => { onChange('standardEnabled', false); }}>
+          Remove
+        </button>
+      </div>
+    )}
+
+    {/* Premium toggle — only show if standard is enabled */}
+    {data.standardEnabled && (!data.premiumEnabled ? (
+      <button type="button" className="pkg-add-btn" onClick={() => onChange('premiumEnabled', true)}>
+        🌟 Add Premium Package <span className="pkg-add-hint">— your best offer, highest price</span>
+      </button>
+    ) : (
+      <div style={{ position: 'relative' }}>
+        <PackageTierForm
+          prefix="premium" label="Premium Package" badge="Optional"
+          data={data} onChange={onChange} errors={errors}
+        />
+        <button type="button" className="pkg-remove-btn" onClick={() => onChange('premiumEnabled', false)}>
+          Remove
+        </button>
+      </div>
+    ))}
   </div>
 );
 
@@ -236,6 +289,24 @@ const StepReview = ({ data }) => (
         <div className="review-row"><span>Delivery:</span><span>{data.basicDeliveryTime ? `${data.basicDeliveryTime} days` : '—'}</span></div>
         <div className="review-row"><span>Revisions:</span><span>{data.basicRevisions}</span></div>
       </div>
+      {data.standardEnabled && data.standardTitle && (
+        <div className="review-section">
+          <h4>Standard Package</h4>
+          <div className="review-row"><span>Title:</span><span>{data.standardTitle}</span></div>
+          <div className="review-row"><span>Price:</span><span>{data.standardPrice ? `$${data.standardPrice}` : '—'}</span></div>
+          <div className="review-row"><span>Delivery:</span><span>{data.standardDeliveryTime ? `${data.standardDeliveryTime} days` : '—'}</span></div>
+          <div className="review-row"><span>Revisions:</span><span>{data.standardRevisions}</span></div>
+        </div>
+      )}
+      {data.premiumEnabled && data.premiumTitle && (
+        <div className="review-section">
+          <h4>Premium Package</h4>
+          <div className="review-row"><span>Title:</span><span>{data.premiumTitle}</span></div>
+          <div className="review-row"><span>Price:</span><span>{data.premiumPrice ? `$${data.premiumPrice}` : '—'}</span></div>
+          <div className="review-row"><span>Delivery:</span><span>{data.premiumDeliveryTime ? `${data.premiumDeliveryTime} days` : '—'}</span></div>
+          <div className="review-row"><span>Revisions:</span><span>{data.premiumRevisions}</span></div>
+        </div>
+      )}
       {data.requirements && (
         <div className="review-section">
           <h4>Requirements</h4>
@@ -256,8 +327,10 @@ const CreateService = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [data, setData] = useState({
     title: '', description: '', category: '', subcategory: '', skills: '',
-    requirements: '', basicTitle: '', basicDescription: '', basicPrice: '',
-    basicDeliveryTime: '', basicRevisions: 1, imagePreview: ''
+    requirements: '', imagePreview: '',
+    basicTitle: '', basicDescription: '', basicPrice: '', basicDeliveryTime: '', basicRevisions: 1,
+    standardEnabled: false, standardTitle: '', standardDescription: '', standardPrice: '', standardDeliveryTime: '', standardRevisions: 2,
+    premiumEnabled: false,  premiumTitle: '',  premiumDescription: '',  premiumPrice: '',  premiumDeliveryTime: '',  premiumRevisions: 3,
   });
 
   const update = (key, value) => {
@@ -302,12 +375,30 @@ const CreateService = () => {
         requirements: data.requirements.trim(),
         pricing: {
           basic: {
-            title: data.basicTitle.trim(),
-            description: data.basicDescription.trim(),
-            price: parseFloat(data.basicPrice),
+            title:        data.basicTitle.trim(),
+            description:  data.basicDescription.trim(),
+            price:        parseFloat(data.basicPrice),
             deliveryTime: parseInt(data.basicDeliveryTime),
-            revisions: parseInt(data.basicRevisions)
-          }
+            revisions:    parseInt(data.basicRevisions),
+          },
+          ...(data.standardEnabled && data.standardTitle ? {
+            standard: {
+              title:        data.standardTitle.trim(),
+              description:  data.standardDescription.trim(),
+              price:        parseFloat(data.standardPrice),
+              deliveryTime: parseInt(data.standardDeliveryTime),
+              revisions:    parseInt(data.standardRevisions),
+            }
+          } : {}),
+          ...(data.premiumEnabled && data.premiumTitle ? {
+            premium: {
+              title:        data.premiumTitle.trim(),
+              description:  data.premiumDescription.trim(),
+              price:        parseFloat(data.premiumPrice),
+              deliveryTime: parseInt(data.premiumDeliveryTime),
+              revisions:    parseInt(data.premiumRevisions),
+            }
+          } : {}),
         }
       };
 

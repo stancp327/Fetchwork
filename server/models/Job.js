@@ -106,6 +106,12 @@ const jobSchema = new mongoose.Schema({
       enum: ['pending', 'accepted', 'rejected', 'withdrawn'],
       default: 'pending'
     },
+    // Freelancer can propose milestone breakdown as part of bid
+    proposedMilestones: [{
+      title:       { type: String, required: true },
+      amount:      { type: Number, required: true, min: 0 },
+      description: String,
+    }],
     submittedAt: {
       type: Date,
       default: Date.now
@@ -305,6 +311,21 @@ jobSchema.methods.acceptProposal = async function(proposalId, freelancerId) {
   this.freelancer = freelancerId;
   this.status = 'in_progress';
   this.startDate = new Date();
+
+  // Copy freelancer-proposed milestones to job milestones (if any)
+  if (proposal.proposedMilestones && proposal.proposedMilestones.length > 0) {
+    const existing = this.milestones || [];
+    if (existing.length === 0) {
+      proposal.proposedMilestones.forEach(m => {
+        this.milestones.push({
+          title:       m.title,
+          description: m.description || '',
+          amount:      m.amount,
+          status:      'pending',
+        });
+      });
+    }
+  }
   
   this.proposals.forEach(p => {
     if (p._id.toString() !== proposalId.toString()) {

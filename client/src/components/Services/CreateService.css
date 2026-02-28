@@ -183,6 +183,61 @@
   color: #111827;
 }
 
+.pricing-card + .pricing-card,
+.pricing-card + .pkg-add-btn,
+.pkg-add-btn + .pricing-card { margin-top: 1.25rem; }
+
+.pricing-card-basic   { border-left: 4px solid #2563eb; }
+.pricing-card-standard { border-left: 4px solid #7c3aed; }
+.pricing-card-premium  { border-left: 4px solid #f59e0b; }
+
+.pkg-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+.pkg-card-header h3 { margin: 0; }
+.pkg-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.pkg-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  margin-top: 1rem;
+  transition: all 0.15s;
+  min-height: 44px;
+}
+.pkg-add-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+.pkg-add-hint { font-size: 0.8rem; opacity: 0.7; }
+
+.pkg-remove-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  min-height: 32px;
+  transition: all 0.15s;
+}
+.pkg-remove-btn:hover { background: #fee2e2; }
+
 /* ── Media Upload ─────────────────────────────────────────────── */
 .media-upload-area {
   display: flex;

@@ -33,6 +33,10 @@ const JobDetails = () => {
     attachments: []
   });
   const [selectedAttachments, setSelectedAttachments] = useState([]);
+  const [showMilestones, setShowMilestones] = useState(false);
+  const [proposedMilestones, setProposedMilestones] = useState([
+    { title: '', amount: '', description: '' }
+  ]);
 
   const API_BASE_URL = getApiBaseUrl();
 
@@ -99,6 +103,14 @@ const JobDetails = () => {
       formData.append('coverLetter', proposal.coverLetter);
       formData.append('proposedBudget', proposal.proposedBudget);
       formData.append('proposedDuration', proposal.proposedDuration);
+
+      // Attach milestone proposals if any were added
+      if (showMilestones) {
+        const validMilestones = proposedMilestones.filter(m => m.title.trim() && parseFloat(m.amount) > 0);
+        if (validMilestones.length > 0) {
+          formData.append('proposedMilestones', JSON.stringify(validMilestones));
+        }
+      }
       
       selectedAttachments.forEach(file => {
         formData.append('attachments', file);
@@ -379,6 +391,66 @@ const JobDetails = () => {
                             <option value="3+ months">3+ months</option>
                           </select>
                         </div>
+                      </div>
+
+                      {/* Optional milestone breakdown */}
+                      <div className="form-group">
+                        {!showMilestones ? (
+                          <button
+                            type="button"
+                            className="milestone-toggle-btn"
+                            onClick={() => setShowMilestones(true)}
+                          >
+                            📋 Break this into milestones <span className="ms-toggle-hint">— optional, helps build trust</span>
+                          </button>
+                        ) : (
+                          <div className="milestone-proposal-block">
+                            <div className="ms-header">
+                              <label>Proposed Milestones</label>
+                              <button type="button" className="ms-remove-all" onClick={() => setShowMilestones(false)}>Remove</button>
+                            </div>
+                            <p className="ms-tip">Break your work into clear checkpoints. Client funds each milestone separately.</p>
+                            {proposedMilestones.map((ms, i) => (
+                              <div key={i} className="ms-row">
+                                <input
+                                  type="text"
+                                  placeholder={`Milestone ${i + 1} title`}
+                                  value={ms.title}
+                                  onChange={e => {
+                                    const updated = [...proposedMilestones];
+                                    updated[i] = { ...updated[i], title: e.target.value };
+                                    setProposedMilestones(updated);
+                                  }}
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="$"
+                                  value={ms.amount}
+                                  min="1"
+                                  onChange={e => {
+                                    const updated = [...proposedMilestones];
+                                    updated[i] = { ...updated[i], amount: e.target.value };
+                                    setProposedMilestones(updated);
+                                  }}
+                                />
+                                {proposedMilestones.length > 1 && (
+                                  <button
+                                    type="button"
+                                    className="ms-delete-btn"
+                                    onClick={() => setProposedMilestones(proposedMilestones.filter((_, j) => j !== i))}
+                                  >×</button>
+                                )}
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              className="ms-add-btn"
+                              onClick={() => setProposedMilestones([...proposedMilestones, { title: '', amount: '', description: '' }])}
+                            >
+                              + Add milestone
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="form-group">

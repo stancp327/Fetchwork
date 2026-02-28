@@ -466,12 +466,26 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
       size: file.size
     })) : [];
     
+    // Parse optional proposed milestones (sent as JSON string in form data)
+    let proposedMilestones = [];
+    if (req.body.proposedMilestones) {
+      try {
+        const parsed = JSON.parse(req.body.proposedMilestones);
+        if (Array.isArray(parsed)) {
+          proposedMilestones = parsed
+            .filter(m => m.title && m.amount && parseFloat(m.amount) > 0)
+            .map(m => ({ title: String(m.title).trim(), amount: parseFloat(m.amount), description: m.description || '' }));
+        }
+      } catch (_) { /* ignore invalid JSON */ }
+    }
+
     const proposal = {
       freelancer: req.user._id,
       coverLetter,
       proposedBudget: parseFloat(proposedBudget),
       proposedDuration,
-      attachments
+      attachments,
+      ...(proposedMilestones.length > 0 ? { proposedMilestones } : {}),
     };
     
     await job.addProposal(proposal);
