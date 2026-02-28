@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../../utils/api';
-import { CATEGORIES } from '../../utils/categories';
+import CategoryCombobox from '../common/CategoryCombobox';
 import './PostJob.css';
 
 const PostJob = () => {
@@ -207,17 +207,15 @@ const PostJob = () => {
 
             <div className="form-group">
               <label htmlFor="category">Category *</label>
-              <select
-                id="category"
-                name="category"
+              <CategoryCombobox
                 value={formData.category}
-                onChange={handleInputChange}
-              >
-                <option value="">Select a category</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.icon} {cat.label}</option>
-                ))}
-              </select>
+                onChange={v => {
+                  setFormData(prev => ({ ...prev, category: v }));
+                  if (errors.category) setErrors(prev => ({ ...prev, category: '' }));
+                }}
+                placeholder="Select a category"
+                required
+              />
               {errors.category && <div className="error-text">{errors.category}</div>}
             </div>
 

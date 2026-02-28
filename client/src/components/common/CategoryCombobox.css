@@ -1,0 +1,70 @@
+/* ── CategoryCombobox — Mobile-first ─────────────────────────── */
+.cat-combo { width: 100%; }
+
+.cat-combo-select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;          /* 16px — prevents iOS zoom */
+  min-height: 44px;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  -webkit-appearance: auto;
+}
+
+.cat-combo-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Custom text input row */
+.cat-combo-custom {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cat-combo-input {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-height: 44px;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.cat-combo-input:focus {
+  outline: none;
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.cat-combo-back {
+  padding: 0 0.85rem;
+  min-height: 44px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.cat-combo-back:hover { background: #e5e7eb; }
+
+.cat-combo-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.4;
+}

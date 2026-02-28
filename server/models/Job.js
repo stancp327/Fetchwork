@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { categoryEnum } = require('../config/categories');
+// categories.js is now open-ended; no enum constraint
 const { locationSchema } = require('../config/locationSchema');
 
 const jobSchema = new mongoose.Schema({
@@ -16,8 +16,9 @@ const jobSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: true,
-    enum: categoryEnum
+    required: [true, 'Category is required'],
+    trim: true,
+    maxlength: [100, 'Category name too long']
   },
   subcategory: {
     type: String,

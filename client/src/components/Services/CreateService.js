@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
-import { categoryOptions } from '../../utils/categories';
+import CategoryCombobox from '../common/CategoryCombobox';
+import { getCategoryLabel } from '../../utils/categories';
 import './CreateService.css';
 
 const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
-
-const CATEGORIES = [
-  { value: '', label: 'Select a category' },
-  ...categoryOptions
-];
 
 // ── Stepper ─────────────────────────────────────────────────────
 const Stepper = ({ steps, current, onStepClick }) => (
@@ -47,7 +43,7 @@ const LivePreview = ({ data }) => (
           {data.description?.length > 120 ? '...' : ''}
         </p>
         {data.category && (
-          <span className="preview-tag">{CATEGORIES.find(c => c.value === data.category)?.label || data.category}</span>
+          <span className="preview-tag">{getCategoryLabel(data.category)}</span>
         )}
       </div>
       {data.basicPrice && (
@@ -114,9 +110,11 @@ const StepDetails = ({ data, onChange, errors }) => (
     <div className="wiz-row">
       <div className="wiz-field">
         <label>Category *</label>
-        <select value={data.category} onChange={e => onChange('category', e.target.value)}>
-          {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
+        <CategoryCombobox
+          value={data.category}
+          onChange={v => onChange('category', v)}
+          required
+        />
         {errors.category && <span className="wiz-error">{errors.category}</span>}
       </div>
       <div className="wiz-field">
@@ -228,7 +226,7 @@ const StepReview = ({ data }) => (
       <div className="review-section">
         <h4>Details</h4>
         <div className="review-row"><span>Title:</span><span>{data.title || '—'}</span></div>
-        <div className="review-row"><span>Category:</span><span>{CATEGORIES.find(c => c.value === data.category)?.label || '—'}</span></div>
+        <div className="review-row"><span>Category:</span><span>{data.category ? getCategoryLabel(data.category) : '—'}</span></div>
         <div className="review-row"><span>Description:</span><span>{data.description?.substring(0, 200) || '—'}{data.description?.length > 200 ? '...' : ''}</span></div>
       </div>
       <div className="review-section">

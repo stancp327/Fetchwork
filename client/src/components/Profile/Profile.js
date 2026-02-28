@@ -4,6 +4,7 @@ import { apiRequest } from '../../utils/api';
 import FileUpload from '../common/FileUpload';
 import { getLocationDisplay } from '../../utils/location';
 import PortfolioWizard from '../Portfolio/PortfolioWizard';
+import CategoryCombobox from '../common/CategoryCombobox';
 import './Profile.css';
 
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
@@ -215,16 +216,11 @@ const TabSkills = ({ data, onChange }) => {
       </div>
       <div className="prof-field" style={{ marginTop: '1.5rem' }}>
         <label>Primary Category</label>
-        <select value={data.primaryCategory || ''} onChange={e => onChange('primaryCategory', e.target.value)}>
-          <option value="">Select your main expertise</option>
-          <option value="web_development">Web Development</option>
-          <option value="mobile_development">Mobile Development</option>
-          <option value="design">Design</option>
-          <option value="writing">Writing</option>
-          <option value="marketing">Marketing</option>
-          <option value="consulting">Consulting</option>
-          <option value="other">Other</option>
-        </select>
+        <CategoryCombobox
+          value={data.primaryCategory || ''}
+          onChange={v => onChange('primaryCategory', v)}
+          placeholder="Select your main expertise"
+        />
       </div>
     </div>
   );
