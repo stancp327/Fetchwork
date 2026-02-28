@@ -24,7 +24,8 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
-    "axios": "^1.10.0"
+    "axios": "^1.10.0",
+    "msw": "^2.12.10"
   },
   "scripts": {
     "start": "react-scripts start",

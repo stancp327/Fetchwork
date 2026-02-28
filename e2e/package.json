@@ -1,0 +1,23 @@
+{
+  "name": "e2e",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  },
+  "dependencies": {
+    "wait-on": "^8.0.1"
+  },
+  "scripts": {
+    "test":      "playwright test --config playwright.config.js",
+    "test:ci":   "playwright test --config playwright.config.js --reporter=github",
+    "report":    "playwright show-report playwright-report"
+  }
+}

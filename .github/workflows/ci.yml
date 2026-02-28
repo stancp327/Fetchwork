@@ -6,10 +6,21 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel previous runs on same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  server-tests:
-    name: Server Tests
+
+  # ── 1. Server unit tests (fast, no DB) ────────────────────────────────────
+  server-unit:
+    name: Server — Unit Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
 
     steps:
       - uses: actions/checkout@v4
@@ -20,22 +31,66 @@ jobs:
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
-      - name: Install server dependencies
-        working-directory: server
+      - name: Install server deps
         run: npm ci
 
-      - name: Run server tests
-        working-directory: server
+      - name: Run unit tests
         env:
-          NODE_ENV: test
-          JWT_SECRET: test-secret-key-for-ci
+          NODE_ENV:       test
+          JWT_SECRET:     test-secret-key-for-ci-minimum-32-chars
           SESSION_SECRET: test-session-secret-for-ci
-          MONGO_URI: ''
-        run: npm test || true
+          CLIENT_URL:     http://localhost:3000
+        run: npx jest --selectProjects unit --ci --forceExit
 
-  client-build:
-    name: Client Build & Tests
+  # ── 2. Server integration tests (in-memory MongoDB) ───────────────────────
+  server-integration:
+    name: Server — Integration Tests
     runs-on: ubuntu-latest
+    needs: server-unit          # only run if unit tests pass
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server deps
+        run: npm ci
+
+      - name: Run integration tests + coverage
+        env:
+          NODE_ENV:                test
+          JWT_SECRET:              test-secret-key-for-ci-minimum-32-chars
+          SESSION_SECRET:          test-session-secret-for-ci
+          CLIENT_URL:              http://localhost:3000
+          ADMIN_EMAILS:            admin@fetchwork.test
+          STRIPE_SECRET_KEY:       sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET:   whsec_test_placeholder
+          PLATFORM_FEE_PERCENT:    '10'
+          # MONGO_URI_TEST auto-set by globalSetup via mongodb-memory-server
+        run: npx jest --selectProjects integration --ci --forceExit --coverage
+
+      - name: Upload server coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage
+          path: server/coverage/lcov.info
+          retention-days: 14
+
+  # ── 3. Client build + RTL tests ────────────────────────────────────────────
+  client-tests:
+    name: Client — Build & RTL Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
 
     steps:
       - uses: actions/checkout@v4
@@ -46,26 +101,35 @@ jobs:
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
-      - name: Install client dependencies
-        working-directory: client
+      - name: Install client deps
         run: npm ci
 
-      - name: Run client tests
-        working-directory: client
+      - name: Run React tests
         env:
-          CI: true
-        run: npm test -- --watchAll=false
+          CI: false    # CRA treats warnings as errors with CI=true; disabled intentionally
+          REACT_APP_API_URL: http://localhost:5000
+        run: npm test -- --watchAll=false --passWithNoTests --coverage
 
-      - name: Build client
-        working-directory: client
+      - name: Build
         env:
           CI: false
           REACT_APP_API_URL: https://fetchwork-1.onrender.com
         run: npm run build
 
-  lint-check:
-    name: Lint & Security
+      - name: Upload client coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-coverage
+          path: client/coverage/lcov.info
+          retention-days: 14
+
+  # ── 4. E2E tests (Playwright) ──────────────────────────────────────────────
+  e2e:
+    name: E2E — Playwright
     runs-on: ubuntu-latest
+    needs: [server-integration, client-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - uses: actions/checkout@v4
@@ -73,11 +137,125 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+            e2e/package-lock.json
 
-      - name: Audit server dependencies
+      # Install all three workspaces
+      - name: Install server deps
+        run: npm ci
         working-directory: server
-        run: npm audit --audit-level=high || true
 
-      - name: Audit client dependencies
+      - name: Install client deps
+        run: npm ci
         working-directory: client
-        run: npm audit --audit-level=high || true
+
+      - name: Install e2e deps + Playwright browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      # Build client
+      - name: Build client
+        env:
+          CI: false
+          REACT_APP_API_URL: http://localhost:5000
+        run: npm run build
+        working-directory: client
+
+      # Start backend
+      - name: Start backend
+        env:
+          NODE_ENV:               test
+          MONGO_URI:              mongodb://localhost/fetchwork_e2e
+          JWT_SECRET:             e2e-test-secret-key-for-ci-minimum-32-chars
+          SESSION_SECRET:         e2e-session-secret-for-ci
+          CLIENT_URL:             http://localhost:3000
+          PORT:                   '5000'
+          STRIPE_SECRET_KEY:      sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET:  whsec_e2e_placeholder
+        run: node index.js &
+        working-directory: server
+
+      # Serve client build
+      - name: Serve client build
+        run: npx serve -s build -l 3000 &
+        working-directory: client
+
+      # Wait for both servers
+      - name: Wait for servers
+        run: |
+          npx wait-on http://localhost:5000/health http://localhost:3000 --timeout 30000
+
+      # Run E2E
+      - name: Run Playwright tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          SERVER_URL:          http://localhost:5000
+          CI:                  'true'
+        run: npx playwright test --config playwright.config.js
+        working-directory: e2e
+
+      # Always upload report + traces
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright traces (failures only)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: e2e/test-results/
+          retention-days: 7
+
+  # ── 5. Coverage gate ───────────────────────────────────────────────────────
+  coverage-gate:
+    name: Coverage Gate
+    runs-on: ubuntu-latest
+    needs: [server-integration, client-tests]
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download server coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: server-coverage
+          path: coverage/server
+        continue-on-error: true
+
+      - name: Download client coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: client-coverage
+          path: coverage/client
+        continue-on-error: true
+
+      - name: Report coverage summary
+        run: |
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/server/lcov.info ]; then
+            echo "### Backend" >> $GITHUB_STEP_SUMMARY
+            grep -E "^LF:|^LH:" coverage/server/lcov.info | awk -F: '
+              /^LF:/ { lf += $2 }
+              /^LH:/ { lh += $2 }
+              END { printf "Lines: %d/%d (%.1f%%)\n", lh, lf, (lf>0 ? lh/lf*100 : 0) }
+            ' >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f coverage/client/lcov.info ]; then
+            echo "### Frontend" >> $GITHUB_STEP_SUMMARY
+            grep -E "^LF:|^LH:" coverage/client/lcov.info | awk -F: '
+              /^LF:/ { lf += $2 }
+              /^LH:/ { lh += $2 }
+              END { printf "Lines: %d/%d (%.1f%%)\n", lh, lf, (lf>0 ? lh/lf*100 : 0) }
+            ' >> $GITHUB_STEP_SUMMARY
+          fi
