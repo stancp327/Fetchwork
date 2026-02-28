@@ -19,8 +19,9 @@ router.get('/', async (req, res) => {
     const skip = (page - 1) * limit;
     
     const filters = {
-      isActive: true,
-      status: 'active'
+      isActive:   true,
+      isArchived: { $ne: true },
+      status:     'active'
     };
     
     if (req.query.category && req.query.category !== 'all') {

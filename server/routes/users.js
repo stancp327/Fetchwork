@@ -331,8 +331,12 @@ router.get('/jobs', authenticateToken, async (req, res) => {
     const skip = (page - 1) * limit;
     const type = req.query.type || 'all';
     
-    let filters = { isActive: true };
-    
+    // Show active jobs + archived jobs (completed/past-deadline) — users keep access to their history
+    // Cancelled/deactivated-for-other-reasons jobs are intentionally excluded
+    let filters = {
+      $or: [{ isActive: true }, { isArchived: true }]
+    };
+
     if (type === 'posted') {
       filters.client = req.user.userId;
     } else if (type === 'working') {
@@ -340,11 +344,18 @@ router.get('/jobs', authenticateToken, async (req, res) => {
     } else if (type === 'applied') {
       filters['proposals.freelancer'] = req.user.userId;
     } else {
-      filters.$or = [
+      // Merge with existing $or by wrapping everything
+      const ownershipFilter = [
         { client: req.user.userId },
         { freelancer: req.user.userId },
         { 'proposals.freelancer': req.user.userId }
       ];
+      filters = {
+        $and: [
+          { $or: [{ isActive: true }, { isArchived: true }] },
+          { $or: ownershipFilter }
+        ]
+      };
     }
     
     const jobs = await Job.find(filters)

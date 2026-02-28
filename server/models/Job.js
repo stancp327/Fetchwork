@@ -265,6 +265,19 @@ const jobSchema = new mongoose.Schema({
     default: function() {
       return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     }
+  },
+  isArchived: {
+    type: Boolean,
+    default: false
+  },
+  archivedAt: {
+    type: Date,
+    default: null
+  },
+  archiveReason: {
+    type: String,
+    enum: ['completed', 'past_deadline', 'admin', null],
+    default: null
   }
 }, {
   timestamps: true
@@ -290,6 +303,8 @@ jobSchema.index({ title: 'text', description: 'text', skills: 'text' });
 // Compound indexes for dashboard queries (my-jobs sorted by date)
 jobSchema.index({ client: 1, isActive: 1, createdAt: -1 });
 jobSchema.index({ freelancer: 1, isActive: 1, status: 1 });
+// Archive index
+jobSchema.index({ isArchived: 1, archivedAt: -1 });
 
 jobSchema.pre('save', function(next) {
   if (this.isModified('proposals')) {
@@ -354,9 +369,14 @@ jobSchema.methods.acceptProposal = async function(proposalId, freelancerId) {
 };
 
 jobSchema.methods.completeJob = async function() {
-  this.status = 'completed';
-  this.completedAt = new Date();
-  this.endDate = new Date();
+  this.status        = 'completed';
+  this.completedAt   = new Date();
+  this.endDate       = new Date();
+  this.isActive      = false;
+  this.isArchived    = true;
+  this.archivedAt    = new Date();
+  this.archiveReason = 'completed';
+  this.expiresAt     = undefined; // Clear TTL — archived jobs must not be auto-deleted
   
   const emailService = require('../services/emailService');
   const emailWorkflowService = require('../services/emailWorkflowService');

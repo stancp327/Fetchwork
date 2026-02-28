@@ -80,6 +80,19 @@ const serviceSchema = new mongoose.Schema({
     enum: ['draft', 'active', 'paused', 'under_review'],
     default: 'draft'
   },
+  isArchived: {
+    type: Boolean,
+    default: false
+  },
+  archivedAt: {
+    type: Date,
+    default: null
+  },
+  archiveReason: {
+    type: String,
+    enum: ['inactive', 'admin', null],
+    default: null
+  },
   orders: [{
     client:                { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     package:               { type: String, enum: ['basic', 'standard', 'premium'] },
@@ -129,6 +142,9 @@ serviceSchema.index({ 'location.coordinates': '2dsphere' });
 serviceSchema.index({ isActive: 1, status: 1, category: 1 }); // category page
 serviceSchema.index({ freelancer: 1, isActive: 1, status: 1 }); // my services
 serviceSchema.index({ title: 'text', description: 'text' }); // service search
+// Archive index
+serviceSchema.index({ isArchived: 1, archivedAt: -1 });
+serviceSchema.index({ updatedAt: 1, isArchived: 1 }); // inactivity cron scan
 
 serviceSchema.methods.incrementViews = function() {
   this.views += 1;

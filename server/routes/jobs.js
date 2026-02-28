@@ -21,9 +21,10 @@ router.get('/', validateQueryParams, async (req, res) => {
     const skip = (page - 1) * limit;
     
     const filters = {
-      isActive: true,
-      status: 'open',
-      expiresAt: { $gt: new Date() }
+      isActive:   true,
+      isArchived: { $ne: true },
+      status:     'open',
+      expiresAt:  { $gt: new Date() }
     };
     
     if (req.query.category && req.query.category !== 'all') {

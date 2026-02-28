@@ -290,6 +290,9 @@ app.use('*', (req, res) => {
 const { initBookingCrons } = require('./crons/bookingCrons');
 initBookingCrons();
 
+const { initArchiveCrons } = require('./crons/archiveCrons');
+initArchiveCrons();
+
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 

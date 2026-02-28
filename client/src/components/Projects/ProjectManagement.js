@@ -35,7 +35,7 @@ const timeAgo = (date) => {
 };
 
 // ── Milestone Row ───────────────────────────────────────────────
-const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate, onFund, onRelease }) => {
+const MilestoneRow = ({ milestone, index, isFreelancer, isClient, isArchived, onUpdate, onFund, onRelease }) => {
   const [acting, setActing] = useState(false);
   const meta    = MILESTONE_STATUS_META[milestone.status] || MILESTONE_STATUS_META.pending;
   const done    = milestone.status === 'completed' || milestone.status === 'approved';
@@ -79,6 +79,8 @@ const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate, onFu
           {meta.label}
         </span>
 
+        {/* All milestone actions are disabled on archived jobs */}
+        {!isArchived && (<>
         {/* Freelancer next-step actions */}
         {isFreelancer && milestone.status === 'pending' && (
           <button className="pm-ms-action start" disabled={acting} onClick={() => act('in_progress')}>
@@ -117,6 +119,7 @@ const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate, onFu
             💸 Release
           </button>
         )}
+        </>)}
       </div>
     </div>
   );
@@ -543,6 +546,8 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
   const partnerName  = partner?.firstName
     ? `${partner.firstName} ${partner.lastName || ''}`.trim() : null;
 
+  const isArchived = !!job.isArchived;
+
   const milestones = job.milestones || [];
   const msDone  = milestones.filter(m => m.status === 'completed' || m.status === 'approved').length;
   const msTotal = milestones.length;
@@ -553,7 +558,7 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
   const totalPaid = job.totalPaid || 0;
 
   return (
-    <div className={`pm-project-card ${isFreelancer ? 'freelancer-card' : ''}`}>
+    <div className={`pm-project-card ${isFreelancer ? 'freelancer-card' : ''} ${isArchived ? 'pm-archived' : ''}`}>
       {/* Header */}
       <div className="pm-project-header">
         <div className="pm-project-title-row">
@@ -571,6 +576,11 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
             {job.title}
           </button>
           <span className={`pm-status-badge ${status}`}>{STATUS_LABELS[status] || status}</span>
+          {isArchived && (
+            <span className="pm-archived-badge" title={`Archived: ${job.archiveReason?.replace('_', ' ') || ''}`}>
+              📦 Archived
+            </span>
+          )}
         </div>
         <div className="pm-project-meta">
           {budget.min != null && (
@@ -628,6 +638,7 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
               index={i}
               isFreelancer={isFreelancer}
               isClient={isClient}
+              isArchived={isArchived}
               onUpdate={(idx, s) => onMilestoneUpdate(job._id, idx, s)}
               onFund={isClient && onFundMilestone ? (idx) => onFundMilestone(job._id, idx) : null}
               onRelease={isClient && onReleaseMilestone ? (idx) => onReleaseMilestone(job._id, idx) : null}
