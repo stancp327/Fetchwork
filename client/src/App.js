@@ -52,6 +52,7 @@ const Support = React.lazy(() => import('./components/common/Support'));
 const CategoryLanding      = React.lazy(() => import('./components/Categories/CategoryLanding'));
 const MyBookings           = React.lazy(() => import('./components/Booking/MyBookings'));
 const AvailabilitySettings = React.lazy(() => import('./components/Booking/AvailabilitySettings'));
+const CalendarConnect      = React.lazy(() => import('./components/Booking/CalendarConnect'));
 
 class AuthErrorBoundary extends React.Component {
   constructor(props) {
@@ -306,6 +307,7 @@ function AppContent() {
           <Route path="/categories/:categoryId" element={<CategoryLanding />} />
           <Route path="/bookings"              element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route path="/availability"          element={<ProtectedRoute><AvailabilitySettings /></ProtectedRoute>} />
+          <Route path="/calendar-connect"      element={<ProtectedRoute><CalendarConnect /></ProtectedRoute>} />
           <Route path="/" element={<Home />} />
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>

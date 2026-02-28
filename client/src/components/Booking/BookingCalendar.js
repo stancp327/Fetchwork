@@ -1,268 +1,306 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DateTime } from 'luxon';
 import { apiRequest } from '../../utils/api';
-import { useAuth } from '../../context/AuthContext';
 import './BookingCalendar.css';
 
-const BookingCalendar = ({ freelancerId, freelancerName, onBooked }) => {
-  const { user, isAuthenticated } = useAuth();
-  const [viewDate,      setViewDate]      = useState(DateTime.now().startOf('month'));
-  const [slotsByDate,   setSlotsByDate]   = useState({});
-  const [selectedDate,  setSelectedDate]  = useState(null);
-  const [selectedSlot,  setSelectedSlot]  = useState(null);
-  const [loading,       setLoading]       = useState(false);
-  const [booking,       setBooking]       = useState(false);
-  const [bookingDone,   setBookingDone]   = useState(null);
-  const [holdExpiry,    setHoldExpiry]    = useState(null);
-  const [countdown,     setCountdown]     = useState('');
-  const [notes,         setNotes]         = useState('');
-  const [locationType,  setLocationType]  = useState('virtual');
-  const [location,      setLocation]      = useState('');
-  const [error,         setError]         = useState('');
-  const [freelancerTz,  setFreelancerTz]  = useState('America/Los_Angeles');
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
-  // Fetch slots for the current month view
-  const fetchSlots = useCallback(() => {
-    const from = viewDate.toFormat('yyyy-MM-dd');
-    const to   = viewDate.endOf('month').toFormat('yyyy-MM-dd');
+const padZero = (n) => String(n).padStart(2, '0');
+const toDateStr = (d) => `${d.getFullYear()}-${padZero(d.getMonth() + 1)}-${padZero(d.getDate())}`;
+
+const BookingCalendar = ({ freelancerId, serviceId, onBooked }) => {
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+  const [slots, setSlots]               = useState({});
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [step, setStep]                 = useState('calendar'); // calendar | confirm | held | done
+  const [locationType, setLocationType] = useState('remote');
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState('');
+  const [booking, setBooking]           = useState(null);
+  const [holdCountdown, setHoldCountdown] = useState(0);
+
+  // Fetch slots when month changes
+  const fetchSlots = useCallback(async () => {
+    if (!freelancerId) return;
     setLoading(true);
-    apiRequest(`/api/availability/${freelancerId}/slots?from=${from}&to=${to}`)
-      .then(d => {
-        setFreelancerTz(d.freelancerTimezone || 'America/Los_Angeles');
-        const byDate = {};
-        (d.slots || []).forEach(day => { byDate[day.date] = day; });
-        setSlotsByDate(byDate);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [freelancerId, viewDate]);
+    setError('');
+    try {
+      const start = toDateStr(currentMonth);
+      const end   = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const endStr = toDateStr(end);
+      const data = await apiRequest(`/api/availability/${freelancerId}/slots?start=${start}&end=${endStr}`);
+      setSlots(data.slots || {});
+    } catch (err) {
+      setError('Could not load availability. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [freelancerId, currentMonth]);
 
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
-  // Countdown timer for hold
+  // Hold countdown timer
   useEffect(() => {
-    if (!holdExpiry) return;
-    const id = setInterval(() => {
-      const remaining = Math.max(0, new Date(holdExpiry) - Date.now());
-      if (remaining === 0) {
-        setCountdown('');
-        setHoldExpiry(null);
-        setSelectedSlot(null);
-        setError('Your hold expired. Please select a new time.');
-        clearInterval(id);
-        return;
-      }
-      const mins = Math.floor(remaining / 60000);
-      const secs = Math.floor((remaining % 60000) / 1000);
-      setCountdown(`${mins}:${secs.toString().padStart(2, '0')}`);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [holdExpiry]);
+    if (step !== 'held' || !booking?.holdExpiresAt) return;
+    const calc = () => {
+      const diff = Math.floor((new Date(booking.holdExpiresAt) - Date.now()) / 1000);
+      setHoldCountdown(Math.max(0, diff));
+    };
+    calc();
+    const t = setInterval(calc, 1000);
+    return () => clearInterval(t);
+  }, [step, booking]);
 
-  const handleSelectSlot = (slot) => {
-    setSelectedSlot(slot);
-    setError('');
+  const prevMonth = () => setCurrentMonth(d => {
+    const n = new Date(d);
+    n.setMonth(n.getMonth() - 1);
+    return n;
+  });
+
+  const nextMonth = () => setCurrentMonth(d => {
+    const n = new Date(d);
+    n.setMonth(n.getMonth() + 1);
+    return n;
+  });
+
+  // Build calendar grid
+  const buildGrid = () => {
+    const year  = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const first = new Date(year, month, 1).getDay(); // 0=Sun
+    const days  = new Date(year, month + 1, 0).getDate();
+    const today = toDateStr(new Date());
+
+    const cells = [];
+    // Leading empty cells
+    for (let i = 0; i < first; i++) {
+      cells.push({ key: `pre-${i}`, empty: true });
+    }
+    // Days in month
+    for (let d = 1; d <= days; d++) {
+      const dateStr = `${year}-${padZero(month + 1)}-${padZero(d)}`;
+      const daySlots = slots[dateStr] || [];
+      const isPast   = dateStr < today;
+      cells.push({
+        key:       dateStr,
+        date:      d,
+        dateStr,
+        isPast,
+        isToday:   dateStr === today,
+        available: !isPast && daySlots.length > 0,
+        slotCount: daySlots.length,
+      });
+    }
+    return cells;
   };
 
-  const handleBook = async () => {
-    if (!selectedSlot || !isAuthenticated) return;
-    setBooking(true);
+  const handleDateClick = (cell) => {
+    if (!cell.available) return;
+    setSelectedDate(cell.dateStr);
+    setSelectedSlot(null);
+    setStep('calendar');
+  };
+
+  const handleSlotClick = (slot) => {
+    setSelectedSlot(slot);
+    setStep('confirm');
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedSlot) return;
+    setLoading(true);
     setError('');
     try {
-      const res = await apiRequest('/api/bookings', {
+      const data = await apiRequest('/api/bookings', {
         method: 'POST',
         body: JSON.stringify({
-          freelancerId,
-          startUTC:         selectedSlot.startUTC,
-          endUTC:           selectedSlot.endUTC,
-          notes,
+          freelancer:   freelancerId,
+          startTime:    selectedSlot.startTime,
+          endTime:      selectedSlot.endTime,
+          service:      serviceId || undefined,
           locationType,
-          location:         locationType !== 'virtual' ? location : undefined,
         }),
       });
-
-      setHoldExpiry(res.holdExpiresAt);
-
-      // Auto-confirm (free booking) — or trigger payment flow if price > 0
-      await apiRequest(`/api/bookings/${res.bookingId}/confirm`, { method: 'POST', body: '{}' });
-
-      setBookingDone({
-        bookingId:   res.bookingId,
-        startUTC:    selectedSlot.startUTC,
-        displayTime: selectedSlot.displayTime,
-        date:        selectedDate,
-        freelancerTz,
-      });
-      onBooked?.();
+      setBooking(data.booking);
+      if (data.booking.status === 'hold') {
+        setStep('held');
+      } else {
+        setStep('done');
+        onBooked?.(data.booking);
+      }
     } catch (err) {
-      setError(err.message === 'slot_full' ? 'This slot is now full. Please choose another time.' : (err.message || 'Failed to create booking'));
-      setSelectedSlot(null);
+      setError(err.message || 'Booking failed. Please try again.');
     } finally {
-      setBooking(false);
+      setLoading(false);
     }
   };
 
-  // ── Calendar grid ──────────────────────────────────────────────────────
-  const daysInMonth = viewDate.daysInMonth;
-  const firstDow    = viewDate.startOf('month').weekday % 7; // 0=Sun
-  const calDays     = [];
-  for (let i = 0; i < firstDow; i++) calDays.push(null);
-  for (let d = 1; d <= daysInMonth; d++) calDays.push(d);
+  const handleReset = () => {
+    setStep('calendar');
+    setSelectedDate(null);
+    setSelectedSlot(null);
+    setBooking(null);
+    setError('');
+    fetchSlots();
+  };
 
-  const userTz   = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const diffTz   = userTz !== freelancerTz;
+  const formatTime = (iso) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
 
-  // ── Confirmation screen ─────────────────────────────────────────────
-  if (bookingDone) {
-    const dtFreelancer = DateTime.fromISO(bookingDone.startUTC, { zone: freelancerTz });
-    const dtClient     = DateTime.fromISO(bookingDone.startUTC, { zone: userTz });
+  const formatCountdown = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${padZero(s)}`;
+  };
+
+  const grid = buildGrid();
+  const daySlots = selectedDate ? (slots[selectedDate] || []) : [];
+
+  if (step === 'done') {
     return (
-      <div className="bc-confirm">
-        <div className="bc-confirm-icon">🎉</div>
+      <div className="booking-done-panel">
+        <div className="booking-done-icon">✅</div>
         <h3>Booking Confirmed!</h3>
-        <p className="bc-confirm-time">
-          {dtFreelancer.toFormat('EEEE, MMMM d, yyyy')}<br />
-          {dtFreelancer.toFormat('h:mm a')} {freelancerTz.split('/')[1]?.replace('_', ' ')}
-          {diffTz && <span className="bc-your-time"> ({dtClient.toFormat('h:mm a')} your time)</span>}
-        </p>
-        <p className="bc-confirm-sub">
-          You'll receive a notification with details. Add to your calendar using the link in your profile.
-        </p>
-        <button className="bc-confirm-btn" onClick={() => {
-          setBookingDone(null); setSelectedSlot(null); setSelectedDate(null);
-          fetchSlots();
-        }}>
-          Book Another
+        <p>Your session has been booked successfully.</p>
+        <button className="booking-confirm-btn" onClick={handleReset}>Book Another</button>
+      </div>
+    );
+  }
+
+  if (step === 'held') {
+    return (
+      <div className="booking-hold-panel">
+        <div className="booking-hold-icon">⏳</div>
+        <h3>Booking Held</h3>
+        <p>Your slot is reserved for <strong>{formatCountdown(holdCountdown)}</strong></p>
+        <p className="booking-hold-sub">Complete payment to confirm your booking.</p>
+        {holdCountdown === 0 && (
+          <p className="booking-hold-expired">Your hold has expired. Please book again.</p>
+        )}
+        <button className="booking-outline-btn" onClick={handleReset} style={{ marginTop: 16 }}>
+          Start Over
         </button>
       </div>
     );
   }
 
   return (
-    <div className="booking-calendar">
-      <div className="bc-header">
-        <h3>Book a session with <strong>{freelancerName}</strong></h3>
-        {loading && <span className="bc-loading-dot" />}
-      </div>
-
+    <div className="booking-cal-wrap">
       {/* Month navigation */}
-      <div className="bc-month-nav">
-        <button onClick={() => { setViewDate(v => v.minus({ months: 1 })); setSelectedDate(null); setSelectedSlot(null); }}>‹</button>
-        <span>{viewDate.toFormat('MMMM yyyy')}</span>
-        <button onClick={() => { setViewDate(v => v.plus({ months: 1 })); setSelectedDate(null); setSelectedSlot(null); }}>›</button>
+      <div className="booking-cal-nav">
+        <button className="booking-nav-btn" onClick={prevMonth} aria-label="Previous month">‹</button>
+        <span className="booking-cal-month">{MONTHS[currentMonth.getMonth()]} {currentMonth.getFullYear()}</span>
+        <button className="booking-nav-btn" onClick={nextMonth} aria-label="Next month">›</button>
       </div>
 
-      {/* Day-of-week headers */}
-      <div className="bc-dow-row">
-        {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => <span key={d}>{d}</span>)}
-      </div>
+      {/* Day headers */}
+      <div className="booking-cal-grid">
+        {DAYS.map(d => (
+          <div key={d} className="booking-cal-day-header">{d}</div>
+        ))}
 
-      {/* Calendar grid */}
-      <div className="bc-grid">
-        {calDays.map((day, i) => {
-          if (!day) return <div key={`e${i}`} className="bc-cell empty" />;
-          const dateStr = viewDate.set({ day }).toFormat('yyyy-MM-dd');
-          const dayData = slotsByDate[dateStr];
-          const isPast  = viewDate.set({ day }) < DateTime.now().startOf('day');
-          const isSelected = dateStr === selectedDate;
-          const hasSlots = !isPast && dayData?.available;
-
-          return (
-            <button
-              key={dateStr}
-              className={`bc-cell ${hasSlots ? 'available' : ''} ${isPast ? 'past' : ''} ${isSelected ? 'selected' : ''}`}
-              onClick={() => { if (hasSlots) { setSelectedDate(dateStr); setSelectedSlot(null); }}}
-              disabled={!hasSlots}
+        {/* Calendar cells */}
+        {grid.map(cell =>
+          cell.empty ? (
+            <div key={cell.key} className="booking-cal-day empty" />
+          ) : (
+            <div
+              key={cell.key}
+              className={[
+                'booking-cal-day',
+                cell.isPast   ? 'past'      : '',
+                cell.isToday  ? 'today'     : '',
+                cell.available ? 'available' : '',
+                selectedDate === cell.dateStr ? 'selected' : '',
+                cell.slotCount > 0 && !cell.isPast ? 'has-spots' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => handleDateClick(cell)}
+              role={cell.available ? 'button' : undefined}
+              tabIndex={cell.available ? 0 : undefined}
+              onKeyDown={e => e.key === 'Enter' && handleDateClick(cell)}
             >
-              <span className="bc-day-num">{day}</span>
-              {hasSlots && <span className="bc-dot" />}
-            </button>
-          );
-        })}
+              {cell.date}
+            </div>
+          )
+        )}
       </div>
 
-      {/* Time slot picker */}
-      {selectedDate && slotsByDate[selectedDate] && (
-        <div className="bc-slots">
-          <h4>{DateTime.fromISO(selectedDate).toFormat('EEEE, MMMM d')}</h4>
-          <div className="bc-slots-grid">
-            {slotsByDate[selectedDate].times.map((slot, i) => {
-              const dtClient = DateTime.fromISO(slot.startUTC, { zone: userTz });
-              return (
+      {loading && <div className="booking-loading">Loading availability…</div>}
+      {error   && <div className="booking-error">{error}</div>}
+
+      {/* Slot picker */}
+      {selectedDate && !loading && step === 'calendar' && (
+        <div className="booking-slots-section">
+          <div className="booking-slots-title">
+            Available times for {new Date(selectedDate + 'T12:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+          </div>
+          {daySlots.length === 0 ? (
+            <p className="booking-no-slots">No slots available for this date.</p>
+          ) : (
+            <div className="booking-slots-grid">
+              {daySlots.map((slot, i) => (
                 <button
                   key={i}
-                  className={`bc-slot-btn ${selectedSlot?.startUTC === slot.startUTC ? 'selected' : ''} ${!slot.available ? 'full' : ''}`}
-                  onClick={() => handleSelectSlot(slot)}
-                  disabled={!slot.available}
+                  className={`booking-slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
+                  onClick={() => handleSlotClick(slot)}
                 >
-                  <span className="bc-slot-time">{slot.displayTime}</span>
-                  {diffTz && (
-                    <span className="bc-slot-your-time">{dtClient.toFormat('h:mm a')} your time</span>
-                  )}
-                  {slot.capacity > 1 && (
-                    <span className="bc-slot-spots">
-                      {slot.available ? `${slot.spotsRemaining}/${slot.capacity} spots` : 'Full'}
-                    </span>
+                  {formatTime(slot.startTime)}
+                  {slot.spotsRemaining > 1 && (
+                    <span className="booking-spots"> · {slot.spotsRemaining} spots</span>
                   )}
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Booking form */}
-      {selectedSlot && (
-        <div className="bc-book-form">
-          <h4>Confirm your session</h4>
-
-          <div className="bc-selected-summary">
-            📅 {DateTime.fromISO(selectedDate).toFormat('EEE, MMM d')} at {selectedSlot.displayTime}
-            {diffTz && (
-              <span className="bc-summary-your-tz">
-                {' '}({DateTime.fromISO(selectedSlot.startUTC, { zone: userTz }).toFormat('h:mm a')} your time)
-              </span>
-            )}
+      {/* Confirm panel */}
+      {step === 'confirm' && selectedSlot && (
+        <div className="booking-confirm-panel">
+          <h4 className="booking-confirm-title">Confirm Booking</h4>
+          <div className="booking-confirm-detail">
+            📅 {new Date(selectedDate + 'T12:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+          </div>
+          <div className="booking-confirm-detail">
+            🕐 {formatTime(selectedSlot.startTime)} – {formatTime(selectedSlot.endTime)}
           </div>
 
-          <div className="bc-form-field">
-            <label>Session Type</label>
-            <select value={locationType} onChange={e => setLocationType(e.target.value)}>
-              <option value="virtual">Virtual / Video Call</option>
-              <option value="in_person">In Person</option>
-              <option value="phone">Phone</option>
-            </select>
+          <div className="booking-location-label">Location</div>
+          <div className="booking-location-options">
+            {['remote', 'in-person'].map(type => (
+              <button
+                key={type}
+                className={`booking-location-opt ${locationType === type ? 'selected' : ''}`}
+                onClick={() => setLocationType(type)}
+              >
+                {type === 'remote' ? '💻 Remote' : '📍 In-Person'}
+              </button>
+            ))}
           </div>
 
-          {locationType === 'in_person' && (
-            <div className="bc-form-field">
-              <label>Location / Address</label>
-              <input type="text" value={location} onChange={e => setLocation(e.target.value)}
-                placeholder="Enter address or meeting point" />
-            </div>
-          )}
+          {error && <div className="booking-error">{error}</div>}
 
-          <div className="bc-form-field">
-            <label>Notes for {freelancerName} <span className="bc-optional">(optional)</span></label>
-            <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)}
-              placeholder="Any details about what you need..." />
-          </div>
-
-          {holdExpiry && countdown && (
-            <div className="bc-hold-timer">
-              ⏱ Slot reserved for <strong>{countdown}</strong>
-            </div>
-          )}
-
-          {error && <p className="bc-error">{error}</p>}
-
-          {!isAuthenticated ? (
-            <p className="bc-login-note">Please <a href="/login">sign in</a> to complete your booking.</p>
-          ) : (
-            <button className="bc-confirm-book-btn" onClick={handleBook} disabled={booking}>
-              {booking ? 'Confirming…' : 'Confirm Booking'}
-            </button>
-          )}
+          <button
+            className="booking-confirm-btn"
+            onClick={handleConfirm}
+            disabled={loading}
+          >
+            {loading ? 'Booking…' : 'Confirm Booking'}
+          </button>
+          <button className="booking-back-btn" onClick={() => setStep('calendar')}>
+            ← Back
+          </button>
         </div>
       )}
     </div>

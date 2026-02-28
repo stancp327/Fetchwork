@@ -1,190 +1,222 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
 import './CalendarConnect.css';
 
 const CalendarConnect = () => {
-  const location = useLocation();
-  const [googleConnected, setGoogleConnected] = useState(false);
-  const [icalUrl,         setIcalUrl]         = useState('');
-  const [copied,          setCopied]           = useState(false);
-  const [rotating,        setRotating]         = useState(false);
-  const [disconnecting,   setDisconnecting]    = useState(false);
-  const [toast,           setToast]            = useState('');
+  const [googleStatus, setGoogleStatus]   = useState({ connected: false, email: null });
+  const [icalUrl, setIcalUrl]             = useState('');
+  const [loadingGoogle, setLoadingGoogle] = useState(true);
+  const [loadingIcal, setLoadingIcal]     = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [copied, setCopied]               = useState(false);
+  const [toast, setToast]                 = useState(null); // { type: 'success'|'error'|'warning', msg }
 
-  // Check URL params for OAuth callback result
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const calStatus = params.get('calendar');
-    if (calStatus === 'connected') showToast('✅ Google Calendar connected!');
-    if (calStatus === 'denied')    showToast('Google Calendar access was denied.');
-    if (calStatus === 'error')     showToast('Something went wrong. Please try again.');
-  }, [location.search]);
+  const showToast = (type, msg) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3500);
+  };
 
+  // Handle ?calendar= URL param on mount
   useEffect(() => {
-    // Load Google status + iCal URL in parallel
-    Promise.all([
-      apiRequest('/api/calendar/google/status'),
-      apiRequest('/api/calendar/ical-url'),
-    ]).then(([gcal, ical]) => {
-      setGoogleConnected(gcal.connected);
-      setIcalUrl(ical.feedUrl);
-    }).catch(() => {});
+    const params = new URLSearchParams(window.location.search);
+    const calParam = params.get('calendar');
+    if (calParam === 'connected') showToast('success', 'Google Calendar connected!');
+    if (calParam === 'error')     showToast('error',   'Could not connect Google Calendar. Please try again.');
+    if (calParam === 'denied')    showToast('warning',  'Google Calendar connection was cancelled.');
+    if (calParam) {
+      params.delete('calendar');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+    }
   }, []);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 4000);
-  };
-
-  const handleGoogleConnect = async () => {
+  const fetchGoogleStatus = useCallback(async () => {
+    setLoadingGoogle(true);
     try {
-      const { authUrl } = await apiRequest('/api/calendar/google/connect', { method: 'POST', body: '{}' });
-      window.location.href = authUrl;
+      const data = await apiRequest('/api/calendar/google/status');
+      setGoogleStatus({ connected: data.connected, email: data.email });
+    } catch {
+      // Not connected
+    } finally {
+      setLoadingGoogle(false);
+    }
+  }, []);
+
+  const fetchIcalUrl = useCallback(async () => {
+    setLoadingIcal(true);
+    try {
+      const data = await apiRequest('/api/calendar/ical/url');
+      setIcalUrl(data.url || '');
+    } catch {
+      // Not available
+    } finally {
+      setLoadingIcal(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGoogleStatus();
+    fetchIcalUrl();
+  }, [fetchGoogleStatus, fetchIcalUrl]);
+
+  const handleConnectGoogle = async () => {
+    setActionLoading(true);
+    try {
+      const data = await apiRequest('/api/calendar/google/auth');
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      }
     } catch (err) {
-      showToast(err.message || 'Failed to start Google auth');
+      showToast('error', err.message || 'Could not start Google auth.');
+      setActionLoading(false);
     }
   };
 
-  const handleGoogleDisconnect = async () => {
-    if (!window.confirm('Disconnect Google Calendar? Future bookings won\'t sync automatically.')) return;
-    setDisconnecting(true);
+  const handleDisconnectGoogle = async () => {
+    if (!window.confirm('Disconnect Google Calendar? Future bookings won\'t sync.')) return;
+    setActionLoading(true);
     try {
       await apiRequest('/api/calendar/google/disconnect', { method: 'DELETE' });
-      setGoogleConnected(false);
-      showToast('Google Calendar disconnected.');
-    } catch {
-      showToast('Failed to disconnect.');
+      setGoogleStatus({ connected: false, email: null });
+      showToast('success', 'Google Calendar disconnected.');
+    } catch (err) {
+      showToast('error', err.message || 'Could not disconnect.');
     } finally {
-      setDisconnecting(false);
+      setActionLoading(false);
     }
   };
 
-  const handleCopy = async () => {
+  const handleCopyIcal = async () => {
     try {
       await navigator.clipboard.writeText(icalUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
-      const el = document.createElement('input');
-      el.value = icalUrl;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      showToast('error', 'Could not copy to clipboard.');
     }
   };
 
-  const handleRotate = async () => {
-    if (!window.confirm('Rotate your iCal URL? Your current subscription will stop updating — you\'ll need to re-add the new URL to your calendar app.')) return;
-    setRotating(true);
+  const handleRotateIcal = async () => {
+    if (!window.confirm('Rotate the iCal URL? Your current subscriptions will stop working and you\'ll need to re-subscribe.')) return;
+    setActionLoading(true);
     try {
-      const { feedUrl } = await apiRequest('/api/calendar/ical-rotate', { method: 'POST', body: '{}' });
-      setIcalUrl(feedUrl);
-      showToast('iCal URL rotated. Re-add the new URL to your calendar app.');
-    } catch {
-      showToast('Failed to rotate URL.');
+      const data = await apiRequest('/api/calendar/ical/rotate', { method: 'POST' });
+      setIcalUrl(data.url || '');
+      showToast('success', 'iCal URL rotated. Update your subscriptions.');
+    } catch (err) {
+      showToast('error', err.message || 'Could not rotate URL.');
     } finally {
-      setRotating(false);
+      setActionLoading(false);
     }
   };
 
   return (
-    <div className="cal-connect">
-      {toast && <div className="cal-toast">{toast}</div>}
+    <div className="cal-connect-wrap">
+      <h2 className="cal-connect-title">Calendar Integration</h2>
+      <p className="cal-connect-subtitle">Sync your bookings with your preferred calendar app.</p>
 
-      {/* ── Google Calendar ─────────────────────────────────── */}
-      <div className="cal-block">
-        <div className="cal-block-header">
-          <div className="cal-block-icon">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-              <rect width="22" height="22" rx="3" fill="#4285F4"/>
-              <text x="11" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">G</text>
-            </svg>
-          </div>
-          <div>
-            <h4>Google Calendar</h4>
-            <p>New bookings appear in your Google Calendar automatically.</p>
-          </div>
+      {/* ── Google Calendar ── */}
+      <div className="cal-section">
+        <div className="cal-section-title">
+          <span className="cal-icon">📅</span>
+          Google Calendar
         </div>
+        <p className="cal-section-desc">
+          Automatically add bookings to your Google Calendar as they're confirmed.
+        </p>
 
-        {googleConnected ? (
-          <div className="cal-connected-row">
-            <span className="cal-connected-badge">✅ Connected</span>
+        {loadingGoogle ? (
+          <div className="cal-loading">Checking status…</div>
+        ) : googleStatus.connected ? (
+          <div className="cal-status-row">
+            <span className="cal-connected-badge">✓ Connected</span>
+            {googleStatus.email && (
+              <span className="cal-connected-email">{googleStatus.email}</span>
+            )}
             <button
               className="cal-disconnect-btn"
-              onClick={handleGoogleDisconnect}
-              disabled={disconnecting}
+              onClick={handleDisconnectGoogle}
+              disabled={actionLoading}
             >
-              {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+              Disconnect
             </button>
           </div>
         ) : (
-          <button className="cal-connect-btn" onClick={handleGoogleConnect}>
-            Connect Google Calendar →
-          </button>
+          <div className="cal-status-row">
+            <button
+              className="cal-connect-btn"
+              onClick={handleConnectGoogle}
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Redirecting…' : 'Connect Google Calendar'}
+            </button>
+          </div>
         )}
       </div>
 
-      {/* ── iCal Subscription (Apple / Outlook / Any) ───────── */}
-      <div className="cal-block">
-        <div className="cal-block-header">
-          <div className="cal-block-icon cal-block-icon-ical">📅</div>
-          <div>
-            <h4>Apple Calendar &amp; Others</h4>
-            <p>Subscribe to your bookings feed in Apple Calendar, Outlook, or any calendar app that supports iCal.</p>
-          </div>
+      {/* ── iCal feed ── */}
+      <div className="cal-section">
+        <div className="cal-section-title">
+          <span className="cal-icon">🗓️</span>
+          iCal Feed (Apple, Outlook, others)
         </div>
+        <p className="cal-section-desc">
+          Subscribe to this URL in any calendar app to see your bookings automatically.
+        </p>
 
-        {icalUrl && (
+        {loadingIcal ? (
+          <div className="cal-loading">Loading feed URL…</div>
+        ) : icalUrl ? (
           <>
-            <div className="ical-url-row">
+            <div className="cal-ical-url-row">
               <input
                 type="text"
+                className="cal-ical-input"
                 value={icalUrl}
                 readOnly
-                className="ical-url-input"
-                onClick={e => e.target.select()}
+                onFocus={e => e.target.select()}
               />
-              <button className="ical-copy-btn" onClick={handleCopy}>
-                {copied ? '✅ Copied' : 'Copy'}
+              <button
+                className="cal-copy-btn"
+                onClick={handleCopyIcal}
+              >
+                {copied ? '✓' : 'Copy'}
+              </button>
+              <button
+                className="cal-rotate-btn"
+                onClick={handleRotateIcal}
+                disabled={actionLoading}
+                title="Generate a new URL (invalidates current subscriptions)"
+              >
+                ↻ Rotate
               </button>
             </div>
-
-            <div className="ical-instructions">
-              <details>
-                <summary>How to add to Apple Calendar</summary>
-                <ol>
-                  <li>Open <strong>Calendar</strong> on Mac or iPhone</li>
-                  <li>Go to <strong>File → New Calendar Subscription</strong> (Mac) or <strong>Add Account → Other → Add Subscribed Calendar</strong> (iPhone)</li>
-                  <li>Paste the URL above and click Subscribe</li>
-                  <li>Set refresh interval to <strong>Every hour</strong></li>
-                </ol>
-              </details>
-              <details>
-                <summary>How to add to Outlook</summary>
-                <ol>
-                  <li>Open <strong>Outlook Calendar</strong></li>
-                  <li>Click <strong>Add calendar → Subscribe from web</strong></li>
-                  <li>Paste the URL above and click Import</li>
-                </ol>
-              </details>
-            </div>
-
-            <div className="ical-rotate-row">
-              <span className="ical-rotate-hint">
-                ⚠️ If your feed URL is compromised, rotate it to generate a new one.
-              </span>
-              <button className="ical-rotate-btn" onClick={handleRotate} disabled={rotating}>
-                {rotating ? 'Rotating…' : 'Rotate URL'}
-              </button>
+            <div className="cal-instructions">
+              <strong>How to subscribe:</strong>
+              <ul>
+                <li><strong>Apple Calendar:</strong> File → New Calendar Subscription → paste URL</li>
+                <li><strong>Outlook:</strong> Add Calendar → From Internet → paste URL</li>
+                <li><strong>Google Calendar:</strong> Other calendars → From URL → paste URL</li>
+              </ul>
+              <p className="cal-security-note">
+                🔒 Keep this URL private — anyone with it can view your bookings.
+              </p>
             </div>
           </>
+        ) : (
+          <p className="cal-loading">iCal feed not available. Contact support.</p>
         )}
       </div>
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div className={`cal-toast cal-toast-${toast.type}`}>
+          {toast.type === 'success' && '✅ '}
+          {toast.type === 'error'   && '❌ '}
+          {toast.type === 'warning' && '⚠️ '}
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 };
