@@ -125,3 +125,47 @@
   .escrow-init-actions .btn,
   .checkout-actions .btn { flex: none; }
 }
+
+/* -- Saved Cards in EscrowModal ----------------------------------- */
+.escrow-saved-cards {
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.escrow-saved-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.35rem;
+}
+.escrow-card-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #374151;
+  transition: border-color 0.15s, background 0.15s;
+}
+.escrow-card-option input[type=radio] { accent-color: #2563eb; }
+.escrow-card-option.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+.escrow-card-option.new-card { color: #2563eb; }
+.escrow-card-brand { font-weight: 600; }
+.escrow-card-num   { font-family: monospace; letter-spacing: 1px; }
+.escrow-card-exp   { color: #9ca3af; font-size: 0.78rem; }
+.escrow-card-default {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  background: #2563eb;
+  color: white;
+  border-radius: 99px;
+}

@@ -102,12 +102,86 @@ router.get('/history', authenticateToken, async (req, res) => {
   }
 });
 
+// ── Saved Payment Methods ───────────────────────────────────────
+//
+// Security notes:
+//   - stripeCustomerId is server-only; never returned to frontend
+//   - Every PM operation verifies pm.customer === user.stripeCustomerId
+//     via stripeService.verifyPMOwnership() (throws if mismatch)
+//   - Card data (numbers, CVV) never touches our servers — only
+//     Stripe's opaque pm_xxx IDs and brand/last4 for display
+
+/** Helper: get or create Stripe Customer for the requesting user */
+async function getOrCreateCustomer(user) {
+  if (user.stripeCustomerId) return user.stripeCustomerId;
+  const customerId = await stripeService.ensureCustomer(user);
+  await User.findByIdAndUpdate(user._id, { stripeCustomerId: customerId });
+  user.stripeCustomerId = customerId; // update in-place for this request
+  return customerId;
+}
+
+// GET /api/payments/methods — list saved cards
+router.get('/methods', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId);
+    if (!user.stripeCustomerId) return res.json({ methods: [] });
+    const methods = await stripeService.listPaymentMethods(user.stripeCustomerId);
+    res.json({ methods });
+  } catch (err) {
+    console.error('List payment methods error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch payment methods' });
+  }
+});
+
+// POST /api/payments/methods/setup — create SetupIntent to save a new card
+router.post('/methods/setup', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId);
+    const customerId = await getOrCreateCustomer(user);
+    const setupIntent = await stripeService.createSetupIntent(customerId);
+    res.json({ clientSecret: setupIntent.client_secret });
+  } catch (err) {
+    console.error('SetupIntent error:', err.message);
+    res.status(500).json({ error: 'Failed to create setup session' });
+  }
+});
+
+// POST /api/payments/methods/:pmId/default — set default payment method
+router.post('/methods/:pmId/default', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId);
+    if (!user.stripeCustomerId) return res.status(400).json({ error: 'No payment methods saved' });
+    // verifyPMOwnership is called inside setDefaultPaymentMethod
+    await stripeService.setDefaultPaymentMethod(req.params.pmId, user.stripeCustomerId);
+    res.json({ message: 'Default payment method updated' });
+  } catch (err) {
+    console.error('Set default PM error:', err.message);
+    const status = err.message.includes('does not belong') ? 403 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// DELETE /api/payments/methods/:pmId — remove a saved card
+router.delete('/methods/:pmId', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId);
+    if (!user.stripeCustomerId) return res.status(400).json({ error: 'No payment methods on file' });
+    // verifyPMOwnership is called inside detachPaymentMethod
+    await stripeService.detachPaymentMethod(req.params.pmId, user.stripeCustomerId);
+    res.json({ message: 'Payment method removed' });
+  } catch (err) {
+    console.error('Detach PM error:', err.message);
+    const status = err.message.includes('does not belong') ? 403 : 500;
+    res.status(status).json({ error: err.message });
+  }
+});
+
 // ── POST /api/payments/fund-escrow ─────────────────────────────
 // Client funds escrow when accepting a proposal.
 // Creates a manual-capture PaymentIntent — money is held but not charged yet.
 router.post('/fund-escrow', authenticateToken, async (req, res) => {
   try {
-    const { jobId, amount } = req.body;
+    const { jobId, amount, paymentMethodId } = req.body;
     if (!jobId || !amount) {
       return res.status(400).json({ error: 'jobId and amount are required' });
     }
@@ -122,15 +196,29 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
     }
 
     const platformFee = calcPlatformFee(amount);
-
-    // Charge client immediately — funds land in Fetchwork's Stripe balance.
-    // No manual-capture hold (7-day expiry risk). Transfer to freelancer on release.
-    const paymentIntent = await stripeService.chargeForJob(amount, 'usd', {
-      jobId:        jobId,
+    const metadata = {
+      jobId:        String(jobId),
       clientId:     String(req.user.userId),
       freelancerId: String(job.freelancer?._id || job.freelancer),
-      platformFee:  String(platformFee)
-    });
+      platformFee:  String(platformFee),
+    };
+
+    let paymentIntent;
+
+    if (paymentMethodId) {
+      // ── Saved card path ─────────────────────────────────────────
+      // Ownership is verified inside chargeWithSavedMethod via verifyPMOwnership
+      const user = await User.findById(req.user.userId || req.user._id);
+      if (!user.stripeCustomerId) {
+        return res.status(400).json({ error: 'No saved payment methods on file' });
+      }
+      paymentIntent = await stripeService.chargeWithSavedMethod(
+        amount, user.stripeCustomerId, paymentMethodId, metadata
+      );
+    } else {
+      // ── New card path (frontend confirms via PaymentElement) ─────
+      paymentIntent = await stripeService.chargeForJob(amount, 'usd', metadata);
+    }
 
     // Record in Payment model
     const payment = await Payment.create({

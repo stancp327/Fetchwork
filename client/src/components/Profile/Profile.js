@@ -6,6 +6,7 @@ import { getLocationDisplay } from '../../utils/location';
 import PortfolioWizard from '../Portfolio/PortfolioWizard';
 import CategoryCombobox from '../common/CategoryCombobox';
 import StripeConnect from '../Payments/StripeConnect';
+import PaymentMethods from '../Payments/PaymentMethods';
 import './Profile.css';
 
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
@@ -494,6 +495,11 @@ const TabVerification = ({ data, onRefresh }) => {
         <StripeConnect onStatusChange={(s) => {
           if (s?.connected && onRefresh) onRefresh();
         }} />
+      </div>
+
+      {/* Saved Payment Methods (client side — for paying jobs/services) */}
+      <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
+        <PaymentMethods />
       </div>
     </div>
   );

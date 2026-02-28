@@ -136,8 +136,9 @@ const userSchema = new mongoose.Schema({
     bankName: String
   },
   paypalEmail: String,
-  stripeAccountId: String,
-  stripeConnected: { type: Boolean, default: false },
+  stripeAccountId:  String,           // Connect account (freelancer payouts)
+  stripeConnected:  { type: Boolean, default: false },
+  stripeCustomerId: String,           // Customer ID (client saved payment methods)
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   emailVerificationToken: String,
@@ -319,6 +320,7 @@ userSchema.methods.getPublicProfile = function() {
   delete userObject.bankAccount;
   delete userObject.paypalEmail;
   delete userObject.stripeAccountId;
+  delete userObject.stripeCustomerId;  // never expose Stripe internal IDs
   return userObject;
 };
 

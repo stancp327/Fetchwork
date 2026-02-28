@@ -1,0 +1,220 @@
+.payment-methods { max-width: 640px; }
+
+.pm-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.pm-section-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 0.25rem;
+}
+.pm-section-note {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+  max-width: 420px;
+}
+
+.pm-btn-add {
+  min-height: 38px;
+  padding: 0 1rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pm-btn-add:hover { background: #1d4ed8; }
+
+/* ── Card List ─────────────────────────────────────────────────── */
+.pm-card-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.pm-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.pm-card-row.default {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.pm-card-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.pm-card-brand { font-size: 0.9rem; font-weight: 600; color: #374151; }
+.pm-card-number { font-size: 0.88rem; color: #374151; font-family: monospace; letter-spacing: 1px; }
+.pm-card-expiry { font-size: 0.8rem; color: #6b7280; }
+.pm-card-default-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: #2563eb;
+  color: white;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-card-actions { display: flex; gap: 0.4rem; align-items: center; }
+
+.pm-btn-set-default {
+  min-height: 32px;
+  padding: 0 0.75rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+.pm-btn-set-default:hover { border-color: #2563eb; color: #2563eb; }
+.pm-btn-set-default:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.pm-btn-delete {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0 0.5rem;
+  background: white;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  color: #dc2626;
+  cursor: pointer;
+}
+.pm-btn-delete:hover { background: #fef2f2; }
+.pm-btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Add Card Form ─────────────────────────────────────────────── */
+.pm-add-form {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: white;
+  margin-bottom: 1rem;
+}
+.pm-add-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.pm-add-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+}
+.pm-add-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #6b7280;
+  cursor: pointer;
+  min-width: 32px;
+  min-height: 32px;
+}
+.pm-add-note {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #f0fdf4;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
+}
+.pm-stripe-element { margin-bottom: 1rem; }
+.pm-add-error {
+  color: #dc2626;
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  border-radius: 6px;
+}
+.pm-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.pm-btn-cancel {
+  min-height: 40px;
+  padding: 0 1rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #374151;
+  cursor: pointer;
+}
+.pm-btn-save {
+  min-height: 40px;
+  padding: 0 1.25rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pm-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Empty / Loading ───────────────────────────────────────────── */
+.pm-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #6b7280;
+}
+.pm-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.pm-empty p { margin: 0 0 0.35rem; font-size: 0.9rem; }
+.pm-empty-sub { font-size: 0.8rem; color: #9ca3af; }
+.pm-btn-add-empty {
+  margin-top: 1rem;
+  min-height: 40px;
+  padding: 0 1.25rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pm-loading { padding: 1.5rem; color: #9ca3af; font-size: 0.85rem; }
+.pm-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  color: #dc2626;
+  font-size: 0.82rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Stripe badge ──────────────────────────────────────────────── */
+.pm-stripe-badge {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+}

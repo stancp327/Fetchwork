@@ -107,6 +107,119 @@ class StripeService {
     });
   }
 
+  // ── Customer & Saved Payment Methods ───────────────────────────
+  //
+  // Security model:
+  //   - One Stripe Customer per Fetchwork user (stripeCustomerId on User model)
+  //   - All card data lives in Stripe — we never see or store it
+  //   - Every PM operation verifies pm.customer === user.stripeCustomerId
+  //     server-side before acting (prevents cross-user attacks)
+  //   - Default PM stored on the Customer object via Stripe API (not our DB)
+
+  /** Create a Stripe Customer for a user. Call once; store ID on User. */
+  async createCustomer(email, name, metadata = {}) {
+    this._ensureStripe();
+    return stripe.customers.create({ email, name, metadata });
+  }
+
+  /** Fetch or lazily create a Customer. Pass user doc; returns customerId. */
+  async ensureCustomer(user) {
+    this._ensureStripe();
+    if (user.stripeCustomerId) return user.stripeCustomerId;
+    const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+    const customer = await stripe.customers.create({
+      email: user.email,
+      name,
+      metadata: { fetchworkUserId: String(user._id) },
+    });
+    // Caller must save stripeCustomerId to User model
+    return customer.id;
+  }
+
+  /**
+   * Create a SetupIntent to save a card with zero charge.
+   * usage: 'off_session' allows future charges without user present.
+   */
+  async createSetupIntent(customerId) {
+    this._ensureStripe();
+    return stripe.setupIntents.create({
+      customer: customerId,
+      usage:    'off_session',
+      automatic_payment_methods: { enabled: true },
+    });
+  }
+
+  /** List saved payment methods for a customer. Returns sanitised card data only. */
+  async listPaymentMethods(customerId) {
+    this._ensureStripe();
+    const [cardPMs, customer] = await Promise.all([
+      stripe.paymentMethods.list({ customer: customerId, type: 'card' }),
+      stripe.customers.retrieve(customerId),
+    ]);
+    const defaultPmId = customer.invoice_settings?.default_payment_method;
+    return cardPMs.data.map(pm => ({
+      id:        pm.id,
+      brand:     pm.card.brand,
+      last4:     pm.card.last4,
+      expMonth:  pm.card.exp_month,
+      expYear:   pm.card.exp_year,
+      isDefault: pm.id === defaultPmId,
+    }));
+  }
+
+  /**
+   * Verify a payment method belongs to a specific customer.
+   * ALWAYS call this before acting on a client-supplied pmId.
+   */
+  async verifyPMOwnership(pmId, customerId) {
+    this._ensureStripe();
+    const pm = await stripe.paymentMethods.retrieve(pmId);
+    if (!pm || pm.customer !== customerId) {
+      throw new Error('Payment method does not belong to this account');
+    }
+    return pm;
+  }
+
+  /** Detach (delete) a payment method. Verifies ownership first. */
+  async detachPaymentMethod(pmId, customerId) {
+    this._ensureStripe();
+    await this.verifyPMOwnership(pmId, customerId); // security check
+    return stripe.paymentMethods.detach(pmId);
+  }
+
+  /** Set a saved card as the Customer's default. Verifies ownership first. */
+  async setDefaultPaymentMethod(pmId, customerId) {
+    this._ensureStripe();
+    await this.verifyPMOwnership(pmId, customerId); // security check
+    return stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: pmId },
+    });
+  }
+
+  /**
+   * Charge a client using a saved payment method.
+   * Verifies pm.customer === customerId before creating the PaymentIntent.
+   *
+   * @param {number} amount
+   * @param {string} customerId   - user.stripeCustomerId
+   * @param {string} pmId         - saved payment method ID
+   * @param {object} metadata
+   */
+  async chargeWithSavedMethod(amount, customerId, pmId, metadata = {}) {
+    this._ensureStripe();
+    // Ownership check — prevents a user from charging another user's card
+    await this.verifyPMOwnership(pmId, customerId);
+    return stripe.paymentIntents.create({
+      amount:         Math.round(amount * 100),
+      currency:       'usd',
+      customer:       customerId,
+      payment_method: pmId,
+      confirm:        true,
+      off_session:    false, // user is present
+      metadata,
+    });
+  }
+
   // ── Refunds ─────────────────────────────────────────────────────
   async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer') {
     this._ensureStripe();
