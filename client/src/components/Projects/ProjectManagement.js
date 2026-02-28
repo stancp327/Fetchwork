@@ -3,6 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import { categoryLabelMap } from '../../utils/categories';
+import EscrowModal from '../Payments/EscrowModal';
 import './ProjectManagement.css';
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -34,10 +35,12 @@ const timeAgo = (date) => {
 };
 
 // ── Milestone Row ───────────────────────────────────────────────
-const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate }) => {
+const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate, onFund, onRelease }) => {
   const [acting, setActing] = useState(false);
-  const meta = MILESTONE_STATUS_META[milestone.status] || MILESTONE_STATUS_META.pending;
-  const done = milestone.status === 'completed' || milestone.status === 'approved';
+  const meta    = MILESTONE_STATUS_META[milestone.status] || MILESTONE_STATUS_META.pending;
+  const done    = milestone.status === 'completed' || milestone.status === 'approved';
+  const funded  = (milestone.escrowAmount || 0) > 0;
+  const released = !!milestone.releasedAt;
 
   const act = async (status) => {
     setActing(true);
@@ -62,6 +65,12 @@ const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate }) =>
           {milestone.description && (
             <span className="pm-ms-desc">{milestone.description}</span>
           )}
+          {/* Payment indicator */}
+          {isClient && (
+            <span className={`pm-ms-pay-tag ${released ? 'released' : funded ? 'funded' : 'unfunded'}`}>
+              {released ? '✅ Released' : funded ? `🔒 ${fmt(milestone.escrowAmount)} secured` : '💳 Not funded'}
+            </span>
+          )}
         </div>
       </div>
       <div className="pm-ms-right">
@@ -69,6 +78,7 @@ const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate }) =>
         <span className="pm-ms-badge" style={{ color: meta.color, background: meta.bg }}>
           {meta.label}
         </span>
+
         {/* Freelancer next-step actions */}
         {isFreelancer && milestone.status === 'pending' && (
           <button className="pm-ms-action start" disabled={acting} onClick={() => act('in_progress')}>
@@ -80,7 +90,16 @@ const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate }) =>
             {acting ? '…' : 'Done ✓'}
           </button>
         )}
-        {/* Client can approve or request revision */}
+
+        {/* Client: fund unfunded milestones */}
+        {isClient && !funded && !released && milestone.status !== 'approved' && onFund && (
+          <button className="pm-ms-action fund" disabled={acting} onClick={() => onFund(index)}
+            title="Secure payment for this milestone">
+            💳 Fund
+          </button>
+        )}
+
+        {/* Client: approve/revise when freelancer marks done */}
         {isClient && milestone.status === 'completed' && (
           <>
             <button className="pm-ms-action approve" disabled={acting} onClick={() => act('approved')}>
@@ -90,6 +109,13 @@ const MilestoneRow = ({ milestone, index, isFreelancer, isClient, onUpdate }) =>
               Revise
             </button>
           </>
+        )}
+
+        {/* Client: release payment after approval */}
+        {isClient && funded && !released && (milestone.status === 'completed' || milestone.status === 'approved') && onRelease && (
+          <button className="pm-ms-action release" disabled={acting} onClick={() => onRelease(index)}>
+            💸 Release
+          </button>
         )}
       </div>
     </div>
@@ -219,8 +245,77 @@ const ApplicantPreview = ({ proposals = [], jobId }) => {
   );
 };
 
+// ── Client In-Progress Header ───────────────────────────────────
+const ClientJobHeader = ({ job }) => {
+  const fl = job.freelancer || {};
+  const name = fl.firstName ? `${fl.firstName} ${fl.lastName || ''}`.trim() : 'Freelancer';
+  const initials = (fl.firstName?.[0] || '') + (fl.lastName?.[0] || '');
+  const rating = fl.rating ? Number(fl.rating).toFixed(1) : null;
+  const milestones = job.milestones || [];
+  const msTotal = milestones.length;
+  const msDone  = milestones.filter(m => m.status === 'approved' || m.status === 'completed').length;
+  const totalSecured  = milestones.reduce((s, m) => s + (m.escrowAmount || 0), job.escrowAmount || 0);
+  const totalReleased = milestones.reduce((s, m) => s + (m.releasedAt ? (m.escrowAmount || 0) : 0), 0);
+
+  return (
+    <div className="pm-client-job-header">
+      {/* Hired freelancer */}
+      <div className="pm-hired-row">
+        <div className="pm-hired-label">Hired</div>
+        <div className="pm-hired-info">
+          <div className="pm-hired-avatar">
+            {fl.profilePicture
+              ? <img src={fl.profilePicture} alt={name} />
+              : <span className="pm-hired-initials">{initials || '?'}</span>}
+          </div>
+          <div className="pm-hired-details">
+            <Link
+              to={`/freelancers/${fl._id}`}
+              className="pm-hired-name"
+              onClick={e => e.stopPropagation()}
+            >
+              {name}
+            </Link>
+            <div className="pm-hired-meta">
+              {rating && <span>⭐ {rating}</span>}
+              {fl.totalJobs > 0 && <span>{fl.totalJobs} jobs done</span>}
+            </div>
+          </div>
+        </div>
+        <Link to="/messages" className="pm-hired-msg-btn" onClick={e => e.stopPropagation()}>
+          💬 Message
+        </Link>
+      </div>
+
+      {/* Payment summary */}
+      {(totalSecured > 0 || totalReleased > 0 || msTotal > 0) && (
+        <div className="pm-payment-summary">
+          {msTotal > 0 && (
+            <div className="pm-pay-sum-item">
+              <span className="pm-pay-sum-label">Milestones</span>
+              <span className="pm-pay-sum-val">{msDone}/{msTotal} done</span>
+            </div>
+          )}
+          {totalSecured > 0 && (
+            <div className="pm-pay-sum-item">
+              <span className="pm-pay-sum-label">🔒 Secured</span>
+              <span className="pm-pay-sum-val green">{fmt(totalSecured)}</span>
+            </div>
+          )}
+          {totalReleased > 0 && (
+            <div className="pm-pay-sum-item">
+              <span className="pm-pay-sum-label">💸 Released</span>
+              <span className="pm-pay-sum-val blue">{fmt(totalReleased)}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Project Card ────────────────────────────────────────────────
-const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onRefresh }) => {
+const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onFundMilestone, onReleaseMilestone, onRefresh }) => {
   const navigate = useNavigate();
   const budget       = job.budget || {};
   const status       = job.status || 'draft';
@@ -275,14 +370,17 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onR
         </div>
       </div>
 
-      {/* Payment status (prominent for freelancers) */}
-      {status === 'in_progress' && (
+      {/* Client in-progress: freelancer info + payment summary */}
+      {isClient && status === 'in_progress' && (
+        <ClientJobHeader job={job} />
+      )}
+
+      {/* Freelancer in-progress: payment pill */}
+      {isFreelancer && status === 'in_progress' && (
         <div className={`pm-payment-pill ${escrow > 0 ? 'funded' : 'unfunded'}`}>
           {escrow > 0
             ? `🔒 ${fmt(escrow)} secured — payment ready`
-            : isClient
-              ? `💳 No payment secured — you can still approve & release when work is done`
-              : `⏳ Awaiting client payment`
+            : `⏳ Awaiting client payment`
           }
           {totalPaid > 0 && ` · ${fmt(totalPaid)} released`}
         </div>
@@ -308,6 +406,8 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onR
               isFreelancer={isFreelancer}
               isClient={isClient}
               onUpdate={(idx, s) => onMilestoneUpdate(job._id, idx, s)}
+              onFund={isClient && onFundMilestone ? (idx) => onFundMilestone(job._id, idx) : null}
+              onRelease={isClient && onReleaseMilestone ? (idx) => onReleaseMilestone(job._id, idx) : null}
             />
           ))}
         </div>
@@ -602,6 +702,42 @@ const ProjectManagement = () => {
     } catch (err) { alert(err.message || 'Failed to update milestone'); }
   };
 
+  // ── Milestone fund / release ────────────────────────────────
+  const [milestoneFunding, setMilestoneFunding] = useState(null);
+
+  const handleFundMilestone = async (jobId, index) => {
+    try {
+      const res = await apiRequest(`/api/jobs/${jobId}/milestones/${index}/fund`, { method: 'POST' });
+      // res = { clientSecret, paymentIntentId, milestoneIndex, milestoneTitle, amount }
+      setMilestoneFunding({ jobId, index, ...res });
+    } catch (err) { alert(err.message || 'Failed to start payment'); }
+  };
+
+  const handleReleaseMilestone = async (jobId, index) => {
+    const job = clientJobs.find(j => j._id === jobId);
+    const ms  = job?.milestones?.[index];
+    if (!window.confirm(`Release ${fmt(ms?.escrowAmount || ms?.amount)} for milestone "${ms?.title}"?\nThis cannot be undone.`)) return;
+    try {
+      await apiRequest(`/api/jobs/${jobId}/milestones/${index}/release`, { method: 'POST' });
+      fetchJobs();
+    } catch (err) { alert(err.message || 'Failed to release payment'); }
+  };
+
+  const handleMilestonePaid = async (paymentIntent) => {
+    if (!milestoneFunding) return;
+    const { jobId, index } = milestoneFunding;
+    try {
+      await apiRequest(`/api/jobs/${jobId}/milestones/${index}/fund/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ paymentIntentId: paymentIntent.id || milestoneFunding.paymentIntentId })
+      });
+    } catch (err) {
+      console.error('Confirm failed:', err.message);
+    }
+    setMilestoneFunding(null);
+    fetchJobs();
+  };
+
   // ── Per-view data ──────────────────────────────────────────────
   const isClientView     = viewMode === 'client';
   const displayJobs      = isClientView ? clientJobs : freelancerJobs;
@@ -658,6 +794,7 @@ const ProjectManagement = () => {
   if (loading) return <div className="pm-container"><div className="pm-loading">Loading projects…</div></div>;
 
   return (
+    <>
     <div className="pm-container">
       {/* ── Page header ──────────────────────────────────────── */}
       <div className="pm-page-header">
@@ -797,12 +934,27 @@ const ProjectManagement = () => {
               onAcceptProposal={handleAcceptProposal}
               onComplete={handleComplete}
               onMilestoneUpdate={handleMilestoneUpdate}
+              onFundMilestone={handleFundMilestone}
+              onReleaseMilestone={handleReleaseMilestone}
               onRefresh={fetchJobs}
             />
           ))}
         </div>
       )}
     </div>
+
+      {/* Milestone funding modal */}
+      {milestoneFunding && (
+        <EscrowModal
+          preloadedSecret={milestoneFunding.clientSecret}
+          job={{ _id: milestoneFunding.jobId, title: milestoneFunding.milestoneTitle || 'Milestone' }}
+          amount={milestoneFunding.amount}
+          title={`Fund Milestone: ${milestoneFunding.milestoneTitle || ''}`}
+          onClose={() => setMilestoneFunding(null)}
+          onPaid={handleMilestonePaid}
+        />
+      )}
+    </>
   );
 };
 
