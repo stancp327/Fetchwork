@@ -1,0 +1,31 @@
+/* ── PlanBadge ────────────────────────────────────────────────── */
+.plan-badge {
+  display: inline-block;
+  border-radius: 20px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Sizes */
+.plan-badge-sm {
+  font-size: 10px;
+  padding: 2px 7px;
+}
+.plan-badge-md {
+  font-size: var(--font-size-xs);
+  padding: 3px 10px;
+}
+
+/* Tiers */
+.plan-badge-plus {
+  background: rgba(102, 126, 234, 0.12);
+  color: var(--color-primary);
+  border: 1px solid rgba(102, 126, 234, 0.25);
+}
+.plan-badge-pro {
+  background: var(--gradient-primary);
+  color: #fff;
+  border: none;
+}

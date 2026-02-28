@@ -1,0 +1,229 @@
+/* ── BillingSettings ──────────────────────────────────────────── */
+.bs-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 16px 80px;
+}
+
+.bs-loading {
+  text-align: center;
+  padding: 60px;
+  color: var(--color-text-muted);
+}
+
+/* ── Header ── */
+.bs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.bs-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+.bs-pricing-link {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+.bs-pricing-link:hover { text-decoration: underline; }
+
+/* ── Messages ── */
+.bs-success {
+  background: rgba(40,167,69,0.08);
+  border: 1px solid rgba(40,167,69,0.2);
+  color: var(--color-success);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin-bottom: 20px;
+}
+.bs-error {
+  background: rgba(220,53,69,0.06);
+  border: 1px solid rgba(220,53,69,0.2);
+  color: var(--color-danger);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin-bottom: 20px;
+}
+
+/* ── Cards ── */
+.bs-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+.bs-card-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: 16px;
+}
+
+/* ── Plan display ── */
+.bs-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.bs-plan-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+.bs-plan-free     { background: var(--color-bg-muted);            color: var(--color-text-muted); }
+.bs-plan-plus     { background: rgba(102,126,234,0.12);           color: var(--color-primary); }
+.bs-plan-pro      { background: var(--gradient-primary);          color: #fff; }
+
+.bs-grandfather-badge {
+  font-size: var(--font-size-xs);
+  background: rgba(102,126,234,0.08);
+  color: var(--color-primary);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: var(--font-weight-medium);
+}
+.bs-past-due-badge {
+  font-size: var(--font-size-xs);
+  background: rgba(255,193,7,0.15);
+  color: #856404;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: var(--font-weight-medium);
+}
+.bs-cancelling-badge {
+  font-size: var(--font-size-xs);
+  background: rgba(220,53,69,0.08);
+  color: var(--color-danger);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── Detail rows ── */
+.bs-detail-rows { border-top: 1px solid var(--color-border); padding-top: 12px; }
+.bs-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-bg-secondary);
+}
+.bs-detail-row strong { color: var(--color-text-primary); }
+
+.bs-free-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.bs-upgrade-link { color: var(--color-primary); font-weight: var(--font-weight-medium); }
+.bs-upgrade-link:hover { text-decoration: underline; }
+
+/* ── Actions ── */
+.bs-actions { display: flex; flex-direction: column; gap: 12px; }
+.bs-portal-note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: -4px 0 8px;
+}
+.bs-cancel-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ── Buttons ── */
+.bs-btn-portal {
+  height: 44px;
+  padding: 0 20px;
+  background: var(--gradient-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+  align-self: flex-start;
+}
+.bs-btn-portal:hover:not(:disabled) { opacity: 0.88; }
+.bs-btn-portal:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.bs-btn-cancel {
+  height: 44px;
+  padding: 0 16px;
+  background: none;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background var(--transition-fast);
+}
+.bs-btn-cancel:hover:not(:disabled) { background: rgba(220,53,69,0.06); }
+.bs-btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Upgrade CTA ── */
+.bs-upgrade-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border: 1px solid rgba(102,126,234,0.3);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  background: rgba(102,126,234,0.04);
+  margin-bottom: 20px;
+}
+.bs-upgrade-cta-text strong { display: block; color: var(--color-text-primary); margin-bottom: 4px; }
+.bs-upgrade-cta-text p      { font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0; }
+
+.bs-btn-upgrade {
+  height: 44px;
+  padding: 0 24px;
+  background: var(--gradient-primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: opacity var(--transition-fast);
+}
+.bs-btn-upgrade:hover { opacity: 0.88; }
+
+/* ── Past due warning ── */
+.bs-past-due-card {
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  background: rgba(255,193,7,0.04);
+  margin-bottom: 20px;
+}
+.bs-past-due-card strong { display: block; margin-bottom: 8px; color: var(--color-text-primary); }
+.bs-past-due-card p { font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0 0 16px; }
+
+/* ── Responsive ── */
+@media (min-width: 480px) {
+  .bs-card { padding: 24px; }
+  .bs-wrap { padding: 40px 24px 80px; }
+}

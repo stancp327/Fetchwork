@@ -168,6 +168,7 @@ const Navigation = () => {
 
                 <div className="nav-divider" />
 
+                <NavLink to="/billing">Billing</NavLink>
                 <NavLink to="/profile">Profile</NavLink>
                 <button className="nav-logout-btn" onClick={() => { logout(); closeMobileMenu(); }}>
                   Logout
@@ -178,6 +179,7 @@ const Navigation = () => {
                 <NavLink to="/freelancers">Freelancers</NavLink>
                 <NavLink to="/browse-jobs">Jobs</NavLink>
                 <NavLink to="/browse-services">Services</NavLink>
+                <NavLink to="/pricing">Pricing</NavLink>
 
                 <div className="nav-spacer" />
 

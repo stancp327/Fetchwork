@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
 import { getLocationDisplay } from '../../utils/location';
+import PlanBadge from '../Billing/PlanBadge';
 
 const FreelancerCard = ({ freelancer }) => {
   const profilePath = `/freelancer/${freelancer.username || freelancer._id}`;
@@ -14,7 +15,10 @@ const FreelancerCard = ({ freelancer }) => {
           className="freelancer-avatar"
         />
         <div className="freelancer-info">
-          <h3>{freelancer.firstName} {freelancer.lastName}</h3>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {freelancer.firstName} {freelancer.lastName}
+            <PlanBadge planSlug={freelancer.planSlug} tier={freelancer.planTier} />
+          </h3>
           <div className="freelancer-rating">
             <span className="rating">★ {Number(freelancer.rating || 0).toFixed(1)}</span>
             <span className="reviews">({freelancer.totalReviews || 0} reviews)</span>
