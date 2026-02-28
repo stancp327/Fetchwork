@@ -19,6 +19,7 @@ const ServiceDetails = () => {
   const [selectedPackage, setSelectedPackage] = useState('basic');
   const [requirements, setRequirements] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [orderConfirmed, setOrderConfirmed] = useState(null); // holds confirmed package details
 
   const apiBaseUrl = getApiBaseUrl();
 
@@ -63,8 +64,15 @@ const ServiceDetails = () => {
         }
       );
 
-      alert('Service ordered successfully! Check your messages for details.');
-      navigate('/messages');
+      const pkg = service.packages?.[selectedPackage] || {};
+      setOrderConfirmed({
+        serviceName: service.title,
+        freelancerName: `${service.user?.firstName} ${service.user?.lastName}`,
+        packageName: pkg.name || selectedPackage,
+        price: pkg.price,
+        delivery: pkg.deliveryDays,
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Failed to order service:', error);
       alert(error.response?.data?.error || 'Failed to order service');
@@ -73,6 +81,58 @@ const ServiceDetails = () => {
     }
   };
 
+
+  if (orderConfirmed) {
+    return (
+      <div className="sd-state-page">
+        <div className="sd-confirmation">
+          <div className="sd-confirm-icon">✅</div>
+          <h2>Order Confirmed!</h2>
+          <p className="sd-confirm-sub">Your order has been placed and the freelancer has been notified.</p>
+
+          <div className="sd-confirm-summary">
+            <div className="sd-confirm-row">
+              <span>Service</span>
+              <span>{orderConfirmed.serviceName}</span>
+            </div>
+            <div className="sd-confirm-row">
+              <span>Freelancer</span>
+              <span>{orderConfirmed.freelancerName}</span>
+            </div>
+            <div className="sd-confirm-row">
+              <span>Package</span>
+              <span>{orderConfirmed.packageName}</span>
+            </div>
+            {orderConfirmed.price && (
+              <div className="sd-confirm-row">
+                <span>Price</span>
+                <span>${orderConfirmed.price}</span>
+              </div>
+            )}
+            {orderConfirmed.delivery && (
+              <div className="sd-confirm-row">
+                <span>Delivery</span>
+                <span>{orderConfirmed.delivery} day{orderConfirmed.delivery !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+          </div>
+
+          <p className="sd-confirm-next">
+            💬 Head to your messages to discuss the details and get started.
+          </p>
+
+          <div className="sd-confirm-actions">
+            <button className="btn btn-primary" onClick={() => navigate('/messages')}>
+              View in Messages →
+            </button>
+            <button className="btn btn-ghost" onClick={() => navigate('/dashboard')}>
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

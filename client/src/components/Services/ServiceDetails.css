@@ -78,3 +78,55 @@
   .service-details-page .service-header h1 { font-size: var(--font-size-2xl); }
   .service-description, .service-skills, .service-faqs, .freelancer-card, .pricing-card { padding: var(--space-xl); }
 }
+
+/* -- Order Confirmation Screen ----------------------------------- */
+.sd-confirmation {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem 1.25rem;
+  max-width: 460px;
+  margin: 0 auto;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+.sd-confirm-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+.sd-confirmation h2 { font-size: 1.4rem; margin: 0 0 0.4rem; }
+.sd-confirm-sub { color: #6b7280; font-size: 0.9rem; margin: 0 0 1.5rem; }
+
+.sd-confirm-summary {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+.sd-confirm-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.sd-confirm-row:last-child { border-bottom: none; }
+.sd-confirm-row span:first-child { color: #6b7280; }
+.sd-confirm-row span:last-child { font-weight: 600; }
+
+.sd-confirm-next {
+  font-size: 0.85rem;
+  color: #374151;
+  background: #eff6ff;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1.25rem;
+}
+.sd-confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.sd-confirm-actions .btn { flex: 1; min-height: 44px; }
+
+@media (min-width: 480px) {
+  .sd-confirmation { padding: 2.5rem 2rem; }
+  .sd-confirm-actions .btn { flex: none; }
+}
