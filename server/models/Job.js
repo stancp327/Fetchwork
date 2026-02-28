@@ -287,6 +287,9 @@ jobSchema.index({ isUrgent: 1 });
 jobSchema.index({ isFeatured: 1 });
 jobSchema.index({ proposalCount: 1 });
 jobSchema.index({ title: 'text', description: 'text', skills: 'text' });
+// Compound indexes for dashboard queries (my-jobs sorted by date)
+jobSchema.index({ client: 1, isActive: 1, createdAt: -1 });
+jobSchema.index({ freelancer: 1, isActive: 1, status: 1 });
 
 jobSchema.pre('save', function(next) {
   if (this.isModified('proposals')) {

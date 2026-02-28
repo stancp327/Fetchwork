@@ -46,9 +46,6 @@ const JobDetails = () => {
       setError('');
       const token = localStorage.getItem('token');
       
-      console.log('Fetching job details for ID:', id);
-      console.log('API_BASE_URL:', API_BASE_URL);
-      console.log('Token:', token ? 'Present' : 'Missing');
       const response = await fetch(`${API_BASE_URL}/api/jobs/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -56,8 +53,6 @@ const JobDetails = () => {
         }
       });
 
-      console.log('Response status:', response.status);
-      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error:', errorText);
@@ -65,9 +60,6 @@ const JobDetails = () => {
       }
 
       const data = await response.json();
-      console.log('API Response:', data);
-      console.log('Job data extracted:', data.job);
-      
       if (!data.job) {
         throw new Error('Job data not found in response');
       }

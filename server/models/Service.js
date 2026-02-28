@@ -125,6 +125,10 @@ serviceSchema.index({ isActive: 1, status: 1 });
 serviceSchema.index({ 'location.locationType': 1 });
 serviceSchema.index({ 'location.zipCode': 1 });
 serviceSchema.index({ 'location.coordinates': '2dsphere' });
+// Compound indexes for browse + text search
+serviceSchema.index({ isActive: 1, status: 1, category: 1 }); // category page
+serviceSchema.index({ freelancer: 1, isActive: 1, status: 1 }); // my services
+serviceSchema.index({ title: 'text', description: 'text' }); // service search
 
 serviceSchema.methods.incrementViews = function() {
   this.views += 1;

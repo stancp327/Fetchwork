@@ -278,6 +278,9 @@ userSchema.index({ 'location.coordinates': '2dsphere' });
 userSchema.index({ rating: -1 });
 userSchema.index({ isActive: 1, isSuspended: 1 });
 userSchema.index({ username: 1 }, { unique: true, sparse: true });
+// Compound indexes for freelancer browse (accountType used in $or filter)
+userSchema.index({ accountType: 1 });
+userSchema.index({ accountType: 1, isActive: 1, rating: -1 }); // sorted freelancer browse
 
 
 userSchema.pre('save', async function(next) {
