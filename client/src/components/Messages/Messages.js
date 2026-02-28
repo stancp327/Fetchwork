@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
 import { getApiBaseUrl, apiRequest } from '../../utils/api';
+import CustomOfferModal from '../Offers/CustomOfferModal';
 import './Messages.css';
 
 // ── Time Formatting ─────────────────────────────────────────────
@@ -49,13 +50,133 @@ const ConvoItem = ({ convo, selected, userId, onClick }) => {
   );
 };
 
+// ── Proposal Action Card (renders inside system message bubbles) ──
+const ProposalActionCard = ({ meta, isMine, userId, onAction }) => {
+  const [acting,  setActing]  = useState(false);
+  const [status,  setStatus]  = useState('pending'); // optimistic local state
+  const [showCounter, setShowCounter] = useState(false);
+  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+
+  const doAccept = async () => {
+    if (!window.confirm(`Accept ${meta.freelancerName}'s proposal for ${fmt(meta.proposedBudget)}? This will hire them for the job.`)) return;
+    setActing(true);
+    try {
+      await apiRequest(`/api/jobs/${meta.jobId}/proposals/${meta.proposalId}/accept`, { method: 'POST' });
+      setStatus('accepted');
+      if (onAction) onAction();
+    } catch (err) {
+      alert(err.message || 'Failed to accept proposal');
+    } finally { setActing(false); }
+  };
+
+  const doDecline = async () => {
+    if (!window.confirm('Decline this proposal?')) return;
+    setActing(true);
+    try {
+      await apiRequest(`/api/jobs/${meta.jobId}/proposals/${meta.proposalId}/decline`, { method: 'POST' });
+      setStatus('declined');
+      if (onAction) onAction();
+    } catch (err) {
+      alert(err.message || 'Failed to decline proposal');
+    } finally { setActing(false); }
+  };
+
+  return (
+    <div className="msg-proposal-card">
+      {/* Summary row */}
+      <div className="msg-proposal-header">
+        <span className="msg-proposal-title">📋 Proposal</span>
+        {meta.jobTitle && <span className="msg-proposal-job">for "{meta.jobTitle}"</span>}
+      </div>
+
+      <div className="msg-proposal-terms">
+        <span className="msg-proposal-term">
+          <span className="term-label">Bid</span>
+          <strong>{fmt(meta.proposedBudget)}</strong>
+        </span>
+        <span className="msg-proposal-term">
+          <span className="term-label">Timeline</span>
+          <strong>{meta.proposedDuration?.replace(/_/g, ' ') || '—'}</strong>
+        </span>
+      </div>
+
+      {meta.coverLetter && (
+        <div className="msg-proposal-cover">
+          {meta.coverLetter.length > 160
+            ? meta.coverLetter.substring(0, 160) + '…'
+            : meta.coverLetter}
+        </div>
+      )}
+
+      {/* Status badge (once actioned) */}
+      {status !== 'pending' && (
+        <div className={`msg-proposal-status ${status}`}>
+          {status === 'accepted' ? '✅ Proposal accepted — job is now in progress' : '❌ Proposal declined'}
+        </div>
+      )}
+
+      {/* Actions — only visible to client (receiver), only when pending */}
+      {!isMine && status === 'pending' && meta.proposalId && (
+        <div className="msg-proposal-actions">
+          <button className="msg-pa-accept" disabled={acting} onClick={doAccept}>
+            ✓ Accept
+          </button>
+          <button className="msg-pa-counter" disabled={acting} onClick={() => setShowCounter(true)}>
+            ↩ Counter
+          </button>
+          <button className="msg-pa-decline" disabled={acting} onClick={doDecline}>
+            ✕ Decline
+          </button>
+          <Link to={`/jobs/${meta.jobId}/proposals`} className="msg-pa-view">
+            View All →
+          </Link>
+        </div>
+      )}
+
+      {/* Freelancer view — just shows status */}
+      {isMine && (
+        <div className="msg-proposal-sent-note">
+          Proposal sent · <Link to={`/jobs/${meta.jobId}`} className="msg-pa-view">View Job →</Link>
+        </div>
+      )}
+
+      {/* Counter offer modal */}
+      {showCounter && (
+        <CustomOfferModal
+          isOpen={true}
+          onClose={() => setShowCounter(false)}
+          recipientId={isMine ? null : meta.freelancerId}
+          recipientName={meta.freelancerName}
+          jobId={meta.jobId}
+          offerType="counter_offer"
+          prefillTerms={{ amount: meta.proposedBudget, deliveryTime: 1, revisions: 1, description: '' }}
+          onSuccess={() => { setShowCounter(false); if (onAction) onAction(); }}
+        />
+      )}
+    </div>
+  );
+};
+
 // ── Message Bubble ──────────────────────────────────────────────
-const MsgBubble = ({ msg, isMine, deliveryStatus }) => {
+const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) => {
   const meta = msg.metadata;
+  const isProposal = meta?.type === 'job_proposal';
+
   return (
     <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>
-      <div className={`msg-bubble ${msg.messageType === 'system' ? 'msg-system' : ''}`}>
-        <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+      <div className={`msg-bubble ${msg.messageType === 'system' ? 'msg-system' : ''} ${isProposal ? 'msg-bubble-proposal' : ''}`}>
+
+        {/* Proposal: render structured card instead of raw text */}
+        {isProposal ? (
+          <ProposalActionCard
+            meta={meta}
+            isMine={isMine}
+            userId={userId}
+            onAction={onProposalAction}
+          />
+        ) : (
+          <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+        )}
 
         {/* Service order link */}
         {meta?.type === 'service_order' && meta.serviceId && (
@@ -64,8 +185,8 @@ const MsgBubble = ({ msg, isMine, deliveryStatus }) => {
           </Link>
         )}
 
-        {/* Job proposal/activity link */}
-        {meta?.type === 'job_proposal' && meta.jobId && (
+        {/* Legacy job proposal link (old messages without metadata) */}
+        {!isProposal && meta?.type === 'job_proposal' && meta.jobId && (
           <Link to={`/jobs/${meta.jobId}`} className="msg-job-link">
             View Job →
           </Link>
@@ -448,8 +569,10 @@ const Messages = () => {
                   messages.map(msg => (
                     <MsgBubble
                       key={msg._id} msg={msg}
-                      isMine={msg.sender?._id === userId}
+                      isMine={msg.sender?._id === userId || msg.sender === userId}
                       deliveryStatus={deliveryStatus}
+                      userId={userId}
+                      onProposalAction={() => fetchMessages(selectedConvo)}
                     />
                   ))
                 )}

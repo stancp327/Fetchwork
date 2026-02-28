@@ -508,13 +508,29 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
       console.log('DEBUG: New conversation created:', conversation._id);
     }
     
+    // Get the newly added proposal's _id so we can wire up in-chat actions
+    const savedProposal = job.proposals.find(
+      p => p.freelancer.toString() === req.user._id.toString()
+    );
+
     console.log('DEBUG: Creating system message');
     const systemMessage = new Message({
       conversation: conversation._id,
       sender: req.user._id,
       recipient: job.client,
       content: `🔔 New Proposal Received for "${job.title}"\n\nFreelancer: ${req.user.firstName} ${req.user.lastName}\nProposed Budget: $${proposedBudget}\nTimeline: ${proposedDuration}\nSubmitted: ${new Date().toLocaleString()}\n\nCover Letter:\n${coverLetter}`,
-      messageType: 'system'
+      messageType: 'system',
+      metadata: {
+        type: 'job_proposal',
+        jobId:          String(job._id),
+        jobTitle:       job.title,
+        proposalId:     savedProposal ? String(savedProposal._id) : null,
+        proposedBudget: parseFloat(proposedBudget),
+        proposedDuration: proposedDuration,
+        coverLetter:    coverLetter,
+        freelancerId:   String(req.user._id),
+        freelancerName: `${req.user.firstName} ${req.user.lastName}`,
+      }
     });
     
     await systemMessage.save();
