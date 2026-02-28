@@ -7,9 +7,13 @@
   overflow-x: hidden;
   box-sizing: border-box;
 }
-/* Target only direct children — never use * selector (breaks grids + min-widths) */
-.admin-dashboard > * { box-sizing: border-box; }
-.dashboard-content { box-sizing: border-box; width: 100%; }
+/* Scoped reset — ensures every nested element stays within the dashboard container.
+   max-width: 100% is a CSS reset pattern (not a layout hack) — safe and necessary here. */
+.admin-dashboard *, .admin-dashboard *::before, .admin-dashboard *::after {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.dashboard-content { width: 100%; }
 
 /* Header */
 .dashboard-header {
@@ -142,9 +146,11 @@
   width: 100%; min-height: 44px; box-sizing: border-box;
 }
 
-/* Tables → card layout on mobile */
+/* Tables → card layout on mobile; overflow-x: auto as fallback if content exceeds width */
 .users-table, .jobs-table, .payments-table, .reviews-table {
   width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Hide table headers on mobile, show card layout */

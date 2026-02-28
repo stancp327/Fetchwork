@@ -4,6 +4,7 @@
 /* ── Global reset — mobile-first foundations ──────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
+  max-width: 100%;        /* Prevent any element from blowing past its container */
 }
 
 html {
