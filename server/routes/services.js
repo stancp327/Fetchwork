@@ -571,7 +571,7 @@ router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) =>
       type:       'new_order',
       title:      'Payment reminder',
       message:    `Your order for "${service.title}" is awaiting payment.`,
-      actionUrl:  `/services/${service._id}`,
+      link:       `/services/${service._id}`,
     });
 
     res.json({ message: 'Reminder sent' });

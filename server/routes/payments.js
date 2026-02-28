@@ -471,8 +471,7 @@ router.webhookHandler = async (req, res) => {
                 type: 'new_order',
                 title: 'New service order',
                 message: `You have a new paid order for "${service.title}" (${pkg.title || order.package}).`,
-                relatedJob: null,
-                actionUrl: `/messages`,
+                link: `/messages`,
               });
 
               console.log('✅ Webhook auto-activated service order:', order._id);
@@ -494,7 +493,7 @@ router.webhookHandler = async (req, res) => {
               title: 'Secure Payment funded',
               message: `${job.client.firstName} ${job.client.lastName} has secured payment for "${job.title}". You're good to start!`,
               relatedJob: job._id,
-              actionUrl: `/jobs/${job._id}/progress`,
+              link: `/jobs/${job._id}/progress`,
             });
           }
         } catch (jobNotifErr) {

@@ -25,13 +25,20 @@ const notificationSchema = new mongoose.Schema({
       'job_started',
       'job_completed',
       'job_cancelled',
+      // Bookings
+      'booking_confirmed',
+      'booking_cancelled',
+      // Orders / Services
+      'new_order',
       // Payments
       'payment_received',
       'payment_released',
+      'payment_failed',
       'escrow_funded',
       // Messages
       'new_message',
       // System
+      'system',
       'system_announcement',
       'account_warning'
     ],
@@ -72,7 +79,29 @@ const notificationSchema = new mongoose.Schema({
 notificationSchema.index({ recipient: 1, read: 1, createdAt: -1 });
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 }); // TTL: 90 days
 
-// Static helper
+// ── Real-time push via socket ───────────────────────────────────────────────
+// Runs after every Notification.create() / .save() automatically.
+// Routes don't need to know about socket.io — just call Notification.create().
+notificationSchema.post('save', function(doc) {
+  try {
+    if (global.io) {
+      global.io.to(doc.recipient.toString()).emit('notification:new', {
+        _id:       doc._id,
+        type:      doc.type,
+        title:     doc.title,
+        message:   doc.message,
+        link:      doc.link,
+        read:      doc.read,
+        createdAt: doc.createdAt
+      });
+    }
+  } catch (err) {
+    // Never let socket errors break the notification save
+    console.error('[Notification] socket push failed:', err.message);
+  }
+});
+
+// Static helper (wraps create with error swallowing — use in non-critical paths)
 notificationSchema.statics.notify = async function(data) {
   try {
     return await this.create(data);

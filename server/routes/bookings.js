@@ -278,7 +278,7 @@ router.post('/:id/confirm', authenticateToken, async (req, res) => {
         type:       'booking_confirmed',
         title:      'New booking confirmed',
         message:    `${client.firstName} ${client.lastName} booked a session with you.`,
-        actionUrl:  `/bookings/${booking._id}`,
+        link:       `/bookings/${booking._id}`,
       });
     } catch { /* non-critical */ }
 
@@ -399,7 +399,7 @@ router.put('/:id/cancel', authenticateToken, async (req, res) => {
           type:      'booking_cancelled',
           title:     'Booking cancelled',
           message:   `${actor.firstName} ${actor.lastName} cancelled the booking.${cancellationFee > 0 ? ` Cancellation fee: $${cancellationFee}` : ''}`,
-          actionUrl: `/bookings/${booking._id}`,
+          link:      `/bookings/${booking._id}`,
         });
       }
     } catch { /* non-critical */ }

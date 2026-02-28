@@ -20,6 +20,7 @@ const SOCKET_EVENTS = [
   'user:offline',
   'message:delivered',
   'user:online_status',
+  'notification:new',
 ];
 
 export const useSocket = (options) => {

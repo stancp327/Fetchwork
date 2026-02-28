@@ -33,6 +33,10 @@ const io = new Server(server, {
   }
 });
 
+// Make io available globally so Notification model's post-save hook
+// can push real-time events without needing to import io everywhere.
+global.io = io;
+
 app.set('io', io);
 app.set('trust proxy', 1); // Trust first proxy (Render's load balancer)
 

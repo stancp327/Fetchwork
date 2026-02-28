@@ -72,5 +72,21 @@ export const useNotifications = () => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
+  // Real-time: when NotificationListener receives a socket push,
+  // immediately update bell count + prepend to items list
+  useEffect(() => {
+    const onNew = (e) => {
+      const notif = e.detail;
+      if (!notif) return;
+      setNotifications(prev => ({
+        ...prev,
+        unreadNotifications: prev.unreadNotifications + 1,
+        items: [{ ...notif, read: false }, ...prev.items].slice(0, 10)
+      }));
+    };
+    window.addEventListener('fetchwork:notification', onNew);
+    return () => window.removeEventListener('fetchwork:notification', onNew);
+  }, []);
+
   return { notifications, loading, refetch: fetchNotifications, markAsRead, markAllRead };
 };

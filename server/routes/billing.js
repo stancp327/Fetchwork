@@ -261,8 +261,8 @@ async function handleSubscriptionDeleted(stripeSub) {
     recipient: userId,
     type:      'system',
     title:     'Subscription ended',
-    content:   'Your subscription has ended and you\'ve been moved to the Free plan. Upgrade anytime to restore your benefits.',
-    metadata:  { type: 'subscription_ended' },
+    message:   'Your subscription has ended and you\'ve been moved to the Free plan. Upgrade anytime to restore your benefits.',
+    link:      '/billing',
   });
 }
 
@@ -290,8 +290,8 @@ async function handlePaymentFailed(invoice) {
     recipient: user._id,
     type:      'system',
     title:     'Payment failed',
-    content:   'We couldn\'t process your subscription payment. Please update your payment method to keep your plan benefits.',
-    metadata:  { type: 'payment_failed', invoiceId: invoice.id },
+    message:   'We couldn\'t process your subscription payment. Please update your payment method to keep your plan benefits.',
+    link:      '/billing',
   });
 }
 
@@ -329,8 +329,8 @@ async function activateSubscription(userId, plan, stripeSub) {
     recipient: userId,
     type:      'system',
     title:     `${plan.name} activated!`,
-    content:   `Welcome to ${plan.name}. Your new benefits are active immediately.`,
-    metadata:  { type: 'subscription_activated', planSlug: plan.slug },
+    message:   `Welcome to ${plan.name}. Your new benefits are active immediately.`,
+    link:      '/billing',
   });
 }
 
