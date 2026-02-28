@@ -4,6 +4,7 @@ import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import CustomOfferModal from './CustomOfferModal';
 import './CustomOffer.css';
+import './MyOffers.css';
 
 const OfferCard = ({ offer, userId, onAction }) => {
   const [showCounter, setShowCounter] = useState(false);
@@ -110,46 +111,44 @@ const MyOffers = () => {
     o.awaitingResponseFrom === user?._id && ['pending', 'countered'].includes(o.status)
   ).length;
 
+  const FILTERS = [
+    { key: 'all',          label: 'All' },
+    { key: 'action_needed', label: '🔔 Action Needed' },
+    { key: 'sent',         label: 'Sent' },
+    { key: 'received',     label: 'Received' },
+  ];
+
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '2rem 1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+    <div className="my-offers-container">
+      <div className="my-offers-header">
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>My Offers</h1>
+          <h1>My Offers</h1>
           {actionNeeded > 0 && (
-            <p style={{ margin: '0.25rem 0 0', color: '#f59e0b', fontSize: '0.9rem', fontWeight: 500 }}>
+            <p className="my-offers-alert">
               🔔 {actionNeeded} offer{actionNeeded > 1 ? 's' : ''} waiting for your response
             </p>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {['all', 'action_needed', 'sent', 'received'].map(f => (
+        <div className="my-offers-filters">
+          {FILTERS.map(({ key, label }) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding: '0.4rem 0.85rem',
-                borderRadius: '20px',
-                border: '1px solid ' + (filter === f ? '#2563eb' : '#d1d5db'),
-                background: filter === f ? '#eff6ff' : 'white',
-                color: filter === f ? '#2563eb' : '#374151',
-                fontSize: '0.8rem',
-                fontWeight: 500,
-                cursor: 'pointer'
-              }}
+              key={key}
+              className={`offer-filter-btn${filter === key ? ' active' : ''}`}
+              onClick={() => setFilter(key)}
             >
-              {f === 'all' ? 'All' : f === 'action_needed' ? '🔔 Action Needed' : f === 'sent' ? 'Sent' : 'Received'}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
       {loading ? (
-        <div>Loading offers...</div>
+        <div className="my-offers-loading">Loading offers…</div>
       ) : offers.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
-          <p>No offers yet</p>
-          <p style={{ fontSize: '0.85rem' }}>Custom offers will appear here when you send or receive them</p>
+        <div className="my-offers-empty">
+          <div className="empty-icon">📋</div>
+          <p><strong>No offers yet</strong></p>
+          <p>Custom offers will appear here when you send or receive them</p>
         </div>
       ) : (
         offers.map(offer => (

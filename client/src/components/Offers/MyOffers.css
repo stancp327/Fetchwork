@@ -1,0 +1,103 @@
+/* ── My Offers Page — Mobile-first ──────────────────────────── */
+.my-offers-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+  padding-top: calc(64px + 1.25rem); /* fixed nav */
+  box-sizing: border-box;
+}
+
+/* ── Page Header ─────────────────────────────────────────────── */
+.my-offers-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.my-offers-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.my-offers-alert {
+  margin: 0.25rem 0 0;
+  color: #f59e0b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* ── Filter Tabs ─────────────────────────────────────────────── */
+.my-offers-filters {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px; /* prevent scroll-bar clipping focus rings */
+}
+.my-offers-filters::-webkit-scrollbar { display: none; }
+
+.offer-filter-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 20px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 36px;
+  transition: all 0.15s;
+}
+
+.offer-filter-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.offer-filter-btn.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* ── States ──────────────────────────────────────────────────── */
+.my-offers-loading {
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.my-offers-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.my-offers-empty .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.my-offers-empty p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+
+/* ── Tablet+ ─────────────────────────────────────────────────── */
+@media (min-width: 480px) {
+  .my-offers-container { padding: 1.5rem 1.25rem; padding-top: calc(64px + 1.5rem); }
+  .my-offers-header { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+  .my-offers-filters { overflow-x: visible; flex-wrap: wrap; }
+}
+
+@media (min-width: 768px) {
+  .my-offers-container { padding: 2rem 1.5rem; padding-top: calc(64px + 2rem); }
+}
