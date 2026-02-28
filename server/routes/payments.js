@@ -7,6 +7,9 @@ const { authenticateToken } = require('../middleware/auth');
 const User    = require('../models/User');
 const Job     = require('../models/Job');
 const Payment = require('../models/Payment');
+const Service = require('../models/Service');
+const { Message, Conversation } = require('../models/Message');
+const Notification = require('../models/Notification');
 
 // ── Helper: calculate platform fee ─────────────────────────────
 function calcPlatformFee(amount) {
@@ -284,14 +287,85 @@ router.webhookHandler = async (req, res) => {
     switch (event.type) {
 
       case 'payment_intent.succeeded': {
-        // Client's card has been charged. Funds are in platform balance.
-        // Job is now "funded" — freelancer can start work.
         const pi = event.data.object;
+
+        // Update Payment record
         await Payment.findOneAndUpdate(
           { stripePaymentIntentId: pi.id },
-          { status: 'processing' }  // processing = funded, awaiting release
+          { status: 'processing' }
         );
-        console.log('✅ payment_intent.succeeded (funded):', pi.id);
+
+        // ── Failsafe: auto-activate any pending service order tied to this PI ──
+        try {
+          const service = await Service.findOne({ 'orders.stripePaymentIntentId': pi.id })
+            .populate('freelancer', 'firstName lastName');
+          if (service) {
+            const order = service.orders.find(o => o.stripePaymentIntentId === pi.id);
+            if (order && order.status === 'pending') {
+              order.status = 'in_progress';
+              await service.save();
+
+              // Ensure conversation is linked
+              let conv = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
+              if (!conv) {
+                conv = new Conversation({
+                  participants:   [service.freelancer._id, order.client],
+                  service:        service._id,
+                  serviceOrderId: order._id,
+                });
+                await conv.save();
+              }
+
+              const pkg = service.pricing?.[order.package] || {};
+              const sysMsg = new Message({
+                conversation: conv._id,
+                sender:       order.client,
+                recipient:    service.freelancer._id,
+                content:      `✅ Payment confirmed — order is now active!\n\nService: "${service.title}"\nPackage: ${pkg.title || order.package}\nPrice: $${order.price}\nDelivery: ${pkg.deliveryTime || '?'} days`,
+                messageType:  'system',
+                metadata: { type: 'service_order', serviceId: service._id, orderId: order._id, price: order.price }
+              });
+              await sysMsg.save();
+              conv.lastMessage = sysMsg._id;
+              await conv.updateLastActivity();
+
+              // Notify freelancer
+              await Notification.create({
+                recipient: service.freelancer._id,
+                type: 'new_order',
+                title: 'New service order',
+                message: `You have a new paid order for "${service.title}" (${pkg.title || order.package}).`,
+                relatedJob: null,
+                actionUrl: `/messages`,
+              });
+
+              console.log('✅ Webhook auto-activated service order:', order._id);
+            }
+          }
+        } catch (svcErr) {
+          console.error('Webhook: service order activation failed:', svcErr.message);
+        }
+
+        // ── Notify freelancer when a job's escrow is funded ──
+        try {
+          const job = await Job.findOne({ stripePaymentIntentId: pi.id })
+            .populate('client', 'firstName lastName')
+            .populate('freelancer', '_id');
+          if (job && job.freelancer) {
+            await Notification.create({
+              recipient: job.freelancer._id,
+              type: 'payment_received',
+              title: 'Secure Payment funded',
+              message: `${job.client.firstName} ${job.client.lastName} has secured payment for "${job.title}". You're good to start!`,
+              relatedJob: job._id,
+              actionUrl: `/jobs/${job._id}/progress`,
+            });
+          }
+        } catch (jobNotifErr) {
+          console.error('Webhook: job funded notification failed:', jobNotifErr.message);
+        }
+
+        console.log('✅ payment_intent.succeeded:', pi.id);
         break;
       }
 

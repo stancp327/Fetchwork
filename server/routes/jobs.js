@@ -8,6 +8,9 @@ const { uploadJobAttachments } = require('../middleware/upload');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
 const { trackEvent } = require('../middleware/analytics');
+const Notification = require('../models/Notification');
+const stripeService = require('../services/stripeService');
+const Payment = require('../models/Payment');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -584,30 +587,140 @@ router.post('/:id/proposals/:proposalId/accept', authenticateToken, validateMong
 
 router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findById(req.params.id).populate('client', 'firstName lastName').populate('freelancer', 'firstName lastName');
     
-    if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
-    }
-    
-    if (job.freelancer.toString() !== req.user._id.toString()) {
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (job.freelancer._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Only the assigned freelancer can complete this job' });
     }
-    
     if (job.status !== 'in_progress') {
       return res.status(400).json({ error: 'Job must be in progress to complete' });
     }
     
     await job.completeJob();
     trackEvent('jobsCompleted');
+
+    const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`.trim();
+
+    // Post system message to the job conversation
+    try {
+      const conversation = await Conversation.findOne({ job: job._id });
+      if (conversation) {
+        const sysMsg = new Message({
+          conversation: conversation._id,
+          sender:    job.freelancer._id,
+          recipient: job.client._id,
+          content:   `✅ ${freelancerName} has marked this job as complete.\n\nPlease review the work and release payment when you're satisfied. Go to the job progress page to release funds.`,
+          messageType: 'system',
+          metadata: { type: 'job_completed', jobId: job._id }
+        });
+        await sysMsg.save();
+        conversation.lastMessage = sysMsg._id;
+        await conversation.updateLastActivity();
+      }
+    } catch (msgErr) {
+      console.error('Failed to post completion message:', msgErr.message);
+    }
+
+    // Notify client
+    try {
+      await Notification.create({
+        recipient: job.client._id,
+        type: 'job_update',
+        title: 'Job marked complete',
+        message: `${freelancerName} has marked "${job.title}" as complete. Please review and release payment.`,
+        relatedJob: job._id,
+        actionUrl: `/jobs/${job._id}/progress`,
+      });
+    } catch (notifErr) {
+      console.error('Failed to create completion notification:', notifErr.message);
+    }
     
-    res.json({
-      message: 'Job completed successfully',
-      job: await Job.findById(job._id)
-    });
+    res.json({ message: 'Job completed successfully', job: await Job.findById(job._id) });
   } catch (error) {
     console.error('Error completing job:', error);
     res.status(500).json({ error: 'Failed to complete job' });
+  }
+});
+
+// ── POST /api/jobs/:id/refund ───────────────────────────────────
+// Cancel an in-progress job and refund the client if payment was held.
+// Either party can request; notifies the other.
+router.post('/:id/refund', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const job = await Job.findById(req.params.id)
+      .populate('client',     'firstName lastName')
+      .populate('freelancer', 'firstName lastName');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const isClient     = String(job.client._id)     === String(req.user._id);
+    const isFreelancer = String(job.freelancer?._id) === String(req.user._id);
+    if (!isClient && !isFreelancer) return res.status(403).json({ error: 'Unauthorized' });
+    if (!['in_progress', 'open'].includes(job.status)) {
+      return res.status(400).json({ error: 'Can only cancel in-progress or open jobs' });
+    }
+
+    let refunded = false;
+
+    // Refund Stripe payment if funded
+    if (job.stripePaymentIntentId && job.escrowAmount > 0) {
+      try {
+        await stripeService.refundPayment(job.stripePaymentIntentId, null, reason || 'requested_by_customer');
+        refunded = true;
+        await Payment.findOneAndUpdate(
+          { stripePaymentIntentId: job.stripePaymentIntentId },
+          { status: 'refunded' }
+        );
+      } catch (refErr) {
+        return res.status(500).json({ error: 'Stripe refund failed: ' + refErr.message });
+      }
+    }
+
+    job.status             = 'cancelled';
+    job.cancelledAt        = new Date();
+    job.cancellationReason = reason || 'Cancelled by ' + (isClient ? 'client' : 'freelancer');
+    job.escrowAmount       = 0;
+    job.isActive           = false;
+    await job.save();
+
+    const requesterName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'A party';
+
+    // Post message to thread
+    try {
+      const conv = await Conversation.findOne({ job: job._id });
+      if (conv) {
+        const sysMsg = new Message({
+          conversation: conv._id,
+          sender:    req.user._id,
+          recipient: isClient ? job.freelancer._id : job.client._id,
+          content:   `❌ Job cancelled by ${requesterName}.\n${reason ? `Reason: ${reason}\n` : ''}${refunded ? '💸 A full refund has been issued to the client.' : ''}`,
+          messageType: 'system',
+          metadata: { type: 'job_cancelled', jobId: job._id }
+        });
+        await sysMsg.save();
+        conv.lastMessage = sysMsg._id;
+        await conv.updateLastActivity();
+      }
+    } catch (_) {}
+
+    // Notify the other party
+    try {
+      const notifRecipient = isClient ? job.freelancer._id : job.client._id;
+      await Notification.create({
+        recipient:  notifRecipient,
+        type:       'job_update',
+        title:      'Job cancelled',
+        message:    `${requesterName} cancelled "${job.title}".${refunded ? ' A refund has been issued.' : ''}`,
+        relatedJob: job._id,
+        actionUrl:  `/jobs/${job._id}`,
+      });
+    } catch (_) {}
+
+    res.json({ message: 'Job cancelled', refunded });
+  } catch (error) {
+    console.error('Error cancelling job:', error);
+    res.status(500).json({ error: 'Failed to cancel job' });
   }
 });
 
@@ -716,6 +829,43 @@ router.put('/:id/milestones/:index', authenticateToken, async (req, res) => {
     }
 
     await job.save();
+
+    // Notify the other party about milestone status changes
+    try {
+      if (isFreelancer && status === 'completed') {
+        await Notification.create({
+          recipient: job.client,
+          type: 'job_update',
+          title: 'Milestone completed',
+          message: `Milestone "${milestone.title}" has been marked complete on "${job.title}". Review and approve it.`,
+          relatedJob: job._id,
+          actionUrl: `/jobs/${job._id}/progress`,
+        });
+      }
+      if (isClient && status === 'approved') {
+        await Notification.create({
+          recipient: job.freelancer,
+          type: 'job_update',
+          title: 'Milestone approved',
+          message: `The client approved milestone "${milestone.title}" on "${job.title}".`,
+          relatedJob: job._id,
+          actionUrl: `/jobs/${job._id}/progress`,
+        });
+      }
+      if (isClient && status === 'in_progress') {
+        await Notification.create({
+          recipient: job.freelancer,
+          type: 'job_update',
+          title: 'Revision requested',
+          message: `The client requested a revision on milestone "${milestone.title}" for "${job.title}".`,
+          relatedJob: job._id,
+          actionUrl: `/jobs/${job._id}/progress`,
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to create milestone notification:', notifErr.message);
+    }
+
     res.json({ message: 'Milestone updated', job });
   } catch (error) {
     console.error('Error updating milestone:', error);

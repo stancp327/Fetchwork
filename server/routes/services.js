@@ -467,6 +467,71 @@ router.put('/:id/orders/:orderId/revision', authenticateToken, async (req, res) 
   }
 });
 
+// ── PUT /api/services/:id/orders/:orderId/cancel ───────────────
+router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id)
+      .populate('freelancer', 'firstName lastName email');
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+
+    const order = service.orders.id(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    const isClient     = String(order.client) === String(req.user._id);
+    const isFreelancer = String(service.freelancer._id) === String(req.user._id);
+    if (!isClient && !isFreelancer) return res.status(403).json({ error: 'Unauthorized' });
+
+    if (['completed', 'cancelled'].includes(order.status)) {
+      return res.status(400).json({ error: `Order is already ${order.status}` });
+    }
+
+    // Refund if payment was collected
+    let refunded = false;
+    if (order.stripePaymentIntentId && order.escrowAmount > 0 && order.status !== 'pending') {
+      try {
+        await stripeService.refundPayment(order.stripePaymentIntentId);
+        refunded = true;
+      } catch (refundErr) {
+        console.error('Refund failed:', refundErr.message);
+        return res.status(500).json({ error: 'Refund failed: ' + refundErr.message });
+      }
+    }
+
+    order.status       = 'cancelled';
+    order.escrowAmount = 0;
+    await service.save();
+
+    // Update payment record
+    if (order.stripePaymentIntentId) {
+      await Payment.findOneAndUpdate(
+        { stripePaymentIntentId: order.stripePaymentIntentId },
+        { status: 'refunded' }
+      );
+    }
+
+    // Post cancellation message
+    const conv = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
+    if (conv) {
+      const msg = new Message({
+        conversation: conv._id,
+        sender:       req.user._id,
+        recipient:    isClient ? service.freelancer._id : order.client,
+        content:      `❌ Order cancelled by ${isClient ? 'the client' : 'the freelancer'}.${refunded ? ' A full refund has been issued.' : ''}`,
+        messageType:  'system',
+        metadata: { type: 'order_cancelled', serviceId: service._id, orderId: order._id }
+      });
+      await msg.save();
+      conv.lastMessage = msg._id;
+      await conv.updateLastActivity();
+    }
+
+    res.json({ message: 'Order cancelled', refunded });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    res.status(500).json({ error: 'Failed to cancel order' });
+  }
+});
+
 // ── GET /api/services/:id/orders/:orderId ──────────────────────
 router.get('/:id/orders/:orderId', authenticateToken, async (req, res) => {
   try {
