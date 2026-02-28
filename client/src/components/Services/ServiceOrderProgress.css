@@ -1,0 +1,267 @@
+.sop-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+
+.sop-back {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-decoration: none;
+  margin-bottom: 1.25rem;
+  min-height: 36px;
+  gap: 0.3rem;
+}
+.sop-back:hover { color: #2563eb; }
+
+/* ── Header ─────────────────────────────────────────────────── */
+.sop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.sop-header h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 0.4rem;
+}
+.sop-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+.sop-meta span { display: flex; align-items: center; gap: 0.3rem; }
+.sop-secured { color: #10b981; font-weight: 600; }
+.sop-btn-view-service {
+  min-height: 36px;
+  padding: 0 1rem;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.sop-btn-view-service:hover { background: #e5e7eb; }
+
+/* ── Timeline ───────────────────────────────────────────────── */
+.sop-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  padding: 1rem 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.sop-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+  min-width: 70px;
+}
+.sop-step.done   { opacity: 1; }
+.sop-step.active { opacity: 1; }
+
+.sop-step-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s;
+}
+.sop-step.done   .sop-step-icon { background: #d1fae5; border-color: #10b981; }
+.sop-step.active .sop-step-icon { background: #dbeafe; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+
+.sop-step-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+  white-space: nowrap;
+}
+.sop-step.done   .sop-step-label { color: #065f46; }
+.sop-step.active .sop-step-label { color: #1d4ed8; }
+
+.sop-step-line {
+  height: 2px;
+  flex: 1;
+  min-width: 20px;
+  background: #e5e7eb;
+  margin-top: -18px; /* align with icon center */
+  transition: background 0.2s;
+}
+.sop-step-line.done { background: #10b981; }
+
+/* ── Cancelled banner ───────────────────────────────────────── */
+.sop-cancelled-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #dc2626;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* ── Body grid ──────────────────────────────────────────────── */
+.sop-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.sop-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.75rem;
+}
+.sop-card h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 0.6rem;
+}
+.sop-text {
+  font-size: 0.88rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+}
+.sop-date {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 0.5rem 0 0;
+}
+.sop-delivery-card { border-left: 3px solid #8b5cf6; }
+.sop-complete-card  { border-left: 3px solid #10b981; }
+
+/* ── Actions panel ──────────────────────────────────────────── */
+.sop-actions-panel { }
+
+.sop-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.sop-action-hint {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: 0 0 0.25rem;
+  line-height: 1.5;
+}
+.sop-success-text { color: #065f46; font-weight: 500; }
+
+.sop-action-msg {
+  padding: 0.5rem 0.75rem;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  margin-bottom: 0.5rem;
+}
+.sop-action-msg.success { background: #d1fae5; color: #065f46; }
+.sop-action-msg.error   { background: #fef2f2; color: #dc2626; }
+
+/* ── Action buttons ─────────────────────────────────────────── */
+.sop-btn {
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  width: 100%;
+}
+.sop-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.sop-btn:hover:not(:disabled) { opacity: 0.88; }
+
+.sop-btn-deliver  { background: #2563eb; color: white; }
+.sop-btn-complete { background: #10b981; color: white; }
+.sop-btn-revision { background: #f59e0b; color: white; }
+.sop-btn-remind   { background: #f59e0b; color: white; }
+.sop-btn-review   { background: #8b5cf6; color: white; }
+.sop-btn-cancel   {
+  background: none;
+  color: #9ca3af;
+  border: 1px solid #e5e7eb;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+.sop-btn-cancel:hover:not(:disabled) { color: #dc2626; border-color: #fecaca; opacity: 1; }
+
+.sop-messages-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+.sop-messages-link:hover { background: #f3f4f6; }
+
+/* ── State ──────────────────────────────────────────────────── */
+.sop-loading, .sop-error {
+  padding: 3rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+.sop-error { color: #dc2626; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (min-width: 480px) {
+  .sop-container { padding: 1.5rem 1.25rem; }
+}
+
+@media (min-width: 768px) {
+  .sop-container { padding: 2rem 1.5rem; }
+  .sop-header h1 { font-size: 1.6rem; }
+  .sop-body {
+    grid-template-columns: 1fr 340px;
+    align-items: start;
+  }
+}
