@@ -1,19 +1,16 @@
 /* ── Admin Dashboard — Mobile-first ─────────────────────────── */
 .admin-dashboard {
   padding: var(--space-sm);
+  width: 100%;        /* Explicit width needed — flex items don't auto-fill without it */
+  min-width: 0;       /* CRITICAL: flex items default to min-width:auto which locks them
+                         at content size (~955px). min-width:0 allows shrinking to viewport. */
   max-width: 1200px;
   margin: 0 auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  overflow-x: hidden;
   box-sizing: border-box;
 }
-/* Scoped reset — ensures every nested element stays within the dashboard container.
-   max-width: 100% is a CSS reset pattern (not a layout hack) — safe and necessary here. */
-.admin-dashboard *, .admin-dashboard *::before, .admin-dashboard *::after {
-  box-sizing: border-box;
-  max-width: 100%;
-}
-.dashboard-content { width: 100%; }
+/* box-sizing handled by global reset in index.css */
+.dashboard-content { width: 100%; min-width: 0; }
 
 /* Header */
 .dashboard-header {
@@ -77,9 +74,12 @@
   border-radius: 6px; cursor: pointer; font-weight: 500; min-height: 44px;
 }
 
-/* Stats grid */
+/* Stats grid — minmax(0,1fr) not 1fr: prevents cards from locking at content size */
 .stats-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  width: 100%;
   margin-bottom: var(--space-lg);
 }
 .stat-card {
@@ -233,7 +233,7 @@
 /* ── Tablet+ ─────────────────────────────────────────────────── */
 @media (min-width: 480px) {
   .admin-dashboard { padding: var(--space-md); }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pagination { flex-direction: row; justify-content: space-between; }
 }
 
@@ -243,7 +243,7 @@
   .header-actions { justify-content: flex-end; }
   .dashboard-header h1 { font-size: var(--font-size-2xl); }
   .tab-button { font-size: 0.9rem; padding: var(--space-sm) var(--space-lg); }
-  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .activity-grid { grid-template-columns: 1fr 1fr; }
   .activity-item { flex-direction: row; justify-content: space-between; align-items: center; }
 
