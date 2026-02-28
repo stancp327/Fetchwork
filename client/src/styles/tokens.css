@@ -1,53 +1,79 @@
 :root {
-  /* Colors */
-  --color-primary: #667eea;
-  --color-primary-dark: #764ba2;
-  --color-success: #28a745;
-  --color-danger: #dc3545;
-  --color-warning: #ffc107;
-  --color-info: #17a2b8;
-  
-  --color-text-primary: #333;
-  --color-text-secondary: #666;
-  --color-text-muted: #6c757d;
-  --color-text-light: #7f8c8d;
-  
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-bg-muted: #e9ecef;
-  --color-border: #e1e5e9;
-  --color-border-light: #f1f3f4;
-  
-  /* Typography — fluid scaling (mobile-first with clamp) */
-  --font-size-xs: clamp(0.7rem, 0.65rem + 0.25vw, 0.75rem);
-  --font-size-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.875rem);
+  /* ── Brand Colors ──────────────────────────────────────────── */
+  --color-primary:       #2563eb;   /* Tailwind blue-600 — was #667eea (wrong purple) */
+  --color-primary-dark:  #1d4ed8;   /* Tailwind blue-700 — hover/active state */
+  --color-primary-light: #eff6ff;   /* Tailwind blue-50  — tinted bg */
+  --color-primary-ring:  rgba(37, 99, 235, 0.2); /* focus ring */
+
+  /* ── Semantic Colors ───────────────────────────────────────── */
+  --color-success:       #10b981;   /* Tailwind emerald-500 — was #28a745 */
+  --color-success-dark:  #059669;   /* Tailwind emerald-600 — hover */
+  --color-success-light: #ecfdf5;   /* Tailwind emerald-50  — tinted bg */
+
+  --color-danger:        #dc2626;   /* Tailwind red-600     — was #dc3545 */
+  --color-danger-dark:   #b91c1c;   /* Tailwind red-700     — hover */
+  --color-danger-light:  #fee2e2;   /* Tailwind red-100     — tinted bg */
+
+  --color-warning:       #f59e0b;   /* Tailwind amber-500   — was #ffc107 */
+  --color-warning-dark:  #d97706;   /* Tailwind amber-600   — hover */
+  --color-warning-light: #fef3c7;   /* Tailwind amber-100   — tinted bg */
+
+  --color-info:          #0ea5e9;   /* Tailwind sky-500 */
+  --color-info-light:    #f0f9ff;   /* Tailwind sky-50  */
+
+  /* ── Text Colors ───────────────────────────────────────────── */
+  --color-text-dark:      #1e293b;  /* headings, high emphasis */
+  --color-text:           #374151;  /* body text — was #333 */
+  --color-text-secondary: #6b7280;  /* secondary text — was #666/#6c757d */
+  --color-text-muted:     #9ca3af;  /* placeholders, captions */
+  --color-text-light:     #d1d5db;  /* disabled, very faint */
+  --color-text-inverse:   #ffffff;  /* on dark backgrounds */
+
+  /* ── Background Colors ─────────────────────────────────────── */
+  --color-bg-primary:   #ffffff;
+  --color-bg-secondary: #f8fafc;    /* page background */
+  --color-bg-muted:     #f3f4f6;    /* light card, input bg — was #e9ecef */
+  --color-bg-hover:     #f1f5f9;    /* hover state bg */
+
+  /* ── Border Colors ─────────────────────────────────────────── */
+  --color-border:       #e5e7eb;    /* default border — was #e1e5e9 */
+  --color-border-light: #f3f4f6;    /* subtle divider */
+  --color-border-focus: var(--color-primary);
+
+  /* ── Surface / Glassmorphism ───────────────────────────────── */
+  --color-surface-glass:      rgba(255, 255, 255, 0.85);
+  --color-surface-glass-dark: rgba(15, 23, 42, 0.85);
+
+  /* ── Typography — fluid scaling (mobile-first, clamp) ─────── */
+  --font-size-xs:   clamp(0.7rem,   0.65rem  + 0.25vw, 0.75rem);
+  --font-size-sm:   clamp(0.8rem,   0.75rem  + 0.25vw, 0.875rem);
   --font-size-base: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);
-  --font-size-md: clamp(0.925rem, 0.875rem + 0.25vw, 1.05rem);
-  --font-size-lg: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-  --font-size-xl: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);
-  --font-size-2xl: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
-  --font-size-3xl: clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem);
-  --font-size-4xl: clamp(1.75rem, 1.3rem + 2vw, 3.5rem);
-  
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
+  --font-size-md:   clamp(0.925rem, 0.875rem + 0.25vw, 1.05rem);
+  --font-size-lg:   clamp(1rem,     0.95rem  + 0.25vw, 1.125rem);
+  --font-size-xl:   clamp(1.125rem, 1rem     + 0.5vw,  1.25rem);
+  --font-size-2xl:  clamp(1.25rem,  1.1rem   + 0.75vw, 1.5rem);
+  --font-size-3xl:  clamp(1.5rem,   1.2rem   + 1.5vw,  2.5rem);
+  --font-size-4xl:  clamp(1.75rem,  1.3rem   + 2vw,    3.5rem);
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
   --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  
-  --line-height-tight: 1.2;
-  --line-height-base: 1.4;
+  --font-weight-bold:     700;
+
+  --line-height-tight:   1.2;
+  --line-height-base:    1.4;
   --line-height-relaxed: 1.6;
-  
-  /* Spacing */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 0.75rem;
-  --space-lg: 1rem;
-  --space-xl: 1.5rem;
+
+  /* ── Spacing ───────────────────────────────────────────────── */
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  0.75rem;
+  --space-lg:  1rem;
+  --space-xl:  1.5rem;
   --space-2xl: 2rem;
   --space-3xl: 2.5rem;
   --space-4xl: 3rem;
-  
+
   --space-px-10: 10px;
   --space-px-20: 20px;
   --space-px-24: 24px;
@@ -55,72 +81,61 @@
   --space-px-40: 40px;
   --space-px-60: 60px;
   --space-px-80: 80px;
-  
-  /* Border radius */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 20px;
-  --radius-full: 50%;
-  
-  /* Shadows */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 4px 20px rgba(0, 0, 0, 0.15);
-  
-  /* Container */
-  --container-max: 1200px;
+
+  /* ── Border Radius ─────────────────────────────────────────── */
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ───────────────────────────────────────────────── */
+  --shadow-sm:  0 1px 3px  rgba(0, 0, 0, 0.08);
+  --shadow-md:  0 2px 8px  rgba(0, 0, 0, 0.10);
+  --shadow-lg:  0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-xl:  0 8px 30px rgba(0, 0, 0, 0.12);
+  --shadow-elevated-xl: 0 32px 64px -12px rgba(0, 0, 0, 0.25);
+  --shadow-inner:       inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-inset:       inset 0 2px 4px rgba(0, 0, 0, 0.10);
+  --shadow-focus:       0 0 0 3px var(--color-primary-ring); /* was rgba(102,126,234) purple */
+  --shadow-glow:        0 0 20px rgba(37, 99, 235, 0.25);    /* was indigo purple */
+  --shadow-glow-lg:     0 0 40px rgba(37, 99, 235, 0.30);
+
+  /* ── Gradients ─────────────────────────────────────────────── */
+  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  --gradient-hero:    linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);  /* was #667eea→#764ba2 */
+  --gradient-success: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+  --gradient-danger:  linear-gradient(135deg, var(--color-danger)  0%, var(--color-danger-dark)  100%);
+  --gradient-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  --gradient-glass:   linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+
+  /* ── Transitions ───────────────────────────────────────────── */
+  --transition-fast:   0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s  cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow:   0.5s  cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.6s  cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --transition-spring: 0.4s  cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  --duration-fast:   150ms;
+  --duration-normal: 300ms;
+  --duration-slow:   500ms;
+  --duration-slower: 750ms;
+
+  /* ── Blur ──────────────────────────────────────────────────── */
+  --blur-sm: 4px;
+  --blur-md: 8px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
+
+  /* ── Layout ────────────────────────────────────────────────── */
+  --container-max:     1200px;
   --container-padding: clamp(1rem, 2vw, 2rem);
-  
-  /* Breakpoints (reference only — use in media queries as raw values)
+
+  /* Breakpoint reference (use raw values in media queries)
      sm: 480px | md: 768px | lg: 1024px | xl: 1280px */
   --breakpoint-sm: 480px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1280px;
-  
-  /* Enhanced design tokens for visual polish */
-  --color-surface-glass: rgba(255, 255, 255, 0.85);
-  --color-surface-glass-dark: rgba(15, 23, 42, 0.85);
-  
-  /* Enhanced shadows for depth */
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
-  --shadow-glow-lg: 0 0 40px rgba(99, 102, 241, 0.4);
-  --shadow-elevated-xl: 0 32px 64px -12px rgba(0, 0, 0, 0.25);
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-  
-  /* Enhanced gradients */
-  --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-  --gradient-glass: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  
-  /* Enhanced transitions with cubic-bezier for smooth animations */
-  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --transition-spring: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-
-  /* Animation durations */
-  --duration-fast: 150ms;
-  --duration-normal: 300ms;
-  --duration-slow: 500ms;
-  --duration-slower: 750ms;
-
-  /* Blur effects for glassmorphism */
-  --blur-sm: 4px;
-  --blur-md: 8px;
-  --blur-lg: 16px;
-  --blur-xl: 24px;
-  
-  /* Enhanced shadows for depth */
-  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-focus: 0 0 0 3px rgba(102, 126, 234, 0.2);
-  
-  /* Gradient tokens */
-  --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  --gradient-success: linear-gradient(135deg, var(--color-success) 0%, #1e7e34 100%);
-  --gradient-danger: linear-gradient(135deg, var(--color-danger) 0%, #c82333 100%);
 }
