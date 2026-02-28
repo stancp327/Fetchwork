@@ -137,6 +137,7 @@ const userSchema = new mongoose.Schema({
   },
   paypalEmail: String,
   stripeAccountId: String,
+  stripeConnected: { type: Boolean, default: false },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   emailVerificationToken: String,

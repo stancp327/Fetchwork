@@ -212,6 +212,10 @@ const jobSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  stripePaymentIntentId: {
+    type: String,
+    default: null
+  },
   rating: {
     client: {
       rating: {

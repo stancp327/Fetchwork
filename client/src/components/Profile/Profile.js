@@ -5,6 +5,7 @@ import FileUpload from '../common/FileUpload';
 import { getLocationDisplay } from '../../utils/location';
 import PortfolioWizard from '../Portfolio/PortfolioWizard';
 import CategoryCombobox from '../common/CategoryCombobox';
+import StripeConnect from '../Payments/StripeConnect';
 import './Profile.css';
 
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
@@ -483,14 +484,16 @@ const TabVerification = ({ data, onRefresh }) => {
       </div>
 
       {/* Payment */}
-      <div className="verify-list" style={{ marginTop: '1.5rem' }}>
-        <div className={`verify-item ${data.stripeConnected ? 'verified' : ''}`}>
-          <span className="verify-icon">{data.stripeConnected ? '✅' : '⬜'}</span>
+      <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
+        <div className="verify-id-header">
           <div>
-            <strong>Payment Setup</strong>
-            <p>{data.stripeConnected ? 'Stripe connected' : 'Connect Stripe to receive payments'}</p>
+            <h3>💳 Payment Setup</h3>
+            <p>Connect Stripe to receive payments directly to your bank account.</p>
           </div>
         </div>
+        <StripeConnect onStatusChange={(s) => {
+          if (s?.connected && onRefresh) onRefresh();
+        }} />
       </div>
     </div>
   );
@@ -546,6 +549,21 @@ const Profile = () => {
     rating: 0, portfolio: [],
     socialLinks: { linkedin: '', github: '', portfolio: '', twitter: '' }
   });
+
+  // Handle Stripe Connect return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const stripe = params.get('stripe');
+    if (stripe === 'success') {
+      setSuccess('🎉 Stripe connected! You can now receive payments.');
+      setActiveTab(4); // Verification tab
+      window.history.replaceState({}, '', '/profile');
+    } else if (stripe === 'refresh') {
+      setError('Stripe setup session expired. Please try again.');
+      setActiveTab(4);
+      window.history.replaceState({}, '', '/profile');
+    }
+  }, []); // eslint-disable-line
 
   const fetchProfile = useCallback(async () => {
     try {
