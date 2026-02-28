@@ -179,6 +179,6 @@
 
 /* ── Responsive ── */
 @media (min-width: 768px) {
-  .abt-plans-grid { grid-template-columns: repeat(3, 1fr); }
-  .abt-form-row-2 { grid-template-columns: repeat(3, 1fr); }
+  .abt-plans-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .abt-form-row-2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

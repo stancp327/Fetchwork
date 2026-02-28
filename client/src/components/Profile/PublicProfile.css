@@ -257,8 +257,8 @@
 
 /* ── Tablet (≥480px) ──────────────────────────────────────────── */
 @media (min-width: 480px) {
-  .pp-portfolio-grid { grid-template-columns: repeat(2, 1fr); }
-  .pp-services-grid { grid-template-columns: repeat(2, 1fr); }
+  .pp-portfolio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pp-services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pp-hero-actions { flex-direction: row; align-items: center; width: auto; }
   .pp-hero-actions .pp-btn-primary,
   .pp-hero-actions .pp-btn-secondary { width: auto; }

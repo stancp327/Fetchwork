@@ -347,7 +347,7 @@
   .job-title-row { flex-direction: row; align-items: flex-start; }
   .job-title-row h1 { font-size: 1.5rem; }
   .status-badge { align-self: auto; }
-  .job-stats-row { grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+  .job-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
   .form-row-2 { grid-template-columns: 1fr 1fr; }
   .job-main-card, .sidebar-card { padding: 1.5rem; }
 }

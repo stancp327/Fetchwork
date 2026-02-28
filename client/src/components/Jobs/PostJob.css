@@ -115,7 +115,7 @@
 .cancellation-desc { font-size: var(--font-size-xs); color: #6b7280; }
 
 @media (min-width: 480px) {
-  .work-type-cards { grid-template-columns: repeat(3, 1fr); }
+  .work-type-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (min-width: 768px) {

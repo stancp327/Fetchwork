@@ -1,5 +1,6 @@
 /* ── Layout ─────────────────────────────────────────────────── */
 .pm-container {
+  width: 100%;          /* flex item needs explicit width to constrain to viewport */
   max-width: 960px;
   margin: 0 auto;
   min-width: 0;
@@ -47,7 +48,7 @@
 /* ── Stats ──────────────────────────────────────────────────── */
 .pm-stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
@@ -527,7 +528,7 @@
 
 @media (min-width: 768px) {
   .pm-container { padding: 2rem 1.5rem; }
-  .pm-stats { grid-template-columns: repeat(4, 1fr); }
+  .pm-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .pm-page-header h1 { font-size: 1.75rem; }
   .pm-ms-right { flex-wrap: nowrap; }
 }

@@ -16,7 +16,7 @@
 }
 
 .aa-stat-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm);
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm);
 }
 .aa-stat-card {
   background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: var(--space-md);
@@ -72,12 +72,12 @@
 .aa-error { color: #dc2626; }
 
 @media (min-width: 480px) {
-  .aa-stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .aa-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .aa-chart { height: 160px; }
   .aa-funnel-step { flex-direction: row; align-items: center; gap: var(--space-sm); }
   .aa-funnel-bar { padding: var(--space-sm) var(--space-md); font-size: var(--font-size-xs); }
 }
 @media (min-width: 768px) {
-  .aa-stat-grid.cols-3 { grid-template-columns: repeat(5, 1fr); }
+  .aa-stat-grid.cols-3 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .aa-chart { height: 200px; }
 }

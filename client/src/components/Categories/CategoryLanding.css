@@ -154,7 +154,7 @@
 /* ── Freelancers Grid ───────────────────────────────────────────── */
 .cat-freelancers-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 .cat-fl-card {
@@ -222,12 +222,12 @@
 @media (min-width: 480px) {
   .cat-search { flex-direction: row; }
   .cat-search-btn { flex-shrink: 0; }
-  .cat-services-grid { grid-template-columns: repeat(2, 1fr); }
-  .cat-freelancers-grid { grid-template-columns: repeat(3, 1fr); }
+  .cat-services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cat-freelancers-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (min-width: 768px) {
   .cat-hero { padding: calc(64px + 3rem) var(--container-padding, 1rem) 3rem; }
-  .cat-services-grid { grid-template-columns: repeat(3, 1fr); }
-  .cat-freelancers-grid { grid-template-columns: repeat(4, 1fr); }
+  .cat-services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cat-freelancers-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }

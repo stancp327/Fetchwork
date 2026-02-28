@@ -302,5 +302,5 @@
   .detail-grid { grid-template-columns: 1fr 350px; }
   .actions-bar { flex-direction: row; }
   .message-bubble { max-width: 75%; }
-  .financial-summary { grid-template-columns: repeat(3, 1fr); }
+  .financial-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
