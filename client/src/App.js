@@ -8,13 +8,7 @@ import { RoleProvider } from './context/RoleContext';
 import { MessagingProvider } from './context/MessagingContext';
 import { ToastProvider } from './components/common/Toast';
 import usePageTracker from './hooks/usePageTracker';
-import Home from './components/Home/Home';
-import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
-import ForgotPassword from './components/Auth/ForgotPassword';
-import ResetPassword from './components/Auth/ResetPassword';
-import VerifyEmail from './components/Auth/VerifyEmail';
-import OAuthCallback from './components/Auth/OAuthCallback';
+// Shell components — always rendered, must stay in main bundle
 import Navigation from './components/Navigation/Navigation';
 import Footer from './components/common/Footer';
 import ChatBot from './components/ChatBot/ChatBot';
@@ -22,6 +16,14 @@ import NotificationListener from './components/common/NotificationListener';
 import MessagePreview from './components/common/MessagePreview';
 import './App.css';
 
+// Route components — lazy-loaded, only downloaded when the route is visited
+const Home         = React.lazy(() => import('./components/Home/Home'));
+const Login        = React.lazy(() => import('./components/Auth/Login'));
+const Register     = React.lazy(() => import('./components/Auth/Register'));
+const ForgotPassword = React.lazy(() => import('./components/Auth/ForgotPassword'));
+const ResetPassword  = React.lazy(() => import('./components/Auth/ResetPassword'));
+const VerifyEmail    = React.lazy(() => import('./components/Auth/VerifyEmail'));
+const OAuthCallback  = React.lazy(() => import('./components/Auth/OAuthCallback'));
 const Dashboard = React.lazy(() => import('./components/Dashboard/Dashboard'));
 const BrowseJobs = React.lazy(() => import('./components/Jobs/BrowseJobs'));
 const BrowseServices = React.lazy(() => import('./components/Services/BrowseServices'));
