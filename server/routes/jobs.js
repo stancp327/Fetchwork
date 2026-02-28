@@ -669,7 +669,7 @@ router.post('/:id/start', authenticateToken, validateMongoId, async (req, res) =
       recipient: job.client._id,
       title: 'Freelancer is ready to start',
       message: `${freelancerName} is ready to begin "${job.title}". You have 24 hours to review milestones and approve the start.`,
-      type: 'job_started',
+      type: 'job_start_requested',
       link: `/projects?view=client`
     });
 
@@ -697,21 +697,20 @@ router.post('/:id/begin', authenticateToken, validateMongoId, async (req, res) =
       return res.status(400).json({ error: 'Job is not waiting for start approval' });
     }
 
-    // Apply any new milestones from the request body (client may have added some)
+    // Apply milestones from request body — replaces any proposal-stage milestones
+    // (job hasn't started yet so none are funded; safe to replace)
     const { milestones } = req.body;
-    if (Array.isArray(milestones) && milestones.length > 0) {
-      const existing = job.milestones || [];
-      if (existing.length === 0) {
-        milestones.forEach(m => {
-          job.milestones.push({
-            title: m.title,
-            description: m.description || '',
-            amount: Number(m.amount) || 0,
-            dueDate: m.dueDate || undefined,
-            status: 'pending'
-          });
-        });
-      }
+    const validMilestones = Array.isArray(milestones)
+      ? milestones.filter(m => m.title && String(m.title).trim())
+      : [];
+    if (validMilestones.length > 0) {
+      job.milestones = validMilestones.map(m => ({
+        title:       String(m.title).trim(),
+        description: m.description || '',
+        amount:      Number(m.amount) || 0,
+        dueDate:     m.dueDate || undefined,
+        status:      'pending'
+      }));
     }
 
     job.status = 'in_progress';

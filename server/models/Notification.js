@@ -21,6 +21,8 @@ const notificationSchema = new mongoose.Schema({
       // Jobs
       'job_proposal_received',
       'job_proposal_accepted',
+      'job_start_requested',
+      'job_started',
       'job_completed',
       'job_cancelled',
       // Payments

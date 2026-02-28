@@ -962,14 +962,15 @@ const ProjectManagement = () => {
     setTab(v === 'client' ? 'open' : 'in_progress');
   };
 
+  const [tab, setTab] = useState(viewMode === 'client' ? 'open' : 'in_progress');
+
   // Sync global role changes (e.g. nav toggle) to the local tab
+  // Only fires when there is NO URL param — URL param takes priority
   useEffect(() => {
-    if (!rawView) return; // URL param in charge
+    if (rawView) return; // URL param is in charge, leave tab alone
     setTab(currentRole === 'client' ? 'open' : 'in_progress');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRole]);
-
-  const [tab, setTab] = useState(viewMode === 'client' ? 'open' : 'in_progress');
 
   const userId = user?._id || user?.id || user?.userId;
 
