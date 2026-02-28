@@ -23,7 +23,7 @@
 }
 
 .browse-header p {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0;
   font-size: var(--font-size-sm);
 }
@@ -75,7 +75,7 @@
   background: none;
   border: none;
   font-size: 1.2rem;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   cursor: pointer;
   min-width: 44px;
   min-height: 44px;
@@ -103,7 +103,7 @@
   flex-direction: column;
   gap: var(--space-sm);
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: var(--space-lg);
 }
@@ -120,7 +120,7 @@
   display: block;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text);
   margin-bottom: var(--space-xs);
 }
 
@@ -146,7 +146,7 @@
   align-items: center;
   gap: var(--space-sm);
   font-size: var(--font-size-sm);
-  color: #374151;
+  color: var(--color-text);
   cursor: pointer;
   padding: var(--space-xs) 0;
   min-height: 44px;
@@ -166,7 +166,7 @@
   border-radius: 10px;
   font-size: var(--font-size-sm);
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text);
   cursor: pointer;
   text-align: center;
   margin-bottom: var(--space-lg);
@@ -184,7 +184,7 @@
 
 .results-count {
   font-size: var(--font-size-sm);
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .results-actions {
@@ -204,7 +204,7 @@
 
 .view-toggle {
   display: flex;
-  background: #f3f4f6;
+  background: var(--color-bg-muted);
   border-radius: 8px;
   padding: 2px;
   gap: 2px;
@@ -217,7 +217,7 @@
   background: transparent;
   cursor: pointer;
   font-size: var(--font-size-sm);
-  color: #6b7280;
+  color: var(--color-text-secondary);
   transition: all 0.15s;
   min-width: 36px;
   min-height: 36px;
@@ -242,7 +242,7 @@
 /* ── Card ─────────────────────────────────────────────────────── */
 .browse-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: var(--space-lg);
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -275,7 +275,7 @@
 
 .browse-card-meta {
   font-size: var(--font-size-xs);
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-top: var(--space-xs);
 }
 
@@ -302,7 +302,7 @@
   border-radius: 6px;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  background: #f3f4f6;
+  background: var(--color-bg-muted);
   color: #4b5563;
 }
 
@@ -329,12 +329,12 @@
   justify-content: space-between;
   align-items: center;
   padding-top: var(--space-md);
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--color-bg-muted);
 }
 
 .browse-card-stats {
   font-size: var(--font-size-xs);
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .browse-card-cta {
@@ -368,7 +368,7 @@
   border-radius: 8px;
   background: white;
   font-size: var(--font-size-sm);
-  color: #374151;
+  color: var(--color-text);
   cursor: pointer;
   transition: all 0.15s;
   min-width: 44px;
@@ -382,26 +382,26 @@
 .page-btn:hover:not(:disabled):not(.active) { border-color: var(--color-primary); color: var(--color-primary); }
 .page-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.page-dots { color: #9ca3af; padding: 0 var(--space-xs); }
+.page-dots { color: var(--color-text-muted); padding: 0 var(--space-xs); }
 
 /* ── Empty State ──────────────────────────────────────────────── */
 .browse-empty {
   text-align: center;
   padding: var(--space-3xl) var(--space-lg);
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 14px;
 }
 
 .browse-empty-icon { font-size: 2.5rem; margin-bottom: var(--space-md); }
 .browse-empty h3 { margin: 0 0 var(--space-sm); color: #111827; font-size: var(--font-size-lg); }
-.browse-empty p { color: #6b7280; margin: 0 0 var(--space-md); }
+.browse-empty p { color: var(--color-text-secondary); margin: 0 0 var(--space-md); }
 .browse-empty-suggestions {
   list-style: none; padding: 0; margin: 0 0 var(--space-md); text-align: left;
   display: inline-block;
 }
 .browse-empty-suggestions li {
-  padding: var(--space-xs) 0; color: #6b7280; font-size: var(--font-size-sm);
+  padding: var(--space-xs) 0; color: var(--color-text-secondary); font-size: var(--font-size-sm);
 }
 .browse-empty-suggestions li::before { content: '💡 '; }
 .browse-empty-actions { margin-top: var(--space-md); }

@@ -49,22 +49,22 @@
 .cat-combo-back {
   padding: 0 0.85rem;
   min-height: 44px;
-  background: #f3f4f6;
+  background: var(--color-bg-muted);
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.cat-combo-back:hover { background: #e5e7eb; }
+.cat-combo-back:hover { background: var(--color-border); }
 
 .cat-combo-hint {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 1.4;
 }

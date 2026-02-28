@@ -12,7 +12,7 @@
   background: white;
   border-radius: 14px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   cursor: pointer;
   animation: msg-slide-up 0.3s ease-out;
   transition: transform 0.15s;
@@ -34,13 +34,13 @@
 
 .msg-preview-body { flex: 1; min-width: 0; }
 .msg-preview-sender { font-weight: 600; font-size: 0.875rem; color: #1f2937; }
-.msg-preview-text { font-size: 0.8rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-preview-text { font-size: 0.8rem; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .msg-preview-close {
-  background: none; border: none; font-size: 1.3rem; color: #9ca3af;
+  background: none; border: none; font-size: 1.3rem; color: var(--color-text-muted);
   cursor: pointer; padding: 0.25rem; flex-shrink: 0;
 }
-.msg-preview-close:hover { color: #374151; }
+.msg-preview-close:hover { color: var(--color-text); }
 
 @media (min-width: 768px) {
   .msg-preview { left: auto; max-width: 400px; }

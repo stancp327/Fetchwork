@@ -1,4 +1,4 @@
-/* ── Admin Dispute Panel — Mobile-first ──────────────────────── */
+﻿/* ── Admin Dispute Panel — Mobile-first ──────────────────────── */
 .disputes-management {
   background: white;
   padding: 0;
@@ -45,7 +45,7 @@
   gap: 4px;
   padding: var(--space-sm);
   margin-bottom: var(--space-sm);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   background: #fafafa;
 }
@@ -62,7 +62,7 @@
 .admin-panel-table td::before {
   content: attr(data-label);
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text);
   font-size: var(--font-size-xs);
   display: block;
   margin-bottom: 2px;
@@ -106,12 +106,12 @@
 .action-btn.view     { background: #3b82f6; color: white; }
 .action-btn.resolve  { background: #10b981; color: white; }
 .action-btn.escalate { background: #8b5cf6; color: white; }
-.action-btn.close    { background: #6b7280; color: white; }
+.action-btn.close    { background: var(--color-text-secondary); color: white; }
 
 /* No-data */
 .no-data {
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-style: italic;
   padding: 40px 20px;
   font-size: var(--font-size-sm);
@@ -141,7 +141,7 @@
   .admin-panel-table td {
     display: table-cell;
     padding: 12px;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--color-border);
   }
   .admin-panel-table td::before { display: none; }
 

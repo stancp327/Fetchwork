@@ -26,7 +26,7 @@
   border-radius: 22px;
   border: 1px solid #d1d5db;
   background: white;
-  color: #374151;
+  color: var(--color-text);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -41,7 +41,7 @@
 }
 
 .saved-filter-btn:hover:not(.active) {
-  border-color: #9ca3af;
+  border-color: var(--color-text-muted);
 }
 
 /* Item list */
@@ -53,7 +53,7 @@
 
 .saved-item {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -97,7 +97,7 @@
 
 .saved-item-meta {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -115,7 +115,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   font-size: 1rem;
   transition: color 0.15s;
   margin-right: 0.25rem;
@@ -129,7 +129,7 @@
 .saved-empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .saved-empty-icon {
@@ -138,7 +138,7 @@
 }
 
 .saved-empty p { margin: 0.35rem 0; }
-.saved-empty .saved-empty-sub { font-size: 0.85rem; color: #9ca3af; }
+.saved-empty .saved-empty-sub { font-size: 0.85rem; color: var(--color-text-muted); }
 
 @media (min-width: 480px) {
   .saved-page { padding: 2rem 1.5rem; }

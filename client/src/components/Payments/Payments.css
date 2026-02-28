@@ -1,7 +1,7 @@
 ﻿/* ── Payments — Mobile-first ─────────────────────────────────── */
 
 /* ── Stripe Connect ──────────────────────────────────────────── */
-.sc-loading { color: #6b7280; font-size: 0.85rem; padding: 0.5rem 0; }
+.sc-loading { color: var(--color-text-secondary); font-size: 0.85rem; padding: 0.5rem 0; }
 
 .sc-card {
   display: flex;
@@ -9,7 +9,7 @@
   align-items: flex-start;
   padding: 1.25rem;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   background: white;
 }
 .sc-card.connected  { border-color: #a7f3d0; background: #f0fdf4; }
@@ -18,7 +18,7 @@
 
 .sc-icon { font-size: 1.5rem; flex-shrink: 0; }
 .sc-card strong { display: block; font-size: 0.95rem; margin-bottom: 0.25rem; }
-.sc-card p { margin: 0 0 0.5rem; font-size: 0.85rem; color: #374151; }
+.sc-card p { margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--color-text); }
 
 .sc-btn {
   display: inline-block;
@@ -36,7 +36,7 @@
 }
 .sc-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
 .sc-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.sc-sub  { font-size: 0.75rem !important; color: #6b7280 !important; margin-top: 0.5rem !important; }
+.sc-sub  { font-size: 0.75rem !important; color: var(--color-text-secondary) !important; margin-top: 0.5rem !important; }
 .sc-error { color: #dc2626; font-size: 0.82rem; margin-top: 0.5rem; }
 
 /* ── Escrow Modal ────────────────────────────────────────────── */
@@ -61,13 +61,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 .escrow-modal-header h2 { margin: 0; font-size: 1.1rem; }
 .escrow-modal-close {
   background: none; border: none; font-size: 1rem; cursor: pointer;
   width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 .escrow-modal-body { padding: 1.5rem; }
 
@@ -75,17 +75,17 @@
 .escrow-how-it-works {
   background: #f8fafc; border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem;
 }
-.escrow-how-it-works h3 { margin: 0 0 0.75rem; font-size: 0.9rem; color: #374151; }
+.escrow-how-it-works h3 { margin: 0 0 0.75rem; font-size: 0.9rem; color: var(--color-text); }
 .escrow-how-it-works ol { margin: 0; padding-left: 1.25rem; }
-.escrow-how-it-works li { font-size: 0.84rem; color: #374151; margin-bottom: 0.4rem; line-height: 1.4; }
+.escrow-how-it-works li { font-size: 0.84rem; color: var(--color-text); margin-bottom: 0.4rem; line-height: 1.4; }
 
 .escrow-amount-row {
   display: flex; justify-content: space-between;
   font-size: 0.9rem; padding: 0.4rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-bg-muted);
 }
 .escrow-amount-row.fee {
-  color: #6b7280; font-size: 0.85rem;
+  color: var(--color-text-secondary); font-size: 0.85rem;
 }
 .escrow-amount-row.total {
   font-weight: 700; font-size: 1rem; border-bottom: none; margin-top: 0.25rem;
@@ -95,7 +95,7 @@
   display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;
 }
 .escrow-init-actions .btn { min-height: 44px; flex: 1; }
-.escrow-loading { text-align: center; color: #6b7280; padding: 2rem; }
+.escrow-loading { text-align: center; color: var(--color-text-secondary); padding: 2rem; }
 
 /* ── Checkout Form ───────────────────────────────────────────── */
 .checkout-form { display: flex; flex-direction: column; gap: 1rem; }
@@ -105,7 +105,7 @@
 }
 .checkout-job-title { font-weight: 600; margin: 0 0 0.25rem; font-size: 0.95rem; }
 .checkout-amount    { font-size: 1.4rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem; }
-.checkout-note      { font-size: 0.78rem; color: #6b7280; margin: 0; }
+.checkout-note      { font-size: 0.78rem; color: var(--color-text-secondary); margin: 0; }
 
 .checkout-payment-element label {
   display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;
@@ -123,7 +123,7 @@
   display: flex; gap: 0.75rem; flex-wrap: wrap;
 }
 .checkout-actions .btn { min-height: 44px; flex: 1; }
-.checkout-secure { font-size: 0.75rem; color: #9ca3af; margin: 0; text-align: center; }
+.checkout-secure { font-size: 0.75rem; color: var(--color-text-muted); margin: 0; text-align: center; }
 
 @media (min-width: 480px) {
   .escrow-init-actions .btn,
@@ -140,7 +140,7 @@
 .escrow-saved-label {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text);
   margin: 0 0 0.35rem;
 }
 .escrow-card-option {
@@ -148,11 +148,11 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.65rem 0.85rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--color-text);
   transition: border-color 0.15s, background 0.15s;
 }
 .escrow-card-option input[type=radio] { accent-color: var(--color-primary); }
@@ -163,7 +163,7 @@
 .escrow-card-option.new-card { color: var(--color-primary); }
 .escrow-card-brand { font-weight: 600; }
 .escrow-card-num   { font-family: monospace; letter-spacing: 1px; }
-.escrow-card-exp   { color: #9ca3af; font-size: 0.78rem; }
+.escrow-card-exp   { color: var(--color-text-muted); font-size: 0.78rem; }
 .escrow-card-default {
   margin-left: auto;
   font-size: 0.7rem;
@@ -176,7 +176,7 @@
 
 /* -- Fee Breakdown ----------------------------------------------- */
 .checkout-fee-breakdown {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
   margin: 0.75rem 0;
@@ -186,11 +186,11 @@
   justify-content: space-between;
   padding: 0.55rem 0.85rem;
   font-size: 0.85rem;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-bg-muted);
 }
 .checkout-fee-row:last-child { border-bottom: none; }
-.checkout-fee-row.muted { color: #9ca3af; font-size: 0.8rem; }
+.checkout-fee-row.muted { color: var(--color-text-muted); font-size: 0.8rem; }
 .checkout-fee-row.total {
   font-weight: 700;
   background: #f9fafb;

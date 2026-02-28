@@ -8,7 +8,7 @@
   display: inline-flex;
   align-items: center;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   text-decoration: none;
   margin-bottom: 1.25rem;
   min-height: 36px;
@@ -36,15 +36,15 @@
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
   font-size: 0.82rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 .sop-meta span { display: flex; align-items: center; gap: 0.3rem; }
 .sop-secured { color: #10b981; font-weight: 600; }
 .sop-btn-view-service {
   min-height: 36px;
   padding: 0 1rem;
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--color-bg-muted);
+  color: var(--color-text);
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 500;
@@ -53,7 +53,7 @@
   align-items: center;
   flex-shrink: 0;
 }
-.sop-btn-view-service:hover { background: #e5e7eb; }
+.sop-btn-view-service:hover { background: var(--color-border); }
 
 /* ── Timeline ───────────────────────────────────────────────── */
 .sop-timeline {
@@ -65,7 +65,7 @@
   overflow-x: auto;
   padding: 1rem 0.5rem;
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
 }
 
@@ -86,12 +86,12 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #f3f4f6;
+  background: var(--color-bg-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-border);
   transition: all 0.2s;
 }
 .sop-step.done   .sop-step-icon { background: #d1fae5; border-color: #10b981; }
@@ -100,7 +100,7 @@
 .sop-step-label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   text-align: center;
   white-space: nowrap;
 }
@@ -111,7 +111,7 @@
   height: 2px;
   flex: 1;
   min-width: 20px;
-  background: #e5e7eb;
+  background: var(--color-border);
   margin-top: -18px; /* align with icon center */
   transition: background 0.2s;
 }
@@ -139,7 +139,7 @@
 /* ── Cards ──────────────────────────────────────────────────── */
 .sop-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1rem 1.1rem;
   margin-bottom: 0.75rem;
@@ -152,14 +152,14 @@
 }
 .sop-text {
   font-size: 0.88rem;
-  color: #374151;
+  color: var(--color-text);
   line-height: 1.6;
   margin: 0;
   white-space: pre-wrap;
 }
 .sop-date {
   font-size: 0.78rem;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   margin: 0.5rem 0 0;
 }
 .sop-delivery-card { border-left: 3px solid #8b5cf6; }
@@ -176,7 +176,7 @@
 }
 .sop-action-hint {
   font-size: 0.82rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0 0 0.25rem;
   line-height: 1.5;
 }
@@ -218,8 +218,8 @@
 .sop-btn-review   { background: #8b5cf6; color: white; }
 .sop-btn-cancel   {
   background: none;
-  color: #9ca3af;
-  border: 1px solid #e5e7eb;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
   font-size: 0.8rem;
   font-weight: 500;
   margin-top: 0.25rem;
@@ -233,21 +233,21 @@
   gap: 0.4rem;
   min-height: 40px;
   background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 9px;
-  color: #374151;
+  color: var(--color-text);
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 500;
   margin-top: 0.5rem;
 }
-.sop-messages-link:hover { background: #f3f4f6; }
+.sop-messages-link:hover { background: var(--color-bg-muted); }
 
 /* ── State ──────────────────────────────────────────────────── */
 .sop-loading, .sop-error {
   padding: 3rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 .sop-error { color: #dc2626; }

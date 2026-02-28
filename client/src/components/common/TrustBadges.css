@@ -1,4 +1,4 @@
-/* Trust Badges */
+﻿/* Trust Badges */
 .trust-badges-row {
   display: flex;
   flex-wrap: wrap;
@@ -34,11 +34,11 @@
 .reputation-stats {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-sm, 0.5rem);
   padding: var(--space-md, 1rem) 0;
-  border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+  border-top: 1px solid var(--color-bg-muted); border-bottom: 1px solid var(--color-bg-muted);
 }
 .rep-stat { text-align: center; }
 .rep-stat strong { display: block; font-size: var(--font-size-sm, 0.875rem); color: #1f2937; }
-.rep-stat span { font-size: 0.65rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.03em; }
+.rep-stat span { font-size: 0.65rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 
 @media (min-width: 480px) {
   .reputation-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }

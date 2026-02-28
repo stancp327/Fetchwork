@@ -9,17 +9,17 @@
 
 .post-job-header { margin-bottom: var(--space-xl); }
 .post-job-header h1 { font-size: var(--font-size-xl); font-weight: 700; color: #1a1a2e; margin: 0 0 var(--space-sm); }
-.post-job-header p { color: #6b7280; font-size: var(--font-size-sm); margin: 0; }
+.post-job-header p { color: var(--color-text-secondary); font-size: var(--font-size-sm); margin: 0; }
 
 .post-job-form {
   background: white; border-radius: 12px; padding: var(--space-lg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); border: 1px solid var(--color-border);
 }
 
 .post-job-form .form-section { margin-bottom: var(--space-xl); }
-.post-job-form .form-section-title { font-size: var(--font-size-base); font-weight: 600; color: #374151; margin: 0 0 var(--space-lg); padding-bottom: var(--space-sm); border-bottom: 1px solid #f3f4f6; }
+.post-job-form .form-section-title { font-size: var(--font-size-base); font-weight: 600; color: var(--color-text); margin: 0 0 var(--space-lg); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--color-bg-muted); }
 .post-job-form .form-group { margin-bottom: var(--space-lg); }
-.post-job-form label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: #374151; margin-bottom: var(--space-xs); }
+.post-job-form label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text); margin-bottom: var(--space-xs); }
 
 .post-job-form input[type="text"],
 .post-job-form input[type="number"],
@@ -35,7 +35,7 @@
 }
 
 .post-job-form textarea { resize: vertical; min-height: 120px; }
-.post-job-form .char-count { font-size: var(--font-size-xs); color: #9ca3af; text-align: right; margin-top: var(--space-xs); }
+.post-job-form .char-count { font-size: var(--font-size-xs); color: var(--color-text-muted); text-align: right; margin-top: var(--space-xs); }
 .post-job-form .error-text { color: #ef4444; font-size: var(--font-size-xs); margin-top: var(--space-xs); }
 .post-job-form .error-banner { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: var(--space-md) var(--space-lg); border-radius: 8px; font-size: var(--font-size-sm); margin-bottom: var(--space-lg); }
 
@@ -48,17 +48,17 @@
 .post-job-checkbox label { margin: 0; font-weight: 500; cursor: pointer; }
 
 /* Actions — stacked on mobile */
-.post-job-actions { display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-2xl); padding-top: var(--space-xl); border-top: 1px solid #f3f4f6; }
+.post-job-actions { display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-2xl); padding-top: var(--space-xl); border-top: 1px solid var(--color-bg-muted); }
 .post-job-actions .btn-primary { background: var(--color-primary); color: white; border: none; padding: var(--space-md) var(--space-2xl); border-radius: 8px; font-weight: 600; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
 .post-job-actions .btn-primary:hover { background: var(--color-primary-dark); }
 .post-job-actions .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
-.post-job-actions .btn-secondary { background: white; color: #374151; border: 1px solid #d1d5db; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 500; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
+.post-job-actions .btn-secondary { background: white; color: var(--color-text); border: 1px solid #d1d5db; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 500; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
 .post-job-actions .btn-secondary:hover { background: #f9fafb; }
 
 /* Success */
 .post-job-success { text-align: center; padding: var(--space-3xl) var(--space-xl); background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); max-width: 500px; margin: calc(64px + 3rem) auto 0; }
 .post-job-success h3 { color: #059669; font-size: var(--font-size-xl); margin: 0 0 var(--space-sm); }
-.post-job-success p { color: #6b7280; margin: 0; }
+.post-job-success p { color: var(--color-text-secondary); margin: 0; }
 
 /* Tablet+ */
 @media (min-width: 480px) {
@@ -70,7 +70,7 @@
 .field-hint {
   display: block;
   font-size: var(--font-size-xs);
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-top: var(--space-xs);
 }
 
@@ -80,7 +80,7 @@
 }
 .work-type-card {
   display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
-  padding: var(--space-md); border: 2px solid #e5e7eb; border-radius: 10px;
+  padding: var(--space-md); border: 2px solid var(--color-border); border-radius: 10px;
   background: white; cursor: pointer; text-align: left; transition: all 0.15s;
   min-height: 44px; width: 100%;
 }
@@ -88,7 +88,7 @@
 .work-type-card.selected { border-color: var(--color-primary); background: #eff6ff; }
 .work-type-icon { font-size: 1.25rem; }
 .work-type-label { font-weight: 600; font-size: var(--font-size-sm); color: #111827; }
-.work-type-desc { font-size: var(--font-size-xs); color: #6b7280; }
+.work-type-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
 .work-type-card.selected .work-type-label { color: var(--color-primary); }
 
 /* Location info banner */
@@ -98,7 +98,7 @@
 }
 
 /* Label optional hint */
-.label-optional { font-size: var(--font-size-xs); color: #9ca3af; font-weight: 400; }
+.label-optional { font-size: var(--font-size-xs); color: var(--color-text-muted); font-weight: 400; }
 
 /* Cancellation policy cards */
 .cancellation-cards {
@@ -106,13 +106,13 @@
 }
 .cancellation-card {
   display: flex; flex-direction: column; gap: 2px;
-  padding: var(--space-sm) var(--space-md); border: 2px solid #e5e7eb; border-radius: 8px;
+  padding: var(--space-sm) var(--space-md); border: 2px solid var(--color-border); border-radius: 8px;
   background: white; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%;
   min-height: 44px;
 }
 .cancellation-card:hover { border-color: #d1d5db; background: #f9fafb; }
 .cancellation-card.selected { border-color: var(--color-primary); background: #eff6ff; }
-.cancellation-desc { font-size: var(--font-size-xs); color: #6b7280; }
+.cancellation-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
 
 @media (min-width: 480px) {
   .work-type-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }

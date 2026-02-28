@@ -16,7 +16,7 @@
 }
 .pm-section-note {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0;
   max-width: 420px;
 }
@@ -45,7 +45,7 @@
   gap: 0.75rem;
   padding: 0.85rem 1rem;
   background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   flex-wrap: wrap;
 }
@@ -60,9 +60,9 @@
   gap: 0.75rem;
   flex-wrap: wrap;
 }
-.pm-card-brand { font-size: 0.9rem; font-weight: 600; color: #374151; }
-.pm-card-number { font-size: 0.88rem; color: #374151; font-family: monospace; letter-spacing: 1px; }
-.pm-card-expiry { font-size: 0.8rem; color: #6b7280; }
+.pm-card-brand { font-size: 0.9rem; font-weight: 600; color: var(--color-text); }
+.pm-card-number { font-size: 0.88rem; color: var(--color-text); font-family: monospace; letter-spacing: 1px; }
+.pm-card-expiry { font-size: 0.8rem; color: var(--color-text-secondary); }
 .pm-card-default-badge {
   font-size: 0.7rem;
   font-weight: 700;
@@ -84,7 +84,7 @@
   border-radius: 7px;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text);
   cursor: pointer;
 }
 .pm-btn-set-default:hover { border-color: var(--color-primary); color: var(--color-primary); }
@@ -106,7 +106,7 @@
 
 /* ── Add Card Form ─────────────────────────────────────────────── */
 .pm-add-form {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.25rem;
   background: white;
@@ -128,14 +128,14 @@
   background: none;
   border: none;
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   cursor: pointer;
   min-width: 32px;
   min-height: 32px;
 }
 .pm-add-note {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin: 0 0 1rem;
   padding: 0.5rem 0.75rem;
   background: #f0fdf4;
@@ -163,7 +163,7 @@
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--color-text);
   cursor: pointer;
 }
 .pm-btn-save {
@@ -183,11 +183,11 @@
 .pm-empty {
   text-align: center;
   padding: 2.5rem 1rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 .pm-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
 .pm-empty p { margin: 0 0 0.35rem; font-size: 0.9rem; }
-.pm-empty-sub { font-size: 0.8rem; color: #9ca3af; }
+.pm-empty-sub { font-size: 0.8rem; color: var(--color-text-muted); }
 .pm-btn-add-empty {
   margin-top: 1rem;
   min-height: 40px;
@@ -200,7 +200,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-.pm-loading { padding: 1.5rem; color: #9ca3af; font-size: 0.85rem; }
+.pm-loading { padding: 1.5rem; color: var(--color-text-muted); font-size: 0.85rem; }
 .pm-error {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -215,6 +215,6 @@
 .pm-stripe-badge {
   margin-top: 1.5rem;
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   text-align: center;
 }

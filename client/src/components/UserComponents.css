@@ -1224,7 +1224,7 @@
   display: inline-block;
   padding: 4px 8px;
   border-radius: 12px;
-  background: #f3f4f6;
+  background: var(--color-bg-muted);
   color: #111827;
   font-size: 0.85rem;
   line-height: 1;

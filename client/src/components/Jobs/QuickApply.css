@@ -13,11 +13,11 @@
 
 .qa-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-sm); }
 .qa-header h3 { margin: 0; font-size: var(--font-size-lg); }
-.qa-close { background: none; border: none; font-size: 1.5rem; color: #6b7280; cursor: pointer; padding: 0.25rem; }
-.qa-job-title { color: #6b7280; font-size: var(--font-size-sm); margin: 0 0 var(--space-lg); }
+.qa-close { background: none; border: none; font-size: 1.5rem; color: var(--color-text-secondary); cursor: pointer; padding: 0.25rem; }
+.qa-job-title { color: var(--color-text-secondary); font-size: var(--font-size-sm); margin: 0 0 var(--space-lg); }
 
 .qa-field { margin-bottom: var(--space-md); }
-.qa-field label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: #374151; margin-bottom: var(--space-xs); }
+.qa-field label { display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text); margin-bottom: var(--space-xs); }
 .qa-field textarea, .qa-field input, .qa-field select {
   width: 100%; padding: var(--space-md); border: 1px solid #d1d5db; border-radius: 8px;
   font-size: 16px; transition: border-color 0.15s;
@@ -25,7 +25,7 @@
 .qa-field textarea:focus, .qa-field input:focus, .qa-field select:focus {
   outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
 }
-.qa-hint { font-size: var(--font-size-xs); color: #9ca3af; }
+.qa-hint { font-size: var(--font-size-xs); color: var(--color-text-muted); }
 
 .qa-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
 
@@ -37,8 +37,8 @@
 .qa-btn-primary { background: var(--color-primary); color: white; }
 .qa-btn-primary:hover { background: var(--color-primary-dark); }
 .qa-btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
-.qa-btn-secondary { background: #f3f4f6; color: #374151; }
-.qa-btn-secondary:hover { background: #e5e7eb; }
+.qa-btn-secondary { background: var(--color-bg-muted); color: var(--color-text); }
+.qa-btn-secondary:hover { background: var(--color-border); }
 
 @media (min-width: 768px) {
   .qa-overlay { align-items: center; padding: var(--space-xl); }

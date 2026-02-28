@@ -47,7 +47,7 @@
   border-radius: 20px;
   border: 1px solid #d1d5db;
   background: white;
-  color: #374151;
+  color: var(--color-text);
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
@@ -72,13 +72,13 @@
 .my-offers-loading {
   padding: 2rem;
   text-align: center;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .my-offers-empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .my-offers-empty .empty-icon {

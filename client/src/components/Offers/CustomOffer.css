@@ -25,7 +25,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .offer-modal-header h2 {
@@ -39,7 +39,7 @@
   border: none;
   font-size: 1.25rem;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   padding: 0;
   width: 44px;
   height: 44px;
@@ -56,7 +56,7 @@
 .offer-recipient {
   padding: 0.75rem 1.5rem 0;
   margin: 0;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -80,7 +80,7 @@
   display: block;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text);
   margin-bottom: 0.35rem;
 }
 
@@ -124,7 +124,7 @@
   border: 1px solid #d1d5db;
   border-radius: 8px;
   background: white;
-  color: #374151;
+  color: var(--color-text);
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -157,7 +157,7 @@
 /* ── Offer Card (for listing) ────────────────────────────────── */
 .offer-card {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 0.75rem;
@@ -184,7 +184,7 @@
 
 .offer-term {
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--color-text);
 }
 
 .offer-term strong {
@@ -204,8 +204,8 @@
 .offer-status.countered { background: #eff6ff; color: var(--color-primary); }
 .offer-status.accepted { background: #ecfdf5; color: #059669; }
 .offer-status.declined { background: #fef2f2; color: #dc2626; }
-.offer-status.withdrawn { background: #f3f4f6; color: #6b7280; }
-.offer-status.expired { background: #f3f4f6; color: #6b7280; }
+.offer-status.withdrawn { background: var(--color-bg-muted); color: var(--color-text-secondary); }
+.offer-status.expired { background: var(--color-bg-muted); color: var(--color-text-secondary); }
 
 .btn-offer-action {
   padding: 0 0.85rem;
@@ -220,7 +220,7 @@
 
 .btn-offer-action.accept { background: #10b981; color: white; }
 .btn-offer-action.counter { background: var(--color-primary); color: white; }
-.btn-offer-action.decline { background: #f3f4f6; color: #dc2626; }
+.btn-offer-action.decline { background: var(--color-bg-muted); color: #dc2626; }
 
 /* Mobile adjustments */
 .offer-modal { margin: 0.5rem; max-height: 95vh; }

@@ -1,4 +1,4 @@
-/* ── Admin Dashboard — Mobile-first ─────────────────────────── */
+﻿/* ── Admin Dashboard — Mobile-first ─────────────────────────── */
 .admin-dashboard {
   padding: var(--space-sm);
   padding-top: calc(64px + var(--space-sm)); /* 64px = fixed nav height */
@@ -167,7 +167,7 @@
 .users-table tbody tr, .jobs-table tbody tr, .payments-table tbody tr, .reviews-table tbody tr {
   display: flex; flex-direction: column; gap: 4px;
   padding: var(--space-sm); margin-bottom: var(--space-sm);
-  border: 1px solid #f3f4f6; border-radius: 8px; background: #fafafa;
+  border: 1px solid var(--color-bg-muted); border-radius: 8px; background: #fafafa;
 }
 .users-table td, .jobs-table td, .payments-table td, .reviews-table td {
   padding: 2px 0; border: none; font-size: var(--font-size-sm);
@@ -276,14 +276,14 @@
 .analytics-tab { padding: 0; }
 .analytics-header {
   display: flex; flex-direction: column; gap: var(--space-sm);
-  margin-bottom: var(--space-lg); padding-bottom: var(--space-sm); border-bottom: 1px solid #e5e7eb;
+  margin-bottom: var(--space-lg); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--color-border);
 }
-.analytics-header h2 { margin: 0; color: #374151; font-size: var(--font-size-lg); font-weight: 600; }
+.analytics-header h2 { margin: 0; color: var(--color-text); font-size: var(--font-size-lg); font-weight: 600; }
 .period-selector { display: flex; align-items: center; gap: var(--space-sm); }
-.period-selector label { font-weight: 500; color: #6b7280; font-size: var(--font-size-sm); }
+.period-selector label { font-weight: 500; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .period-selector select { padding: var(--space-sm); border: 1px solid #d1d5db; border-radius: 6px; font-size: var(--font-size-sm); min-height: 44px; }
 .analytics-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); }
-.chart-section { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: var(--space-md); }
+.chart-section { background: white; border: 1px solid var(--color-border); border-radius: 8px; padding: var(--space-md); }
 .chart-container { position: relative; height: 250px; }
 
 @media (min-width: 768px) {
