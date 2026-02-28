@@ -257,6 +257,92 @@ class StripeService {
     });
   }
 
+  // ── Subscription management ──────────────────────────────────────
+
+  /** Create a Stripe Product for a plan. */
+  async createProduct(name, description = '') {
+    this._ensureStripe();
+    return stripe.products.create({ name, description });
+  }
+
+  /** Create a Stripe Price for a plan product. amount in cents. */
+  async createPrice(productId, unitAmountCents, interval = 'month', currency = 'usd') {
+    this._ensureStripe();
+    return stripe.prices.create({
+      product:      productId,
+      unit_amount:  unitAmountCents,
+      currency,
+      recurring:    { interval },
+    });
+  }
+
+  /**
+   * Create a Stripe Checkout Session for a plan upgrade.
+   * @param {string} customerId      Stripe Customer ID
+   * @param {string} stripePriceId   Stripe Price ID for the plan
+   * @param {string} successUrl      Redirect URL on success (?session_id={CHECKOUT_SESSION_ID})
+   * @param {string} cancelUrl       Redirect URL on cancel
+   * @param {Object} metadata        Extra metadata (userId, planSlug, etc.)
+   */
+  async createCheckoutSession(customerId, stripePriceId, successUrl, cancelUrl, metadata = {}) {
+    this._ensureStripe();
+    return stripe.checkout.sessions.create({
+      mode:        'subscription',
+      customer:    customerId,
+      line_items:  [{ price: stripePriceId, quantity: 1 }],
+      success_url: successUrl,
+      cancel_url:  cancelUrl,
+      metadata,
+      subscription_data: { metadata },
+      allow_promotion_codes: true,
+    });
+  }
+
+  /** Create a Stripe Customer Portal session for managing subscription. */
+  async createBillingPortalSession(customerId, returnUrl) {
+    this._ensureStripe();
+    return stripe.billingPortal.sessions.create({
+      customer:   customerId,
+      return_url: returnUrl,
+    });
+  }
+
+  /** Retrieve a subscription from Stripe. */
+  async retrieveSubscription(subscriptionId) {
+    this._ensureStripe();
+    return stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['default_payment_method', 'latest_invoice'],
+    });
+  }
+
+  /** Cancel a subscription at period end. */
+  async cancelSubscriptionAtPeriodEnd(subscriptionId) {
+    this._ensureStripe();
+    return stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
+  }
+
+  /** Cancel a subscription immediately. */
+  async cancelSubscriptionImmediately(subscriptionId) {
+    this._ensureStripe();
+    return stripe.subscriptions.cancel(subscriptionId);
+  }
+
+  /** Change a subscription to a new price (upgrade/downgrade). */
+  async updateSubscriptionPrice(subscriptionId, newPriceId) {
+    this._ensureStripe();
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    return stripe.subscriptions.update(subscriptionId, {
+      items: [{ id: sub.items.data[0].id, price: newPriceId }],
+      proration_behavior: 'create_prorations',
+    });
+  }
+
+  /** Verify and construct a billing webhook event. */
+  async constructBillingWebhookEvent(rawBody, signature, secret) {
+    this._ensureStripe();
+    return stripe.webhooks.constructEvent(rawBody, signature, secret);
+  }
+
   // ── Legacy aliases (kept for any indirect callers) ───────────────
   /** @deprecated Use chargeForJob() instead */
   async holdFundsInEscrow(amount, currency = 'usd', metadata = {}) {

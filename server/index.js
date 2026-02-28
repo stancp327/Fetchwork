@@ -87,8 +87,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// ── Stripe Webhook (MUST be before express.json() — needs raw body for signature verification)
+// ── Stripe Webhooks (MUST be before express.json() — needs raw body for signature verification)
 app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), require('./routes/payments').webhookHandler);
+app.post('/api/billing/webhook',  express.raw({ type: 'application/json' }), require('./routes/billing').webhookHandler);
 
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
@@ -252,6 +253,7 @@ app.use('/api/stats',        require('./routes/stats'));
 app.use('/api/availability', require('./routes/availability'));
 app.use('/api/bookings',     require('./routes/bookings'));
 app.use('/api/calendar',     require('./routes/calendar'));
+app.use('/api/billing',      require('./routes/billing'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {
