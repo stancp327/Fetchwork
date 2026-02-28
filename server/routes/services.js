@@ -10,6 +10,7 @@ const { escapeRegex } = require('../utils/sanitize');
 const stripeService = require('../services/stripeService');
 const emailWorkflowService = require('../services/emailWorkflowService');
 const emailService  = require('../services/emailService');
+const { checkServiceLimit } = require('../middleware/entitlements');
 
 router.get('/', async (req, res) => {
   try {
@@ -108,7 +109,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
   try {
     const {
       title,

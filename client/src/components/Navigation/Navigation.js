@@ -169,6 +169,7 @@ const Navigation = () => {
                 <div className="nav-divider" />
 
                 <NavLink to="/billing">Billing</NavLink>
+                <NavLink to="/wallet">Wallet</NavLink>
                 <NavLink to="/profile">Profile</NavLink>
                 <button className="nav-logout-btn" onClick={() => { logout(); closeMobileMenu(); }}>
                   Logout

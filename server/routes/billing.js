@@ -23,6 +23,8 @@ const BillingAuditLog  = require('../models/BillingAuditLog');
 const Notification     = require('../models/Notification');
 const { assignDefaultPlan, logBillingAction } = require('../utils/billingUtils');
 const { CLIENT_URL }   = require('../config/env');
+const BillingCredit    = require('../models/BillingCredit');
+const { getPlanLimits } = require('../middleware/entitlements');
 
 const BILLING_WEBHOOK_SECRET = process.env.STRIPE_BILLING_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -54,9 +56,11 @@ router.get('/status', authenticateToken, async (req, res) => {
       const user = await User.findById(req.user.userId).select('role accountType').lean();
       const audience = user?.accountType === 'client' ? 'client' : 'freelancer';
       const freePlan = await Plan.findOne({ audience, tier: 'free', active: true }).lean();
-      return res.json({ plan: freePlan, subscription: null, isDefault: true });
+      const limits = await getPlanLimits(req.user.userId);
+      return res.json({ plan: freePlan, subscription: null, isDefault: true, planLimits: limits });
     }
 
+    const limits = await getPlanLimits(req.user.userId);
     res.json({
       plan:         sub.plan,
       subscription: {
@@ -67,7 +71,8 @@ router.get('/status', authenticateToken, async (req, res) => {
         source:            sub.source,
         customPrice:       sub.customPrice,
       },
-      isDefault: sub.source === 'default',
+      isDefault:  sub.source === 'default',
+      planLimits: limits,
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch billing status' });
@@ -397,8 +402,11 @@ async function webhookHandler(req, res) {
 
       case 'checkout.session.completed': {
         const session = event.data.object;
-        if (session.mode !== 'subscription') break;
-        await handleSubscriptionActivated(session.subscription, session.metadata);
+        if (session.metadata?.type === 'wallet_topup') {
+          await handleWalletTopup(session);
+        } else if (session.mode === 'subscription') {
+          await handleSubscriptionActivated(session.subscription, session.metadata);
+        }
         break;
       }
 
@@ -440,5 +448,121 @@ async function webhookHandler(req, res) {
   res.json({ received: true });
 }
 
+// ── Wallet routes ────────────────────────────────────────────────
+
+// GET /api/billing/wallet — wallet balance + credit history
+router.get('/wallet', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Active credits (not expired, not voided, remaining > 0)
+    const activeCredits = await BillingCredit.find({
+      user:      userId,
+      status:    'active',
+      remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).sort({ createdAt: 1 }).lean();
+
+    const balance = activeCredits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+
+    // Recent used credits
+    const usedCredits = await BillingCredit.find({ user: userId, status: { $in: ['used', 'voided', 'expired'] } })
+      .sort({ updatedAt: -1 }).limit(20).lean();
+
+    res.json({
+      balance: Math.round(balance * 100) / 100,
+      active:  activeCredits,
+      history: usedCredits,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch wallet' });
+  }
+});
+
+// POST /api/billing/wallet/add — Stripe Checkout to prepay wallet funds
+// Body: { amount } — dollar amount to add (min $5)
+router.post('/wallet/add', authenticateToken, async (req, res) => {
+  try {
+    const amount = parseFloat(req.body.amount);
+    if (!amount || amount < 5) return res.status(400).json({ error: 'Minimum wallet top-up is $5' });
+    if (amount > 500) return res.status(400).json({ error: 'Maximum single top-up is $500' });
+
+    // Check entitlement: wallet requires Plus or Pro
+    const limits = await getPlanLimits(req.user.userId);
+    const level  = limits.analyticsLevel; // 'basic' = free tier
+    // We use analyticsLevel as a proxy for tier; free users have 'basic'
+    const sub = await UserSubscription
+      .findOne({ user: req.user.userId, status: { $in: ['active', 'trialing'] } })
+      .populate('plan').lean();
+    const tier = sub?.plan?.tier || 'free';
+
+    if (tier === 'free') {
+      return res.status(403).json({
+        error:      'Wallet is available on Plus and Pro plans.',
+        reason:     'feature_gated',
+        feature:    'wallet',
+        upgradeUrl: '/pricing',
+      });
+    }
+
+    const user = await User.findById(req.user.userId).select('email firstName stripeCustomerId');
+    if (!user.stripeCustomerId) {
+      const customerId = await stripeService.ensureCustomer(user);
+      user.stripeCustomerId = customerId;
+      await user.save();
+    }
+
+    const amountCents = Math.round(amount * 100);
+
+    // One-time payment checkout session
+    const session = await stripeService.stripe.checkout.sessions.create({
+      customer:    user.stripeCustomerId,
+      mode:        'payment',
+      line_items:  [{ price_data: {
+        currency:    'usd',
+        unit_amount: amountCents,
+        product_data: { name: `Fetchwork Wallet — $${amount.toFixed(2)} credit` },
+      }, quantity: 1 }],
+      success_url: `${CLIENT_URL}/wallet?funded=1&amount=${amount}`,
+      cancel_url:  `${CLIENT_URL}/wallet?cancelled=1`,
+      metadata:    { type: 'wallet_topup', userId: String(req.user.userId), amount: String(amount) },
+    });
+
+    res.json({ checkoutUrl: session.url });
+  } catch (err) {
+    console.error('Wallet add error:', err.message);
+    res.status(500).json({ error: 'Could not create checkout session' });
+  }
+});
+
+// POST /api/billing/wallet/confirm — called by webhook OR manually after return
+// Usually triggered by checkout.session.completed webhook for wallet_topup
+async function handleWalletTopup(session) {
+  try {
+    const { userId, amount } = session.metadata;
+    if (!userId || !amount) return;
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount) return;
+
+    await BillingCredit.create({
+      user:      userId,
+      amount:    parsedAmount,
+      remaining: parsedAmount,
+      reason:    `Wallet top-up via Stripe (session ${session.id})`,
+      status:    'active',
+    });
+
+    await logBillingAction({
+      userId,
+      action:   'wallet_topup',
+      after:    { amount: parsedAmount, sessionId: session.id },
+      note:     `$${parsedAmount} added to wallet`,
+    });
+  } catch (err) {
+    console.error('handleWalletTopup error:', err.message);
+  }
+}
+
 module.exports = router;
 module.exports.webhookHandler = webhookHandler;
+module.exports.handleWalletTopup = handleWalletTopup;

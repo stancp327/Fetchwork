@@ -29,11 +29,15 @@ export const apiRequest = async (endpoint, options = {}) => {
 
   if (!response.ok) {
     let errText = response.statusText;
+    let errData = null;
     try {
-      const data = await response.json();
-      errText = data?.error || data?.message || errText;
+      errData = await response.json();
+      errText = errData?.error || errData?.message || errText;
     } catch (e) {}
-    throw new Error(errText);
+    const err = new Error(errText);
+    err.status = response.status;
+    err.data   = errData; // full response body — callers can check err.data?.reason
+    throw err;
   }
 
   if (response.status === 204) return null;

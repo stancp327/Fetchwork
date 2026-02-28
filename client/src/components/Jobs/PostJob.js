@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../../utils/api';
 import CategoryCombobox from '../common/CategoryCombobox';
+import UpgradePrompt from '../Billing/UpgradePrompt';
 import './PostJob.css';
 
 const PostJob = () => {
@@ -10,6 +11,7 @@ const PostJob = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [upgradeLimit, setUpgradeLimit] = useState(null); // { reason, limit }
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -147,7 +149,12 @@ const PostJob = () => {
 
     } catch (error) {
       console.error('Failed to post job:', error);
-      setError(error.response?.data?.error || 'Failed to post job');
+      const data = error.response?.data;
+      if (data?.reason === 'job_limit') {
+        setUpgradeLimit({ reason: 'job_limit', limit: data.limit });
+      } else {
+        setError(data?.error || 'Failed to post job');
+      }
     } finally {
       setLoading(false);
     }
@@ -490,6 +497,14 @@ const PostJob = () => {
           </div>
 
           {error && <div className="error-banner">{error}</div>}
+          {upgradeLimit && (
+            <UpgradePrompt
+              inline
+              reason={upgradeLimit.reason}
+              limit={upgradeLimit.limit}
+              onDismiss={() => setUpgradeLimit(null)}
+            />
+          )}
 
           <div className="post-job-actions">
             <button

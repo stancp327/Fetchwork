@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import CategoryCombobox from '../common/CategoryCombobox';
 import { getCategoryLabel } from '../../utils/categories';
+import UpgradePrompt from '../Billing/UpgradePrompt';
 import './CreateService.css';
 
 const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
@@ -325,6 +326,7 @@ const CreateService = () => {
   const [error, setError] = useState(null);
   const [errors, setErrors] = useState({});
   const [showPreview, setShowPreview] = useState(true);
+  const [upgradeLimit, setUpgradeLimit] = useState(null);
   const [data, setData] = useState({
     title: '', description: '', category: '', subcategory: '', skills: '',
     requirements: '', imagePreview: '',
@@ -405,8 +407,10 @@ const CreateService = () => {
       await apiRequest('/api/services', { method: 'POST', body: JSON.stringify(serviceData) });
       navigate('/browse-services');
     } catch (err) {
-      if (err.message?.includes('401') || err.message?.includes('session')) {
+      if (err.status === 401 || err.message?.includes('401') || err.message?.includes('session')) {
         navigate('/login');
+      } else if (err.data?.reason === 'service_limit') {
+        setUpgradeLimit({ reason: 'service_limit', limit: err.data.limit });
       } else {
         setError(err.message || 'Failed to create service');
       }
@@ -447,6 +451,14 @@ const CreateService = () => {
         <div className="wizard-form-panel">
           {stepContent[step]}
           {error && <div className="wizard-error">⚠️ {error}</div>}
+          {upgradeLimit && (
+            <UpgradePrompt
+              inline
+              reason={upgradeLimit.reason}
+              limit={upgradeLimit.limit}
+              onDismiss={() => setUpgradeLimit(null)}
+            />
+          )}
         </div>
 
         {showPreview && (

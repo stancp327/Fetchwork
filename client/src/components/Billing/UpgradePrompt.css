@@ -1,0 +1,117 @@
+/* ── UpgradePrompt ────────────────────────────────────────────── */
+
+/* Overlay / modal mode */
+.upgrade-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.upgrade-prompt-card {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  overflow: hidden;
+}
+.upgrade-prompt-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  line-height: 1;
+  padding: 4px;
+  z-index: 1;
+}
+.upgrade-prompt-close:hover { color: var(--color-text-primary); }
+
+/* Body (shared by modal + inline) */
+.upgrade-prompt-modal-body {
+  padding: 36px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+/* Inline mode */
+.upgrade-prompt-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(102, 126, 234, 0.06);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+.upgrade-prompt-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+.upgrade-prompt-inline .upgrade-prompt-icon { font-size: 24px; }
+
+.upgrade-prompt-text strong {
+  display: block;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: 4px;
+}
+.upgrade-prompt-text p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+.upgrade-prompt-inline .upgrade-prompt-text { flex: 1; }
+
+.upgrade-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.upgrade-prompt-modal-body .upgrade-prompt-actions {
+  justify-content: center;
+}
+
+.upgrade-prompt-cta {
+  height: 44px;
+  padding: 0 24px;
+  background: var(--gradient-primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity var(--transition-fast);
+  white-space: nowrap;
+}
+.upgrade-prompt-cta:hover { opacity: 0.88; }
+
+.upgrade-prompt-dismiss {
+  height: 44px;
+  padding: 0 16px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.upgrade-prompt-dismiss:hover { color: var(--color-text-primary); }

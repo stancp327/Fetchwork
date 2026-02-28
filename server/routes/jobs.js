@@ -4,6 +4,7 @@ const Job = require('../models/Job');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { validateJobPost, validateProposal, validateQueryParams, validateMongoId } = require('../middleware/validation');
+const { checkJobLimit } = require('../middleware/entitlements');
 const { uploadJobAttachments } = require('../middleware/upload');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
@@ -283,7 +284,7 @@ router.get('/:id', validateMongoId, async (req, res) => {
   }
 });
 
-router.post('/', authenticateToken, validateJobPost, async (req, res) => {
+router.post('/', authenticateToken, validateJobPost, checkJobLimit, async (req, res) => {
   try {
     const {
       title,
