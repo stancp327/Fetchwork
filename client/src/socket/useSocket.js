@@ -1,11 +1,26 @@
 import { useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
 import { getApiBaseUrl } from '../utils/api';
+
+// socket.io-client (~107KB) is loaded lazily via dynamic import.
+// It only downloads when a user actually has a token (i.e. is logged in),
+// keeping it out of the main bundle entirely.
 
 const getSocketBaseUrl = () => {
   if (process.env.REACT_APP_SOCKET_URL) return process.env.REACT_APP_SOCKET_URL;
   return getApiBaseUrl();
 };
+
+const SOCKET_EVENTS = [
+  'message:receive',
+  'message:read',
+  'conversation:update',
+  'typing:start',
+  'typing:stop',
+  'user:online',
+  'user:offline',
+  'message:delivered',
+  'user:online_status',
+];
 
 export const useSocket = (options) => {
   const { token: providedToken, onEvent } = options || {};
@@ -15,51 +30,47 @@ export const useSocket = (options) => {
     const resolvedToken = providedToken || localStorage.getItem('token');
     if (!resolvedToken) return;
 
-    const socket = io(getSocketBaseUrl(), {
-      auth: { token: resolvedToken },
-      transports: ['websocket'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      timeout: 20000
-    });
+    let socket;
+    let cancelled = false;
 
-    socketRef.current = socket;
+    // Dynamic import — socket.io chunk only loads for logged-in users
+    import('socket.io-client').then(({ io }) => {
+      if (cancelled) return;
 
-    socket.on('disconnect', (reason) => {
-      console.warn('[SOCKET] Disconnected:', reason);
-    });
+      socket = io(getSocketBaseUrl(), {
+        auth: { token: resolvedToken },
+        transports: ['websocket'],
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+        timeout: 20000,
+      });
 
-    socket.on('connect_error', (error) => {
-      console.error('[SOCKET] Connection error:', error);
-    });
+      socketRef.current = socket;
 
-    socket.on('error', (error) => {
-      console.error('[SOCKET] Socket error:', error);
-    });
+      socket.on('disconnect', (reason) => {
+        console.warn('[SOCKET] Disconnected:', reason);
+      });
+      socket.on('connect_error', (error) => {
+        console.error('[SOCKET] Connection error:', error);
+      });
+      socket.on('error', (error) => {
+        console.error('[SOCKET] Socket error:', error);
+      });
 
-    const eventList = [
-      'message:receive',
-      'message:read',
-      'conversation:update',
-      'typing:start',
-      'typing:stop',
-      'user:online',
-      'user:offline',
-      'message:delivered',
-      'user:online_status'
-    ];
-    eventList.forEach((event) => {
-      socket.on(event, (data) => {
-        if (typeof onEvent === 'function') {
-          onEvent(event, data);
-        }
+      SOCKET_EVENTS.forEach((event) => {
+        socket.on(event, (data) => {
+          if (typeof onEvent === 'function') onEvent(event, data);
+        });
       });
     });
 
     return () => {
-      eventList.forEach((event) => socket.off(event));
-      socket.disconnect();
-      socketRef.current = null;
+      cancelled = true;
+      if (socket) {
+        SOCKET_EVENTS.forEach((event) => socket.off(event));
+        socket.disconnect();
+        socketRef.current = null;
+      }
     };
   }, [providedToken, onEvent]);
 

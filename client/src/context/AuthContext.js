@@ -1,153 +1,138 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { getApiBaseUrl } from '../utils/api';
+
+// ---------------------------------------------------------------------------
+// Lightweight fetch wrapper — replaces axios in this file.
+// Throws an error shaped like axios errors so callers don't need to change:
+//   error.response.status  — HTTP status code
+//   error.response.data    — parsed JSON body
+// ---------------------------------------------------------------------------
+const apiFetch = async (method, path, body) => {
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  let data;
+  try { data = await res.json(); } catch { data = {}; }
+
+  if (!res.ok) {
+    const err = new Error(data?.error || data?.message || `HTTP ${res.status}`);
+    err.response = { status: res.status, data };
+    throw err;
+  }
+  return { data, status: res.status };
+};
+
+// ---------------------------------------------------------------------------
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
 
-
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken]     = useState(localStorage.getItem('token'));
 
-  const apiBaseUrl = getApiBaseUrl();
-
+  // ── fetchUser ────────────────────────────────────────────────────────────
   const fetchUser = useCallback(async () => {
     try {
       const currentToken = localStorage.getItem('token');
-      
-      if (!currentToken) {
-        setLoading(false);
-        return;
-      }
+      if (!currentToken) { setLoading(false); return; }
 
       try {
         const decoded = jwtDecode(currentToken);
-        
-        if (decoded.exp * 1000 < Date.now()) {
-          logout();
-          return;
-        }
-      } catch (decodeError) {
-        console.error('❌ AuthContext - JWT decode error:', decodeError);
-        logout();
-        return;
+        if (decoded.exp * 1000 < Date.now()) { logout(); return; }
+      } catch {
+        logout(); return;
       }
 
-      const response = await axios.get(`${apiBaseUrl}/api/auth/me`);
-      const userData = response.data.user;
-      
-      const decoded = jwtDecode(currentToken);
-      const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
-      setUser(userWithAdmin);
+      const { data } = await apiFetch('GET', '/api/auth/me');
+      const decoded  = jwtDecode(currentToken);
+      setUser({ ...data.user, isAdmin: decoded.isAdmin });
     } catch (error) {
       console.error('❌ AuthContext - fetchUser error:', error);
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        logout();
-      } else {
-        setLoading(false);
-      }
+      const status = error.response?.status;
+      if (status === 401 || status === 403) logout();
+      else setLoading(false);
     } finally {
       setLoading(false);
     }
-  }, [apiBaseUrl]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
+    if (token) fetchUser();
+    else setLoading(false);
   }, [token, fetchUser]);
 
+  // ── login ────────────────────────────────────────────────────────────────
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${apiBaseUrl}/api/auth/login`, {
-        email,
-        password
-      });
-
-      const { token: newToken, user: userData } = response.data;
-      
+      const { data } = await apiFetch('POST', '/api/auth/login', { email, password });
+      const { token: newToken, user: userData } = data;
       const decoded = jwtDecode(newToken);
       const userWithAdmin = { ...userData, isAdmin: decoded.isAdmin };
-      
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userWithAdmin);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      
       return { success: true, user: userWithAdmin };
     } catch (error) {
       console.error('Login failed:', error);
       const errorData = error.response?.data;
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: errorData?.error || 'Login failed',
-        requiresVerification: errorData?.requiresVerification || false
+        requiresVerification: errorData?.requiresVerification || false,
       };
     }
   };
 
+  // ── register ─────────────────────────────────────────────────────────────
   const register = async (userData) => {
     try {
-      const response = await axios.post(`${apiBaseUrl}/api/auth/register`, userData);
-
-      if (response.data.requiresVerification) {
-        return { 
-          success: true, 
-          requiresVerification: true,
-          message: response.data.message 
-        };
+      const { data } = await apiFetch('POST', '/api/auth/register', userData);
+      if (data.requiresVerification) {
+        return { success: true, requiresVerification: true, message: data.message };
       }
-
-      const { token: newToken, user: newUser } = response.data;
-      
+      const { token: newToken, user: newUser } = data;
       const decoded = jwtDecode(newToken);
       const userWithAdmin = { ...newUser, isAdmin: decoded.isAdmin };
-      
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userWithAdmin);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      
       return { success: true, user: userWithAdmin };
     } catch (error) {
       console.error('Registration failed:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Registration failed' 
-      };
+      return { success: false, error: error.response?.data?.error || 'Registration failed' };
     }
   };
 
+  // ── logout ───────────────────────────────────────────────────────────────
   const logout = () => {
     localStorage.removeItem('token');
     sessionStorage.clear();
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
-    
     window.location.href = '/login';
   };
 
-  const updateUser = (userData) => {
-    setUser(prev => ({ ...prev, ...userData }));
-  };
+  // ── misc ─────────────────────────────────────────────────────────────────
+  const updateUser = (userData) => setUser(prev => ({ ...prev, ...userData }));
 
   const requestPasswordReset = async (email) => {
     try {
-      await axios.post(`${apiBaseUrl}/api/auth/forgot-password`, { email });
+      await apiFetch('POST', '/api/auth/forgot-password', { email });
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Password reset request failed' };
@@ -156,7 +141,7 @@ export const AuthProvider = ({ children }) => {
 
   const resetPassword = async (token, password) => {
     try {
-      await axios.post(`${apiBaseUrl}/api/auth/reset-password`, { token, password });
+      await apiFetch('POST', '/api/auth/reset-password', { token, password });
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Password reset failed' };
@@ -165,7 +150,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyEmail = async (token) => {
     try {
-      await axios.get(`${apiBaseUrl}/api/auth/verify-email?token=${token}`);
+      await apiFetch('GET', `/api/auth/verify-email?token=${token}`);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Email verification failed' };
@@ -176,26 +161,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setUser(userData);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
   };
 
   const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    updateUser,
-    requestPasswordReset,
-    resetPassword,
-    verifyEmail,
+    user, loading,
+    login, register, logout, updateUser,
+    requestPasswordReset, resetPassword, verifyEmail,
     setAuthFromOAuth,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
