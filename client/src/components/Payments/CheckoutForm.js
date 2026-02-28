@@ -47,7 +47,7 @@ const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) =
         <p className="checkout-job-title">{jobTitle}</p>
         <p className="checkout-amount">${amount?.toFixed(2)}</p>
         <p className="checkout-note">
-          💡 Funds are held securely until you mark the job complete — then released to the freelancer.
+          🔒 Your payment is protected — funds are only released to the freelancer once you approve the work.
         </p>
       </div>
 
@@ -65,7 +65,7 @@ const CheckoutForm = ({ clientSecret, amount, jobTitle, onSuccess, onCancel }) =
           Cancel
         </button>
         <button type="submit" className="btn btn-primary" disabled={processing || !stripe}>
-          {processing ? 'Processing…' : `Hold $${amount?.toFixed(2)} in Escrow`}
+          {processing ? 'Processing…' : `Secure $${amount?.toFixed(2)} →`}
         </button>
       </div>
 

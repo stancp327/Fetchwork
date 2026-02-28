@@ -45,7 +45,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid }) => {
     <div className="escrow-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="escrow-modal">
         <div className="escrow-modal-header">
-          <h2>Fund Escrow</h2>
+          <h2>Secure Payment</h2>
           <button className="escrow-modal-close" onClick={onClose}>✕</button>
         </div>
 
@@ -53,7 +53,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid }) => {
           {!clientSecret && !loading && (
             <div className="escrow-init">
               <div className="escrow-how-it-works">
-                <h3>How escrow works</h3>
+                <h3>How Secure Payment works</h3>
                 <ol>
                   <li>💳 Your card is authorized but <strong>not charged yet</strong></li>
                   <li>🔒 Funds are held securely while work is in progress</li>
@@ -66,7 +66,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid }) => {
                 <span>Job:</span><span>{job.title}</span>
               </div>
               <div className="escrow-amount-row total">
-                <span>Amount to hold:</span><span>${Number(amount).toFixed(2)}</span>
+                <span>Secured amount:</span><span>${Number(amount).toFixed(2)}</span>
               </div>
 
               {error && <div className="checkout-error">{error}</div>}

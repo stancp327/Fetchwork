@@ -114,7 +114,7 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Only the client can fund escrow' });
     }
     if (job.escrowAmount > 0) {
-      return res.status(400).json({ error: 'Escrow already funded for this job' });
+      return res.status(400).json({ error: 'Secure Payment already active for this job' });
     }
 
     const platformFee = calcPlatformFee(amount);
@@ -162,7 +162,7 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      message:         'Escrow funded — funds held until job completion',
+      message:         'Secure Payment active — funds held until you approve the work',
       paymentIntentId: paymentIntent.id,
       clientSecret:    paymentIntent.client_secret,
       paymentId:       payment._id
@@ -187,7 +187,7 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Only the client can release escrow' });
     }
     if (!job.stripePaymentIntentId) {
-      return res.status(400).json({ error: 'No escrow found for this job' });
+      return res.status(400).json({ error: 'No Secure Payment found for this job' });
     }
 
     // Find the escrow Payment record
