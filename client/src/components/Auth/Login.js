@@ -93,7 +93,7 @@ const Login = () => {
         <p className="auth-brand-sub">The marketplace built for your community.</p>
         <ul className="auth-brand-features">
           <li>Local &amp; remote freelancers</li>
-          <li>Secure payments with escrow</li>
+          <li>Secure Payment protection on every job</li>
           <li>Verified profiles &amp; reviews</li>
           <li>100+ job categories</li>
         </ul>

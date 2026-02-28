@@ -121,7 +121,7 @@ const Register = () => {
         <ul className="auth-brand-features">
           <li>Free to sign up — no monthly fees</li>
           <li>Get hired for local or remote work</li>
-          <li>Secure escrow payments</li>
+          <li>Secure Payment protection on every job</li>
           <li>Build your reputation with reviews</li>
         </ul>
         <div className="auth-brand-trust">

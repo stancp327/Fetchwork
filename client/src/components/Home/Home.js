@@ -134,7 +134,7 @@ const Home = () => {
               <div className="step-card">
                 <div className="step-number">3</div>
                 <h3>Hire & Pay Safely</h3>
-                <p>Pick your freelancer, fund escrow, and release payment when you're satisfied.</p>
+                <p>Pick your freelancer, pay securely, and release payment when you're satisfied.</p>
               </div>
             </div>
           </div>
@@ -153,7 +153,7 @@ const Home = () => {
               <div className="feature-card">
                 <div className="feature-icon">🛡️</div>
                 <h3>Safe Payments</h3>
-                <p>Escrow protection means you only pay when the work is done right.</p>
+                <p>Secure Payment protection means you only pay when the work is done right.</p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">⭐</div>

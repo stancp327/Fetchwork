@@ -8,6 +8,8 @@ import { createJobPostingSchema } from '../../utils/structuredData';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import DisputeFilingForm from '../Disputes/DisputeFilingForm';
 import FileUpload from '../common/FileUpload';
+import EscrowModal from '../Payments/EscrowModal';
+import { apiRequest } from '../../utils/api';
 import './JobDetails.css';
 import { getApiBaseUrl } from '../../utils/api';
 
@@ -21,6 +23,8 @@ const JobDetails = () => {
   const [applying, setApplying] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showSecurePayment, setShowSecurePayment] = useState(false);
+  const [releasing, setReleasing] = useState(false);
   const [offerRecipient, setOfferRecipient] = useState(null);
   const [proposal, setProposal] = useState({
     coverLetter: '',
@@ -128,63 +132,20 @@ const JobDetails = () => {
     alert('Dispute filed successfully. An admin will review your case.');
   };
 
-  const handleFundEscrow = async () => {
+  const handleReleasePayment = async () => {
+    if (!window.confirm('Release payment to the freelancer? This cannot be undone.')) return;
+    setReleasing(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/payments/fund-escrow`, {
+      await apiRequest('/api/payments/release-escrow', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          jobId: id,
-          amount: job.budget.amount
-        })
+        body: JSON.stringify({ jobId: id })
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to fund escrow');
-      }
-
-      const data = await response.json();
-      if (data.paymentIntent) {
-        window.location.href = `/payments/checkout?payment_intent=${data.paymentIntent.id}`;
-      }
-    } catch (error) {
-      console.error('Error funding escrow:', error);
-      alert('Failed to fund escrow. Please try again.');
-    }
-  };
-
-  const handleReleaseEscrow = async () => {
-    if (!window.confirm('Are you sure you want to release the escrow payment to the freelancer?')) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/payments/release-escrow`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          jobId: id
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to release escrow');
-      }
-
-      await response.json();
       alert('Payment released successfully!');
       fetchJobDetails();
-    } catch (error) {
-      console.error('Error releasing escrow:', error);
-      alert('Failed to release payment. Please try again.');
+    } catch (err) {
+      alert(err.message || 'Failed to release payment. Please try again.');
+    } finally {
+      setReleasing(false);
     }
   };
 
@@ -482,14 +443,14 @@ const JobDetails = () => {
                 )}
                 
                 {job.status === 'in_progress' && job.escrowAmount === 0 && (
-                  <button className="btn-full btn-primary-jd" style={{ marginTop: '0.5rem' }} onClick={handleFundEscrow}>
-                    Fund Escrow ({formatBudget(job.budget)})
+                  <button className="btn-full btn-primary-jd" style={{ marginTop: '0.5rem' }} onClick={() => setShowSecurePayment(true)}>
+                    🔒 Secure Payment ({formatBudget(job.budget)})
                   </button>
                 )}
-                
-                {job.status === 'completed' && job.escrowAmount > 0 && (
-                  <button className="btn-full btn-success-jd" style={{ marginTop: '0.5rem' }} onClick={handleReleaseEscrow}>
-                    Release Payment (${job.escrowAmount})
+
+                {job.status === 'in_progress' && job.escrowAmount > 0 && (
+                  <button className="btn-full btn-success-jd" style={{ marginTop: '0.5rem' }} onClick={handleReleasePayment} disabled={releasing}>
+                    {releasing ? 'Releasing…' : `Release Payment ($${job.escrowAmount})`}
                   </button>
                 )}
               </div>
@@ -550,6 +511,15 @@ const JobDetails = () => {
         />
       )}
     </div>
+
+      {showSecurePayment && job && (
+        <EscrowModal
+          job={job}
+          amount={job.budget?.max || job.budget?.min || job.budget?.amount || 0}
+          onClose={() => setShowSecurePayment(false)}
+          onPaid={() => { setShowSecurePayment(false); fetchJobDetails(); }}
+        />
+      )}
     </>
   );
 };

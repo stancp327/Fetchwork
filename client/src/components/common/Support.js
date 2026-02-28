@@ -36,7 +36,7 @@ const Support = () => {
         },
         {
           q: 'When do I get paid?',
-          a: 'Payments are held in escrow and released when milestones are completed or the job is finished. Funds typically appear in your account within 2-3 business days.'
+          a: 'Payments are held securely by Fetchwork and released when milestones are completed or the job is finished. Funds typically appear in your account within 2-3 business days.'
         }
       ]
     },
@@ -53,7 +53,7 @@ const Support = () => {
         },
         {
           q: 'How does payment protection work?',
-          a: 'We use an escrow system that holds your payment securely until work is completed to your satisfaction. This protects both you and the freelancer.'
+          a: 'We use Secure Payment to hold your funds safely until work is completed to your satisfaction. This protects both you and the freelancer.'
         }
       ]
     },
