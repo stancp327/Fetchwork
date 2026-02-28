@@ -147,10 +147,12 @@ const QuickUpdate = ({ jobId, onPosted }) => {
 // ── Project Card ────────────────────────────────────────────────
 const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onRefresh }) => {
   const navigate = useNavigate();
-  const budget   = job.budget || {};
-  const status   = job.status || 'draft';
+  const budget       = job.budget || {};
+  const status       = job.status || 'draft';
   const isFreelancer = job._userRole === 'freelancer';
   const isClient     = job._userRole === 'client';
+  const isProposer   = job._userRole === 'proposer';
+  const myProposal   = job._myProposal || null;
   const partner  = isFreelancer ? (job.client || {}) : (job.freelancer || {});
   const partnerLabel = isFreelancer ? 'Client' : 'Freelancer';
   const partnerName  = partner?.firstName
@@ -223,6 +225,41 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onR
               onUpdate={(idx, s) => onMilestoneUpdate(job._id, idx, s)}
             />
           ))}
+        </div>
+      )}
+
+      {/* My Proposal (proposer view) */}
+      {isProposer && myProposal && (
+        <div className="pm-my-proposal">
+          <div className="pm-my-proposal-header">
+            <span className="pm-my-proposal-label">My Proposal</span>
+            <span className={`pm-proposal-status-badge ${myProposal.status}`}>
+              {myProposal.status === 'pending'  ? '⏳ Awaiting review'
+               : myProposal.status === 'accepted' ? '✅ Accepted!'
+               : myProposal.status === 'declined' ? '❌ Declined'
+               : myProposal.status}
+            </span>
+          </div>
+          <div className="pm-my-proposal-terms">
+            <span>💰 {fmt(myProposal.proposedBudget)}</span>
+            <span>⏱ {myProposal.proposedDuration?.replace(/_/g, ' ')}</span>
+          </div>
+          {myProposal.coverLetter && (
+            <div className="pm-my-proposal-cover">
+              {myProposal.coverLetter.substring(0, 140)}{myProposal.coverLetter.length > 140 ? '…' : ''}
+            </div>
+          )}
+          {myProposal.status === 'accepted' && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: '#059669', fontWeight: 600 }}>
+              🎉 You got the job! Check your active work.
+            </div>
+          )}
+        </div>
+      )}
+
+      {isProposer && !myProposal && (
+        <div className="pm-no-proposals" style={{ fontStyle: 'normal', color: '#9ca3af', fontSize: '0.8rem' }}>
+          Proposal data unavailable — <Link to={`/jobs/${job._id}`} style={{ color: '#2563eb' }}>view job</Link>
         </div>
       )}
 
@@ -420,29 +457,33 @@ const ProjectManagement = () => {
     setLoading(true);
     setError('');
     try {
-      const [clientData, freelancerData] = await Promise.all([
-        apiRequest(`/api/jobs?client=${userId}&limit=100`),
-        apiRequest(`/api/jobs?freelancer=${userId}&limit=100`),
+      // Use the correct authenticated user-specific endpoint
+      const [postedData, workingData, appliedData] = await Promise.all([
+        apiRequest(`/api/users/jobs?type=posted&limit=100`),
+        apiRequest(`/api/users/jobs?type=working&limit=100`),
+        apiRequest(`/api/users/jobs?type=applied&limit=100`),
       ]);
 
-      const cJobs = (clientData.jobs     || clientData     || [])
+      const cJobs = (postedData.jobs || [])
         .map(j => ({ ...j, _userRole: 'client' }))
         .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 
-      const fJobs = (freelancerData.jobs || freelancerData || [])
+      const fJobs = (workingData.jobs || [])
         .map(j => ({ ...j, _userRole: 'freelancer' }))
         .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 
+      // For applied jobs, attach the user's own proposal for display
+      const pJobs = (appliedData.jobs || []).map(j => {
+        const myProposal = (j.proposals || []).find(p => {
+          const flId = p.freelancer?._id?.toString() || p.freelancer?.toString();
+          return flId === String(userId);
+        });
+        return { ...j, _userRole: 'proposer', _myProposal: myProposal || null };
+      }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
       setClientJobs(cJobs);
       setFreelancerJobs(fJobs);
-
-      // Proposals I submitted (freelancer side)
-      try {
-        const pd = await apiRequest(`/api/jobs?proposer=${userId}&limit=100`);
-        const pJobs = (pd.jobs || pd || []).map(j => ({ ...j, _userRole: 'proposer' }));
-        pJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setProposalJobs(pJobs);
-      } catch (_) {}
+      setProposalJobs(pJobs);
 
       // Service orders (freelancer role)
       try {

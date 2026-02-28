@@ -215,8 +215,16 @@ const JobDetails = () => {
     );
   }
 
-  const isOwnJob = user && job.client && job.client._id === user._id;
-  const hasApplied = job.proposals && job.proposals.some(p => p.freelancer._id === user._id);
+  const isOwnJob = user && job.client && (
+    job.client._id?.toString() === (user._id || user.id || user.userId)?.toString() ||
+    job.client?.toString() === (user._id || user.id || user.userId)?.toString()
+  );
+  const myUserId = (user?._id || user?.id || user?.userId)?.toString();
+  const myProposal = job.proposals?.find(p => {
+    const flId = p.freelancer?._id?.toString() || p.freelancer?.toString();
+    return flId && flId === myUserId;
+  }) || null;
+  const hasApplied = !!myProposal;
   const jobStructuredData = job && job.client ? createJobPostingSchema(job, job.client) : null;
 
   return (
@@ -341,8 +349,45 @@ const JobDetails = () => {
               <div className="sidebar-card">
                 {hasApplied ? (
                   <div className="already-applied">
-                    <h3>✅ Application Submitted</h3>
-                    <p>You have already submitted a proposal for this job.</p>
+                    {myProposal?.status === 'accepted' ? (
+                      <>
+                        <h3>🎉 Proposal Accepted!</h3>
+                        <p>You've been hired for this job. Check your active work.</p>
+                      </>
+                    ) : myProposal?.status === 'declined' ? (
+                      <>
+                        <h3>❌ Proposal Declined</h3>
+                        <p>The client didn't move forward with your proposal this time.</p>
+                      </>
+                    ) : (
+                      <>
+                        <h3>✅ Proposal Submitted</h3>
+                        <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+                          Awaiting the client's review.
+                        </p>
+                      </>
+                    )}
+                    {myProposal && (
+                      <div className="my-proposal-summary">
+                        <div className="my-proposal-row">
+                          <span className="my-proposal-label">Your Bid</span>
+                          <strong>${myProposal.proposedBudget}</strong>
+                        </div>
+                        <div className="my-proposal-row">
+                          <span className="my-proposal-label">Timeline</span>
+                          <strong>{myProposal.proposedDuration?.replace(/_/g, ' ')}</strong>
+                        </div>
+                        {myProposal.coverLetter && (
+                          <div className="my-proposal-cover">
+                            <span className="my-proposal-label">Cover Letter</span>
+                            <p>{myProposal.coverLetter.substring(0, 200)}{myProposal.coverLetter.length > 200 ? '…' : ''}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <Link to="/messages" className="btn-full btn-secondary-jd" style={{ marginTop: '0.75rem', textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+                      💬 Message the Client
+                    </Link>
                   </div>
                 ) : (
                   <>

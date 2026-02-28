@@ -419,3 +419,37 @@
   padding: 0.25rem 0;
   min-height: unset;
 }
+
+/* -- My Proposal Summary (job detail page) --------------------- */
+.my-proposal-summary {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+.my-proposal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+.my-proposal-row:last-child { border-bottom: none; }
+.my-proposal-label { color: #6b7280; }
+.my-proposal-cover {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+}
+.my-proposal-cover .my-proposal-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+.my-proposal-cover p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.5;
+}

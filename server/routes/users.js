@@ -348,8 +348,9 @@ router.get('/jobs', authenticateToken, async (req, res) => {
     }
     
     const jobs = await Job.find(filters)
-      .populate('client', 'firstName lastName profilePicture')
+      .populate('client', 'firstName lastName profilePicture rating totalJobs')
       .populate('freelancer', 'firstName lastName profilePicture')
+      .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
