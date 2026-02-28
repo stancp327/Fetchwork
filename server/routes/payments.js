@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const stripeService = require('../services/stripeService');
-const emailService  = require('../services/emailService');
+const emailService         = require('../services/emailService');
+const emailWorkflowService = require('../services/emailWorkflowService');
 const { authenticateToken } = require('../middleware/auth');
 const User    = require('../models/User');
 const Job     = require('../models/Job');
@@ -149,14 +150,11 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
 
     // Notify freelancer
     if (job.freelancer) {
-      const emailWorkflowService = require('../services/emailWorkflowService');
       const freelancerId = job.freelancer?._id || job.freelancer;
       if (await emailWorkflowService.canSendEmail(freelancerId, 'payment', 'escrow_funded')) {
         const freelancer = await User.findById(freelancerId);
         if (freelancer) {
-          await emailService.sendPaymentNotification(freelancer, {
-            type: 'escrow_funded', amount, job
-          });
+          await emailService.sendPaymentNotification(freelancer, { amount, job }, 'escrow_funded');
         }
       }
     }
@@ -243,11 +241,8 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
     });
 
     // 6. Notify freelancer
-    const emailWorkflowService = require('../services/emailWorkflowService');
-    if (await emailWorkflowService.canSendEmail(freelancer._id, 'payment', 'payment_released')) {
-      await emailService.sendPaymentNotification(freelancer, {
-        type: 'payment_released', amount: payoutAmt, job
-      });
+    if (await emailWorkflowService.canSendEmail(freelancer._id, 'payment', 'payment_received')) {
+      await emailService.sendPaymentNotification(freelancer, { amount: payoutAmt, job }, 'payment_received');
     }
 
     res.json({

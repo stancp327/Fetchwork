@@ -749,7 +749,11 @@ router.get('/:id/progress', authenticateToken, async (req, res) => {
         _id: job._id,
         title: job.title,
         client: job.client,
-        freelancer: job.freelancer
+        freelancer: job.freelancer,
+        budget: job.budget,
+        escrowAmount: job.escrowAmount || 0,
+        totalPaid: job.totalPaid || 0,
+        stripePaymentIntentId: job.stripePaymentIntentId || null
       }
     });
   } catch (error) {

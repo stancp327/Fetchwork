@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import EscrowModal from '../Payments/EscrowModal';
 import './JobProgress.css';
 
 const UPDATE_ICONS = {
@@ -29,6 +30,9 @@ const JobProgress = () => {
   const [posting, setPosting] = useState(false);
   const [showAddMilestone, setShowAddMilestone] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ title: '', amount: '', description: '', dueDate: '' });
+  const [showSecurePayment, setShowSecurePayment] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [releaseMsg, setReleaseMsg] = useState('');
 
   const fetchProgress = useCallback(async () => {
     try {
@@ -88,6 +92,24 @@ const JobProgress = () => {
     }
   };
 
+  const handleReleasePayment = async () => {
+    if (!window.confirm('Release payment to the freelancer? This cannot be undone.')) return;
+    setReleasing(true);
+    setReleaseMsg('');
+    try {
+      const result = await apiRequest('/api/payments/release-escrow', {
+        method: 'POST',
+        body: JSON.stringify({ jobId: id })
+      });
+      setReleaseMsg(`✅ Payment of $${result.payoutAmt?.toFixed(2)} released!`);
+      fetchProgress();
+    } catch (err) {
+      setReleaseMsg(`❌ ${err.message || 'Failed to release payment'}`);
+    } finally {
+      setReleasing(false);
+    }
+  };
+
   if (loading) return <div className="jp-container"><div className="jp-loading">Loading progress...</div></div>;
   if (error) return <div className="jp-container"><div className="jp-error">{error}</div></div>;
   if (!data) return null;
@@ -114,6 +136,61 @@ const JobProgress = () => {
           </div>
         </div>
       </div>
+
+      {/* Secure Payment Banner */}
+      {(() => {
+        const job = data.job;
+        const escrow = job?.escrowAmount || 0;
+        const amount = job?.budget?.max || job?.budget?.min || escrow;
+        if (data.status === 'completed') {
+          return (
+            <div className="jp-payment-banner jp-payment-released">
+              💸 Payment has been released to the freelancer.
+            </div>
+          );
+        }
+        if (isClient && escrow === 0 && job?.freelancer) {
+          return (
+            <div className="jp-payment-banner jp-payment-unfunded">
+              <div>
+                <strong>🔒 Secure Payment not set up</strong>
+                <p>Fund the job so the freelancer knows you're committed. Funds are only released when you approve.</p>
+              </div>
+              <button className="jp-btn-secure" onClick={() => setShowSecurePayment(true)}>
+                Secure Payment →
+              </button>
+            </div>
+          );
+        }
+        if (isClient && escrow > 0) {
+          return (
+            <div className="jp-payment-banner jp-payment-funded">
+              <div>
+                <strong>🔒 ${escrow.toFixed(2)} secured</strong>
+                <p>Funds are held safely. Release to the freelancer once you're satisfied with the work.</p>
+                {releaseMsg && <p className="jp-release-msg">{releaseMsg}</p>}
+              </div>
+              <button className="jp-btn-release" onClick={handleReleasePayment} disabled={releasing}>
+                {releasing ? 'Releasing…' : 'Release Payment'}
+              </button>
+            </div>
+          );
+        }
+        if (isFreelancer) {
+          return escrow > 0 ? (
+            <div className="jp-payment-banner jp-payment-funded">
+              <strong>🔒 ${escrow.toFixed(2)} secured by client</strong>
+              <p>Payment will be deposited to your Stripe account when the client releases it.</p>
+            </div>
+          ) : (
+            <div className="jp-payment-banner jp-payment-unfunded">
+              <strong>⏳ Awaiting client payment</strong>
+              <p>The client hasn't secured payment yet. You can still start work, but payment isn't guaranteed until funded.</p>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Overall Progress Bar */}
       <div className="jp-progress-card">
@@ -260,6 +337,15 @@ const JobProgress = () => {
           )}
         </div>
       </div>
+
+      {showSecurePayment && (
+        <EscrowModal
+          job={data.job}
+          amount={data.job?.budget?.max || data.job?.budget?.min || 0}
+          onClose={() => setShowSecurePayment(false)}
+          onPaid={() => { setShowSecurePayment(false); fetchProgress(); }}
+        />
+      )}
     </div>
   );
 };
