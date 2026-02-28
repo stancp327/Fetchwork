@@ -1,4 +1,4 @@
-.wizard-container { max-width: 900px; margin: 0 auto; padding: 20px; }
+﻿.wizard-container { max-width: 900px; margin: 0 auto; padding: 20px; }
 .wizard-header h1 { margin-bottom: 8px; }
 .progress-bar { width: 100%; height: 6px; background: #eee; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
 .progress { height: 100%; background: #4f46e5; }
@@ -11,7 +11,7 @@
 .skills-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .skill-tag { background: #eef2ff; color: #3730a3; padding: 6px 10px; border-radius: 16px; display: inline-flex; align-items: center; gap: 6px; }
 .wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
-.info { color: #2563eb; }
+.info { color: var(--color-primary); }
 /* Mobile base */
 .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 

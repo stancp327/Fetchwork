@@ -1,4 +1,4 @@
-/* ── Profile Page ─────────────────────────────────────────────── */
+﻿/* ── Profile Page ─────────────────────────────────────────────── */
 .profile-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -37,7 +37,7 @@
 
 .profile-completion-badge {
   background: #eff6ff;
-  color: #2563eb;
+  color: var(--color-primary);
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -65,7 +65,7 @@
   align-items: center;
 }
 
-.btn-preview:hover, .btn-share:hover { border-color: #2563eb; color: #2563eb; }
+.btn-preview:hover, .btn-share:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 /* ── Tabs ─────────────────────────────────────────────────────── */
 .profile-tabs {
@@ -97,8 +97,8 @@
 .profile-tab:hover { color: #111827; }
 
 .profile-tab.active {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -139,7 +139,7 @@
   justify-content: center;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .summary-name { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.25rem; color: #111827; }
@@ -148,7 +148,7 @@
 
 .summary-completion { margin-bottom: 1rem; }
 .completion-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
-.completion-fill { height: 100%; background: #2563eb; border-radius: 3px; transition: width 0.3s; }
+.completion-fill { height: 100%; background: var(--color-primary); border-radius: 3px; transition: width 0.3s; }
 .completion-text { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; display: block; }
 
 .summary-stats {
@@ -178,7 +178,7 @@
   min-height: 44px; box-sizing: border-box;
 }
 .prof-field input:focus, .prof-field select:focus, .prof-field textarea:focus {
-  border-color: #2563eb; outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 .prof-field textarea { resize: vertical; min-height: 80px; }
 .prof-row { display: grid; grid-template-columns: 1fr; gap: 1rem; }
@@ -204,7 +204,7 @@
   cursor: pointer; font-size: 0.85rem; text-align: left; width: 100%;
   transition: border-color 0.15s; min-height: 44px;
 }
-.todo-item:hover { border-color: #2563eb; }
+.todo-item:hover { border-color: var(--color-primary); }
 .todo-circle { width: 16px; height: 16px; border: 2px solid #d1d5db; border-radius: 50%; flex-shrink: 0; }
 .todo-arrow { margin-left: auto; color: #9ca3af; }
 .overview-complete {
@@ -218,25 +218,25 @@
 .overview-card h4 { font-size: 0.85rem; font-weight: 600; color: #6b7280; margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
 .overview-card p { font-size: 0.9rem; color: #111827; margin: 0; }
 .overview-skills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.ov-skill-tag { background: #eff6ff; color: #2563eb; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500; }
+.ov-skill-tag { background: #eff6ff; color: var(--color-primary); padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500; }
 .ov-empty { color: #9ca3af; font-size: 0.85rem; }
 
 /* ── Skills Tab ───────────────────────────────────────────────── */
 .skill-input-row { display: flex; gap: 0.5rem; }
 .skill-input-row input { flex: 1; }
 .btn-add-skill {
-  padding: 0.6rem 1rem; background: #2563eb; color: white; border: none;
+  padding: 0.6rem 1rem; background: var(--color-primary); color: white; border: none;
   border-radius: 10px; font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap;
   min-height: 44px;
 }
-.btn-add-skill:hover { background: #1d4ed8; }
+.btn-add-skill:hover { background: var(--color-primary-dark); }
 .skills-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
 .skill-chip {
   display: flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.75rem;
-  background: #eff6ff; color: #2563eb; border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+  background: #eff6ff; color: var(--color-primary); border-radius: 20px; font-size: 0.85rem; font-weight: 500;
 }
 .skill-remove {
-  background: none; border: none; color: #2563eb; cursor: pointer;
+  background: none; border: none; color: var(--color-primary); cursor: pointer;
   font-size: 1rem; padding: 0; line-height: 1; opacity: 0.6;
 }
 .skill-remove:hover { opacity: 1; }
@@ -256,8 +256,8 @@
   text-align: center; cursor: pointer; transition: border-color 0.15s; min-height: 200px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-.portfolio-add:hover { border-color: #2563eb; }
-.portfolio-add span { font-weight: 600; color: #2563eb; }
+.portfolio-add:hover { border-color: var(--color-primary); }
+.portfolio-add span { font-weight: 600; color: var(--color-primary); }
 .portfolio-add p { font-size: 0.8rem; color: #9ca3af; margin: 0.25rem 0 0; }
 
 /* Tab content header row */
@@ -275,7 +275,7 @@
 /* Add project button */
 .btn-add-portfolio {
   padding: 0.5rem 1rem;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -286,7 +286,7 @@
   white-space: nowrap;
   transition: background 0.15s;
 }
-.btn-add-portfolio:hover { background: #1d4ed8; }
+.btn-add-portfolio:hover { background: var(--color-primary-dark); }
 
 /* Portfolio empty state */
 .portfolio-empty {
@@ -297,7 +297,7 @@
   cursor: pointer;
   transition: border-color 0.15s;
 }
-.portfolio-empty:hover { border-color: #2563eb; }
+.portfolio-empty:hover { border-color: var(--color-primary); }
 .portfolio-empty-icon { font-size: 3rem; margin-bottom: 1rem; }
 .portfolio-empty h3 { margin: 0 0 0.5rem; color: #111827; }
 .portfolio-empty p { color: #6b7280; margin: 0 0 1.5rem; font-size: 0.9rem; }
@@ -307,7 +307,7 @@
   display: flex; flex-wrap: wrap; gap: 4px; margin: 0.5rem 0;
 }
 .portfolio-tag {
-  padding: 2px 8px; background: #eff6ff; color: #2563eb;
+  padding: 2px 8px; background: #eff6ff; color: var(--color-primary);
   border-radius: 4px; font-size: 0.7rem; font-weight: 600;
 }
 .portfolio-tile-edit {
@@ -328,12 +328,12 @@
 .rates-services { margin-top: 2rem; }
 .rates-services h3 { font-size: 1rem; margin: 0 0 0.5rem; }
 .btn-create-service {
-  display: inline-block; padding: 0.5rem 1rem; background: #2563eb; color: white;
+  display: inline-block; padding: 0.5rem 1rem; background: var(--color-primary); color: white;
   border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem;
   margin-top: 0.75rem; transition: background 0.15s; min-height: 44px;
   display: inline-flex; align-items: center;
 }
-.btn-create-service:hover { background: #1d4ed8; }
+.btn-create-service:hover { background: var(--color-primary-dark); }
 
 /* ── Verification Tab ─────────────────────────────────────────── */
 .verify-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -430,11 +430,11 @@
   min-height: 44px;
 }
 .btn-save {
-  padding: 0.5rem 1.25rem; background: #2563eb; color: white;
+  padding: 0.5rem 1.25rem; background: var(--color-primary); color: white;
   border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
   min-height: 44px;
 }
-.btn-save:hover { background: #1d4ed8; }
+.btn-save:hover { background: var(--color-primary-dark); }
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .sticky-error { color: #dc2626; font-size: 0.8rem; }

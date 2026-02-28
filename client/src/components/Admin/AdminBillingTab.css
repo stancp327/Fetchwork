@@ -1,4 +1,4 @@
-/* ── AdminBillingTab ──────────────────────────────────────────── */
+﻿/* ── AdminBillingTab ──────────────────────────────────────────── */
 .abt-wrap { padding: 24px 0; }
 
 .abt-loading { text-align: center; padding: 40px; color: var(--color-text-muted); }
@@ -33,7 +33,7 @@
   border-top: 4px solid var(--color-border);
 }
 .abt-plan-card.abt-tier-free { border-top-color: #6c757d; }
-.abt-plan-card.abt-tier-plus { border-top-color: #667eea; }
+.abt-plan-card.abt-tier-plus { border-top-color: var(--color-primary); }
 .abt-plan-card.abt-tier-pro  { border-top-color: #764ba2; }
 
 .abt-plan-header {

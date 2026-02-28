@@ -1,4 +1,4 @@
-/*
+﻿/*
  * shared.css — Fetchwork canonical UI primitives
  *
  * Provides the base layer for buttons, cards, badges, forms, and layout.
@@ -177,7 +177,7 @@
 }
 
 /* Status badges (used for job/order/proposal status) */
-.status-open        { background: #dbeafe; color: #1d4ed8; }
+.status-open        { background: #dbeafe; color: var(--color-primary-dark); }
 .status-in_progress { background: #fef3c7; color: #d97706; }
 .status-completed   { background: var(--color-success-light); color: var(--color-success-dark); }
 .status-cancelled   { background: var(--color-danger-light);  color: var(--color-danger); }

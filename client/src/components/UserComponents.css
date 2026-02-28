@@ -1,4 +1,4 @@
-.user-container {
+﻿.user-container {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -211,7 +211,7 @@
 .filter-group select:focus,
 .filter-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -261,7 +261,7 @@
 }
 
 .btn-primary {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -290,12 +290,12 @@
 
 .btn-outline {
   background: transparent;
-  border: 2px solid #667eea;
-  color: #667eea;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
 }
 
 .btn-outline:hover {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -379,7 +379,7 @@
 }
 
 .tag.primary {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -447,9 +447,9 @@
 }
 
 .pagination button.active {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
-  border-color: #667eea;
+  border-color: var(--color-primary);
 }
 
 .pagination button:disabled {
@@ -483,7 +483,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -634,7 +634,7 @@
 }
 
 .role-btn.active {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -812,7 +812,7 @@
 }
 
 .package-btn.active {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }
 
@@ -955,7 +955,7 @@
 }
 
 .role-badge {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   padding: 6px 12px;
   border-radius: 20px;

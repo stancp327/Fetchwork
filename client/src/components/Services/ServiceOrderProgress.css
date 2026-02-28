@@ -1,4 +1,4 @@
-.sop-container {
+﻿.sop-container {
   max-width: 900px;
   margin: 0 auto;
   padding: 1.25rem 1rem;
@@ -14,7 +14,7 @@
   min-height: 36px;
   gap: 0.3rem;
 }
-.sop-back:hover { color: #2563eb; }
+.sop-back:hover { color: var(--color-primary); }
 
 /* ── Header ─────────────────────────────────────────────────── */
 .sop-header {
@@ -95,7 +95,7 @@
   transition: all 0.2s;
 }
 .sop-step.done   .sop-step-icon { background: #d1fae5; border-color: #10b981; }
-.sop-step.active .sop-step-icon { background: #dbeafe; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+.sop-step.active .sop-step-icon { background: #dbeafe; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 
 .sop-step-label {
   font-size: 0.7rem;
@@ -105,7 +105,7 @@
   white-space: nowrap;
 }
 .sop-step.done   .sop-step-label { color: #065f46; }
-.sop-step.active .sop-step-label { color: #1d4ed8; }
+.sop-step.active .sop-step-label { color: var(--color-primary-dark); }
 
 .sop-step-line {
   height: 2px;
@@ -211,7 +211,7 @@
 .sop-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .sop-btn:hover:not(:disabled) { opacity: 0.88; }
 
-.sop-btn-deliver  { background: #2563eb; color: white; }
+.sop-btn-deliver  { background: var(--color-primary); color: white; }
 .sop-btn-complete { background: #10b981; color: white; }
 .sop-btn-revision { background: #f59e0b; color: white; }
 .sop-btn-remind   { background: #f59e0b; color: white; }

@@ -1,4 +1,4 @@
-/* ── Job Proposals Page — Mobile-first ──────────────────────── */
+﻿/* ── Job Proposals Page — Mobile-first ──────────────────────── */
 .jp-container {
   width: 100%;
   min-width: 0;
@@ -19,7 +19,7 @@
   text-decoration: none;
   margin-bottom: 1.25rem;
 }
-.jp-back:hover { color: #2563eb; }
+.jp-back:hover { color: var(--color-primary); }
 
 /* ── Header ──────────────────────────────────────────────────── */
 .jp-header {
@@ -48,7 +48,7 @@
   text-transform: capitalize;
 }
 .jp-header-badge.open        { background: #d1fae5; color: #065f46; }
-.jp-header-badge.in_progress { background: #dbeafe; color: #1d4ed8; }
+.jp-header-badge.in_progress { background: #dbeafe; color: var(--color-primary-dark); }
 .jp-header-badge.completed   { background: #ede9fe; color: #6d28d9; }
 
 /* ── Filter bar ──────────────────────────────────────────────── */
@@ -76,8 +76,8 @@
   min-height: 36px;
   transition: all 0.15s;
 }
-.jp-filter-btn:hover { border-color: #2563eb; color: #2563eb; }
-.jp-filter-btn.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+.jp-filter-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.jp-filter-btn.active { border-color: var(--color-primary); background: #eff6ff; color: var(--color-primary); }
 
 /* ── Empty / Loading ─────────────────────────────────────────── */
 .jp-loading, .jp-empty {
@@ -114,7 +114,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -171,7 +171,7 @@
 }
 .jp-bid-item { font-size: 0.85rem; color: #374151; }
 .jp-bid-item strong { color: #111827; font-weight: 700; }
-.jp-bid-item.highlight strong { color: #2563eb; }
+.jp-bid-item.highlight strong { color: var(--color-primary); }
 
 /* Cover letter */
 .jp-cover-label {
@@ -235,8 +235,8 @@
   min-height: 40px;
   padding: 0 1.1rem;
   background: white;
-  color: #2563eb;
-  border: 1.5px solid #2563eb;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;

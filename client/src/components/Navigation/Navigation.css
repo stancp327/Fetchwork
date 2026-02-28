@@ -1,4 +1,4 @@
-/* ── Navigation ───────────────────────────────────────────────── */
+﻿/* ── Navigation ───────────────────────────────────────────────── */
 .navigation {
   position: fixed;
   top: 0;
@@ -40,7 +40,7 @@
 .brand-text {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 /* ── Nav Links — mobile: slide-in drawer ─────────────────────── */
@@ -99,8 +99,8 @@
 }
 
 .role-pill.active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
 }
 
@@ -137,11 +137,11 @@
   transition: all 0.15s;
 }
 
-.role-btn:hover { color: #2563eb; }
+.role-btn:hover { color: var(--color-primary); }
 
 .role-btn.active {
   background: white;
-  color: #2563eb;
+  color: var(--color-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-weight: 600;
 }
@@ -163,12 +163,12 @@
 }
 
 .nav-link:hover {
-  color: #2563eb;
+  color: var(--color-primary);
   background: #f0f4ff;
 }
 
 .nav-link.active {
-  color: #2563eb;
+  color: var(--color-primary);
   background: #eff6ff;
   font-weight: 600;
 }
@@ -200,7 +200,7 @@
 .nav-spacer { display: none; }
 
 .nav-login {
-  color: #2563eb !important;
+  color: var(--color-primary) !important;
   font-weight: 600 !important;
 }
 
@@ -209,7 +209,7 @@
   text-align: center;
   padding: 0.75rem;
   min-height: 44px;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white !important;
   border-radius: 8px;
   font-weight: 600;
@@ -219,7 +219,7 @@
   white-space: nowrap;
 }
 
-.nav-cta-btn:hover { background: #1d4ed8; }
+.nav-cta-btn:hover { background: var(--color-primary-dark); }
 
 /* ── Logout ───────────────────────────────────────────────────── */
 .nav-logout-btn {
@@ -333,7 +333,7 @@
     transform: translateX(-50%);
     width: 60%;
     height: 2px;
-    background: #2563eb;
+    background: var(--color-primary);
     border-radius: 2px;
   }
 
@@ -363,7 +363,7 @@
 .role-btn:focus-visible,
 .nav-logout-btn:focus-visible,
 .mobile-menu-toggle:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -448,7 +448,7 @@
 .notif-mark-all {
   background: none;
   border: none;
-  color: #2563eb;
+  color: var(--color-primary);
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
@@ -481,7 +481,7 @@
 
 .notif-item.unread {
   background: #eff6ff;
-  border-left: 3px solid #2563eb;
+  border-left: 3px solid var(--color-primary);
 }
 
 .notif-item.read { opacity: 0.7; }
@@ -526,7 +526,7 @@
 .nav-login-btn:hover { background: rgba(255,255,255,0.15); border-color: white; }
 
 .nav-cta-btn {
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   text-decoration: none;
   font-weight: 700;
@@ -538,4 +538,4 @@
   display: inline-flex;
   align-items: center;
 }
-.nav-cta-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+.nav-cta-btn:hover { background: var(--color-primary-dark); transform: translateY(-1px); }

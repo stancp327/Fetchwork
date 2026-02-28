@@ -1,7 +1,7 @@
-/* ── Job Progress — Mobile-first ──────────────────────────────── */
+﻿/* ── Job Progress — Mobile-first ──────────────────────────────── */
 .jp-container { width: 100%; max-width: 1100px; margin: 0 auto; padding: var(--space-lg) var(--container-padding); }
 .jp-loading, .jp-error { text-align: center; padding: var(--space-3xl); color: #6b7280; }
-.jp-back { color: #2563eb; text-decoration: none; font-size: var(--font-size-sm); min-height: 44px; display: inline-flex; align-items: center; }
+.jp-back { color: var(--color-primary); text-decoration: none; font-size: var(--font-size-sm); min-height: 44px; display: inline-flex; align-items: center; }
 .jp-back:hover { text-decoration: underline; }
 .jp-header h1 { margin: var(--space-sm) 0 var(--space-xs); font-size: var(--font-size-xl); color: #111827; }
 .jp-meta { font-size: var(--font-size-sm); color: #6b7280; }
@@ -25,14 +25,14 @@
 
 .jp-btn-secure {
   min-height: 44px; padding: 0 1.25rem;
-  background: #2563eb; color: white;
+  background: var(--color-primary); color: white;
   border: none; border-radius: 8px;
   font-size: 0.88rem; font-weight: 600;
   cursor: pointer; white-space: nowrap;
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.jp-btn-secure:hover { background: #1d4ed8; }
+.jp-btn-secure:hover { background: var(--color-primary-dark); }
 
 .jp-btn-release {
   min-height: 44px; padding: 0 1.25rem;
@@ -51,9 +51,9 @@
 .jp-progress-card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: var(--space-lg); margin: var(--space-xl) 0; }
 .jp-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); }
 .jp-progress-header h2 { margin: 0; font-size: var(--font-size-base); }
-.jp-progress-pct { font-size: var(--font-size-2xl); font-weight: 700; color: #2563eb; }
+.jp-progress-pct { font-size: var(--font-size-2xl); font-weight: 700; color: var(--color-primary); }
 .jp-progress-bar-outer { height: 10px; background: #e5e7eb; border-radius: 10px; overflow: hidden; }
-.jp-progress-bar-inner { height: 100%; background: linear-gradient(90deg, #2563eb, #10b981); border-radius: 10px; transition: width 0.3s; }
+.jp-progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--color-primary), #10b981); border-radius: 10px; transition: width 0.3s; }
 .jp-progress-summary { font-size: var(--font-size-xs); color: #6b7280; margin-top: var(--space-sm); }
 
 /* Layout — single column on mobile */
@@ -90,14 +90,14 @@
 .jp-timeline-time { font-size: var(--font-size-xs); color: #9ca3af; }
 .jp-timeline-msg { margin: 0; font-size: var(--font-size-sm); color: #374151; line-height: var(--line-height-relaxed); }
 .jp-timeline-attachments { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); flex-wrap: wrap; }
-.jp-attachment { padding: var(--space-xs) var(--space-sm); background: #f3f4f6; border-radius: 4px; font-size: var(--font-size-xs); color: #2563eb; text-decoration: none; }
+.jp-attachment { padding: var(--space-xs) var(--space-sm); background: #f3f4f6; border-radius: 4px; font-size: var(--font-size-xs); color: var(--color-primary); text-decoration: none; }
 
 /* Buttons */
 .jp-btn-sm { padding: 0 var(--space-md); border: 1px solid #d1d5db; border-radius: 6px; font-size: var(--font-size-xs); font-weight: 500; cursor: pointer; background: white; color: #374151; min-height: 44px; }
-.jp-btn-sm.primary { background: #2563eb; color: white; border-color: #2563eb; }
+.jp-btn-sm.primary { background: var(--color-primary); color: white; border-color: var(--color-primary); }
 .jp-btn-sm.success { background: #10b981; color: white; border-color: #10b981; }
 .jp-btn-sm.warning { background: #f59e0b; color: white; border-color: #f59e0b; }
-.jp-btn-primary { padding: var(--space-sm) var(--space-lg); border: none; border-radius: 8px; background: #2563eb; color: white; font-size: var(--font-size-sm); font-weight: 500; cursor: pointer; min-height: 44px; }
+.jp-btn-primary { padding: var(--space-sm) var(--space-lg); border: none; border-radius: 8px; background: var(--color-primary); color: white; font-size: var(--font-size-sm); font-weight: 500; cursor: pointer; min-height: 44px; }
 .jp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .jp-btn-ghost { padding: var(--space-sm) var(--space-lg); border: 1px solid #d1d5db; border-radius: 8px; background: white; color: #374151; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; }
 .jp-empty { padding: var(--space-2xl); text-align: center; color: #9ca3af; font-size: var(--font-size-sm); }
@@ -127,5 +127,5 @@
   background: #ede9fe;
   color: #5b21b6;
 }
-.jp-btn-sm.secure  { background: #2563eb; color: white; }
+.jp-btn-sm.secure  { background: var(--color-primary); color: white; }
 .jp-btn-sm.release { background: #10b981; color: white; }

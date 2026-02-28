@@ -1,4 +1,4 @@
-/* ── Admin User Drawer — Mobile-first ────────────────────────── */
+﻿/* ── Admin User Drawer — Mobile-first ────────────────────────── */
 .aud-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000;
   display: flex; justify-content: flex-end;
@@ -17,11 +17,11 @@
   position: sticky; top: 0; background: white; z-index: 2; min-height: 48px;
 }
 .aud-back {
-  background: none; border: none; font-size: var(--font-size-sm); color: #2563eb;
+  background: none; border: none; font-size: var(--font-size-sm); color: var(--color-primary);
   font-weight: 600; cursor: pointer; padding: var(--space-sm); min-height: 44px;
 }
 .aud-view-public { font-size: var(--font-size-xs); color: #6b7280; text-decoration: none; padding: var(--space-sm); }
-.aud-view-public:hover { color: #2563eb; }
+.aud-view-public:hover { color: var(--color-primary); }
 
 /* Profile card — stacks on mobile */
 .aud-profile-card {
@@ -30,7 +30,7 @@
 }
 .aud-avatar-lg {
   width: 56px; height: 56px; border-radius: 50%; background: #eff6ff;
-  color: #2563eb; font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+  color: var(--color-primary); font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
 .aud-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
@@ -39,7 +39,7 @@
   margin: 0; font-size: var(--font-size-base); display: flex; align-items: center;
   justify-content: center; gap: var(--space-xs); flex-wrap: wrap;
 }
-.aud-verified { color: #2563eb; font-size: 0.8rem; }
+.aud-verified { color: var(--color-primary); font-size: 0.8rem; }
 .aud-headline { color: #6b7280; font-size: var(--font-size-sm); margin: 0.15rem 0; }
 .aud-email-line { color: #9ca3af; font-size: var(--font-size-xs); margin: 0 0 var(--space-sm); word-break: break-all; }
 .aud-badges { display: flex; flex-wrap: wrap; gap: var(--space-xs); justify-content: center; }
@@ -47,7 +47,7 @@
   font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; font-weight: 600;
 }
 .aud-badge-admin { background: #fef2f2; color: #dc2626; }
-.aud-badge-moderator { background: #eff6ff; color: #2563eb; }
+.aud-badge-moderator { background: #eff6ff; color: var(--color-primary); }
 .aud-badge-user { background: #f3f4f6; color: #6b7280; }
 .aud-badge-success { background: #ecfdf5; color: #059669; }
 .aud-badge-danger { background: #fef2f2; color: #dc2626; }
@@ -77,7 +77,7 @@
   color: #6b7280; cursor: pointer; white-space: nowrap; min-height: 44px;
   flex-shrink: 0;
 }
-.aud-sec-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+.aud-sec-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 .aud-sec-tab:hover { color: #1f2937; }
 
 /* Content area */
@@ -94,7 +94,7 @@
 .aud-skills, .aud-bio { margin-top: var(--space-md); }
 .aud-skills h4, .aud-bio h4 { font-size: var(--font-size-sm); margin: 0 0 var(--space-sm); color: #374151; }
 .aud-tag-list { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
-.aud-tag { background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; }
+.aud-tag { background: #eff6ff; color: var(--color-primary); padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; }
 .aud-bio p { font-size: var(--font-size-sm); color: #4b5563; line-height: 1.5; margin: 0; }
 
 /* Lists (jobs, services, reviews) */
@@ -103,7 +103,7 @@
   padding: var(--space-sm); border: 1px solid #f3f4f6; border-radius: 8px;
   margin-bottom: var(--space-xs);
 }
-.aud-list-item a { color: #2563eb; text-decoration: none; font-size: var(--font-size-sm); font-weight: 500; display: block; }
+.aud-list-item a { color: var(--color-primary); text-decoration: none; font-size: var(--font-size-sm); font-weight: 500; display: block; }
 .aud-list-item a:hover { text-decoration: underline; }
 .aud-list-meta {
   display: flex; flex-wrap: wrap; gap: var(--space-xs); font-size: 0.65rem;
@@ -120,7 +120,7 @@
 .aud-portfolio-body h5 { margin: 0 0 var(--space-xs); font-size: var(--font-size-sm); }
 .aud-portfolio-body p { margin: 0 0 var(--space-sm); font-size: var(--font-size-xs); color: #6b7280; line-height: 1.4; }
 .aud-portfolio-links { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
-.aud-portfolio-links a { font-size: var(--font-size-xs); color: #2563eb; text-decoration: none; }
+.aud-portfolio-links a { font-size: var(--font-size-xs); color: var(--color-primary); text-decoration: none; }
 
 /* Actions */
 .aud-actions-grid { display: flex; flex-direction: column; gap: var(--space-xs); }
@@ -135,7 +135,7 @@
 }
 .aud-action-btn:hover { background: #f9fafb; }
 .aud-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.aud-action-btn.primary { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+.aud-action-btn.primary { background: #eff6ff; border-color: #bfdbfe; color: var(--color-primary); }
 .aud-action-btn.success { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
 .aud-action-btn.warning { background: #fffbeb; border-color: #fde68a; color: #d97706; }
 .aud-action-btn.danger { background: #fef2f2; border-color: #fecaca; color: #dc2626; }

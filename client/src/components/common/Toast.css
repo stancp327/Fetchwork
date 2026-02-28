@@ -1,4 +1,4 @@
-/* ── Toast Notifications — Mobile-first ──────────────────────── */
+﻿/* ── Toast Notifications — Mobile-first ──────────────────────── */
 .toast-container {
   position: fixed;
   top: 70px;
@@ -29,7 +29,7 @@
 
 .toast:hover { transform: translateX(-2px); }
 
-.toast-info { border-left-color: #2563eb; }
+.toast-info { border-left-color: var(--color-primary); }
 .toast-success { border-left-color: #059669; }
 .toast-error { border-left-color: #dc2626; }
 .toast-warning { border-left-color: #d97706; }

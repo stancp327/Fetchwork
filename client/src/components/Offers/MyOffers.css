@@ -1,4 +1,4 @@
-/* ── My Offers Page — Mobile-first ──────────────────────────── */
+﻿/* ── My Offers Page — Mobile-first ──────────────────────────── */
 .my-offers-container {
   width: 100%;
   min-width: 0;
@@ -58,14 +58,14 @@
 }
 
 .offer-filter-btn:hover {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .offer-filter-btn.active {
-  border-color: #2563eb;
+  border-color: var(--color-primary);
   background: #eff6ff;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 /* ── States ──────────────────────────────────────────────────── */

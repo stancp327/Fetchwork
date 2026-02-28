@@ -1,4 +1,4 @@
-/* ── Saved Items — Mobile-first ──────────────────────────────── */
+﻿/* ── Saved Items — Mobile-first ──────────────────────────────── */
 .saved-page {
   max-width: 900px;
   margin: 0 auto;
@@ -35,9 +35,9 @@
 }
 
 .saved-filter-btn.active {
-  border-color: #2563eb;
+  border-color: var(--color-primary);
   background: #eff6ff;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .saved-filter-btn:hover:not(.active) {

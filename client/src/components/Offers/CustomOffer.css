@@ -1,4 +1,4 @@
-/* ── Modal Overlay ────────────────────────────────────────────── */
+﻿/* ── Modal Overlay ────────────────────────────────────────────── */
 .offer-modal-overlay {
   position: fixed;
   inset: 0;
@@ -99,7 +99,7 @@
 .offer-field input:focus,
 .offer-field textarea:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -138,7 +138,7 @@
   min-height: 44px;
   border: none;
   border-radius: 8px;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   font-size: 0.9rem;
   font-weight: 500;
@@ -146,7 +146,7 @@
 }
 
 .btn-offer-send:hover {
-  background: #1d4ed8;
+  background: var(--color-primary-dark);
 }
 
 .btn-offer-send:disabled {
@@ -201,7 +201,7 @@
 }
 
 .offer-status.pending { background: #fef3c7; color: #a16207; }
-.offer-status.countered { background: #eff6ff; color: #2563eb; }
+.offer-status.countered { background: #eff6ff; color: var(--color-primary); }
 .offer-status.accepted { background: #ecfdf5; color: #059669; }
 .offer-status.declined { background: #fef2f2; color: #dc2626; }
 .offer-status.withdrawn { background: #f3f4f6; color: #6b7280; }
@@ -219,7 +219,7 @@
 }
 
 .btn-offer-action.accept { background: #10b981; color: white; }
-.btn-offer-action.counter { background: #2563eb; color: white; }
+.btn-offer-action.counter { background: var(--color-primary); color: white; }
 .btn-offer-action.decline { background: #f3f4f6; color: #dc2626; }
 
 /* Mobile adjustments */

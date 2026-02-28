@@ -1,4 +1,4 @@
-/* ── Payments — Mobile-first ─────────────────────────────────── */
+﻿/* ── Payments — Mobile-first ─────────────────────────────────── */
 
 /* ── Stripe Connect ──────────────────────────────────────────── */
 .sc-loading { color: #6b7280; font-size: 0.85rem; padding: 0.5rem 0; }
@@ -24,7 +24,7 @@
   display: inline-block;
   padding: 0 1.25rem;
   min-height: 44px;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: 8px;
@@ -34,7 +34,7 @@
   transition: background 0.15s;
   margin-top: 0.5rem;
 }
-.sc-btn:hover:not(:disabled) { background: #1d4ed8; }
+.sc-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
 .sc-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .sc-sub  { font-size: 0.75rem !important; color: #6b7280 !important; margin-top: 0.5rem !important; }
 .sc-error { color: #dc2626; font-size: 0.82rem; margin-top: 0.5rem; }
@@ -155,12 +155,12 @@
   color: #374151;
   transition: border-color 0.15s, background 0.15s;
 }
-.escrow-card-option input[type=radio] { accent-color: #2563eb; }
+.escrow-card-option input[type=radio] { accent-color: var(--color-primary); }
 .escrow-card-option.selected {
-  border-color: #2563eb;
+  border-color: var(--color-primary);
   background: #eff6ff;
 }
-.escrow-card-option.new-card { color: #2563eb; }
+.escrow-card-option.new-card { color: var(--color-primary); }
 .escrow-card-brand { font-weight: 600; }
 .escrow-card-num   { font-family: monospace; letter-spacing: 1px; }
 .escrow-card-exp   { color: #9ca3af; font-size: 0.78rem; }
@@ -169,7 +169,7 @@
   font-size: 0.7rem;
   font-weight: 700;
   padding: 2px 7px;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   border-radius: 99px;
 }

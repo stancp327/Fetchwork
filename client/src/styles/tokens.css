@@ -1,6 +1,6 @@
-:root {
+﻿:root {
   /* ── Brand Colors ──────────────────────────────────────────── */
-  --color-primary:       #2563eb;   /* Tailwind blue-600 — was #667eea (wrong purple) */
+  --color-primary:       #2563eb;   /* Tailwind blue-600 — canonical primary */
   --color-primary-dark:  #1d4ed8;   /* Tailwind blue-700 — hover/active state */
   --color-primary-light: #eff6ff;   /* Tailwind blue-50  — tinted bg */
   --color-primary-ring:  rgba(37, 99, 235, 0.2); /* focus ring */
@@ -104,7 +104,7 @@
 
   /* ── Gradients ─────────────────────────────────────────────── */
   --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  --gradient-hero:    linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);  /* was #667eea→#764ba2 */
+  --gradient-hero:    linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);  /* was var(--color-primary)→#764ba2 */
   --gradient-success: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
   --gradient-danger:  linear-gradient(135deg, var(--color-danger)  0%, var(--color-danger-dark)  100%);
   --gradient-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);

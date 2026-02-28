@@ -1,4 +1,4 @@
-/* ── Message Preview — Mobile-first ──────────────────────────── */
+﻿/* ── Message Preview — Mobile-first ──────────────────────────── */
 .msg-preview {
   position: fixed;
   bottom: var(--space-lg, 1rem);
@@ -27,7 +27,7 @@
 
 .msg-preview-avatar {
   width: 40px; height: 40px; border-radius: 50%;
-  background: #eff6ff; color: #2563eb;
+  background: #eff6ff; color: var(--color-primary);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
 }

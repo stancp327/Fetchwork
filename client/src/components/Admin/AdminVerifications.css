@@ -1,4 +1,4 @@
-/* ── Admin Verifications — Mobile-first ──────────────────────── */
+﻿/* ── Admin Verifications — Mobile-first ──────────────────────── */
 .av-page { padding: 0; }
 
 .av-header {
@@ -71,7 +71,7 @@
   overflow: hidden;
   transition: border-color 0.15s;
 }
-.av-card.expanded { border-color: #2563eb; }
+.av-card.expanded { border-color: var(--color-primary); }
 
 /* Summary row */
 .av-card-summary {
@@ -103,7 +103,7 @@
   height: 40px;
   border-radius: 50%;
   background: #dbeafe;
-  color: #1d4ed8;
+  color: var(--color-primary-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,7 +164,7 @@
 }
 .av-doc-img:hover { opacity: 0.85; }
 .av-doc-link {
-  color: #2563eb;
+  color: var(--color-primary);
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
@@ -190,7 +190,7 @@
   font-family: inherit;
   box-sizing: border-box;
 }
-.av-notes-field textarea:focus { outline: none; border-color: #2563eb; }
+.av-notes-field textarea:focus { outline: none; border-color: var(--color-primary); }
 
 .av-actions {
   display: flex;

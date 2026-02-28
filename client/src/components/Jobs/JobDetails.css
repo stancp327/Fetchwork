@@ -1,4 +1,4 @@
-/* ── Job Details ──────────────────────────────────────────────── */
+﻿/* ── Job Details ──────────────────────────────────────────────── */
 .job-details-page {
   max-width: 1100px;
   margin: 0 auto;
@@ -9,7 +9,7 @@
 .job-details-page .back-button {
   background: none;
   border: none;
-  color: #2563eb;
+  color: var(--color-primary);
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
@@ -20,7 +20,7 @@
   align-items: center;
 }
 
-.job-details-page .back-button:hover { color: #1d4ed8; }
+.job-details-page .back-button:hover { color: var(--color-primary-dark); }
 
 .job-meta {
   display: flex;
@@ -32,7 +32,7 @@
 
 .job-category {
   background: #eff6ff;
-  color: #2563eb;
+  color: var(--color-primary);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -84,7 +84,7 @@
 }
 
 .status-badge.open { background: #dcfce7; color: #15803d; }
-.status-badge.in_progress { background: #dbeafe; color: #1d4ed8; }
+.status-badge.in_progress { background: #dbeafe; color: var(--color-primary-dark); }
 .status-badge.completed { background: #f3f4f6; color: #374151; }
 .status-badge.cancelled { background: #fee2e2; color: #dc2626; }
 .status-badge.disputed { background: #fef3c7; color: #b45309; }
@@ -143,7 +143,7 @@
 
 .skill-tag {
   background: #f0f4ff;
-  color: #2563eb;
+  color: var(--color-primary);
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -214,7 +214,7 @@
 .sidebar-card select:focus,
 .sidebar-card textarea:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -228,7 +228,7 @@
 
 .btn-submit-proposal {
   width: 100%;
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   border: none;
   padding: 0.75rem;
@@ -240,7 +240,7 @@
   transition: background 0.15s;
 }
 
-.btn-submit-proposal:hover { background: #1d4ed8; }
+.btn-submit-proposal:hover { background: var(--color-primary-dark); }
 .btn-submit-proposal:disabled { background: #93c5fd; cursor: not-allowed; }
 
 .btn-full {
@@ -258,8 +258,8 @@
   border: none;
 }
 
-.btn-primary-jd { background: #2563eb; color: white; }
-.btn-primary-jd:hover { background: #1d4ed8; }
+.btn-primary-jd { background: var(--color-primary); color: white; }
+.btn-primary-jd:hover { background: var(--color-primary-dark); }
 .btn-secondary-jd { background: white; color: #374151; border: 1px solid #d1d5db; }
 .btn-secondary-jd:hover { background: #f9fafb; }
 .btn-success-jd { background: #059669; color: white; }
@@ -305,7 +305,7 @@
 .jd-state-page p { color: #6b7280; margin: 0 0 1rem; }
 
 .jd-state-page .btn-back {
-  background: #2563eb;
+  background: var(--color-primary);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -319,7 +319,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid #e5e7eb;
-  border-top: 3px solid #2563eb;
+  border-top: 3px solid var(--color-primary);
   border-radius: 50%;
   animation: spin-jd 0.8s linear infinite;
   margin: 0 auto 1rem;
@@ -369,7 +369,7 @@
   min-height: 44px;
   transition: all 0.15s;
 }
-.milestone-toggle-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+.milestone-toggle-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: #eff6ff; }
 .ms-toggle-hint { font-size: 0.8rem; opacity: 0.7; }
 
 .milestone-proposal-block {
@@ -413,7 +413,7 @@
 .ms-add-btn {
   background: none;
   border: none;
-  color: #2563eb;
+  color: var(--color-primary);
   font-size: 0.85rem;
   cursor: pointer;
   padding: 0.25rem 0;
@@ -455,7 +455,7 @@
 }
 
 /* -- Owner Proposals Panel (job detail sidebar) ---------------- */
-.owner-proposals-panel { border-left: 3px solid #2563eb; }
+.owner-proposals-panel { border-left: 3px solid var(--color-primary); }
 .owner-proposals-header {
   display: flex;
   justify-content: space-between;
@@ -480,7 +480,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, var(--color-primary), #764ba2);
   color: white;
   font-size: 0.8rem;
   font-weight: 700;

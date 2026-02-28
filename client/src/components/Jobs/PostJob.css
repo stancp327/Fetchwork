@@ -1,4 +1,4 @@
-/* ── Post Job — Mobile-first ──────────────────────────────────── */
+﻿/* ── Post Job — Mobile-first ──────────────────────────────────── */
 .post-job-page {
   width: 100%;
   max-width: 800px;
@@ -31,7 +31,7 @@
 }
 
 .post-job-form input:focus, .post-job-form select:focus, .post-job-form textarea:focus {
-  outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .post-job-form textarea { resize: vertical; min-height: 120px; }
@@ -44,13 +44,13 @@
 
 /* Checkbox */
 .post-job-checkbox { display: flex; align-items: center; gap: var(--space-sm); margin: var(--space-lg) 0; min-height: 44px; }
-.post-job-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: #2563eb; }
+.post-job-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--color-primary); }
 .post-job-checkbox label { margin: 0; font-weight: 500; cursor: pointer; }
 
 /* Actions — stacked on mobile */
 .post-job-actions { display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-2xl); padding-top: var(--space-xl); border-top: 1px solid #f3f4f6; }
-.post-job-actions .btn-primary { background: #2563eb; color: white; border: none; padding: var(--space-md) var(--space-2xl); border-radius: 8px; font-weight: 600; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
-.post-job-actions .btn-primary:hover { background: #1d4ed8; }
+.post-job-actions .btn-primary { background: var(--color-primary); color: white; border: none; padding: var(--space-md) var(--space-2xl); border-radius: 8px; font-weight: 600; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
+.post-job-actions .btn-primary:hover { background: var(--color-primary-dark); }
 .post-job-actions .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
 .post-job-actions .btn-secondary { background: white; color: #374151; border: 1px solid #d1d5db; padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 500; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
 .post-job-actions .btn-secondary:hover { background: #f9fafb; }
@@ -85,16 +85,16 @@
   min-height: 44px; width: 100%;
 }
 .work-type-card:hover { border-color: #93c5fd; background: #f8faff; }
-.work-type-card.selected { border-color: #2563eb; background: #eff6ff; }
+.work-type-card.selected { border-color: var(--color-primary); background: #eff6ff; }
 .work-type-icon { font-size: 1.25rem; }
 .work-type-label { font-weight: 600; font-size: var(--font-size-sm); color: #111827; }
 .work-type-desc { font-size: var(--font-size-xs); color: #6b7280; }
-.work-type-card.selected .work-type-label { color: #2563eb; }
+.work-type-card.selected .work-type-label { color: var(--color-primary); }
 
 /* Location info banner */
 .location-info-banner {
   background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
-  padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm); color: #1d4ed8;
+  padding: var(--space-sm) var(--space-md); font-size: var(--font-size-sm); color: var(--color-primary-dark);
 }
 
 /* Label optional hint */
@@ -111,7 +111,7 @@
   min-height: 44px;
 }
 .cancellation-card:hover { border-color: #d1d5db; background: #f9fafb; }
-.cancellation-card.selected { border-color: #2563eb; background: #eff6ff; }
+.cancellation-card.selected { border-color: var(--color-primary); background: #eff6ff; }
 .cancellation-desc { font-size: var(--font-size-xs); color: #6b7280; }
 
 @media (min-width: 480px) {
