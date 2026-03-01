@@ -22,13 +22,12 @@ const InviteToJob = ({ freelancer, onClose }) => {
     if (!selectedJob) return;
     setLoading(true);
     try {
-      await apiRequest(`/api/messages`, {
+      await apiRequest(`/api/messages/conversations`, {
         method: 'POST',
         body: JSON.stringify({
           recipientId: freelancer._id,
           content: message || `Hi ${freelancer.firstName}, I'd like to invite you to apply to my job. Check it out and let me know if you're interested!`,
           jobId: selectedJob,
-          type: 'job_invite'
         })
       });
       addToast(`Invitation sent to ${freelancer.firstName}!`, 'success');
