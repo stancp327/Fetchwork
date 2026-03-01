@@ -113,10 +113,11 @@ async function triggerReferralReward(refereeId) {
     const referee = await User.findById(refereeId).select('firstName lastName').lean();
     const name    = `${referee?.firstName || ''} ${referee?.lastName || ''}`.trim() || 'Someone';
     await Notification.create({
-      user:    referral.referrer,
-      type:    'referral_reward',
-      message: `🎁 ${name} completed their first job! You earned $${referral.rewardAmount} in referral credits.`,
-      link:    `/settings?tab=referrals`,
+      recipient: referral.referrer,
+      type:      'referral_reward',
+      title:     'Referral reward earned!',
+      message:   `🎁 ${name} completed their first job! You earned $${referral.rewardAmount} in referral credits.`,
+      link:      `/referrals`,
     });
   } catch (err) {
     console.error('triggerReferralReward error:', err.message);

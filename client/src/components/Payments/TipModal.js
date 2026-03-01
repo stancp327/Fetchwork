@@ -13,8 +13,9 @@ const TipModal = ({ job, onClose, onSuccess }) => {
   useEffect(() => {
     apiRequest('/api/payments/methods')
       .then(data => {
-        setMethods(data || []);
-        if (data?.length) setPmId(data.find(m => m.isDefault)?._id || data[0]._id || '');
+        const list = data.methods || [];
+        setMethods(list);
+        if (list.length) setPmId(list.find(m => m.isDefault)?.id || list[0].id || '');
       })
       .catch(() => {});
   }, []);
@@ -107,7 +108,7 @@ const TipModal = ({ job, onClose, onSuccess }) => {
                     className="tip-select"
                   >
                     {methods.map(m => (
-                      <option key={m._id} value={m._id}>
+                      <option key={m.id} value={m.id}>
                         {m.brand?.toUpperCase()} ····{m.last4}
                         {m.isDefault ? ' (default)' : ''}
                       </option>

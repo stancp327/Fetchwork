@@ -470,10 +470,11 @@ router.post('/tip', authenticateToken, async (req, res) => {
     // Notify freelancer
     const clientName = `${clientUser.firstName || ''} ${clientUser.lastName || ''}`.trim() || 'Your client';
     await Notification.create({
-      user:    freelancerId,
-      type:    'payment_received',
-      message: `🎉 ${clientName} sent you a $${amount} tip for "${job.title}"!`,
-      link:    `/projects`,
+      recipient: freelancerId,
+      type:      'payment_received',
+      title:     'You received a tip!',
+      message:   `🎉 ${clientName} sent you a $${amount} tip for "${job.title}"!`,
+      link:      `/projects`,
     });
 
     res.json({ success: true, paymentIntentId: paymentIntent.id, clientSecret: paymentIntent.client_secret || null });

@@ -74,6 +74,7 @@ async function checkJobAlerts(job) {
     if (!alerts.length) return;
 
     const notifications = [];
+    const matchedAlertIds = [];
 
     for (const alert of alerts) {
       // Skip alert owner if they're also the client (shouldn't match their own job)
@@ -84,40 +85,38 @@ async function checkJobAlerts(job) {
       // Category filter
       if (f.category && job.category !== f.category) continue;
 
-      // Budget filter
+      // Budget filter (use budget.amount for fixed, budget.max for range)
       const jobBudget = job.budget?.amount || job.budget?.max || 0;
       if (f.budgetMin && jobBudget < f.budgetMin) continue;
       if (f.budgetMax && jobBudget > f.budgetMax) continue;
 
-      // Location filter (simple substring match)
+      // Location filter — only apply if job has a city (remote jobs skip location checks)
       if (f.location && job.location?.city) {
         const loc = (job.location.city || '').toLowerCase();
         if (!loc.includes(f.location.toLowerCase())) continue;
       }
 
-      // Keywords filter (match title or description)
+      // Keywords filter (match any keyword in title or description)
       if (f.keywords) {
         const kws = f.keywords.toLowerCase().split(/[,\s]+/).filter(Boolean);
         const haystack = `${job.title} ${job.description}`.toLowerCase();
-        const matched = kws.some(kw => haystack.includes(kw));
-        if (!matched) continue;
+        if (!kws.some(kw => haystack.includes(kw))) continue;
       }
 
       notifications.push({
-        user:    alert.user,
-        type:    'job_alert',
-        message: `🔔 New job matching "${alert.name}": ${job.title}`,
-        link:    `/jobs/${job._id}`,
+        recipient: alert.user,
+        type:      'job_alert',
+        title:     'New job matches your alert',
+        message:   `🔔 New job matching "${alert.name}": ${job.title}`,
+        link:      `/jobs/${job._id}`,
       });
+      matchedAlertIds.push(alert._id);
     }
 
     if (notifications.length) {
       await Notification.insertMany(notifications);
-      // Update lastTriggered
-      const alertIds = alerts
-        .filter(a => notifications.some(n => String(n.user) === String(a.user)))
-        .map(a => a._id);
-      await JobAlert.updateMany({ _id: { $in: alertIds } }, { lastTriggered: new Date() });
+      // Update lastTriggered only on alerts that actually matched
+      await JobAlert.updateMany({ _id: { $in: matchedAlertIds } }, { lastTriggered: new Date() });
     }
   } catch (err) {
     console.error('checkJobAlerts error:', err.message);

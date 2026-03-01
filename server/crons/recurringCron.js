@@ -89,19 +89,21 @@ async function spawnRecurringJobs() {
           const clientName = `${client?.firstName || ''} ${client?.lastName || ''}`.trim() || 'Your client';
 
           await Notification.create({
-            user:    parent.freelancer,
-            type:    'job_proposal_received',
-            message: `♻️ ${clientName} posted a recurring job you worked on: "${parent.title}". You have first look — apply now!`,
-            link:    `/jobs/${newJob._id}`,
+            recipient: parent.freelancer,
+            type:      'job_proposal_received',
+            title:     'First look: recurring job reposted',
+            message:   `♻️ ${clientName} reposted "${parent.title}" — you worked on this before. Apply first!`,
+            link:      `/jobs/${newJob._id}`,
           });
         }
 
         // Notify client
         await Notification.create({
-          user:    parent.client,
-          type:    'system',
-          message: `♻️ Your recurring job "${parent.title}" has been automatically reposted.`,
-          link:    `/jobs/${newJob._id}`,
+          recipient: parent.client,
+          type:      'system',
+          title:     'Recurring job reposted',
+          message:   `♻️ Your recurring job "${parent.title}" has been automatically reposted.`,
+          link:      `/jobs/${newJob._id}`,
         });
 
         console.log(`[recurringCron] Spawned new job ${newJob._id} from ${parent._id}`);

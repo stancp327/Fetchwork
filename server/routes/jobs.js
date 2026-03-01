@@ -860,12 +860,11 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
 
       // Schedule next run for recurring jobs
       if (job.recurring?.enabled) {
-        const now = new Date();
-        const next = new Date(now);
+        const next = new Date();
         if (job.recurring.interval === 'weekly')        next.setDate(next.getDate() + 7);
         else if (job.recurring.interval === 'biweekly') next.setDate(next.getDate() + 14);
         else                                             next.setMonth(next.getMonth() + 1);
-        await require('../models/Job').updateOne({ _id: job._id }, { 'recurring.nextRunDate': next });
+        await Job.updateOne({ _id: job._id }, { 'recurring.nextRunDate': next });
       }
 
       return res.json({ message: 'Job approved and payment released', job: await Job.findById(job._id) });
