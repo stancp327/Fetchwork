@@ -16,12 +16,15 @@ const ServiceDetails = () => {
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [orderLoading, setOrderLoading] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState('basic');
-  const [requirements, setRequirements] = useState('');
-  const [showOfferModal,  setShowOfferModal]  = useState(false);
-  const [orderConfirmed,  setOrderConfirmed]  = useState(null); // holds confirmed package details
-  const [orderPayment,    setOrderPayment]    = useState(null); // { clientSecret, orderId, amount, packageName, deliveryDays }
+  const [orderLoading,     setOrderLoading]     = useState(false);
+  const [selectedPackage,  setSelectedPackage]  = useState('basic');
+  const [selectedBundle,   setSelectedBundle]   = useState(null);   // bundleId string
+  const [bundleLoading,    setBundleLoading]    = useState(false);
+  const [subscribeLoading, setSubscribeLoading] = useState(false);
+  const [requirements,     setRequirements]     = useState('');
+  const [showOfferModal,   setShowOfferModal]   = useState(false);
+  const [orderConfirmed,   setOrderConfirmed]   = useState(null);
+  const [orderPayment,     setOrderPayment]     = useState(null);
 
   const fetchService = useCallback(async () => {
     try {
@@ -86,6 +89,56 @@ const ServiceDetails = () => {
     }
   };
 
+
+  const handleBundlePurchase = async () => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    if (!selectedBundle) { alert('Please select a bundle first.'); return; }
+    setBundleLoading(true);
+    try {
+      const data = await apiRequest(`/api/services/${id}/bundle/purchase`, {
+        method: 'POST',
+        body: JSON.stringify({ bundleId: selectedBundle }),
+      });
+      setOrderPayment({
+        clientSecret: data.clientSecret,
+        orderId:      data.purchaseId,
+        amount:       data.amountCharged,
+        packageName:  `${data.bundleName} (${data.sessions} sessions)`,
+        deliveryDays: null,
+        serviceName:  service?.title,
+        type:         'bundle',
+      });
+    } catch (err) {
+      alert(err.message || 'Failed to initiate bundle purchase.');
+    } finally {
+      setBundleLoading(false);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    setSubscribeLoading(true);
+    try {
+      const data = await apiRequest(`/api/services/${id}/subscribe`, {
+        method: 'POST',
+        body: JSON.stringify({ tier: selectedPackage }),
+      });
+      setOrderPayment({
+        clientSecret: data.clientSecret,
+        orderId:      data.subscriptionId,
+        amount:       data.amountPerCycle,
+        packageName:  `${selectedPackage} — ${data.billingCycle}`,
+        deliveryDays: null,
+        serviceName:  service?.title,
+        type:         'subscription',
+        billingCycle: data.billingCycle,
+      });
+    } catch (err) {
+      alert(err.message || 'Failed to start subscription.');
+    } finally {
+      setSubscribeLoading(false);
+    }
+  };
 
   if (orderConfirmed) {
     return (
@@ -325,7 +378,11 @@ const ServiceDetails = () => {
                         {service.serviceType === 'recurring' && service.recurring?.billingCycle
                           ? ` / ${service.recurring.billingCycle === 'per_session' ? 'session' : service.recurring.billingCycle === 'weekly' ? 'week' : 'month'}`
                           : ''}
-                      </strong></span>
+                      </strong>
+                      {service.feesIncluded && (
+                        <span className="fees-included-badge">fees included</span>
+                      )}
+                      </span>
                     </div>
                     {service.serviceType === 'recurring' ? (
                       <>
@@ -377,24 +434,28 @@ const ServiceDetails = () => {
 
                   {!isOwnService && (
                     <div className="order-section">
-                      <div className="form-group">
-                        <label htmlFor="requirements">Additional Requirements (Optional)</label>
-                        <textarea
-                          id="requirements"
-                          value={requirements}
-                          onChange={(e) => setRequirements(e.target.value)}
-                          placeholder="Any specific requirements or details..."
-                          rows={3}
-                        />
-                      </div>
+                      {service.serviceType !== 'recurring' && (
+                        <div className="form-group">
+                          <label htmlFor="requirements">Additional Requirements (Optional)</label>
+                          <textarea
+                            id="requirements"
+                            value={requirements}
+                            onChange={(e) => setRequirements(e.target.value)}
+                            placeholder="Any specific requirements or details..."
+                            rows={3}
+                          />
+                        </div>
+                      )}
 
-                      <button
-                        onClick={handleOrder}
-                        disabled={orderLoading}
-                        className="btn btn-primary btn-large"
-                      >
-                        {orderLoading ? 'Ordering...' : `Order Now - $${currentPackage.price}`}
-                      </button>
+                      {service.serviceType === 'recurring' ? (
+                        <button onClick={handleSubscribe} disabled={subscribeLoading} className="btn btn-primary btn-large">
+                          {subscribeLoading ? 'Starting...' : `Subscribe — $${currentPackage.price}/${service.recurring?.billingCycle === 'weekly' ? 'wk' : service.recurring?.billingCycle === 'per_session' ? 'session' : 'mo'}`}
+                        </button>
+                      ) : (
+                        <button onClick={handleOrder} disabled={orderLoading} className="btn btn-primary btn-large">
+                          {orderLoading ? 'Ordering...' : `Order Now — $${currentPackage.price}`}
+                        </button>
+                      )}
 
                       <button
                         onClick={() => setShowOfferModal(true)}
@@ -415,6 +476,47 @@ const ServiceDetails = () => {
               )}
             </div>
           </div>
+
+          {/* Bundle section */}
+          {service.bundles?.length > 0 && !isOwnService && (
+            <div className="bundles-section">
+              <h3>📦 Session Bundles</h3>
+              <p className="bundles-subtitle">Buy multiple sessions at a discount. Payments are held securely and released per completed session.</p>
+              <div className="bundles-grid">
+                {service.bundles.filter(b => b.active).map(b => (
+                  <div
+                    key={b._id}
+                    className={`bundle-card ${selectedBundle === b._id ? 'selected' : ''}`}
+                    onClick={() => setSelectedBundle(b._id)}
+                  >
+                    {b.savings > 0 && <span className="bundle-savings-badge">Save ${b.savings}</span>}
+                    <div className="bundle-card-name">{b.name}</div>
+                    <div className="bundle-card-sessions">{b.sessions} sessions</div>
+                    <div className="bundle-card-price">
+                      ${b.price} total
+                      {service.feesIncluded && <span className="fees-included-badge">fees incl.</span>}
+                    </div>
+                    <div className="bundle-card-per">
+                      ${(b.price / b.sessions).toFixed(2)} / session
+                    </div>
+                    {b.expiresInDays && (
+                      <div className="bundle-card-expiry">⏱ Expires in {b.expiresInDays} days</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {selectedBundle && (
+                <button
+                  onClick={handleBundlePurchase}
+                  disabled={bundleLoading}
+                  className="btn btn-primary"
+                  style={{ width: '100%', marginTop: '1rem' }}
+                >
+                  {bundleLoading ? 'Processing...' : `Buy Bundle — $${service.bundles.find(b => b._id === selectedBundle)?.price}`}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
       {showOfferModal && service && (

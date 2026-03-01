@@ -704,3 +704,130 @@
   .wizard-body.with-preview { grid-template-columns: 1fr 400px; }
   .wizard-preview-panel { position: sticky; top: 80px; }
 }
+
+/* ── Bundle Editor ─────────────────────────────────────────── */
+.bundle-editor {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+
+.bundle-editor h4 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-base);
+  color: var(--text-dark);
+}
+
+.bundle-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.bundle-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+}
+
+.bundle-chip-name   { font-weight: 600; color: var(--text-dark); }
+.bundle-chip-detail { color: var(--text-muted); }
+.bundle-chip-expiry { color: var(--warning); font-size: var(--text-xs); }
+.bundle-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 2px;
+  font-size: var(--text-xs);
+  line-height: 1;
+}
+.bundle-chip-remove:hover { color: var(--danger); }
+
+.bundle-draft { margin-top: var(--space-3); }
+
+.bundle-draft-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.bundle-draft-row .wiz-field {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ── Fees Toggle ───────────────────────────────────────────── */
+.fees-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+
+.fees-toggle-info strong {
+  display: block;
+  font-size: var(--text-base);
+  color: var(--text-dark);
+  margin-bottom: var(--space-1);
+}
+
+.fees-toggle-info p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border-color);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider { background: var(--primary); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+@media (max-width: 480px) {
+  .bundle-draft-row { flex-direction: column; }
+  .bundle-draft-row .wiz-field { min-width: unset; max-width: unset !important; }
+  .fees-toggle-card { flex-direction: column; align-items: flex-start; }
+}
