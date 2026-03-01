@@ -243,6 +243,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/job-templates', require('./routes/jobTemplates'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/chatrooms', require('./routes/chatrooms'));
 app.use('/api/disputes', require('./routes/disputes'));

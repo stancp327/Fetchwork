@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
+import { useFeatures } from '../../hooks/useFeatures';
 import SEO from '../common/SEO';
 import './JobProposals.css';
 
@@ -151,13 +152,17 @@ const ProposalCard = ({ proposal, jobId, jobStatus, onAccept, onDecline }) => {
 const JobProposals = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const { hasFeature } = useFeatures();
   const navigate = useNavigate();
+  const canCompare = hasFeature('proposal_comparison');
 
   const [job,     setJob]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState('');
   const [filter,  setFilter]  = useState('all');
   const [acting,  setActing]  = useState(false);
+  const [compareIds, setCompareIds] = useState([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   const fetchJob = useCallback(async () => {
     try {
@@ -272,6 +277,58 @@ const JobProposals = () => {
         </div>
       )}
 
+      {/* Compare button */}
+      {canCompare && proposals.length >= 2 && (
+        <div className="jp-compare-bar">
+          {!showCompare ? (
+            <button className="jp-compare-toggle" onClick={() => setShowCompare(true)}>
+              📊 Compare Proposals
+            </button>
+          ) : (
+            <>
+              <span className="jp-compare-hint">Select 2–4 proposals to compare</span>
+              <button className="jp-compare-toggle" onClick={() => { setShowCompare(false); setCompareIds([]); }}>
+                ✕ Cancel Compare
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Comparison table */}
+      {showCompare && compareIds.length >= 2 && (
+        <div className="jp-compare-table-wrap">
+          <div className="jp-compare-table">
+            <div className="jp-ct-header">
+              <div className="jp-ct-label" />
+              {compareIds.map(pid => {
+                const p = proposals.find(x => x._id === pid);
+                return (
+                  <div key={pid} className="jp-ct-cell">
+                    <strong>{p?.freelancer?.firstName} {p?.freelancer?.lastName}</strong>
+                  </div>
+                );
+              })}
+            </div>
+            {[
+              { label: 'Price', render: p => `$${p.price || p.amount || '—'}` },
+              { label: 'Delivery', render: p => p.deliveryTime ? `${p.deliveryTime} days` : '—' },
+              { label: 'Rating', render: p => p.freelancer?.rating ? `${p.freelancer.rating.toFixed(1)} ⭐` : '—' },
+              { label: 'Response Time', render: p => p.freelancer?.avgResponseTime ? `${Math.round(p.freelancer.avgResponseTime)}m` : '—' },
+              { label: 'Status', render: p => p.status },
+            ].map(row => (
+              <div key={row.label} className="jp-ct-row">
+                <div className="jp-ct-label">{row.label}</div>
+                {compareIds.map(pid => {
+                  const p = proposals.find(x => x._id === pid);
+                  return <div key={pid} className="jp-ct-cell">{p ? row.render(p) : '—'}</div>;
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Proposals */}
       {proposals.length === 0 ? (
         <div className="jp-empty">
@@ -291,14 +348,28 @@ const JobProposals = () => {
         </div>
       ) : (
         filtered.map(proposal => (
-          <ProposalCard
-            key={proposal._id}
-            proposal={proposal}
-            jobId={id}
-            jobStatus={job.status}
-            onAccept={handleAccept}
-            onDecline={handleDecline}
-          />
+          <div key={proposal._id} className={`jp-proposal-wrap ${showCompare ? 'compare-mode' : ''}`}>
+            {showCompare && (
+              <label className="jp-compare-check">
+                <input
+                  type="checkbox"
+                  checked={compareIds.includes(proposal._id)}
+                  onChange={e => {
+                    if (e.target.checked && compareIds.length < 4) setCompareIds(prev => [...prev, proposal._id]);
+                    else setCompareIds(prev => prev.filter(x => x !== proposal._id));
+                  }}
+                  disabled={!compareIds.includes(proposal._id) && compareIds.length >= 4}
+                />
+              </label>
+            )}
+            <ProposalCard
+              proposal={proposal}
+              jobId={id}
+              jobStatus={job.status}
+              onAccept={handleAccept}
+              onDecline={handleDecline}
+            />
+          </div>
         ))
       )}
     </div>
