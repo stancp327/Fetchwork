@@ -831,3 +831,26 @@
   .bundle-draft-row .wiz-field { min-width: unset; max-width: unset !important; }
   .fees-toggle-card { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── Feature gate styles ───────────────────────────────────── */
+.service-type-card.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.feature-gate-notice {
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.feature-gate-notice a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+}

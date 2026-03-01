@@ -260,6 +260,14 @@ const userSchema = new mongoose.Schema({
     completedAt: { type: Date, default: null },
     expiresAt: { type: Date, default: null }
   },
+  // Mobile push tokens
+  expoPushTokens: [{
+    token:    { type: String, required: true },
+    deviceId: { type: String, required: true },
+    addedAt:  { type: Date, default: Date.now }
+  }],
+  tokenVersion: { type: Number, default: 0 },
+
   // Trust signals
   lastSeen: { type: Date, default: null },           // set on socket disconnect
   avgResponseTime: { type: Number, default: null }, // minutes (rolling EMA)

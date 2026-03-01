@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useFeatures } from '../../hooks/useFeatures';
 import { apiRequest } from '../../utils/api';
 import CategoryCombobox from '../common/CategoryCombobox';
 import { getCategoryLabel } from '../../utils/categories';
@@ -142,12 +143,13 @@ const ServiceTypeSelector = ({ value, onChange }) => (
       </button>
       <button
         type="button"
-        className={`service-type-card ${value === 'recurring' ? 'selected' : ''}`}
-        onClick={() => onChange('serviceType', 'recurring')}
+        className={`service-type-card ${value === 'recurring' ? 'selected' : ''} ${!hasFeature('recurring_services') ? 'locked' : ''}`}
+        onClick={() => hasFeature('recurring_services') ? onChange('serviceType', 'recurring') : null}
+        title={!hasFeature('recurring_services') ? 'Requires Plus or Pro plan' : ''}
       >
         <span className="svc-type-icon">🔄</span>
         <div>
-          <strong>Recurring Sessions</strong>
+          <strong>Recurring Sessions {!hasFeature('recurring_services') ? '🔒' : ''}</strong>
           <p>Tutoring, personal training, coaching, music lessons...</p>
         </div>
         <span className="svc-type-check">{value === 'recurring' ? '✓' : ''}</span>
@@ -157,7 +159,7 @@ const ServiceTypeSelector = ({ value, onChange }) => (
 );
 
 // ── Step Components ─────────────────────────────────────────────
-const StepDetails = ({ data, onChange, errors }) => (
+const StepDetails = ({ data, onChange, errors, hasFeature = () => true }) => (
   <div className="wizard-step-content">
     <h2>Service Details</h2>
     <p className="wizard-tip">💡 A clear, descriptive title helps clients find your service.</p>
@@ -487,8 +489,10 @@ const FeesIncludedToggle = ({ value, onChange }) => (
   </div>
 );
 
-const StepPricing = ({ data, onChange, errors }) => {
-  const isRecurring = data.serviceType === 'recurring';
+const StepPricing = ({ data, onChange, errors, hasFeature = () => true }) => {
+  const canRecurring = hasFeature('recurring_services');
+  const canBundles   = hasFeature('bundle_creation');
+  const isRecurring  = data.serviceType === 'recurring';
 
   return (
     <div className="wizard-step-content">
@@ -536,11 +540,15 @@ const StepPricing = ({ data, onChange, errors }) => {
         </div>
       ))}
 
-      {/* Session bundles — available on all service types */}
-      <BundleEditor
-        bundles={data.bundles}
-        onChange={v => onChange('bundles', v)}
-      />
+      {/* Session bundles — Plus/Pro only */}
+      {canBundles ? (
+        <BundleEditor bundles={data.bundles} onChange={v => onChange('bundles', v)} />
+      ) : (
+        <div className="feature-gate-notice">
+          📦 <strong>Session Bundles</strong> — available on Plus and Pro plans.{' '}
+          <a href="/pricing">Upgrade to unlock</a>
+        </div>
+      )}
 
       {/* Fees-included toggle */}
       <FeesIncludedToggle value={data.feesIncluded} onChange={onChange} />
@@ -688,6 +696,7 @@ const StepReview = ({ data }) => {
 // ── Main Wizard ─────────────────────────────────────────────────
 const CreateService = () => {
   const navigate = useNavigate();
+  const { hasFeature } = useFeatures();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -824,8 +833,8 @@ const CreateService = () => {
   };
 
   const stepContent = [
-    <StepDetails data={data} onChange={update} errors={errors} />,
-    <StepPricing data={data} onChange={update} errors={errors} />,
+    <StepDetails data={data} onChange={update} errors={errors} hasFeature={hasFeature} />,
+    <StepPricing data={data} onChange={update} errors={errors} hasFeature={hasFeature} />,
     <StepMedia data={data} onChange={update} />,
     <StepRequirements data={data} onChange={update} />,
     <StepReview data={data} />,

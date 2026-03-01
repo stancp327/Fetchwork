@@ -13,6 +13,7 @@ import ErrorDashboard from './ErrorDashboard';
 import AdminUserDrawer from './AdminUserDrawer';
 import AdminVerifications from './AdminVerifications';
 import AdminBillingTab from './AdminBillingTab';
+import FeatureGroupsPanel from './FeatureGroupsPanel';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -539,6 +540,12 @@ const AdminDashboard = () => {
           id="permissions"
           label="Permissions"
           active={activeTab === 'permissions'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="feature-groups"
+          label="🏷 Groups"
+          active={activeTab === 'feature-groups'}
           onClick={setActiveTab}
         />
       </div>
@@ -1310,6 +1317,14 @@ const AdminDashboard = () => {
 
         {activeTab === 'permissions' && (
           <PermissionsTab />
+        )}
+
+        {activeTab === 'feature-groups' && (
+          <div className="billing-tab">
+            <TracingErrorBoundary componentName="FeatureGroupsPanel">
+              <FeatureGroupsPanel />
+            </TracingErrorBoundary>
+          </div>
         )}
       </div>
     </div>
