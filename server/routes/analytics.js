@@ -305,6 +305,43 @@ router.get('/me', authenticateToken, async (req, res) => {
         ]);
         const rg = ratingGivenAgg[0] || {};
 
+        // ── Spend by freelancer (Business tier) ──────────────────────
+        const spendByFreelancerAgg = await Payment.aggregate([
+          { $match: { client: uid, type: 'release', status: 'completed' } },
+          { $group: { _id: '$freelancer', totalSpent: { $sum: '$amount' }, payments: { $sum: 1 } } },
+          { $sort: { totalSpent: -1 } },
+          { $limit: 10 },
+        ]);
+        const spendFreelancerIds = spendByFreelancerAgg.map(f => f._id);
+        const spendFreelancerUsers = await User.find({ _id: { $in: spendFreelancerIds } })
+          .select('firstName lastName profilePicture rating avgResponseTime').lean();
+        const spendUserMap = {};
+        spendFreelancerUsers.forEach(u => { spendUserMap[u._id.toString()] = u; });
+        const spendByFreelancer = spendByFreelancerAgg.map(f => {
+          const u = spendUserMap[f._id?.toString()] || {};
+          return {
+            id: f._id,
+            name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown',
+            profilePicture: u.profilePicture,
+            totalSpent: Math.round(f.totalSpent * 100) / 100,
+            payments: f.payments,
+            rating: u.rating ? Math.round(u.rating * 10) / 10 : null,
+            avgResponseTime: u.avgResponseTime || null,
+          };
+        });
+
+        // ── Spend by month + category (Business tier) ────────────────────
+        const spendByCatMonthRaw = await Payment.aggregate([
+          { $match: { client: uid, type: 'release', status: 'completed', createdAt: { $gte: rangeStart } } },
+          { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobInfo' } },
+          { $unwind: { path: '$jobInfo', preserveNullAndEmptyArrays: true } },
+          { $group: {
+            _id: { month: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, category: '$jobInfo.category' },
+            amount: { $sum: '$amount' },
+          }},
+          { $sort: { '_id.month': 1 } },
+        ]);
+
         return {
           // summary
           totalSpent:     Math.round((sp.totalSpent || 0) * 100) / 100,
@@ -325,6 +362,12 @@ router.get('/me', authenticateToken, async (req, res) => {
           topCategories:       budgetVsActual,
           topFreelancers,
           timeToHireByCategory,
+          // Business tier
+          spendByFreelancer,
+          spendByCategoryMonth: spendByCatMonthRaw.map(r => ({
+            month: r._id.month, category: r._id.category || 'Other',
+            amount: Math.round(r.amount * 100) / 100,
+          })),
         };
       })() : null,
     ]);

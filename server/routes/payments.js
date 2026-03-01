@@ -32,6 +32,18 @@ async function calcPlatformFee(userId, role, job, amount) {
   }
 }
 
+// ── GET /api/payments/payout-info ────────────────────────────────
+// Returns freelancer's payout tier (standard/faster/priority)
+router.get('/payout-info', authenticateToken, async (req, res) => {
+  try {
+    const { getPayoutInfo } = require('../services/payoutScheduler');
+    const info = await getPayoutInfo(req.user.userId);
+    res.json(info);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GET /api/payments/status ────────────────────────────────────
 // Returns freelancer's Stripe Connect account status
 router.get('/status', authenticateToken, async (req, res) => {
