@@ -1,0 +1,133 @@
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { jobsApi } from '../../api/endpoints/jobsApi';
+import { JobsStackParamList } from '../../types/navigation';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
+import { colors, spacing, typography, radius } from '../../theme';
+
+type Props = NativeStackScreenProps<JobsStackParamList, 'PostJob'>;
+
+const schema = z.object({
+  title:       z.string().min(10, 'At least 10 characters'),
+  description: z.string().min(50, 'At least 50 characters'),
+  category:    z.string().min(1, 'Required'),
+  budgetType:  z.enum(['fixed', 'hourly']),
+  budgetMin:   z.coerce.number().min(1, 'Required'),
+  budgetMax:   z.coerce.number().optional(),
+  skills:      z.string().optional(),
+});
+type FormData = z.infer<typeof schema>;
+
+export default function PostJobScreen({ navigation }: Props) {
+  const qc = useQueryClient();
+
+  const { control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { title: '', description: '', category: '', budgetType: 'fixed', budgetMin: 0, skills: '' },
+  });
+
+  const budgetType = watch('budgetType');
+
+  const mutation = useMutation({
+    mutationFn: (data: FormData) => jobsApi.create({
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      budget: { type: data.budgetType, amount: data.budgetMin, max: data.budgetMax },
+      skills: data.skills?.split(',').map(s => s.trim()).filter(Boolean) || [],
+      status: 'open',
+    }),
+    onSuccess: () => {
+      Alert.alert('Job Posted!', 'Your job is now live.');
+      qc.invalidateQueries({ queryKey: ['jobs'] });
+      navigation.navigate('MyJobs');
+    },
+    onError: (err: any) => {
+      Alert.alert('Error', err?.response?.data?.error || 'Failed to post job');
+    },
+  });
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+
+          <Controller control={control} name="title"
+            render={({ field: { onChange, value } }) => (
+              <Input label="Job Title *" placeholder="e.g. Need a plumber for kitchen fix"
+                value={value} onChangeText={onChange} error={errors.title?.message} />
+            )} />
+
+          <Controller control={control} name="description"
+            render={({ field: { onChange, value } }) => (
+              <Input label="Description *" placeholder="Describe the job in detail..." value={value}
+                onChangeText={onChange} multiline numberOfLines={5} error={errors.description?.message} />
+            )} />
+
+          <Controller control={control} name="category"
+            render={({ field: { onChange, value } }) => (
+              <Input label="Category *" placeholder="e.g. Plumbing, Tutoring, Design"
+                value={value} onChangeText={onChange} error={errors.category?.message} />
+            )} />
+
+          {/* Budget type selector */}
+          <Text style={styles.fieldLabel}>Budget Type *</Text>
+          <View style={styles.budgetRow}>
+            {(['fixed', 'hourly'] as const).map(t => (
+              <Pressable key={t} style={[styles.budgetBtn, budgetType === t && styles.budgetBtnActive]}
+                onPress={() => setValue('budgetType', t)}>
+                <Text style={[styles.budgetBtnText, budgetType === t && styles.budgetBtnTextActive]}>
+                  {t === 'fixed' ? '💰 Fixed' : '⏱ Hourly'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={styles.amountRow}>
+            <Controller control={control} name="budgetMin"
+              render={({ field: { onChange, value } }) => (
+                <Input label={budgetType === 'fixed' ? 'Budget ($) *' : 'Min Rate ($/hr) *'}
+                  placeholder="e.g. 100" value={String(value || '')} onChangeText={onChange}
+                  keyboardType="numeric" error={errors.budgetMin?.message} containerStyle={{ flex: 1 }} />
+              )} />
+            {budgetType === 'fixed' && (
+              <Controller control={control} name="budgetMax"
+                render={({ field: { onChange, value } }) => (
+                  <Input label="Max Budget ($)" placeholder="e.g. 500"
+                    value={String(value || '')} onChangeText={onChange} keyboardType="numeric"
+                    containerStyle={{ flex: 1 }} />
+                )} />
+            )}
+          </View>
+
+          <Controller control={control} name="skills"
+            render={({ field: { onChange, value } }) => (
+              <Input label="Required Skills" placeholder="React, Python, Photoshop (comma separated)"
+                value={value || ''} onChangeText={onChange} />
+            )} />
+
+          <Button label="Post Job" onPress={handleSubmit(d => mutation.mutate(d))}
+            loading={isSubmitting || mutation.isPending} fullWidth size="lg" style={{ marginTop: spacing.sm }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe:               { flex: 1, backgroundColor: colors.white },
+  scroll:             { padding: spacing.lg, flexGrow: 1 },
+  fieldLabel:         { ...typography.label, marginBottom: 6 },
+  budgetRow:          { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  budgetBtn:          { flex: 1, padding: spacing.md, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
+  budgetBtnActive:    { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  budgetBtnText:      { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  budgetBtnTextActive:{ color: colors.primary },
+  amountRow:          { flexDirection: 'row', gap: spacing.sm },
+});
