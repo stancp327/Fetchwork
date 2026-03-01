@@ -307,7 +307,7 @@ class StripeService {
    * @param {string} cancelUrl
    * @param {object} metadata     Passed to session.metadata
    */
-  async createPaymentSession(customerId, amountCents, description, successUrl, cancelUrl, metadata = {}) {
+  async createPaymentSession(customerId, amountCents, description, successUrl, cancelUrl, metadata = {}, saveCard = true) {
     this._ensureStripe();
     return stripe.checkout.sessions.create({
       customer:    customerId,
@@ -317,6 +317,8 @@ class StripeService {
         unit_amount: amountCents,
         product_data: { name: description },
       }, quantity: 1 }],
+      // Save card for future use (e.g. job payments without re-entering card)
+      payment_intent_data: saveCard ? { setup_future_usage: 'off_session' } : undefined,
       success_url: successUrl,
       cancel_url:  cancelUrl,
       metadata,
