@@ -467,18 +467,25 @@ router.post('/logout', authenticateToken, async (req, res) => {
 // ── POST /api/auth/google/mobile — Google ID token for Expo ─────
 router.post('/google/mobile', async (req, res) => {
   try {
-    const { idToken } = req.body;
-    if (!idToken) return res.status(400).json({ error: 'idToken required' });
+    const { idToken, accessToken } = req.body;
+    if (!idToken && !accessToken) return res.status(400).json({ error: 'idToken or accessToken required' });
 
-    const { OAuth2Client } = require('google-auth-library');
-    const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    let email, given_name, family_name, picture, googleId;
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const { email, given_name, family_name, picture, sub: googleId } = payload;
+    if (idToken) {
+      // Verify ID token (preferred — available when webClientId is set)
+      const { OAuth2Client } = require('google-auth-library');
+      const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      const ticket = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+      const payload = ticket.getPayload();
+      ({ email, given_name, family_name, picture, sub: googleId } = payload);
+    } else {
+      // Fallback: exchange accessToken for user info (Android-only flow)
+      const resp = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`);
+      if (!resp.ok) return res.status(401).json({ error: 'Invalid Google access token' });
+      const info = await resp.json();
+      ({ email, given_name, family_name, picture, sub: googleId } = info);
+    }
 
     let user = await User.findOne({ email });
     if (!user) {

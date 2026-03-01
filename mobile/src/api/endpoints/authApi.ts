@@ -9,8 +9,8 @@ export const authApi = {
     password: string; role: string; referralCode?: string;
   }) => publicClient.post('/api/auth/register', data).then(r => r.data),
 
-  loginWithGoogle: (idToken: string) =>
-    publicClient.post('/api/auth/google/mobile', { idToken }).then(r => r.data),
+  loginWithGoogle: (token: string, isAccessToken = false) =>
+    publicClient.post('/api/auth/google/mobile', isAccessToken ? { accessToken: token } : { idToken: token }).then(r => r.data),
 
   getMe: () =>
     client.get('/api/auth/me').then(r => r.data),

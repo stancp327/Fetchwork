@@ -1,8 +1,9 @@
 import React from 'react';
 import {
   Pressable, Text, ActivityIndicator,
-  StyleSheet, ViewStyle, TextStyle,
+  StyleSheet, ViewStyle, TextStyle, StyleProp,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, MIN_TOUCH_TARGET } from '../../theme';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success';
@@ -16,7 +17,9 @@ interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  labelStyle?: TextStyle;
+  leftIcon?: React.ComponentProps<typeof Ionicons>['name'];
 }
 
 const VARIANT_STYLES: Record<Variant, { container: ViewStyle; text: TextStyle }> = {
@@ -35,11 +38,13 @@ const SIZE_STYLES: Record<Size, { container: ViewStyle; text: TextStyle }> = {
 
 export default function Button({
   label, onPress, variant = 'primary', size = 'md',
-  loading = false, disabled = false, fullWidth = false, style,
+  loading = false, disabled = false, fullWidth = false,
+  style, labelStyle, leftIcon,
 }: ButtonProps) {
   const v = VARIANT_STYLES[variant];
   const s = SIZE_STYLES[size];
   const isDisabled = disabled || loading;
+  const iconColor = labelStyle?.color as string || (variant === 'secondary' || variant === 'ghost' ? colors.primary : colors.white);
 
   return (
     <Pressable
@@ -58,7 +63,10 @@ export default function Button({
       {loading ? (
         <ActivityIndicator size="small" color={variant === 'secondary' || variant === 'ghost' ? colors.primary : colors.white} />
       ) : (
-        <Text style={[styles.label, v.text, s.text]}>{label}</Text>
+        <>
+          {leftIcon && <Ionicons name={leftIcon} size={18} color={iconColor} style={{ marginRight: 8 }} />}
+          <Text style={[styles.label, v.text, s.text, labelStyle]}>{label}</Text>
+        </>
       )}
     </Pressable>
   );
