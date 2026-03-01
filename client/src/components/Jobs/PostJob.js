@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
+import { useFeatures } from '../../hooks/useFeatures';
 import CategoryCombobox from '../common/CategoryCombobox';
 import UpgradePrompt from '../Billing/UpgradePrompt';
 import './PostJob.css';
@@ -8,10 +9,100 @@ import SEO from '../common/SEO';
 
 const PostJob = () => {
   const navigate = useNavigate();
+  const { hasFeature } = useFeatures();
+  const canTemplates = hasFeature('job_templates');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [upgradeLimit, setUpgradeLimit] = useState(null); // { reason, limit }
+  const [templates, setTemplates] = useState([]);
+  const [templateLoading, setTemplateLoading] = useState(false);
+  const [templateMsg, setTemplateMsg] = useState('');
+  const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
+  const loadTemplates = useCallback(async () => {
+    if (!canTemplates) return;
+    try {
+      const data = await apiRequest('/api/job-templates');
+      setTemplates(data.templates || []);
+    } catch { /* silent */ }
+  }, [canTemplates]);
+
+  useEffect(() => { loadTemplates(); }, [loadTemplates]);
+
+  const applyTemplate = async (templateId) => {
+    setTemplateLoading(true);
+    try {
+      const data = await apiRequest(`/api/job-templates/${templateId}/use`, { method: 'POST' });
+      const t = data.template;
+      setFormData(prev => ({
+        ...prev,
+        title:          t.title || prev.title,
+        description:    t.description || prev.description,
+        category:       t.category || prev.category,
+        subcategory:    t.subcategory || prev.subcategory,
+        skills:         t.skills?.join(', ') || prev.skills,
+        budgetType:     t.budgetType || prev.budgetType,
+        budgetAmount:   t.budgetMin || prev.budgetAmount,
+        budgetMax:      t.budgetMax || prev.budgetMax,
+        locationType:   t.location?.locationType || prev.locationType,
+        city:           t.location?.city || prev.city,
+        state:          t.location?.state || prev.state,
+        zipCode:        t.location?.zipCode || prev.zipCode,
+      }));
+      setTemplateMsg(`Template "${t.name}" applied ✅`);
+      setTimeout(() => setTemplateMsg(''), 3000);
+    } catch (err) {
+      setTemplateMsg('Failed: ' + err.message);
+    } finally {
+      setTemplateLoading(false);
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!saveTemplateName.trim()) return;
+    setTemplateLoading(true);
+    try {
+      await apiRequest('/api/job-templates', {
+        method: 'POST',
+        body: JSON.stringify({
+          name:        saveTemplateName.trim(),
+          title:       formData.title,
+          description: formData.description,
+          category:    formData.category,
+          subcategory: formData.subcategory,
+          skills:      formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+          budgetType:  formData.budgetType,
+          budgetMin:   formData.budgetAmount ? Number(formData.budgetAmount) : undefined,
+          budgetMax:   formData.budgetMax ? Number(formData.budgetMax) : undefined,
+          location: {
+            locationType: formData.locationType,
+            city:         formData.city,
+            state:        formData.state,
+            zipCode:      formData.zipCode,
+          },
+        }),
+      });
+      setTemplateMsg('Template saved ✅');
+      setSaveTemplateName('');
+      setShowSaveTemplate(false);
+      loadTemplates();
+      setTimeout(() => setTemplateMsg(''), 3000);
+    } catch (err) {
+      setTemplateMsg('Failed: ' + err.message);
+    } finally {
+      setTemplateLoading(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (id) => {
+    if (!window.confirm('Delete this template?')) return;
+    try {
+      await apiRequest(`/api/job-templates/${id}`, { method: 'DELETE' });
+      loadTemplates();
+    } catch { /* silent */ }
+  };
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -182,6 +273,27 @@ const PostJob = () => {
       </div>
 
       <div className="post-job-form">
+        {/* Template picker */}
+        {canTemplates && templates.length > 0 && (
+          <div className="pj-template-bar">
+            <div className="pj-template-header">
+              <span className="pj-template-icon">📋</span>
+              <strong>Templates</strong>
+            </div>
+            <div className="pj-template-list">
+              {templates.map(t => (
+                <div key={t._id} className="pj-template-chip">
+                  <button className="pj-template-apply" onClick={() => applyTemplate(t._id)} disabled={templateLoading}>
+                    {t.name}
+                  </button>
+                  <button className="pj-template-delete" onClick={() => handleDeleteTemplate(t._id)} title="Delete">✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {templateMsg && <div className="pj-template-msg">{templateMsg}</div>}
+
         <form onSubmit={handleSubmit}>
           <div className="form-section">
             <div className="form-section-title">Job Details</div>
@@ -552,6 +664,31 @@ const PostJob = () => {
               limit={upgradeLimit.limit}
               onDismiss={() => setUpgradeLimit(null)}
             />
+          )}
+
+          {/* Save as template */}
+          {canTemplates && (
+            <div className="pj-save-template">
+              {!showSaveTemplate ? (
+                <button type="button" className="pj-save-template-btn" onClick={() => setShowSaveTemplate(true)}>
+                  📋 Save as Template
+                </button>
+              ) : (
+                <div className="pj-save-template-form">
+                  <input
+                    type="text"
+                    value={saveTemplateName}
+                    onChange={e => setSaveTemplateName(e.target.value)}
+                    placeholder="Template name..."
+                    className="pj-save-template-input"
+                  />
+                  <button type="button" className="pj-save-template-confirm" onClick={handleSaveTemplate} disabled={templateLoading || !saveTemplateName.trim()}>
+                    {templateLoading ? '...' : 'Save'}
+                  </button>
+                  <button type="button" className="pj-save-template-cancel" onClick={() => setShowSaveTemplate(false)}>✕</button>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="post-job-actions">

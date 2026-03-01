@@ -143,3 +143,24 @@
   margin: 0;
   line-height: 1.5;
 }
+
+/* -- Job Templates ------------------------------------------- */
+.pj-template-bar { padding: var(--space-4); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); margin-bottom: var(--space-4); }
+.pj-template-header { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); font-size: var(--text-sm); }
+.pj-template-icon { font-size: 18px; }
+.pj-template-list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.pj-template-chip { display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: var(--radius-full); overflow: hidden; }
+.pj-template-apply { padding: var(--space-2) var(--space-3); background: var(--bg-card); border: none; font-size: var(--text-sm); cursor: pointer; min-height: 44px; }
+.pj-template-apply:hover { background: var(--bg-secondary); }
+.pj-template-apply:disabled { opacity: 0.5; }
+.pj-template-delete { padding: 0 var(--space-2); background: none; border: none; border-left: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; font-size: 12px; min-height: 44px; display: flex; align-items: center; }
+.pj-template-delete:hover { color: var(--danger); }
+.pj-template-msg { padding: var(--space-2) var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-3); }
+
+.pj-save-template { margin-bottom: var(--space-4); }
+.pj-save-template-btn { background: none; border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: var(--space-2) var(--space-4); font-size: var(--text-sm); color: var(--primary); cursor: pointer; min-height: 44px; }
+.pj-save-template-form { display: flex; gap: var(--space-2); align-items: center; }
+.pj-save-template-input { flex: 1; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); min-height: 44px; }
+.pj-save-template-confirm { padding: var(--space-2) var(--space-4); background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; cursor: pointer; min-height: 44px; }
+.pj-save-template-confirm:disabled { opacity: 0.5; }
+.pj-save-template-cancel { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: var(--space-2); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
