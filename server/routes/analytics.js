@@ -4,9 +4,11 @@ const { authenticateToken } = require('../middleware/auth');
 const { authenticateAdmin, requirePermission } = require('../middleware/auth');
 const { DailyStats, PageView, VisitorSession } = require('../models/Analytics');
 const crypto = require('crypto');
-const User = require('../models/User');
-const Job = require('../models/Job');
+const User    = require('../models/User');
+const Job     = require('../models/Job');
 const Service = require('../models/Service');
+const Payment = require('../models/Payment');
+const Review  = require('../models/Review');
 
 // ── Public: client-side page view tracking (no auth) ────────────
 router.post('/track', async (req, res) => {
@@ -40,49 +42,106 @@ router.post('/track', async (req, res) => {
 });
 
 // ── User-facing analytics (auth required, no admin) ─────────────
-const Payment = require('../models/Payment');
+
+// ── Helper: build last N months array ────────────────────────────
+function lastNMonths(n) {
+  const months = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  return months;
+}
+
+// ── Helper: fill monthly buckets (0 for missing months) ──────────
+function fillMonths(agg, months, valueKey = 'amount') {
+  const map = {};
+  agg.forEach(r => { map[r._id] = r[valueKey]; });
+  return months.map(m => ({ month: m, [valueKey]: Math.round((map[m] || 0) * 100) / 100 }));
+}
 
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const userId  = (req.user._id || req.user.userId).toString();
-    const user    = await User.findById(userId).select('accountType').lean();
+    const user    = await User.findById(userId).select('accountType avgResponseTime').lean();
     const isFreelancer = ['freelancer', 'both'].includes(user?.accountType);
     const isClient     = ['client', 'both'].includes(user?.accountType);
 
-    const ytdStart = new Date(new Date().getFullYear(), 0, 1); // Jan 1 of current year
-    const allTime  = new Date(0);
+    // range param: '30d' | '90d' | '6mo' | '1yr' (default 1yr)
+    const range = req.query.range || '1yr';
+    const monthCount = range === '30d' ? 1 : range === '90d' ? 3 : range === '6mo' ? 6 : 12;
+    const rangeStart = new Date();
+    rangeStart.setMonth(rangeStart.getMonth() - monthCount);
+    rangeStart.setDate(1); rangeStart.setHours(0, 0, 0, 0);
+
+    const ytdStart = new Date(new Date().getFullYear(), 0, 1);
+    const months   = lastNMonths(monthCount);
 
     const [freelancerStats, clientStats] = await Promise.all([
       isFreelancer ? (async () => {
         const uid = require('mongoose').Types.ObjectId.createFromHexString(userId);
 
-        // Earnings
+        // ── Aggregate earnings (all-time + YTD + avg job size) ──────────
         const earningsAgg = await Payment.aggregate([
           { $match: { freelancer: uid, type: 'release', status: 'completed' } },
           { $group: {
             _id: null,
-            ytdEarnings:    { $sum: { $cond: [{ $gte: ['$createdAt', ytdStart] }, '$netAmount', 0] } },
-            totalEarnings:  { $sum: '$netAmount' },
+            ytdEarnings:      { $sum: { $cond: [{ $gte: ['$createdAt', ytdStart] }, '$netAmount', 0] } },
+            totalEarnings:    { $sum: '$netAmount' },
             platformFeesPaid: { $sum: '$fees.platform' },
-            paymentCount:   { $sum: 1 },
+            paymentCount:     { $sum: 1 },
+            avgJobSize:       { $avg: '$netAmount' },
           }}
         ]);
         const ep = earningsAgg[0] || {};
 
-        // Proposal stats (win rate)
-        const [totalProposals, acceptedProposals] = await Promise.all([
-          Job.countDocuments({ 'proposals.freelancer': uid }),
-          Job.countDocuments({ 'proposals': { $elemMatch: { freelancer: uid, status: 'accepted' } } }),
+        // ── Monthly earnings time-series ─────────────────────────────────
+        const monthlyRaw = await Payment.aggregate([
+          { $match: { freelancer: uid, type: 'release', status: 'completed', createdAt: { $gte: rangeStart } } },
+          { $group: {
+            _id:    { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+            amount: { $sum: '$netAmount' },
+            fees:   { $sum: '$fees.platform' },
+          }},
+          { $sort: { _id: 1 } },
         ]);
-        const winRate = totalProposals > 0 ? Math.round((acceptedProposals / totalProposals) * 100) : 0;
+        const monthlyEarnings = months.map(m => {
+          const r = monthlyRaw.find(x => x._id === m) || {};
+          return { month: m, amount: Math.round((r.amount || 0) * 100) / 100, fees: Math.round((r.fees || 0) * 100) / 100 };
+        });
 
-        // Jobs by status
-        const [activeJobs, completedJobs] = await Promise.all([
-          Job.countDocuments({ freelancer: uid, status: 'in_progress', isArchived: { $ne: true } }),
-          Job.countDocuments({ freelancer: uid, status: 'completed' }),
+        // ── Proposal funnel ──────────────────────────────────────────────
+        const proposalFunnelAgg = await Job.aggregate([
+          { $match: { 'proposals.freelancer': uid } },
+          { $project: { proposal: { $filter: { input: '$proposals', as: 'p', cond: { $eq: ['$$p.freelancer', uid] } } } } },
+          { $unwind: '$proposal' },
+          { $group: { _id: '$proposal.status', count: { $sum: 1 } } },
         ]);
+        const funnelMap = {};
+        proposalFunnelAgg.forEach(r => { funnelMap[r._id] = r.count; });
+        const proposalFunnel = {
+          sent:     (funnelMap.pending || 0) + (funnelMap.accepted || 0) + (funnelMap.declined || 0) + (funnelMap.withdrawn || 0),
+          pending:  funnelMap.pending  || 0,
+          accepted: funnelMap.accepted || 0,
+          declined: funnelMap.declined || 0,
+        };
+        const winRate = proposalFunnel.sent > 0
+          ? Math.round((proposalFunnel.accepted / proposalFunnel.sent) * 100) : 0;
 
-        // Repeat clients (clients with 2+ completed jobs)
+        // ── Jobs by status + delivery rate ───────────────────────────────
+        const jobStatusAgg = await Job.aggregate([
+          { $match: { freelancer: uid } },
+          { $group: { _id: '$status', count: { $sum: 1 } } },
+        ]);
+        const statusMap = {};
+        jobStatusAgg.forEach(r => { statusMap[r._id] = r.count; });
+        const completedJobs = statusMap.completed || 0;
+        const activeJobs    = statusMap.in_progress || 0;
+        const deliveryRate  = (completedJobs + (statusMap.cancelled || 0)) > 0
+          ? Math.round((completedJobs / (completedJobs + (statusMap.cancelled || 0))) * 100) : null;
+
+        // ── Repeat clients ───────────────────────────────────────────────
         const clientJobsAgg = await Job.aggregate([
           { $match: { freelancer: uid, status: 'completed' } },
           { $group: { _id: '$client', count: { $sum: 1 } } },
@@ -91,30 +150,64 @@ router.get('/me', authenticateToken, async (req, res) => {
         const repeatClients = clientJobsAgg.filter(c => c.count >= 2).length;
         const repeatClientRate = totalClients > 0 ? Math.round((repeatClients / totalClients) * 100) : 0;
 
-        // Avg response time (from User model)
-        const fullUser = await User.findById(userId).select('avgResponseTime').lean();
+        // ── Top earning categories ────────────────────────────────────────
+        const topCategoriesAgg = await Job.aggregate([
+          { $match: { freelancer: uid, status: 'completed' } },
+          { $group: { _id: '$category', earned: { $sum: '$escrowAmount' }, jobs: { $sum: 1 } } },
+          { $sort: { earned: -1 } },
+          { $limit: 5 },
+        ]);
+
+        // ── Average review rating ─────────────────────────────────────────
+        const ratingAgg = await Review.aggregate([
+          { $match: { reviewee: uid } },
+          { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+        ]);
+        const ratingData = ratingAgg[0] || {};
+
+        // ── Monthly rating trend ──────────────────────────────────────────
+        const ratingTrendRaw = await Review.aggregate([
+          { $match: { reviewee: uid, createdAt: { $gte: rangeStart } } },
+          { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+          { $sort: { _id: 1 } },
+        ]);
+        const ratingTrend = months.map(m => {
+          const r = ratingTrendRaw.find(x => x._id === m);
+          return { month: m, avg: r ? Math.round(r.avg * 10) / 10 : null, count: r?.count || 0 };
+        });
 
         return {
+          // summary
           ytdEarnings:      Math.round((ep.ytdEarnings   || 0) * 100) / 100,
           totalEarnings:    Math.round((ep.totalEarnings  || 0) * 100) / 100,
           platformFeesPaid: Math.round((ep.platformFeesPaid || 0) * 100) / 100,
-          proposalsSent:    totalProposals,
+          avgJobSize:       Math.round((ep.avgJobSize     || 0) * 100) / 100,
           winRate,
           activeJobs,
           completedJobs,
+          deliveryRate,
           repeatClientRate,
-          avgResponseTime:  fullUser?.avgResponseTime || null,
+          avgResponseTime:  user?.avgResponseTime || null,
+          ratingAvg:        ratingData.avg ? Math.round(ratingData.avg * 10) / 10 : null,
+          ratingCount:      ratingData.count || 0,
+          // time-series
+          monthlyEarnings,
+          ratingTrend,
+          // breakdowns
+          proposalFunnel,
+          jobsByStatus:     statusMap,
+          topCategories:    topCategoriesAgg.map(c => ({ category: c._id || 'Other', earned: Math.round(c.earned * 100) / 100, jobs: c.jobs })),
         };
       })() : null,
 
       isClient ? (async () => {
         const uid = require('mongoose').Types.ObjectId.createFromHexString(userId);
 
-        // Spend
+        // ── Spend summary ─────────────────────────────────────────────────
         const spendAgg = await Payment.aggregate([
           { $match: { client: uid, type: 'release', status: 'completed' } },
           { $group: {
-            _id: null,
+            _id:        null,
             totalSpent: { $sum: '$amount' },
             ytdSpent:   { $sum: { $cond: [{ $gte: ['$createdAt', ytdStart] }, '$amount', 0] } },
             jobCount:   { $sum: 1 },
@@ -122,56 +215,116 @@ router.get('/me', authenticateToken, async (req, res) => {
         ]);
         const sp = spendAgg[0] || {};
 
-        // Job stats
-        const [jobsPosted, jobsFilled, jobsOpen] = await Promise.all([
-          Job.countDocuments({ client: uid }),
-          Job.countDocuments({ client: uid, status: { $in: ['in_progress', 'completed'] } }),
-          Job.countDocuments({ client: uid, status: 'open', isArchived: { $ne: true } }),
+        // ── Monthly spend time-series ─────────────────────────────────────
+        const monthlySpendRaw = await Payment.aggregate([
+          { $match: { client: uid, type: 'release', status: 'completed', createdAt: { $gte: rangeStart } } },
+          { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, amount: { $sum: '$amount' } } },
+          { $sort: { _id: 1 } },
         ]);
-        const fillRate = jobsPosted > 0 ? Math.round((jobsFilled / jobsPosted) * 100) : 0;
+        const monthlySpend = months.map(m => {
+          const r = monthlySpendRaw.find(x => x._id === m) || {};
+          return { month: m, amount: Math.round((r.amount || 0) * 100) / 100 };
+        });
 
-        // Avg time to hire (open → accepted)
+        // ── Job stats ─────────────────────────────────────────────────────
+        const jobStatusAgg = await Job.aggregate([
+          { $match: { client: uid } },
+          { $group: { _id: '$status', count: { $sum: 1 } } },
+        ]);
+        const statusMap = {};
+        jobStatusAgg.forEach(r => { statusMap[r._id] = r.count; });
+        const jobsPosted = Object.values(statusMap).reduce((a, b) => a + b, 0);
+        const jobsFilled = (statusMap.in_progress || 0) + (statusMap.completed || 0);
+        const jobsOpen   = statusMap.open || 0;
+        const fillRate   = jobsPosted > 0 ? Math.round((jobsFilled / jobsPosted) * 100) : 0;
+
+        // ── Avg time to hire ──────────────────────────────────────────────
         const hiredJobs = await Job.find({
           client: uid,
           status: { $in: ['accepted', 'pending_start', 'in_progress', 'completed'] },
           acceptedAt: { $exists: true },
-          createdAt: { $exists: true },
-        }).select('createdAt acceptedAt').lean();
+        }).select('createdAt acceptedAt category').lean();
         let avgTimeToHire = null;
         if (hiredJobs.length > 0) {
-          const avgMs = hiredJobs.reduce((s, j) =>
-            s + (new Date(j.acceptedAt) - new Date(j.createdAt)), 0) / hiredJobs.length;
-          avgTimeToHire = Math.round(avgMs / (1000 * 60 * 60)); // hours
+          const totalMs = hiredJobs.reduce((s, j) => s + (new Date(j.acceptedAt) - new Date(j.createdAt)), 0);
+          avgTimeToHire = Math.round(totalMs / hiredJobs.length / (1000 * 60 * 60));
         }
 
-        // Repeat freelancers
+        // ── Time-to-hire by category ──────────────────────────────────────
+        const tthByCategory = {};
+        hiredJobs.forEach(j => {
+          const cat = j.category || 'Other';
+          if (!tthByCategory[cat]) tthByCategory[cat] = { total: 0, count: 0 };
+          tthByCategory[cat].total += new Date(j.acceptedAt) - new Date(j.createdAt);
+          tthByCategory[cat].count++;
+        });
+        const timeToHireByCategory = Object.entries(tthByCategory)
+          .map(([cat, d]) => ({ category: cat, avgHours: Math.round(d.total / d.count / (1000 * 60 * 60)) }))
+          .sort((a, b) => b.avgHours - a.avgHours)
+          .slice(0, 5);
+
+        // ── Repeat freelancers ────────────────────────────────────────────
         const freelancerJobsAgg = await Job.aggregate([
           { $match: { client: uid, status: 'completed' } },
-          { $group: { _id: '$freelancer', count: { $sum: 1 } } },
+          { $group: { _id: '$freelancer', jobs: { $sum: 1 }, totalPaid: { $sum: '$escrowAmount' } } },
+          { $sort: { jobs: -1 } },
         ]);
         const totalFreelancers  = freelancerJobsAgg.length;
-        const repeatFreelancers = freelancerJobsAgg.filter(f => f.count >= 2).length;
+        const repeatFreelancers = freelancerJobsAgg.filter(f => f.jobs >= 2).length;
         const repeatHireRate    = totalFreelancers > 0 ? Math.round((repeatFreelancers / totalFreelancers) * 100) : 0;
 
-        // Spend by category
-        const categoryAgg = await Job.aggregate([
-          { $match: { client: uid, status: 'completed' } },
-          { $group: { _id: '$category', spent: { $sum: '$budget' }, jobs: { $sum: 1 } } },
-          { $sort: { spent: -1 } },
+        // Top freelancers (populate names)
+        const topFreelancerIds = freelancerJobsAgg.slice(0, 5).map(f => f._id);
+        const topFreelancerUsers = await User.find({ _id: { $in: topFreelancerIds } })
+          .select('firstName lastName profilePicture').lean();
+        const userMap = {};
+        topFreelancerUsers.forEach(u => { userMap[u._id.toString()] = u; });
+        const topFreelancers = freelancerJobsAgg.slice(0, 5).map(f => {
+          const u = userMap[f._id?.toString()] || {};
+          return { id: f._id, name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown', jobs: f.jobs, totalPaid: Math.round((f.totalPaid || 0) * 100) / 100 };
+        });
+
+        // ── Spend by category (budget vs actual) ─────────────────────────
+        const categoryBudgetAgg = await Job.aggregate([
+          { $match: { client: uid, status: { $in: ['in_progress', 'completed'] } } },
+          { $group: { _id: '$category', budgeted: { $sum: '$budget' }, actual: { $sum: '$escrowAmount' }, jobs: { $sum: 1 } } },
+          { $sort: { budgeted: -1 } },
           { $limit: 5 },
         ]);
+        const budgetVsActual = categoryBudgetAgg.map(c => ({
+          category: c._id || 'Other',
+          budgeted: Math.round(c.budgeted * 100) / 100,
+          actual:   Math.round(c.actual * 100) / 100,
+          jobs:     c.jobs,
+        }));
+
+        // ── Avg rating given by this client ──────────────────────────────
+        const ratingGivenAgg = await Review.aggregate([
+          { $match: { reviewer: uid, reviewerType: 'client' } },
+          { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+        ]);
+        const rg = ratingGivenAgg[0] || {};
 
         return {
-          totalSpent:        Math.round((sp.totalSpent || 0) * 100) / 100,
-          ytdSpent:          Math.round((sp.ytdSpent   || 0) * 100) / 100,
-          avgCostPerJob:     sp.jobCount > 0 ? Math.round((sp.totalSpent / sp.jobCount) * 100) / 100 : 0,
+          // summary
+          totalSpent:     Math.round((sp.totalSpent || 0) * 100) / 100,
+          ytdSpent:       Math.round((sp.ytdSpent   || 0) * 100) / 100,
+          avgCostPerJob:  sp.jobCount > 0 ? Math.round((sp.totalSpent / sp.jobCount) * 100) / 100 : 0,
           jobsPosted,
           jobsFilled,
           jobsOpen,
           fillRate,
           avgTimeToHire,
           repeatHireRate,
-          topCategories:     categoryAgg.map(c => ({ category: c._id, spent: c.spent, jobs: c.jobs })),
+          avgRatingGiven: rg.avg ? Math.round(rg.avg * 10) / 10 : null,
+          // time-series
+          monthlySpend,
+          // breakdowns
+          jobsByStatus:        statusMap,
+          budgetVsActual,
+          topCategories:       budgetVsActual,
+          topFreelancers,
+          timeToHireByCategory,
         };
       })() : null,
     ]);
@@ -179,6 +332,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.json({
       freelancer: freelancerStats,
       client:     clientStats,
+      meta: { range, monthCount, months },
     });
   } catch (err) {
     console.error('User analytics error:', err);
