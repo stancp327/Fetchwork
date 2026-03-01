@@ -6,6 +6,7 @@ import CategoryCombobox from '../common/CategoryCombobox';
 import { getCategoryLabel } from '../../utils/categories';
 import UpgradePrompt from '../Billing/UpgradePrompt';
 import SEO from '../common/SEO';
+import IntakeFormEditor from './IntakeFormEditor';
 import './CreateService.css';
 
 const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
@@ -552,6 +553,21 @@ const StepPricing = ({ data, onChange, errors, hasFeature = () => true }) => {
 
       {/* Fees-included toggle */}
       <FeesIncludedToggle value={data.feesIncluded} onChange={onChange} />
+
+      {/* Intake form editor */}
+      {hasFeature('intake_forms') ? (
+        <IntakeFormEditor
+          fields={data.intakeFields || []}
+          enabled={data.intakeEnabled || false}
+          onToggle={v => onChange('intakeEnabled', v)}
+          onChange={v => onChange('intakeFields', v)}
+        />
+      ) : (
+        <div className="feature-gate-notice">
+          📋 <strong>Client Intake Forms</strong> — ask custom questions when clients order.{' '}
+          <a href="/pricing">Upgrade to unlock</a>
+        </div>
+      )}
     </div>
   );
 };
@@ -728,6 +744,9 @@ const CreateService = () => {
     // bundles + fees
     bundles: [],
     feesIncluded: false,
+    // intake form
+    intakeEnabled: false,
+    intakeFields: [],
   });
 
   const update = (key, value) => {
@@ -816,6 +835,9 @@ const CreateService = () => {
 
       serviceData.feesIncluded = data.feesIncluded;
       if (data.bundles?.length > 0) serviceData.bundles = data.bundles;
+      if (data.intakeEnabled && data.intakeFields?.length > 0) {
+        serviceData.intakeForm = { enabled: true, fields: data.intakeFields };
+      }
 
       await apiRequest('/api/services', { method: 'POST', body: JSON.stringify(serviceData) });
       navigate('/browse-services');

@@ -22,6 +22,42 @@ const serviceSchema = new mongoose.Schema({
   // true            = fees are baked in; client pays exactly the listed price
   feesIncluded: { type: Boolean, default: false },
 
+  // Deposit — require upfront partial payment (Pro only)
+  deposit: {
+    enabled:    { type: Boolean, default: false },
+    type:       { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
+    amount:     { type: Number, default: 25 },  // 25% or $25 depending on type
+    refundable: { type: Boolean, default: true },
+  },
+
+  // Travel fee — local service add-on (Pro only)
+  travelFee: {
+    enabled:  { type: Boolean, default: false },
+    type:     { type: String, enum: ['flat', 'per_mile'], default: 'flat' },
+    amount:   { type: Number, default: 0 },  // $ flat or $/mile
+    freeWithinMiles: { type: Number, default: 0 }, // no charge within X miles
+  },
+
+  // Capacity controls (Plus+ only)
+  capacity: {
+    enabled:       { type: Boolean, default: false },
+    maxPerDay:     { type: Number, default: null },  // null = unlimited
+    maxPerWeek:    { type: Number, default: null },
+    maxConcurrent: { type: Number, default: null },  // max active orders at once
+  },
+
+  // Intake form — custom questions clients answer when ordering/booking
+  intakeForm: {
+    enabled: { type: Boolean, default: false },
+    fields: [{
+      label:       { type: String, required: true },           // "What's your dog's breed?"
+      type:        { type: String, enum: ['text', 'textarea', 'select', 'checkbox', 'number', 'date'], default: 'text' },
+      placeholder: { type: String, default: '' },
+      required:    { type: Boolean, default: false },
+      options:     [{ type: String }],                         // for select type
+    }],
+  },
+
   // Prepaid session bundles (e.g. "3 sessions for $80, 5 for $120")
   bundles: [{
     name:          { type: String, required: true, maxlength: 80 },

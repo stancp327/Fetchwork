@@ -151,6 +151,55 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
         });
       }
     }
+    // ── Deposit gate (Pro only) ──────────────────────────────────
+    const { deposit, travelFee } = req.body;
+    if (deposit?.enabled) {
+      const canDeposits = await hasFeature(userId, FEATURES.DEPOSITS);
+      if (!canDeposits) {
+        return res.status(403).json({
+          error: 'Deposits require a Pro plan.', reason: 'feature_gated',
+          feature: FEATURES.DEPOSITS, upgradeUrl: '/pricing',
+        });
+      }
+    }
+
+    // ── Travel fee gate (Pro only) ────────────────────────────────
+    if (travelFee?.enabled) {
+      const canTravel = await hasFeature(userId, FEATURES.TRAVEL_FEES);
+      if (!canTravel) {
+        return res.status(403).json({
+          error: 'Travel fees require a Pro plan.', reason: 'feature_gated',
+          feature: FEATURES.TRAVEL_FEES, upgradeUrl: '/pricing',
+        });
+      }
+    }
+
+    // ── Capacity controls gate (Plus+ only) ─────────────────────
+    const { capacity } = req.body;
+    if (capacity?.enabled) {
+      const canCapacity = await hasFeature(userId, FEATURES.CAPACITY_CONTROLS);
+      if (!canCapacity) {
+        return res.status(403).json({
+          error: 'Capacity controls require a Plus or Pro plan.', reason: 'feature_gated',
+          feature: FEATURES.CAPACITY_CONTROLS, upgradeUrl: '/pricing',
+        });
+      }
+    }
+
+    // ── Intake form gate ────────────────────────────────────────
+    const { intakeForm } = req.body;
+    if (intakeForm?.enabled && intakeForm?.fields?.length > 0) {
+      const canIntake = await hasFeature(userId, FEATURES.INTAKE_FORMS);
+      if (!canIntake) {
+        return res.status(403).json({
+          error:      'Intake forms require a Plus or Pro plan.',
+          reason:     'feature_gated',
+          feature:    FEATURES.INTAKE_FORMS,
+          upgradeUrl: '/pricing',
+        });
+      }
+    }
+
     const { bundles, feesIncluded } = req.body;
     if (bundles?.length > 0) {
       const canBundles = await hasFeature(userId, FEATURES.BUNDLE_CREATION);
@@ -195,6 +244,10 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       feesIncluded: feesIncluded === true,
       ...(serviceType === 'recurring' && recurring ? { recurring } : {}),
       ...(bundles?.length > 0 ? { bundles } : {}),
+      ...(intakeForm?.enabled ? { intakeForm } : {}),
+      ...(deposit?.enabled ? { deposit } : {}),
+      ...(travelFee?.enabled ? { travelFee } : {}),
+      ...(capacity?.enabled ? { capacity } : {}),
     });
     
     await service.save();

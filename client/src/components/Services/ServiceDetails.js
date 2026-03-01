@@ -7,6 +7,7 @@ import { apiRequest } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import EscrowModal from '../Payments/EscrowModal';
 import BookingCalendar from '../Bookings/BookingCalendar';
+import IntakeFormFill from './IntakeFormFill';
 import SEO from '../common/SEO';
 import './ServiceDetails.css';
 
@@ -23,6 +24,7 @@ const ServiceDetails = () => {
   const [bundleLoading,    setBundleLoading]    = useState(false);
   const [subscribeLoading, setSubscribeLoading] = useState(false);
   const [requirements,     setRequirements]     = useState('');
+  const [intakeValues,     setIntakeValues]     = useState({});
   const [showOfferModal,   setShowOfferModal]   = useState(false);
   const [orderConfirmed,   setOrderConfirmed]   = useState(null);
   const [orderPayment,     setOrderPayment]     = useState(null);
@@ -52,7 +54,7 @@ const ServiceDetails = () => {
     try {
       const data = await apiRequest(`/api/services/${id}/order`, {
         method: 'POST',
-        body: JSON.stringify({ package: selectedPackage, requirements: requirements.trim() })
+        body: JSON.stringify({ package: selectedPackage, requirements: requirements.trim(), intakeResponses: intakeValues })
       });
       // Show payment modal with pre-fetched clientSecret
       setOrderPayment({
@@ -446,6 +448,15 @@ const ServiceDetails = () => {
                             rows={3}
                           />
                         </div>
+                      )}
+
+                      {/* Intake form */}
+                      {service.intakeForm?.enabled && service.intakeForm?.fields?.length > 0 && (
+                        <IntakeFormFill
+                          fields={service.intakeForm.fields}
+                          values={intakeValues}
+                          onChange={(key, val) => setIntakeValues(prev => ({ ...prev, [key]: val }))}
+                        />
                       )}
 
                       {service.serviceType === 'recurring' ? (
