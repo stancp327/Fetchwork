@@ -175,10 +175,12 @@ router.get('/users', authenticateAdmin, requirePermission('user_management'), va
     const limit = parseInt(req.query.limit) || 20;
     const search = req.query.search || '';
     const status = req.query.status || 'all';
+    const roleFilter = req.query.role || 'all';
     const sortBy = req.query.sortBy || 'createdAt';
     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
 
     let query = {};
+    if (roleFilter !== 'all') query.role = roleFilter;
     
     if (search) {
       const safeSearch = escapeRegex(search);
@@ -912,6 +914,51 @@ router.put('/users/:userId/remove-moderator', authenticateAdmin, requirePermissi
     res.json({ message: `${user.firstName} is no longer a moderator` });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
+// ── Permission catalog + role defaults ──────────────────────────
+const ALL_PERMISSIONS = [
+  { key: 'user_management',    label: 'User Management',    description: 'Suspend, unsuspend, promote/demote users' },
+  { key: 'job_management',     label: 'Job Management',     description: 'Edit, remove, feature, archive jobs' },
+  { key: 'content_moderation', label: 'Content Moderation', description: 'Review and remove listings, reviews, profiles' },
+  { key: 'payment_management', label: 'Payment Management', description: 'View payments, issue refunds, waive fees' },
+  { key: 'dispute_management', label: 'Dispute Management', description: 'Review and resolve disputes between users' },
+  { key: 'analytics_view',     label: 'Analytics View',     description: 'Access platform analytics and reports' },
+  { key: 'fee_waiver',         label: 'Fee Waiver',         description: 'Waive platform fees for specific users/jobs' },
+  { key: 'user_impersonation', label: 'User Impersonation', description: 'Log in as another user for support purposes' },
+  { key: 'system_settings',    label: 'System Settings',    description: 'Edit platform config, billing plans, cron jobs' },
+];
+
+const ROLE_DEFAULTS = {
+  admin:     ALL_PERMISSIONS.map(p => p.key),
+  moderator: ['job_management', 'content_moderation', 'dispute_management'],
+  user:      [],
+};
+
+router.get('/permissions', authenticateAdmin, async (req, res) => {
+  res.json({ permissions: ALL_PERMISSIONS, roleDefaults: ROLE_DEFAULTS });
+});
+
+// ── Update a user's custom permissions ──────────────────────────
+router.put('/users/:userId/permissions', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { permissions } = req.body;
+    if (!Array.isArray(permissions)) return res.status(400).json({ error: 'permissions must be an array' });
+
+    const validKeys = ALL_PERMISSIONS.map(p => p.key);
+    const filtered  = permissions.filter(p => validKeys.includes(p));
+
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.role !== 'moderator') return res.status(400).json({ error: 'Custom permissions only apply to moderators' });
+
+    user.permissions = filtered;
+    await user.save();
+
+    res.json({ message: 'Permissions updated', permissions: filtered });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update permissions' });
   }
 });
 

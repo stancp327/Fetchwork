@@ -1,8 +1,8 @@
-/* -- Admin Dashboard — Mobile-first --------------------------- */
+/* -- Admin Dashboard ï¿½ Mobile-first --------------------------- */
 .admin-dashboard {
   padding: var(--space-sm);
   padding-top: var(--space-sm); /* nav offset provided by .page-content */
-  width: 100%;        /* Explicit width needed — flex items don't auto-fill without it */
+  width: 100%;        /* Explicit width needed ï¿½ flex items don't auto-fill without it */
   min-width: 0;       /* CRITICAL: flex items default to min-width:auto which locks them
                          at content size (~955px). min-width:0 allows shrinking to viewport. */
   max-width: 1200px;
@@ -30,7 +30,7 @@
 }
 .refresh-button:hover { background: #2980b9; }
 
-/* Tabs — horizontal scroll on mobile */
+/* Tabs ï¿½ horizontal scroll on mobile */
 .dashboard-tabs {
   display: flex; gap: 2px;
   width: 100%;          /* CRITICAL: constrain the flex container to viewport width.
@@ -54,7 +54,7 @@
 .tab-button:hover { color: var(--color-text-dark); background: var(--color-bg-subtle); }
 .tab-button.active { color: #3498db; border-bottom-color: #3498db; background: var(--color-bg-subtle); }
 
-/* Content — universal overflow guard for ALL tabs */
+/* Content ï¿½ universal overflow guard for ALL tabs */
 .dashboard-content { min-height: 300px; overflow: hidden; }
 .dashboard-content > div { overflow: hidden; word-break: break-word; }
 
@@ -75,7 +75,7 @@
   border-radius: 6px; cursor: pointer; font-weight: 500; min-height: 44px;
 }
 
-/* Stats grid — minmax(0,1fr) not 1fr: prevents cards from locking at content size */
+/* Stats grid ï¿½ minmax(0,1fr) not 1fr: prevents cards from locking at content size */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -118,7 +118,7 @@
 .user-email, .job-budget, .job-status { color: #7f8c8d; font-size: var(--font-size-xs); }
 .activity-date { color: #95a5a6; font-size: 0.7rem; }
 
-/* Tab content containers — ALL tabs */
+/* Tab content containers ï¿½ ALL tabs */
 .overview-tab, .users-tab, .jobs-tab, .payments-tab, .reviews-tab,
 .disputes-tab, .email-tab, .monitoring-tab, .analytics-tab, .billing-tab,
 .errors-tab, .verifications-tab {
@@ -162,7 +162,7 @@
   width: 100%; border-collapse: collapse;
 }
 .users-table thead, .jobs-table thead, .payments-table thead, .reviews-table thead {
-  display: none; /* Hide headers on mobile — cards are self-descriptive */
+  display: none; /* Hide headers on mobile ï¿½ cards are self-descriptive */
 }
 .users-table tbody tr, .jobs-table tbody tr, .payments-table tbody tr, .reviews-table tbody tr {
   display: flex; flex-direction: column; gap: 4px;
@@ -209,6 +209,7 @@
 .action-btn.demote { background: #ffc107; color: #212529; }
 .action-btn.delete { background: #dc3545; color: white; }
 .action-btn.delete:disabled { background: var(--color-text-secondary); cursor: not-allowed; }
+.action-btn.moderator { background: #2563eb; color: white; }
 .action-btn.cancel { background: #dc3545; color: white; }
 .action-btn.view { background: #007bff; color: white; }
 .action-btn.approve { background: var(--color-success); color: white; }
@@ -272,7 +273,7 @@
   }
 }
 
-/* -- Analytics (old placeholder styles — kept for compat) ----- */
+/* -- Analytics (old placeholder styles ï¿½ kept for compat) ----- */
 .analytics-tab { padding: 0; }
 .analytics-header {
   display: flex; flex-direction: column; gap: var(--space-sm);
@@ -293,3 +294,57 @@
 }
 
 
+
+/* -- Permissions Tab -------------------------------------------- */
+.perm-tab { display: flex; flex-direction: column; gap: 2rem; }
+.perm-section { background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.5rem; }
+.perm-section-title { font-size: 1rem; font-weight: 700; margin: 0 0 1rem; color: var(--color-text-heading); }
+
+/* Catalog */
+.perm-catalog { display: flex; flex-direction: column; gap: 0.5rem; }
+.perm-catalog-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.75rem; background: var(--color-bg-secondary); border-radius: var(--radius-sm); flex-wrap: wrap; }
+.perm-catalog-badges { display: flex; gap: 4px; flex-shrink: 0; }
+.perm-role-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
+.perm-role-badge.admin { background: #fef2f2; color: #dc2626; }
+.perm-role-badge.moderator { background: #eff6ff; color: #2563eb; }
+.perm-catalog-text { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 1px; }
+.perm-catalog-label { font-weight: 600; font-size: 0.88rem; color: var(--color-text-primary); }
+.perm-catalog-desc  { font-size: 0.78rem; color: var(--color-text-secondary); }
+.perm-catalog-key   { font-size: 0.72rem; color: #6b7280; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+
+/* Moderator layout */
+.perm-mod-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+@media (min-width: 640px) { .perm-mod-layout { grid-template-columns: 220px minmax(0, 1fr); } }
+.perm-mod-list   { display: flex; flex-direction: column; gap: 6px; }
+.perm-mod-item   { background: var(--color-bg-secondary); border: 2px solid transparent; border-radius: var(--radius-sm); padding: 0.65rem 0.75rem; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 1px; transition: border-color 0.12s; }
+.perm-mod-item:hover { border-color: var(--color-primary); }
+.perm-mod-item.active { border-color: var(--color-primary); background: #eff6ff; }
+.perm-mod-name   { font-weight: 600; font-size: 0.88rem; }
+.perm-mod-email  { font-size: 0.76rem; color: var(--color-text-secondary); }
+.perm-mod-count  { font-size: 0.74rem; color: var(--color-text-muted); margin-top: 2px; }
+
+/* Editor */
+.perm-mod-editor { border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; }
+.perm-editor-header { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); flex-wrap: wrap; gap: 0.5rem; }
+.perm-editor-email  { display: block; font-size: 0.78rem; color: var(--color-text-muted); }
+.perm-save-btn { padding: 0.45rem 1rem; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; min-height: 36px; transition: opacity 0.15s; }
+.perm-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.perm-toggles   { display: flex; flex-direction: column; }
+.perm-toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-border); cursor: pointer; gap: 1rem; transition: background 0.1s; }
+.perm-toggle-row:last-child { border-bottom: none; }
+.perm-toggle-row.on { background: #f0fdf4; }
+.perm-toggle-row:hover { background: var(--color-bg-secondary); }
+.perm-toggle-info  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.perm-toggle-label { font-weight: 600; font-size: 0.87rem; }
+.perm-toggle-desc  { font-size: 0.77rem; color: var(--color-text-secondary); }
+.perm-default-badge { font-size: 0.7rem; color: #6b7280; background: #f3f4f6; padding: 1px 6px; border-radius: 99px; width: fit-content; margin-top: 2px; }
+.perm-toggle-switch { flex-shrink: 0; position: relative; width: 40px; height: 22px; }
+.perm-toggle-switch input { opacity: 0; width: 0; height: 0; }
+.perm-switch-track { position: absolute; inset: 0; background: var(--color-border); border-radius: 99px; transition: background 0.2s; cursor: pointer; }
+.perm-switch-track::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+.perm-toggle-row.on .perm-switch-track { background: var(--color-primary); }
+.perm-toggle-row.on .perm-switch-track::before { transform: translateX(18px); }
+
+.perm-mod-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 3rem 1rem; color: var(--color-text-muted); font-size: 0.9rem; border: 1px dashed var(--color-border); border-radius: var(--radius-md); }
+.perm-mod-placeholder span { font-size: 1.5rem; }
+.perm-empty { color: var(--color-text-secondary); font-size: 0.9rem; }

@@ -16,6 +16,138 @@ import AdminBillingTab from './AdminBillingTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
+// ── Permissions Tab ─────────────────────────────────────────────
+const PermissionsTab = () => {
+  const [catalog,    setCatalog]    = useState([]);
+  const [defaults,   setDefaults]   = useState({});
+  const [moderators, setModerators] = useState([]);
+  const [selected,   setSelected]   = useState(null);
+  const [draft,      setDraft]      = useState([]);
+  const [saving,     setSaving]     = useState(false);
+  const [saved,      setSaved]      = useState(false);
+  const [loading,    setLoading]    = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      apiRequest('/api/admin/permissions'),
+      apiRequest('/api/admin/users?role=moderator&limit=100'),
+    ]).then(([perms, users]) => {
+      setCatalog(perms.permissions || []);
+      setDefaults(perms.roleDefaults || {});
+      setModerators((users.users || users || []).filter(u => u.role === 'moderator'));
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const selectModerator = (mod) => {
+    setSelected(mod);
+    const base   = defaults.moderator || [];
+    const custom = mod.permissions || [];
+    setDraft([...new Set([...base, ...custom])]);
+    setSaved(false);
+  };
+
+  const togglePerm = (key) => {
+    setDraft(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+    setSaved(false);
+  };
+
+  const savePerms = async () => {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      await apiRequest(`/api/admin/users/${selected._id}/permissions`, {
+        method: 'PUT', body: JSON.stringify({ permissions: draft }),
+      });
+      setModerators(prev => prev.map(m => m._id === selected._id ? { ...m, permissions: draft } : m));
+      setSelected(prev => ({ ...prev, permissions: draft }));
+      setSaved(true);
+    } catch (err) {
+      alert(err.data?.error || 'Failed to save');
+    } finally { setSaving(false); }
+  };
+
+  if (loading) return <div style={{ padding: '2rem', color: '#6b7280' }}>Loading…</div>;
+
+  return (
+    <div className="perm-tab">
+      <section className="perm-section">
+        <h2 className="perm-section-title">Permission Catalog</h2>
+        <div className="perm-catalog">
+          {catalog.map(p => (
+            <div key={p.key} className="perm-catalog-row">
+              <div className="perm-catalog-badges">
+                <span className="perm-role-badge admin">admin</span>
+                {(defaults.moderator || []).includes(p.key) && (
+                  <span className="perm-role-badge moderator">mod default</span>
+                )}
+              </div>
+              <div className="perm-catalog-text">
+                <span className="perm-catalog-label">{p.label}</span>
+                <span className="perm-catalog-desc">{p.description}</span>
+              </div>
+              <code className="perm-catalog-key">{p.key}</code>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="perm-section">
+        <h2 className="perm-section-title">Moderator Permissions</h2>
+        {moderators.length === 0 ? (
+          <p className="perm-empty">No moderators yet. Promote a user from the Users tab.</p>
+        ) : (
+          <div className="perm-mod-layout">
+            <div className="perm-mod-list">
+              {moderators.map(mod => (
+                <button key={mod._id} className={`perm-mod-item ${selected?._id === mod._id ? 'active' : ''}`} onClick={() => selectModerator(mod)}>
+                  <span className="perm-mod-name">{mod.firstName} {mod.lastName}</span>
+                  <span className="perm-mod-email">{mod.email}</span>
+                  <span className="perm-mod-count">{[...new Set([...(defaults.moderator||[]),...(mod.permissions||[])])].length}/{catalog.length} perms</span>
+                </button>
+              ))}
+            </div>
+            {selected ? (
+              <div className="perm-mod-editor">
+                <div className="perm-editor-header">
+                  <div>
+                    <strong>{selected.firstName} {selected.lastName}</strong>
+                    <span className="perm-editor-email">{selected.email}</span>
+                  </div>
+                  <button className="perm-save-btn" onClick={savePerms} disabled={saving}>
+                    {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Changes'}
+                  </button>
+                </div>
+                <div className="perm-toggles">
+                  {catalog.map(p => {
+                    const isDefault = (defaults.moderator || []).includes(p.key);
+                    const isEnabled = draft.includes(p.key);
+                    return (
+                      <label key={p.key} className={`perm-toggle-row ${isEnabled ? 'on' : ''}`}>
+                        <div className="perm-toggle-info">
+                          <span className="perm-toggle-label">{p.label}</span>
+                          <span className="perm-toggle-desc">{p.description}</span>
+                          {isDefault && <span className="perm-default-badge">default</span>}
+                        </div>
+                        <div className="perm-toggle-switch">
+                          <input type="checkbox" checked={isEnabled} onChange={() => togglePerm(p.key)} />
+                          <span className="perm-switch-track" />
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="perm-mod-placeholder"><span>👈</span><p>Select a moderator to edit their permissions</p></div>
+            )}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
@@ -245,6 +377,24 @@ const AdminDashboard = () => {
     }
   };
 
+  const makeModerator = async (userId) => {
+    try {
+      await apiRequest(`/api/admin/users/${userId}/make-moderator`, { method: 'PUT', body: JSON.stringify({ permissions: [] }) });
+      fetchUsersData();
+    } catch (err) {
+      alert('Failed to make moderator: ' + (err.data?.error || err.message));
+    }
+  };
+
+  const removeModerator = async (userId) => {
+    try {
+      await apiRequest(`/api/admin/users/${userId}/remove-moderator`, { method: 'PUT' });
+      fetchUsersData();
+    } catch (err) {
+      alert('Failed to remove moderator: ' + (err.data?.error || err.message));
+    }
+  };
+
   const deleteUser = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
@@ -383,6 +533,12 @@ const AdminDashboard = () => {
           id="billing"
           label="Billing"
           active={activeTab === 'billing'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="permissions"
+          label="Permissions"
+          active={activeTab === 'permissions'}
           onClick={setActiveTab}
         />
       </div>
@@ -537,13 +693,14 @@ const AdminDashboard = () => {
                                   }}>Suspend</button>
                                 )}
                                 {u.role === 'moderator' ? (
-                                  <button className="action-btn demote" onClick={async () => {
-                                    try { await apiRequest(`/api/admin/users/${u._id}/remove-moderator`, { method: 'PUT' }); fetchUsersData(); } catch(e) { alert(e.message); }
-                                  }}>Remove Mod</button>
+                                  <button className="action-btn demote" onClick={() => removeModerator(u._id)}>Remove Mod</button>
                                 ) : u.isAdminPromoted ? (
                                   <button className="action-btn demote" onClick={() => demoteUser(u._id)}>Remove Admin</button>
                                 ) : (
-                                  <button className="action-btn promote" onClick={() => promoteUser(u._id)}>Make Admin</button>
+                                  <>
+                                    <button className="action-btn promote" onClick={() => promoteUser(u._id)}>Make Admin</button>
+                                    <button className="action-btn moderator" onClick={() => makeModerator(u._id)}>Make Moderator</button>
+                                  </>
                                 )}
                               </div>
                             </td>
@@ -1149,6 +1306,10 @@ const AdminDashboard = () => {
               <AdminBillingTab />
             </TracingErrorBoundary>
           </div>
+        )}
+
+        {activeTab === 'permissions' && (
+          <PermissionsTab />
         )}
       </div>
     </div>
