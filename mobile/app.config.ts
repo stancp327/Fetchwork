@@ -4,6 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Fetchwork',
   slug: 'fetchwork',
+  owner: 'zestyfresh925s-organization',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -21,6 +22,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSCameraUsageDescription: 'Used for profile photo and ID verification uploads.',
       NSPhotoLibraryUsageDescription: 'Used for profile photo and portfolio uploads.',
       NSPhotoLibraryAddUsageDescription: 'Used to save images from Fetchwork.',
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
@@ -36,7 +38,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     eas: {
-      projectId: process.env.EAS_PROJECT_ID || 'YOUR_EAS_PROJECT_ID',
+      projectId: '7550a4f8-a14b-4568-a588-989666852755',
     },
   },
   plugins: [
