@@ -17,14 +17,20 @@ const serviceSchema = new mongoose.Schema({
     trialPrice:       { type: Number, min: 0 },
   },
 
+  // Whether listed prices include platform fees (fees-included = client pays exactly the listed price)
+  // false (default) = fees added on top of listed price at checkout
+  // true            = fees are baked in; client pays exactly the listed price
+  feesIncluded: { type: Boolean, default: false },
+
   // Prepaid session bundles (e.g. "3 sessions for $80, 5 for $120")
   bundles: [{
-    name:          { type: String, required: true, maxlength: 80 },   // "3 sessions"
-    sessions:      { type: Number, required: true, min: 2, max: 100 }, // session count
-    price:         { type: Number, required: true, min: 5 },           // total bundle price (freelancer sets this)
-    savings:       { type: Number, default: 0 },                       // display-only savings vs individual price
-    expiresInDays: { type: Number, default: null },                    // null = no expiry (Plus/Pro only)
+    name:          { type: String, required: true, maxlength: 80 },
+    sessions:      { type: Number, required: true, min: 2, max: 100 },
+    price:         { type: Number, required: true, min: 5 },
+    savings:       { type: Number, default: 0 },
+    expiresInDays: { type: Number, default: null },
     active:        { type: Boolean, default: true },
+    feesIncluded:  { type: Boolean, default: null }, // null = inherit from service-level setting
   }],
 
   title: {

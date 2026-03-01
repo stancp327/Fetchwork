@@ -184,6 +184,80 @@ async function calcPlatformFeeAsync({ userId, role = 'freelancer', jobType = 're
   return result.fee;
 }
 
+// ── Fees-included calculator ─────────────────────────────────────
+// When freelancer lists a price with fees already baked in,
+// we reverse-calculate the base and split correctly.
+//
+// For remote (percentage):
+//   listedPrice = base × (1 + clientRate)
+//   base        = listedPrice / (1 + clientRate)
+//   clientFee   = listedPrice - base
+//   freelancerFee = base × freelancerRate
+//   clientCharges = listedPrice  (client pays exactly the listed price)
+//   freelancerPayout = listedPrice - clientFee - freelancerFee
+//
+// For local (flat fee):
+//   listedPrice = base + flatFee  →  base = listedPrice - flatFee
+//   clientCharges = listedPrice
+//   freelancerPayout = listedPrice - flatFee (local freelancer fee always $0)
+
+async function getFeeIncluded({ userId, role, jobType, listedPrice }) {
+  // Determine rates without knowing base yet — look up user plan first
+  let clientPlanKey     = 'free';
+  let freelancerPlanKey = 'free';
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('subscription').lean();
+    const plan = user?.subscription?.plan?.toLowerCase() || 'free';
+    if (role === 'client') {
+      if (plan.includes('business') || plan.includes('pro')) clientPlanKey = 'business';
+      else if (plan.includes('plus'))                        clientPlanKey = 'plus';
+    } else {
+      if (plan.includes('pro') || plan.includes('business')) freelancerPlanKey = 'pro';
+      else if (plan.includes('plus'))                        freelancerPlanKey = 'plus';
+    }
+  } catch { /* use defaults */ }
+
+  if (jobType === 'local') {
+    // Look up the flat fee for this bracket, then reverse
+    const flatFee     = getLocalClientFlatFee(FALLBACK_RATES.localClient, listedPrice);
+    const base        = Math.max(0, listedPrice - flatFee);
+    const clientFee   = flatFee;
+    const freelancerFee = 0; // always $0 for local
+    return {
+      base, listedPrice,
+      clientFee, freelancerFee,
+      totalPlatformFee: clientFee,
+      clientCharges:    listedPrice,
+      freelancerPayout: roundFee(base),
+      feesIncluded:     true,
+      source:           'fees_included_local',
+    };
+  }
+
+  // Remote: reverse-calculate from listed price
+  const clientRates     = { free: 0.05, plus: 0.03, business: 0.02 };
+  const freelancerRates = { free: 0.10, plus: 0.07, pro: 0.05 };
+  const clientRate      = clientRates[clientPlanKey]     ?? 0.05;
+  const freelancerRate  = freelancerRates[freelancerPlanKey] ?? 0.10;
+
+  const base          = roundFee(listedPrice / (1 + clientRate));
+  const clientFee     = roundFee(listedPrice - base);
+  const freelancerFee = roundFee(base * freelancerRate);
+  const totalPlatformFee = roundFee(clientFee + freelancerFee);
+  const freelancerPayout = roundFee(listedPrice - clientFee - freelancerFee);
+
+  return {
+    base, listedPrice,
+    clientFee, freelancerFee,
+    totalPlatformFee,
+    clientCharges:    listedPrice,  // client pays exactly the listed price
+    freelancerPayout,
+    feesIncluded:     true,
+    source:           'fees_included_remote',
+  };
+}
+
 // ── Tip / bonus: always fee-free ─────────────────────────────────
 async function getTipFee() {
   return { fee: 0, feeRate: 0, source: 'tip_fee_free' };
@@ -215,6 +289,7 @@ function fromCents(cents)  { return Math.round(cents) / 100; }
 
 module.exports = {
   getFee,
+  getFeeIncluded,
   calcPlatformFeeAsync,
   getTipFee,
   getRecurringFee,
