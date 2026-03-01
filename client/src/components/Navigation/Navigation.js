@@ -170,6 +170,7 @@ const Navigation = () => {
 
                 <NavLink to="/billing">Billing</NavLink>
                 <NavLink to="/wallet">Wallet</NavLink>
+                <NavLink to="/analytics">Analytics</NavLink>
                 <NavLink to="/profile">Profile</NavLink>
                 <button className="nav-logout-btn" onClick={() => { logout(); closeMobileMenu(); }}>
                   Logout

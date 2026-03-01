@@ -374,6 +374,13 @@ const Dashboard = () => {
                   <div className="rec-desc">Find ready-made solutions for your needs</div>
                 </div>
               </Link>
+              <Link to="/analytics" className="recommendation-item">
+                <span className="rec-icon">📊</span>
+                <div>
+                  <div className="rec-title">View your analytics</div>
+                  <div className="rec-desc">Earnings, win rate, spend & more</div>
+                </div>
+              </Link>
             </div>
           </div>
         </div>

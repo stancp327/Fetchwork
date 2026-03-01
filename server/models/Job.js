@@ -172,6 +172,7 @@ const jobSchema = new mongoose.Schema({
   cancellationReason: String,
   startDate: Date,
   pendingStartAt: { type: Date, default: null },
+  acceptedAt: Date,
   endDate: Date,
   completedAt: Date,
   milestones: [{
@@ -329,6 +330,7 @@ jobSchema.methods.acceptProposal = async function(proposalId, freelancerId) {
   proposal.status = 'accepted';
   this.freelancer = freelancerId;
   this.status = 'accepted';  // freelancer still needs to hit "Start Job"
+  this.acceptedAt = new Date();
 
   // Copy freelancer-proposed milestones to job milestones (if any)
   if (proposal.proposedMilestones && proposal.proposedMilestones.length > 0) {
