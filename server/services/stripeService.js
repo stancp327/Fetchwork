@@ -370,6 +370,82 @@ class StripeService {
     return stripe.webhooks.constructEvent(rawBody, signature, secret);
   }
 
+  // ── Recurring Service Subscriptions ─────────────────────────────
+  //
+  // Architecture: platform-collected (funds go to platform account)
+  // On each invoice.paid webhook → we transfer freelancerPayout to Connect account.
+  // This gives full control over per-user fee calculation.
+
+  /**
+   * Create or retrieve a Stripe Product for a service.
+   * Called once per service; reused for all pricing tiers.
+   */
+  async createServiceProduct(service) {
+    this._ensureStripe();
+    return stripe.products.create({
+      name:        service.title,
+      description: service.description?.slice(0, 500) || '',
+      metadata:    { serviceId: String(service._id), freelancerId: String(service.freelancer) },
+    });
+  }
+
+  /**
+   * Create a recurring Stripe Price for a service tier.
+   * amount = clientCharges (base + client fee) in USD dollars.
+   */
+  async createServiceRecurringPrice({ productId, amount, billingCycle, currency = 'usd' }) {
+    this._ensureStripe();
+    const intervalMap = { weekly: 'week', monthly: 'month', per_session: 'week' };
+    const interval = intervalMap[billingCycle] || 'month';
+    return stripe.prices.create({
+      product:         productId,
+      unit_amount:     Math.round(amount * 100),
+      currency,
+      recurring:       { interval },
+      metadata:        { billingCycle },
+    });
+  }
+
+  /**
+   * Create a Stripe Subscription for a client subscribing to a recurring service.
+   * Funds land in Fetchwork's platform account; freelancer payout handled via webhook.
+   */
+  async createServiceSubscription({ customerId, priceId, metadata = {}, trialDays }) {
+    this._ensureStripe();
+    const params = {
+      customer:          customerId,
+      items:             [{ price: priceId }],
+      payment_behavior:  'default_incomplete',   // requires payment method confirmation
+      payment_settings:  { save_default_payment_method: 'on_subscription' },
+      expand:            ['latest_invoice.payment_intent'],
+      metadata,
+    };
+    if (trialDays) params.trial_period_days = trialDays;
+    return stripe.subscriptions.create(params);
+  }
+
+  /**
+   * Transfer freelancer payout after invoice.paid fires.
+   * Uses stripeInvoiceId as idempotency key to prevent double-transfers.
+   */
+  async transferServicePayout({ amount, destinationAccountId, invoiceId, subscriptionId }) {
+    this._ensureStripe();
+    return stripe.transfers.create({
+      amount:         Math.round(amount * 100),
+      currency:       'usd',
+      destination:    destinationAccountId,
+      metadata:       { invoiceId, subscriptionId, type: 'recurring_service_payout' },
+    }, {
+      idempotencyKey: `svc-payout-${invoiceId}`,
+    });
+  }
+
+  /** Immediately cancel a service subscription. */
+  async cancelServiceSubscriptionNow(stripeSubscriptionId) {
+    this._ensureStripe();
+    return stripe.subscriptions.cancel(stripeSubscriptionId);
+  }
+
   // ── Legacy aliases (kept for any indirect callers) ───────────────
   /** @deprecated Use chargeForJob() instead */
   async holdFundsInEscrow(amount, currency = 'usd', metadata = {}) {

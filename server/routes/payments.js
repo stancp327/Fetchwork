@@ -706,6 +706,115 @@ router.webhookHandler = async (req, res) => {
         break;
       }
 
+      // ── Recurring service: invoice paid → payout freelancer ──────
+      case 'invoice.paid': {
+        try {
+          const invoice = event.data.object;
+          const stripeSubId = invoice.subscription;
+          if (!stripeSubId) break; // not a subscription invoice
+
+          const ServiceSubscription = require('../models/ServiceSubscription');
+          const sub = await ServiceSubscription.findOne({ stripeSubscriptionId: stripeSubId });
+          if (!sub) break; // not one of our service subs
+
+          const amountPaid = invoice.amount_paid / 100; // cents → dollars
+
+          // Recalculate fee using stored rate (locked at subscribe time)
+          const feeRate      = sub.platformFeeRate || 0.10;
+          const freelancerFee = Math.round(amountPaid * feeRate * 100) / 100;
+          const clientFeeAmt  = sub.platformFeeAmount ? (sub.platformFeeAmount - freelancerFee) : 0;
+          const payoutAmt     = Math.round((amountPaid - freelancerFee) * 100) / 100;
+
+          // Transfer payout to freelancer's Connect account
+          const freelancer = await User.findById(sub.freelancer).select('stripeAccountId');
+          let transferId;
+          if (freelancer?.stripeAccountId && payoutAmt > 0) {
+            const transfer = await stripeService.transferServicePayout({
+              amount:              payoutAmt,
+              destinationAccountId: freelancer.stripeAccountId,
+              invoiceId:           invoice.id,
+              subscriptionId:      stripeSubId,
+            });
+            transferId = transfer.id;
+          }
+
+          // Log invoice on the subscription
+          sub.invoices.push({
+            stripeInvoiceId: invoice.id,
+            amount:          amountPaid,
+            platformFee:     sub.platformFeeAmount || freelancerFee + clientFeeAmt,
+            freelancerPaid:  payoutAmt,
+            paidAt:          new Date(invoice.status_transitions?.paid_at * 1000 || Date.now()),
+            status:          'paid',
+            stripeTransferId: transferId,
+          });
+          sub.status          = 'active';
+          sub.nextBillingDate = invoice.next_payment_attempt
+            ? new Date(invoice.next_payment_attempt * 1000) : null;
+          if (!sub.startedAt) sub.startedAt = new Date();
+          await sub.save();
+
+          // Notify freelancer
+          await Notification.create({
+            recipient: sub.freelancer,
+            title:     'Recurring payment received',
+            message:   `You received $${payoutAmt.toFixed(2)} for a recurring service subscription`,
+            link:      `/services/${sub.service}`,
+          });
+
+          console.log(`✅ Recurring service payout: $${payoutAmt} → ${freelancer?.stripeAccountId}`);
+        } catch (invoiceErr) {
+          console.error('Webhook invoice.paid handler error:', invoiceErr.message);
+        }
+        break;
+      }
+
+      // ── Recurring service: payment failed → notify both sides ────
+      case 'invoice.payment_failed': {
+        try {
+          const invoice = event.data.object;
+          if (!invoice.subscription) break;
+          const ServiceSubscription = require('../models/ServiceSubscription');
+          const sub = await ServiceSubscription.findOne({ stripeSubscriptionId: invoice.subscription });
+          if (!sub) break;
+
+          sub.status = 'past_due';
+          await sub.save();
+
+          await Notification.create({
+            recipient: sub.client,
+            title:     'Recurring payment failed',
+            message:   'Your payment for a recurring service failed. Please update your payment method.',
+            link:      '/settings/billing',
+          });
+
+          console.log(`⚠️ Recurring service payment failed: sub ${sub._id}`);
+        } catch (err) {
+          console.error('Webhook invoice.payment_failed error:', err.message);
+        }
+        break;
+      }
+
+      // ── Recurring service: subscription cancelled in Stripe ───────
+      case 'customer.subscription.deleted': {
+        try {
+          const stripeSub = event.data.object;
+          const ServiceSubscription = require('../models/ServiceSubscription');
+          const sub = await ServiceSubscription.findOne({ stripeSubscriptionId: stripeSub.id });
+          if (!sub) break;
+          if (!['cancelled', 'completed'].includes(sub.status)) {
+            sub.status      = 'cancelled';
+            sub.cancelledAt = new Date();
+            sub.cancelReason = 'stripe_cancelled';
+            await sub.save();
+          }
+          console.log(`🔴 Service subscription cancelled: ${sub._id}`);
+        } catch (err) {
+          console.error('Webhook subscription.deleted error:', err.message);
+        }
+        break;
+      }
+
       default:
         console.log(`Unhandled webhook event: ${event.type}`);
     }

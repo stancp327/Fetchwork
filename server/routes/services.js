@@ -3,6 +3,8 @@ const router = express.Router();
 const Service = require('../models/Service');
 const User    = require('../models/User');
 const Payment = require('../models/Payment');
+const ServiceSubscription = require('../models/ServiceSubscription');
+const Notification = require('../models/Notification');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
@@ -11,6 +13,7 @@ const stripeService = require('../services/stripeService');
 const emailWorkflowService = require('../services/emailWorkflowService');
 const emailService  = require('../services/emailService');
 const { checkServiceLimit } = require('../middleware/entitlements');
+const { getFee, getFeeDisplay } = require('../services/feeEngine');
 
 router.get('/', async (req, res) => {
   try {
@@ -648,6 +651,201 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECURRING SERVICE SUBSCRIPTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── POST /api/services/:id/subscribe ─────────────────────────────────────────
+// Client subscribes to a recurring service.
+// Returns clientSecret for frontend to confirm payment method.
+router.post('/:id/subscribe', authenticateToken, async (req, res) => {
+  try {
+    const { tier = 'basic' } = req.body;
+
+    const service = await Service.findById(req.params.id)
+      .populate('freelancer', 'firstName lastName email stripeAccountId');
+    if (!service || !service.isActive || service.status !== 'active') {
+      return res.status(404).json({ error: 'Service not found or unavailable' });
+    }
+    if (service.serviceType !== 'recurring') {
+      return res.status(400).json({ error: 'This service is not a recurring service. Use /order instead.' });
+    }
+    if (String(service.freelancer._id) === String(req.user.userId)) {
+      return res.status(400).json({ error: 'Cannot subscribe to your own service' });
+    }
+
+    // Check for existing active subscription
+    const existing = await ServiceSubscription.findOne({
+      service: service._id,
+      client:  req.user.userId,
+      status:  { $in: ['pending', 'active'] },
+    });
+    if (existing) {
+      return res.status(409).json({ error: 'You already have an active subscription to this service' });
+    }
+
+    const selectedPackage = service.pricing[tier];
+    if (!selectedPackage) return res.status(400).json({ error: 'Invalid tier selected' });
+
+    const billingCycle = service.recurring?.billingCycle || 'monthly';
+    const baseAmount   = selectedPackage.price;
+
+    // Calculate fees using the fee engine (plan-aware)
+    const clientFeeResult     = await getFee({ userId: String(req.user.userId), role: 'client',     jobType: 'remote', amount: baseAmount });
+    const freelancerFeeResult = await getFee({ userId: String(service.freelancer._id), role: 'freelancer', jobType: 'remote', amount: baseAmount });
+    const clientCharges       = parseFloat((baseAmount + clientFeeResult.fee).toFixed(2));
+    const freelancerPayout    = parseFloat((baseAmount - freelancerFeeResult.fee).toFixed(2));
+    const totalPlatformFee    = parseFloat((clientFeeResult.fee + freelancerFeeResult.fee).toFixed(2));
+
+    // Ensure client has a Stripe Customer ID
+    const clientUser = await User.findById(req.user.userId);
+    const stripeCustomerId = await stripeService.ensureCustomer(clientUser);
+    if (!clientUser.stripeCustomerId) {
+      clientUser.stripeCustomerId = stripeCustomerId;
+      await clientUser.save();
+    }
+
+    // Create Stripe Product + Price (or reuse existing from service)
+    let stripeProductId = service.stripeProductId;
+    let stripePriceId;
+
+    if (!stripeProductId) {
+      const product = await stripeService.createServiceProduct(service);
+      stripeProductId = product.id;
+      service.stripeProductId = stripeProductId;
+      await service.save();
+    }
+
+    const price = await stripeService.createServiceRecurringPrice({
+      productId:    stripeProductId,
+      amount:       clientCharges,
+      billingCycle,
+    });
+    stripePriceId = price.id;
+
+    // Create Stripe Subscription
+    const stripeSub = await stripeService.createServiceSubscription({
+      customerId: stripeCustomerId,
+      priceId:    stripePriceId,
+      metadata: {
+        serviceId:       String(service._id),
+        clientId:        String(req.user.userId),
+        freelancerId:    String(service.freelancer._id),
+        tier,
+        billingCycle,
+        platformFeeRate: String(freelancerFeeResult.feeRate),
+      },
+    });
+
+    // Save ServiceSubscription to DB
+    const serviceSub = await ServiceSubscription.create({
+      service:              service._id,
+      client:               req.user.userId,
+      freelancer:           service.freelancer._id,
+      tier,
+      amountPerCycle:       clientCharges,
+      billingCycle,
+      stripeSubscriptionId: stripeSub.id,
+      stripeProductId,
+      stripePriceId,
+      stripeCustomerId,
+      status:               'pending',
+      platformFeeRate:      freelancerFeeResult.feeRate,
+      platformFeeAmount:    totalPlatformFee,
+      freelancerPayout,
+    });
+
+    // Notify freelancer
+    await Notification.create({
+      recipient: service.freelancer._id,
+      title:     'New recurring subscription',
+      message:   `${clientUser.firstName} ${clientUser.lastName} subscribed to your "${service.title}" service`,
+      link:      `/services/${service._id}`,
+    });
+
+    res.status(201).json({
+      message:              'Subscription created — confirm payment method to activate',
+      subscriptionId:       serviceSub._id,
+      stripeSubscriptionId: stripeSub.id,
+      clientSecret:         stripeSub.latest_invoice?.payment_intent?.client_secret,
+      amountPerCycle:       clientCharges,
+      billingCycle,
+      platformFee:          totalPlatformFee,
+      feeDisplay:           getFeeDisplay({ fee: clientFeeResult.fee, feeRate: clientFeeResult.feeRate, jobType: 'remote', role: 'client' }),
+    });
+  } catch (err) {
+    console.error('Error creating service subscription:', err);
+    res.status(500).json({ error: 'Failed to create subscription' });
+  }
+});
+
+// ── GET /api/services/subscriptions/me ───────────────────────────────────────
+// List all recurring subscriptions for the current user (as client or freelancer).
+router.get('/subscriptions/me', authenticateToken, async (req, res) => {
+  try {
+    const { role = 'client' } = req.query;
+    const filter = role === 'freelancer'
+      ? { freelancer: req.user.userId }
+      : { client: req.user.userId };
+
+    const subs = await ServiceSubscription.find(filter)
+      .populate('service', 'title category pricing serviceType')
+      .populate('client',     'firstName lastName avatar')
+      .populate('freelancer', 'firstName lastName avatar')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ subscriptions: subs });
+  } catch (err) {
+    console.error('Error fetching subscriptions:', err);
+    res.status(500).json({ error: 'Failed to fetch subscriptions' });
+  }
+});
+
+// ── DELETE /api/services/subscriptions/:subId ─────────────────────────────────
+// Cancel a recurring service subscription.
+router.delete('/subscriptions/:subId', authenticateToken, async (req, res) => {
+  try {
+    const sub = await ServiceSubscription.findById(req.params.subId);
+    if (!sub) return res.status(404).json({ error: 'Subscription not found' });
+
+    // Only client or freelancer can cancel
+    const isClient     = String(sub.client)     === String(req.user.userId);
+    const isFreelancer = String(sub.freelancer)  === String(req.user.userId);
+    if (!isClient && !isFreelancer) return res.status(403).json({ error: 'Forbidden' });
+
+    if (['cancelled', 'completed'].includes(sub.status)) {
+      return res.status(400).json({ error: 'Subscription is already cancelled' });
+    }
+
+    // Cancel in Stripe
+    if (sub.stripeSubscriptionId) {
+      await stripeService.cancelServiceSubscriptionNow(sub.stripeSubscriptionId);
+    }
+
+    sub.status      = 'cancelled';
+    sub.cancelledAt = new Date();
+    sub.cancelReason = isClient ? 'client_cancelled' : 'freelancer_cancelled';
+    await sub.save();
+
+    // Notify the other party
+    const cancellerName = isClient ? 'The client' : 'The freelancer';
+    const notifyUserId  = isClient ? sub.freelancer : sub.client;
+    const service = await Service.findById(sub.service).select('title');
+    await Notification.create({
+      recipient: notifyUserId,
+      title:     'Subscription cancelled',
+      message:   `${cancellerName} cancelled the recurring subscription to "${service?.title || 'your service'}"`,
+      link:      `/services/${sub.service}`,
+    });
+
+    res.json({ message: 'Subscription cancelled', subscriptionId: sub._id });
+  } catch (err) {
+    console.error('Error cancelling subscription:', err);
+    res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 });
 

@@ -119,6 +119,7 @@ const serviceSchema = new mongoose.Schema({
     price:                 Number,
     requirements:          String,
     stripePaymentIntentId: { type: String, default: null },
+  stripeProductId:       { type: String, default: null },  // Stripe Product for recurring billing
     escrowAmount:          { type: Number, default: 0 },
     revisionCount:         { type: Number, default: 0 },
     deliveryNote:          String,
