@@ -1,0 +1,39 @@
+.bc-root { margin-top: var(--space-6); padding: var(--space-5); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); }
+.bc-title { font-size: var(--text-lg); font-weight: 700; margin: 0 0 var(--space-4); }
+
+/* Date strip — horizontal scroll */
+.bc-date-strip { display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-2); -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.bc-date-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--space-2) var(--space-3); min-width: 56px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); cursor: pointer; transition: all 0.15s; flex-shrink: 0; min-height: 44px; }
+.bc-date-btn:hover:not(:disabled) { border-color: var(--primary); background: #eff6ff; }
+.bc-date-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+.bc-date-btn.no-slots { opacity: 0.35; cursor: not-allowed; }
+.bc-date-btn.today { border-color: var(--primary); }
+.bc-date-day { font-size: 10px; text-transform: uppercase; font-weight: 600; }
+.bc-date-num { font-size: var(--text-lg); font-weight: 700; line-height: 1; }
+.bc-date-month { font-size: 10px; color: inherit; opacity: 0.7; }
+
+/* Slots */
+.bc-slots-section { margin-top: var(--space-4); }
+.bc-slots-title { font-size: var(--text-sm); font-weight: 600; margin: 0 0 var(--space-3); color: var(--text-muted); }
+.bc-loading, .bc-no-slots { font-size: var(--text-sm); color: var(--text-muted); padding: var(--space-4) 0; }
+.bc-slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: var(--space-2); }
+.bc-slot-btn { padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); cursor: pointer; font-size: var(--text-sm); font-weight: 500; min-height: 44px; transition: all 0.15s; }
+.bc-slot-btn:hover { border-color: var(--primary); background: #eff6ff; }
+.bc-slot-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* Booking form */
+.bc-book-section { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
+.bc-selected-summary { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) var(--space-4); background: #eff6ff; border-radius: var(--radius-md); margin-bottom: var(--space-3); font-size: var(--text-sm); }
+.bc-notes { width: 100%; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); resize: vertical; font-family: inherit; margin-bottom: var(--space-3); }
+.bc-book-btn { width: 100%; padding: var(--space-3); background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-size: var(--text-base); font-weight: 600; cursor: pointer; min-height: 48px; }
+.bc-book-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.bc-login-prompt { font-size: var(--text-sm); color: var(--text-muted); text-align: center; }
+.bc-login-prompt a { color: var(--primary); font-weight: 600; }
+.bc-error { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: #fef2f2; color: var(--danger); border-radius: var(--radius-md); font-size: var(--text-sm); }
+
+/* Success */
+.bc-success { text-align: center; padding: var(--space-6); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); margin-top: var(--space-6); }
+.bc-success-icon { font-size: 3rem; }
+.bc-success h3 { margin: var(--space-3) 0 var(--space-2); }
+.bc-success p { color: var(--text-muted); font-size: var(--text-sm); }
+.bc-reset-btn { margin-top: var(--space-4); padding: var(--space-2) var(--space-5); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; font-size: var(--text-sm); }

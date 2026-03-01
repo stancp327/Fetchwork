@@ -6,6 +6,7 @@ import { formatCategory } from '../../utils/formatters';
 import { apiRequest } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import EscrowModal from '../Payments/EscrowModal';
+import BookingCalendar from '../Bookings/BookingCalendar';
 import SEO from '../common/SEO';
 import './ServiceDetails.css';
 
@@ -517,8 +518,17 @@ const ServiceDetails = () => {
               )}
             </div>
           )}
+
+          {/* Booking calendar */}
+          {service.availability?.enabled && !isOwnService && (
+            <BookingCalendar
+              serviceId={service._id}
+              availability={service.availability}
+            />
+          )}
         </div>
       </div>
+
       {showOfferModal && service && (
         <CustomOfferModal
           isOpen={true}

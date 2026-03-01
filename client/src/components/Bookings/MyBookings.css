@@ -1,0 +1,43 @@
+.mb-page { max-width: 720px; margin: 0 auto; padding: var(--space-4); }
+.mb-title { font-size: var(--text-xl); font-weight: 700; margin: 0 0 var(--space-4); }
+
+/* Tabs */
+.mb-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); }
+.mb-tab { background: none; border: none; padding: var(--space-2) var(--space-3); font-size: var(--text-sm); font-weight: 500; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-md); min-height: 44px; }
+.mb-tab.active { background: var(--primary); color: white; font-weight: 600; }
+
+.mb-msg { padding: var(--space-3) var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-4); }
+.mb-loading { padding: var(--space-8); text-align: center; color: var(--text-muted); }
+
+/* Empty */
+.mb-empty { text-align: center; padding: var(--space-8) var(--space-4); }
+.mb-empty h3 { margin: var(--space-3) 0 var(--space-1); }
+.mb-empty p { color: var(--text-muted); font-size: var(--text-sm); }
+
+/* Cards */
+.mb-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.mb-card { padding: var(--space-4); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); }
+.mb-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); margin-bottom: var(--space-2); }
+.mb-card-service { font-size: var(--text-base); font-weight: 700; margin: 0; }
+.mb-card-person { font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-1) 0 0; }
+
+/* Status */
+.mb-status { font-size: var(--text-xs); padding: 3px 10px; border-radius: var(--radius-full); font-weight: 600; white-space: nowrap; }
+.mb-status-success { background: #dcfce7; color: #166534; }
+.mb-status-warning { background: #fef9c3; color: #854d0e; }
+.mb-status-danger  { background: #fef2f2; color: #991b1b; }
+.mb-status-muted   { background: var(--bg-secondary); color: var(--text-muted); }
+
+/* Details */
+.mb-card-details { display: flex; gap: var(--space-4); font-size: var(--text-sm); margin-bottom: var(--space-2); }
+.mb-card-notes { font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-2) 0 0; }
+.mb-card-cancel-reason { font-size: var(--text-xs); color: var(--danger); margin: var(--space-1) 0 0; font-style: italic; }
+
+/* Actions */
+.mb-card-actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--bg-secondary); }
+.mb-action-btn { padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-card); min-height: 44px; }
+.mb-action-btn.confirm { background: var(--primary); color: white; border-color: var(--primary); }
+.mb-action-btn.complete { background: #16a34a; color: white; border-color: #16a34a; }
+.mb-action-btn.cancel { color: var(--danger); border-color: var(--danger); }
+.mb-action-btn.cancel:hover { background: #fef2f2; }
+.mb-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }

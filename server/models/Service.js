@@ -158,6 +158,20 @@ const serviceSchema = new mongoose.Schema({
   views: {
     type: Number,
     default: 0
+  },
+
+  // ── Booking availability ────────────────────────────────────────
+  availability: {
+    enabled:      { type: Boolean, default: false },
+    timezone:     { type: String, default: 'America/Los_Angeles' },
+    windows: [{
+      dayOfWeek:  { type: Number, min: 0, max: 6 }, // 0=Sunday
+      startTime:  { type: String }, // "09:00" (24hr)
+      endTime:    { type: String }, // "17:00"
+    }],
+    slotDuration:   { type: Number, default: 60 },  // minutes
+    bufferTime:     { type: Number, default: 0 },    // minutes between slots
+    maxAdvanceDays: { type: Number, default: 30 },   // how far ahead clients can book
   }
 }, {
   timestamps: true

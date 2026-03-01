@@ -1,457 +1,293 @@
-const express      = require('express');
-const router       = express.Router();
-const mongoose     = require('mongoose');
-const ical         = require('ical-generator');
-const { DateTime } = require('luxon');
-const Booking      = require('../models/Booking');
-const Availability = require('../models/Availability');
-const User         = require('../models/User');
-const Notification = require('../models/Notification');
+const express = require('express');
+const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
-const { validateSlot }      = require('../utils/slotGenerator');
-const calendarService       = require('../services/calendarService');
+const { requireFeature } = require('../middleware/entitlements');
+const Booking = require('../models/Booking');
+const Service = require('../models/Service');
+const Notification = require('../models/Notification');
 
-// ── iCal feed (PUBLIC — rate limited at nginx/express level) ─────────────
-// GET /api/bookings/feed/:icalSecret.ics
-router.get('/feed/:token', async (req, res) => {
-  try {
-    // Strip .ics extension
-    const token = req.params.token.replace(/\.ics$/, '');
+// ── Helper: generate available slots for a date ──────────────────
+function generateSlots(windows, slotDuration, bufferTime, dayOfWeek) {
+  const dayWindows = windows.filter(w => w.dayOfWeek === dayOfWeek);
+  const slots = [];
 
-    const user = await User.findOne({ icalSecret: token })
-      .select('firstName lastName email');
-    if (!user) return res.status(404).send('Not found');
+  for (const win of dayWindows) {
+    const [startH, startM] = win.startTime.split(':').map(Number);
+    const [endH, endM]     = win.endTime.split(':').map(Number);
+    const startMin = startH * 60 + startM;
+    const endMin   = endH * 60 + endM;
 
-    const bookings = await Booking.find({
-      freelancer: user._id,
-      status:     { $in: ['confirmed', 'completed'] },
-      startTime:  { $gte: new Date(Date.now() - 90 * 24 * 3600 * 1000) }, // 90 days back
-    }).select('startTime endTime icalUid clientNotes location locationType freelancerTimezone').lean();
-
-    const cal = ical.default({ name: `FetchWork — ${user.firstName} ${user.lastName}` });
-
-    for (const b of bookings) {
-      cal.createEvent({
-        id:       b.icalUid,
-        start:    b.startTime,
-        end:      b.endTime,
-        summary:  'FetchWork Booking',
-        description: b.clientNotes || '',
-        location: b.location || (b.locationType === 'virtual' ? 'Video call' : ''),
-        timezone: b.freelancerTimezone || 'UTC',
-      });
+    let cursor = startMin;
+    while (cursor + slotDuration <= endMin) {
+      const slotStart = `${String(Math.floor(cursor / 60)).padStart(2, '0')}:${String(cursor % 60).padStart(2, '0')}`;
+      const slotEndMin = cursor + slotDuration;
+      const slotEnd   = `${String(Math.floor(slotEndMin / 60)).padStart(2, '0')}:${String(slotEndMin % 60).padStart(2, '0')}`;
+      slots.push({ startTime: slotStart, endTime: slotEnd });
+      cursor = slotEndMin + bufferTime;
     }
+  }
 
-    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    res.setHeader('Content-Disposition', 'inline; filename="fetchwork.ics"');
-    res.setHeader('Cache-Control', 'no-cache, no-store');
-    res.send(cal.toString());
+  return slots;
+}
+
+// ── PUT /api/bookings/availability/:serviceId ────────────────────
+// Freelancer sets/updates availability (feature-gated)
+router.put('/availability/:serviceId', authenticateToken, requireFeature('booking_calendar'), async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.serviceId);
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+    if (service.freelancer.toString() !== req.user.userId.toString())
+      return res.status(403).json({ error: 'Not your service' });
+
+    const { enabled, timezone, windows, slotDuration, bufferTime, maxAdvanceDays } = req.body;
+
+    service.availability = {
+      enabled:        enabled !== false,
+      timezone:       timezone || service.availability?.timezone || 'America/Los_Angeles',
+      windows:        windows || [],
+      slotDuration:   slotDuration || 60,
+      bufferTime:     bufferTime || 0,
+      maxAdvanceDays: maxAdvanceDays || 30,
+    };
+
+    await service.save();
+    res.json({ message: 'Availability updated', availability: service.availability });
   } catch (err) {
-    console.error('iCal feed error:', err);
-    res.status(500).send('Error generating calendar feed');
+    console.error('Error updating availability:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ── GET /api/bookings/my — authenticated user's bookings ────────────────
-router.get('/my', authenticateToken, async (req, res) => {
+// ── GET /api/bookings/availability/:serviceId ────────────────────
+// Public — returns availability config
+router.get('/availability/:serviceId', async (req, res) => {
   try {
-    const { role = 'client', status = 'upcoming', page = 1 } = req.query;
-    const limit = 20;
-    const skip  = (parseInt(page) - 1) * limit;
-    const now   = new Date();
-
-    const timeFilter = status === 'upcoming'
-      ? { startTime: { $gte: now } }
-      : { startTime: { $lt: now  } };
-
-    let filter;
-    if (role === 'freelancer') {
-      filter = { freelancer: req.user.userId, ...timeFilter };
-    } else {
-      filter = { 'participants.client': req.user.userId, ...timeFilter };
-    }
-
-    // Exclude cancelled/hold for upcoming
-    if (status === 'upcoming') {
-      filter.status = { $in: ['confirmed'] };
-    } else {
-      filter.status = { $in: ['confirmed', 'completed', 'cancelled', 'no_show'] };
-    }
-
-    const [bookings, total] = await Promise.all([
-      Booking.find(filter)
-        .sort({ startTime: status === 'upcoming' ? 1 : -1 })
-        .skip(skip).limit(limit)
-        .populate('freelancer',         'firstName lastName profilePicture')
-        .populate('participants.client','firstName lastName profilePicture')
-        .populate('service',            'title')
-        .populate('job',                'title')
-        .lean(),
-      Booking.countDocuments(filter),
-    ]);
-
-    res.json({ bookings, total, page: parseInt(page), pages: Math.ceil(total / limit) });
+    const service = await Service.findById(req.params.serviceId)
+      .select('availability title freelancer').lean();
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+    res.json({ availability: service.availability || { enabled: false } });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to load bookings' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ── GET /api/bookings/:id ─────────────────────────────────────────────────
-router.get('/:id', authenticateToken, async (req, res) => {
+// ── GET /api/bookings/slots/:serviceId?date=YYYY-MM-DD ──────────
+// Public — returns available time slots for a specific date
+router.get('/slots/:serviceId', async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id)
-      .populate('freelancer',          'firstName lastName profilePicture email')
-      .populate('participants.client', 'firstName lastName profilePicture email')
-      .populate('service', 'title')
-      .populate('job',     'title');
+    const { date } = req.query;
+    if (!date) return res.status(400).json({ error: 'date query param required (YYYY-MM-DD)' });
 
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    const service = await Service.findById(req.params.serviceId).select('availability').lean();
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+    if (!service.availability?.enabled) return res.json({ slots: [], message: 'Booking not enabled' });
 
-    const userId = req.user.userId;
-    const isFreelancer   = String(booking.freelancer._id) === userId;
-    const isParticipant  = booking.participants.some(p => String(p.client._id) === userId);
-    if (!isFreelancer && !isParticipant) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
+    const requestedDate = new Date(date + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    res.json({ booking });
+    // Check date is in range
+    if (requestedDate < today) return res.json({ slots: [], message: 'Date is in the past' });
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + (service.availability.maxAdvanceDays || 30));
+    if (requestedDate > maxDate) return res.json({ slots: [], message: 'Date too far in advance' });
+
+    const dayOfWeek = requestedDate.getDay();
+    const { windows, slotDuration, bufferTime } = service.availability;
+
+    // Generate all possible slots
+    const allSlots = generateSlots(windows || [], slotDuration || 60, bufferTime || 0, dayOfWeek);
+
+    // Find existing bookings for this date (non-cancelled)
+    const startOfDay = new Date(date + 'T00:00:00Z');
+    const endOfDay   = new Date(date + 'T23:59:59Z');
+    const existingBookings = await Booking.find({
+      service: req.params.serviceId,
+      date:    { $gte: startOfDay, $lte: endOfDay },
+      status:  { $in: ['pending', 'confirmed'] },
+    }).select('startTime endTime').lean();
+
+    const bookedTimes = new Set(existingBookings.map(b => b.startTime));
+
+    // Filter out booked slots
+    const availableSlots = allSlots.filter(s => !bookedTimes.has(s.startTime));
+
+    res.json({ date, dayOfWeek, slots: availableSlots, totalSlots: allSlots.length });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to load booking' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ── POST /api/bookings — create hold (atomic overlap check via transaction) ──
-router.post('/', authenticateToken, async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+// ── POST /api/bookings/:serviceId ────────────────────────────────
+// Client books a slot
+router.post('/:serviceId', authenticateToken, async (req, res) => {
   try {
-    const {
-      freelancerId, startUTC, endUTC,
-      notes, serviceId, jobId,
-      locationType, location, price, cancellationPolicy,
-    } = req.body;
+    const { date, startTime, endTime, notes } = req.body;
+    if (!date || !startTime || !endTime)
+      return res.status(400).json({ error: 'date, startTime, and endTime are required' });
 
-    if (!freelancerId || !startUTC || !endUTC) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'freelancerId, startUTC, endUTC required' });
-    }
+    const service = await Service.findById(req.params.serviceId).populate('freelancer', 'firstName lastName');
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+    if (!service.availability?.enabled)
+      return res.status(400).json({ error: 'Booking is not enabled for this service' });
+    if (service.freelancer._id.toString() === req.user.userId.toString())
+      return res.status(400).json({ error: 'Cannot book your own service' });
 
-    const proposedStart = new Date(startUTC);
-    const proposedEnd   = new Date(endUTC);
-    if (isNaN(proposedStart) || isNaN(proposedEnd) || proposedStart >= proposedEnd) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'Invalid time range' });
-    }
-
-    // Load availability for slot validation + timezone snapshot
-    const availability = await Availability.findOne({
-      freelancer: freelancerId, isActive: true,
-    }).lean();
-    if (!availability) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'Freelancer has not set up availability' });
-    }
-
-    // Server-side slot validation (prevents slot injection)
-    const existingForValidation = await Booking.find({
-      freelancer: freelancerId,
-      status:     { $in: ['hold', 'confirmed'] },
-      startTime:  { $lt: proposedEnd },
-      endTime:    { $gt: proposedStart },
-    }).lean();
-
-    const isValidSlot = validateSlot(startUTC, endUTC, availability, existingForValidation);
-    if (!isValidSlot) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'Not a valid bookable slot' });
-    }
-
-    // Atomic overlap check
+    // Check for double-booking (atomic with unique compound)
+    const startOfDay = new Date(date + 'T00:00:00Z');
+    const endOfDay   = new Date(date + 'T23:59:59Z');
     const conflict = await Booking.findOne({
-      freelancer: freelancerId,
-      status:     { $in: ['hold', 'confirmed'] },
-      startTime:  { $lt: proposedEnd },
-      endTime:    { $gt: proposedStart },
-    }).session(session).lean();
-
-    const capacity     = conflict?.capacity ?? availability.defaultCapacity ?? 1;
-    const activeCount  = conflict
-      ? (conflict.participants || []).filter(p => p.status !== 'cancelled').length
-      : 0;
-
-    if (conflict && activeCount >= capacity) {
-      await session.abortTransaction();
-      return res.status(409).json({ error: 'slot_full', spotsRemaining: 0 });
-    }
-
-    const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15-min hold
-    const duration      = Math.round((proposedEnd - proposedStart) / 60000);
-
-    let booking;
-    if (conflict && activeCount < capacity) {
-      // Slot exists with room — add as participant
-      conflict.participants.push({
-        client:  req.user.userId,
-        status:  'confirmed',
-        price:   price ?? null,
-      });
-      await Booking.findByIdAndUpdate(
-        conflict._id,
-        { $push: { participants: { client: req.user.userId, status: 'confirmed', price: price ?? null } } },
-        { session }
-      );
-      booking = await Booking.findById(conflict._id).session(session).lean();
-    } else {
-      // New slot — create hold
-      [booking] = await Booking.create(
-        [{
-          freelancer:         freelancerId,
-          startTime:          proposedStart,
-          endTime:            proposedEnd,
-          duration,
-          freelancerTimezone: availability.timezone,
-          capacity,
-          participants:       [{ client: req.user.userId, status: 'confirmed', price: price ?? null }],
-          status:             'hold',
-          holdExpiresAt,
-          locationType:       locationType || 'virtual',
-          location:           location || '',
-          price:              price ?? null,
-          cancellationPolicy: cancellationPolicy || availability.cancellationPolicy || 'flexible',
-          clientNotes:        notes || '',
-          ...(serviceId && { service: serviceId }),
-          ...(jobId     && { job:     jobId     }),
-        }],
-        { session }
-      );
-    }
-
-    await session.commitTransaction();
-
-    res.status(201).json({
-      bookingId:     booking._id,
-      holdExpiresAt,
-      startUTC:      proposedStart,
-      endUTC:        proposedEnd,
-      freelancerTimezone: availability.timezone,
-      spotsRemaining: Math.max(0, capacity - activeCount - 1),
+      service:   req.params.serviceId,
+      date:      { $gte: startOfDay, $lte: endOfDay },
+      startTime,
+      status:    { $in: ['pending', 'confirmed'] },
     });
-  } catch (err) {
-    await session.abortTransaction();
-    console.error('booking create error:', err);
-    res.status(500).json({ error: 'Failed to create booking' });
-  } finally {
-    session.endSession();
-  }
-});
+    if (conflict) return res.status(409).json({ error: 'This time slot is already booked' });
 
-// ── POST /api/bookings/:id/confirm ────────────────────────────────────────
-router.post('/:id/confirm', authenticateToken, async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
-
-    // Idempotent — already confirmed
-    if (booking.status === 'confirmed') return res.json({ booking });
-
-    if (booking.status !== 'hold') {
-      return res.status(400).json({ error: `Cannot confirm a booking with status: ${booking.status}` });
-    }
-
-    const isParticipant = booking.participants.some(
-      p => String(p.client) === req.user.userId
-    );
-    if (!isParticipant) return res.status(403).json({ error: 'Forbidden' });
-
-    booking.status        = 'confirmed';
-    booking.holdExpiresAt = null;
-    await booking.save();
-
-    // Async calendar sync — fire and forget, never blocks response
-    setImmediate(() => calendarService.pushBookingToCalendar(booking._id));
+    const booking = await Booking.create({
+      service:    req.params.serviceId,
+      client:     req.user.userId,
+      freelancer: service.freelancer._id,
+      date:       new Date(date + 'T00:00:00Z'),
+      startTime,
+      endTime,
+      notes:      notes || '',
+    });
 
     // Notify freelancer
-    try {
-      const client = await User.findById(req.user.userId).select('firstName lastName');
-      await Notification.create({
-        recipient:  booking.freelancer,
-        type:       'booking_confirmed',
-        title:      'New booking confirmed',
-        message:    `${client.firstName} ${client.lastName} booked a session with you.`,
-        link:       `/bookings/${booking._id}`,
-      });
-    } catch { /* non-critical */ }
+    await Notification.create({
+      recipient: service.freelancer._id,
+      title:     'New Booking Request',
+      message:   `New booking for "${service.title}" on ${date} at ${startTime}`,
+      link:      '/bookings',
+      type:      'booking',
+    });
 
-    res.json({ booking, calendarSyncQueued: true });
+    res.status(201).json({ message: 'Booking created', booking });
   } catch (err) {
-    console.error('booking confirm error:', err);
-    res.status(500).json({ error: 'Failed to confirm booking' });
+    console.error('Error creating booking:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ── PUT /api/bookings/:id/reschedule ──────────────────────────────────────
-router.put('/:id/reschedule', authenticateToken, async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+// ── GET /api/bookings/me?role=client|freelancer&status=upcoming|past|cancelled
+router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const { newStartUTC, newEndUTC } = req.body;
-    if (!newStartUTC || !newEndUTC) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'newStartUTC and newEndUTC required' });
+    const { role = 'client', status = 'upcoming' } = req.query;
+    const filter = {};
+
+    if (role === 'freelancer') filter.freelancer = req.user.userId;
+    else filter.client = req.user.userId;
+
+    const now = new Date();
+    if (status === 'upcoming') {
+      filter.status = { $in: ['pending', 'confirmed'] };
+      filter.date   = { $gte: new Date(now.toISOString().split('T')[0] + 'T00:00:00Z') };
+    } else if (status === 'past') {
+      filter.status = { $in: ['completed', 'no_show'] };
+    } else if (status === 'cancelled') {
+      filter.status = 'cancelled';
     }
 
-    const booking = await Booking.findById(req.params.id).session(session);
-    if (!booking) { await session.abortTransaction(); return res.status(404).json({ error: 'Not found' }); }
+    const bookings = await Booking.find(filter)
+      .populate('service', 'title pricing availability')
+      .populate('client', 'firstName lastName profilePicture')
+      .populate('freelancer', 'firstName lastName profilePicture')
+      .sort(status === 'upcoming' ? { date: 1, startTime: 1 } : { date: -1 })
+      .lean();
 
-    const isFreelancer  = String(booking.freelancer) === req.user.userId;
-    const isParticipant = booking.participants.some(p => String(p.client) === req.user.userId);
-    if (!isFreelancer && !isParticipant) {
-      await session.abortTransaction();
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    if (!['hold', 'confirmed'].includes(booking.status)) {
-      await session.abortTransaction();
-      return res.status(400).json({ error: 'Cannot reschedule a booking with status: ' + booking.status });
-    }
-
-    const newStart = new Date(newStartUTC);
-    const newEnd   = new Date(newEndUTC);
-
-    // Overlap check for new time, excluding current booking
-    const conflict = await Booking.findOne({
-      freelancer: booking.freelancer,
-      _id:        { $ne: booking._id },
-      status:     { $in: ['hold', 'confirmed'] },
-      startTime:  { $lt: newEnd   },
-      endTime:    { $gt: newStart },
-    }).session(session).lean();
-
-    const capacity    = booking.capacity ?? 1;
-    const activeCount = conflict
-      ? (conflict.participants || []).filter(p => p.status !== 'cancelled').length
-      : 0;
-
-    if (conflict && activeCount >= capacity) {
-      await session.abortTransaction();
-      return res.status(409).json({ error: 'slot_full' });
-    }
-
-    booking.startTime  = newStart;
-    booking.endTime    = newEnd;
-    booking.duration   = Math.round((newEnd - newStart) / 60000);
-    booking.status     = 'confirmed';
-    booking.holdExpiresAt = null;
-    await booking.save({ session });
-
-    await session.commitTransaction();
-
-    // Async calendar update
-    setImmediate(() => calendarService.updateCalendarEvent(booking._id));
-
-    res.json({ booking });
+    res.json({ bookings });
   } catch (err) {
-    await session.abortTransaction();
-    console.error('reschedule error:', err);
-    res.status(500).json({ error: 'Failed to reschedule booking' });
-  } finally {
-    session.endSession();
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ── PUT /api/bookings/:id/cancel ──────────────────────────────────────────
-router.put('/:id/cancel', authenticateToken, async (req, res) => {
+// ── PATCH /api/bookings/:bookingId/confirm ───────────────────────
+router.patch('/:bookingId/confirm', authenticateToken, async (req, res) => {
   try {
-    const { reason } = req.body;
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ error: 'Not found' });
+    const booking = await Booking.findById(req.params.bookingId).populate('service', 'title');
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.freelancer.toString() !== req.user.userId.toString())
+      return res.status(403).json({ error: 'Only the freelancer can confirm' });
+    if (booking.status !== 'pending')
+      return res.status(400).json({ error: `Cannot confirm a ${booking.status} booking` });
 
-    const isFreelancer  = String(booking.freelancer) === req.user.userId;
-    const isParticipant = booking.participants.some(p => String(p.client) === req.user.userId);
-    if (!isFreelancer && !isParticipant) return res.status(403).json({ error: 'Forbidden' });
-
-    if (['cancelled', 'completed'].includes(booking.status)) {
-      return res.status(400).json({ error: 'Booking is already ' + booking.status });
-    }
-
-    const cancellationFee = booking.calcCancellationFee();
-
-    booking.status            = 'cancelled';
-    booking.cancelledAt       = new Date();
-    booking.cancellationReason= reason || '';
-    booking.cancellationFee   = cancellationFee;
-    booking.cancelledBy       = req.user.userId;
-    booking.holdExpiresAt     = null;
+    booking.status = 'confirmed';
     await booking.save();
 
-    // Async calendar delete
-    setImmediate(() => calendarService.deleteCalendarEvent(booking._id));
+    await Notification.create({
+      recipient: booking.client,
+      title:     'Booking Confirmed',
+      message:   `Your booking for "${booking.service.title}" on ${booking.date.toISOString().split('T')[0]} at ${booking.startTime} has been confirmed!`,
+      link:      '/bookings',
+      type:      'booking',
+    });
 
-    // Notify the other party
-    try {
-      const actor = await User.findById(req.user.userId).select('firstName lastName');
-      const notifyId = isFreelancer
-        ? booking.participants[0]?.client
-        : booking.freelancer;
-      if (notifyId) {
-        await Notification.create({
-          recipient: notifyId,
-          type:      'booking_cancelled',
-          title:     'Booking cancelled',
-          message:   `${actor.firstName} ${actor.lastName} cancelled the booking.${cancellationFee > 0 ? ` Cancellation fee: $${cancellationFee}` : ''}`,
-          link:      `/bookings/${booking._id}`,
-        });
-      }
-    } catch { /* non-critical */ }
-
-    res.json({ booking, cancellationFee, refundAmount: (booking.price || 0) - cancellationFee });
+    res.json({ message: 'Booking confirmed', booking });
   } catch (err) {
-    console.error('cancel error:', err);
-    res.status(500).json({ error: 'Failed to cancel booking' });
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ── PUT /api/bookings/:id/complete ────────────────────────────────────────
-router.put('/:id/complete', authenticateToken, async (req, res) => {
+// ── PATCH /api/bookings/:bookingId/cancel ────────────────────────
+router.patch('/:bookingId/cancel', authenticateToken, async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ error: 'Not found' });
+    const booking = await Booking.findById(req.params.bookingId).populate('service', 'title');
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
-    const isFreelancer = String(booking.freelancer) === req.user.userId;
-    if (!isFreelancer) return res.status(403).json({ error: 'Only freelancer can mark complete' });
+    const isClient     = booking.client.toString()     === req.user.userId.toString();
+    const isFreelancer = booking.freelancer.toString() === req.user.userId.toString();
+    if (!isClient && !isFreelancer)
+      return res.status(403).json({ error: 'Not authorized' });
+    if (['cancelled', 'completed'].includes(booking.status))
+      return res.status(400).json({ error: `Cannot cancel a ${booking.status} booking` });
 
-    if (booking.status !== 'confirmed') {
-      return res.status(400).json({ error: 'Booking must be confirmed to complete' });
-    }
+    booking.status = 'cancelled';
+    booking.cancellationReason = req.body.reason || '';
+    booking.cancelledBy = req.user.userId;
+    booking.cancelledAt = new Date();
+    await booking.save();
+
+    // Notify the other party
+    const notifyId = isClient ? booking.freelancer : booking.client;
+    await Notification.create({
+      recipient: notifyId,
+      title:     'Booking Cancelled',
+      message:   `Booking for "${booking.service.title}" on ${booking.date.toISOString().split('T')[0]} at ${booking.startTime} was cancelled`,
+      link:      '/bookings',
+      type:      'booking',
+    });
+
+    res.json({ message: 'Booking cancelled', booking });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PATCH /api/bookings/:bookingId/complete ──────────────────────
+router.patch('/:bookingId/complete', authenticateToken, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.bookingId).populate('service', 'title');
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.freelancer.toString() !== req.user.userId.toString())
+      return res.status(403).json({ error: 'Only the freelancer can mark complete' });
+    if (booking.status !== 'confirmed')
+      return res.status(400).json({ error: `Cannot complete a ${booking.status} booking` });
 
     booking.status = 'completed';
     await booking.save();
-    res.json({ booking });
+
+    await Notification.create({
+      recipient: booking.client,
+      title:     'Session Completed',
+      message:   `Your session for "${booking.service.title}" has been marked complete`,
+      link:      '/bookings',
+      type:      'booking',
+    });
+
+    res.json({ message: 'Booking completed', booking });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to complete booking' });
-  }
-});
-
-// ── PUT /api/bookings/:id/no-show ─────────────────────────────────────────
-router.put('/:id/no-show', authenticateToken, async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ error: 'Not found' });
-
-    if (String(booking.freelancer) !== req.user.userId) {
-      return res.status(403).json({ error: 'Only freelancer can mark no-show' });
-    }
-
-    const gracePeriodMs = 15 * 60 * 1000;
-    if (Date.now() < new Date(booking.startTime).getTime() + gracePeriodMs) {
-      return res.status(400).json({ error: 'Grace period has not passed yet (15 minutes)' });
-    }
-
-    booking.status = 'no_show';
-    await booking.save();
-    res.json({ booking });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to mark no-show' });
+    res.status(500).json({ error: err.message });
   }
 });
 

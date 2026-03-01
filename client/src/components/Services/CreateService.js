@@ -125,7 +125,7 @@ const LivePreview = ({ data }) => {
 };
 
 // ── Service Type Selector ───────────────────────────────────────
-const ServiceTypeSelector = ({ value, onChange }) => (
+const ServiceTypeSelector = ({ value, onChange, hasFeature = () => true }) => (
   <div className="service-type-selector">
     <label className="wiz-field-label-standalone">What kind of service is this? *</label>
     <div className="service-type-cards">
@@ -164,7 +164,7 @@ const StepDetails = ({ data, onChange, errors, hasFeature = () => true }) => (
     <h2>Service Details</h2>
     <p className="wizard-tip">💡 A clear, descriptive title helps clients find your service.</p>
 
-    <ServiceTypeSelector value={data.serviceType} onChange={onChange} />
+    <ServiceTypeSelector value={data.serviceType} onChange={onChange} hasFeature={hasFeature} />
 
     <div className="wiz-field" style={{ marginTop: '1.5rem' }}>
       <label>Service Title *</label>

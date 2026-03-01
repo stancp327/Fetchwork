@@ -55,8 +55,9 @@ const OnboardingWizard = React.lazy(() => import('./components/Onboarding/Profil
 const ContactUs = React.lazy(() => import('./components/common/ContactUs'));
 const Support = React.lazy(() => import('./components/common/Support'));
 const CategoryLanding      = React.lazy(() => import('./components/Categories/CategoryLanding'));
-const MyBookings           = React.lazy(() => import('./components/Booking/MyBookings'));
+const MyBookings           = React.lazy(() => import('./components/Bookings/MyBookings'));
 const AvailabilitySettings = React.lazy(() => import('./components/Booking/AvailabilitySettings'));
+const AvailabilityManager  = React.lazy(() => import('./components/Bookings/AvailabilityManager'));
 const CalendarConnect      = React.lazy(() => import('./components/Booking/CalendarConnect'));
 const PricingPage          = React.lazy(() => import('./components/Billing/PricingPage'));
 const BillingSettings      = React.lazy(() => import('./components/Billing/BillingSettings'));
@@ -325,6 +326,7 @@ function AppContent() {
           <Route path="/support" element={<Support />} />
           <Route path="/categories/:categoryId" element={<CategoryLanding />} />
           <Route path="/bookings"              element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+          <Route path="/services/:id/availability" element={<ProtectedRoute><AvailabilityManager /></ProtectedRoute>} />
           <Route path="/availability"          element={<ProtectedRoute><AvailabilitySettings /></ProtectedRoute>} />
           <Route path="/calendar-connect"      element={<ProtectedRoute><CalendarConnect /></ProtectedRoute>} />
           <Route path="/pricing"               element={<PricingPage />} />
