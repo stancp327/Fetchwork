@@ -16,6 +16,17 @@ const serviceSchema = new mongoose.Schema({
     trialEnabled:     { type: Boolean, default: false },
     trialPrice:       { type: Number, min: 0 },
   },
+
+  // Prepaid session bundles (e.g. "3 sessions for $80, 5 for $120")
+  bundles: [{
+    name:          { type: String, required: true, maxlength: 80 },   // "3 sessions"
+    sessions:      { type: Number, required: true, min: 2, max: 100 }, // session count
+    price:         { type: Number, required: true, min: 5 },           // total bundle price (freelancer sets this)
+    savings:       { type: Number, default: 0 },                       // display-only savings vs individual price
+    expiresInDays: { type: Number, default: null },                    // null = no expiry (Plus/Pro only)
+    active:        { type: Boolean, default: true },
+  }],
+
   title: {
     type: String,
     required: true,

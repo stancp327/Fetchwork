@@ -576,6 +576,29 @@ router.webhookHandler = async (req, res) => {
           console.error('Webhook: service order activation failed:', svcErr.message);
         }
 
+        // ── Activate bundle purchase if payment succeeded ────────────
+        try {
+          if (pi.metadata?.type === 'bundle_purchase') {
+            const BundlePurchase = require('../models/BundlePurchase');
+            const purchase = await BundlePurchase.findOne({ stripePaymentIntentId: pi.id });
+            if (purchase && purchase.status === 'pending') {
+              purchase.status      = 'active';
+              purchase.activatedAt = new Date();
+              await purchase.save();
+
+              await Notification.create({
+                recipient: purchase.client,
+                title:     'Bundle activated',
+                message:   `Your "${purchase.bundleName}" bundle is now active. ${purchase.sessionsTotal} sessions ready to schedule.`,
+                link:      `/services/bundles/${purchase._id}`,
+              });
+              console.log('✅ Bundle activated:', purchase._id);
+            }
+          }
+        } catch (bundleErr) {
+          console.error('Webhook: bundle activation failed:', bundleErr.message);
+        }
+
         // ── Notify freelancer when a job's escrow is funded ──
         try {
           const job = await Job.findOne({ stripePaymentIntentId: pi.id })

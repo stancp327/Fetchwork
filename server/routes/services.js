@@ -655,6 +655,202 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PREPAID BUNDLE PURCHASES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── POST /api/services/:id/bundle/purchase ────────────────────────────────────
+// Client buys a prepaid session bundle. Returns clientSecret to confirm payment.
+router.post('/:id/bundle/purchase', authenticateToken, async (req, res) => {
+  try {
+    const { bundleId } = req.body;
+    if (!bundleId) return res.status(400).json({ error: 'bundleId is required' });
+
+    const service = await Service.findById(req.params.id)
+      .populate('freelancer', 'firstName lastName email stripeAccountId');
+    if (!service || !service.isActive || service.status !== 'active') {
+      return res.status(404).json({ error: 'Service not found or unavailable' });
+    }
+    if (String(service.freelancer._id) === String(req.user.userId)) {
+      return res.status(400).json({ error: 'Cannot purchase your own bundle' });
+    }
+
+    const bundle = service.bundles?.id(bundleId);
+    if (!bundle || !bundle.active) {
+      return res.status(404).json({ error: 'Bundle not found or unavailable' });
+    }
+
+    const baseAmount = bundle.price;
+
+    // Calculate fees (plan-aware)
+    const clientFeeResult     = await getFee({ userId: String(req.user.userId),           role: 'client',     jobType: 'remote', amount: baseAmount });
+    const freelancerFeeResult = await getFee({ userId: String(service.freelancer._id),    role: 'freelancer', jobType: 'remote', amount: baseAmount });
+    const clientCharges       = parseFloat((baseAmount + clientFeeResult.fee).toFixed(2));
+    const freelancerTotal     = parseFloat((baseAmount - freelancerFeeResult.fee).toFixed(2));
+    const totalPlatformFee    = parseFloat((clientFeeResult.fee + freelancerFeeResult.fee).toFixed(2));
+    const perSessionPayout    = parseFloat((freelancerTotal / bundle.sessions).toFixed(2));
+
+    // Create PaymentIntent — funds captured immediately, held in platform balance
+    const paymentIntent = await stripeService.chargeForJob(clientCharges, 'usd', {
+      type:          'bundle_purchase',
+      serviceId:     String(service._id),
+      clientId:      String(req.user.userId),
+      freelancerId:  String(service.freelancer._id),
+      bundleId:      String(bundle._id),
+      sessionsTotal: String(bundle.sessions),
+    });
+
+    // Compute optional expiry
+    const expiresAt = bundle.expiresInDays
+      ? new Date(Date.now() + bundle.expiresInDays * 24 * 60 * 60 * 1000)
+      : null;
+
+    // Pre-create session slots
+    const BundlePurchase = require('../models/BundlePurchase');
+    const sessionSlots = Array.from({ length: bundle.sessions }, () => ({ status: 'pending' }));
+
+    const purchase = await BundlePurchase.create({
+      service:               service._id,
+      client:                req.user.userId,
+      freelancer:            service.freelancer._id,
+      bundleName:            bundle.name,
+      sessionsTotal:         bundle.sessions,
+      baseAmount,
+      clientFee:             clientFeeResult.fee,
+      freelancerFee:         freelancerFeeResult.fee,
+      totalPlatformFee,
+      clientCharges,
+      freelancerTotal,
+      perSessionPayout,
+      stripePaymentIntentId: paymentIntent.id,
+      status:                'pending',
+      sessions:              sessionSlots,
+      sessionsRemaining:     bundle.sessions,
+      expiresAt,
+    });
+
+    // Notify freelancer
+    const clientUser = await User.findById(req.user.userId).select('firstName lastName');
+    await Notification.create({
+      recipient: service.freelancer._id,
+      title:     'Bundle purchased',
+      message:   `${clientUser?.firstName} ${clientUser?.lastName} purchased your "${bundle.name}" bundle for "${service.title}"`,
+      link:      `/services/${service._id}`,
+    });
+
+    res.status(201).json({
+      message:         'Bundle purchase initiated — complete payment to activate',
+      purchaseId:      purchase._id,
+      clientSecret:    paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      bundleName:      bundle.name,
+      sessions:        bundle.sessions,
+      amountCharged:   clientCharges,
+      platformFee:     totalPlatformFee,
+      perSessionPayout,
+      expiresAt,
+    });
+  } catch (err) {
+    console.error('Error purchasing bundle:', err);
+    res.status(500).json({ error: 'Failed to purchase bundle' });
+  }
+});
+
+// ── POST /api/services/bundles/:purchaseId/sessions/:sessionIndex/complete ───
+// Freelancer marks a session as complete → triggers partial payout transfer.
+router.post('/bundles/:purchaseId/sessions/:sessionIndex/complete', authenticateToken, async (req, res) => {
+  try {
+    const { notes } = req.body;
+    const BundlePurchase = require('../models/BundlePurchase');
+    const purchase = await BundlePurchase.findById(req.params.purchaseId);
+    if (!purchase) return res.status(404).json({ error: 'Bundle purchase not found' });
+
+    if (String(purchase.freelancer) !== String(req.user.userId)) {
+      return res.status(403).json({ error: 'Only the freelancer can mark sessions complete' });
+    }
+    if (purchase.status !== 'active') {
+      return res.status(400).json({ error: 'Bundle is not active' });
+    }
+
+    // Check expiry
+    if (purchase.expiresAt && new Date() > purchase.expiresAt) {
+      purchase.status = 'expired';
+      await purchase.save();
+      return res.status(400).json({ error: 'Bundle has expired' });
+    }
+
+    const idx = parseInt(req.params.sessionIndex, 10);
+    const session = purchase.sessions[idx];
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    if (session.status !== 'pending') {
+      return res.status(400).json({ error: 'Session is already completed or cancelled' });
+    }
+
+    // Mark session complete
+    session.status      = 'completed';
+    session.completedAt = new Date();
+    session.notes       = notes?.trim() || '';
+    session.freelancerPaid = purchase.perSessionPayout;
+
+    // Transfer this session's payout to freelancer
+    const freelancer = await User.findById(purchase.freelancer).select('stripeAccountId');
+    if (freelancer?.stripeAccountId && purchase.perSessionPayout > 0) {
+      const transfer = await stripeService.releasePayment(
+        purchase.perSessionPayout,
+        freelancer.stripeAccountId,
+        purchase.stripePaymentIntentId
+      );
+      session.stripeTransferId = transfer.id;
+    }
+
+    await purchase.save();
+
+    // Notify client
+    await Notification.create({
+      recipient: purchase.client,
+      title:     'Session completed',
+      message:   `Your session ${idx + 1} of ${purchase.sessionsTotal} has been marked complete`,
+      link:      `/services/bundles/${purchase._id}`,
+    });
+
+    res.json({
+      message:           'Session marked complete',
+      sessionIndex:      idx,
+      sessionsCompleted: purchase.sessionsCompleted,
+      sessionsRemaining: purchase.sessionsRemaining,
+      paidOut:           purchase.perSessionPayout,
+      bundleStatus:      purchase.status,
+    });
+  } catch (err) {
+    console.error('Error completing session:', err);
+    res.status(500).json({ error: 'Failed to complete session' });
+  }
+});
+
+// ── GET /api/services/bundles/me ─────────────────────────────────────────────
+// List bundle purchases for current user (client or freelancer view).
+router.get('/bundles/me', authenticateToken, async (req, res) => {
+  try {
+    const { role = 'client' } = req.query;
+    const BundlePurchase = require('../models/BundlePurchase');
+    const filter = role === 'freelancer'
+      ? { freelancer: req.user.userId }
+      : { client: req.user.userId };
+
+    const purchases = await BundlePurchase.find(filter)
+      .populate('service',    'title category')
+      .populate('client',     'firstName lastName avatar')
+      .populate('freelancer', 'firstName lastName avatar')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ bundles: purchases });
+  } catch (err) {
+    console.error('Error fetching bundles:', err);
+    res.status(500).json({ error: 'Failed to fetch bundles' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RECURRING SERVICE SUBSCRIPTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
