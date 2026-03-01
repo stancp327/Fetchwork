@@ -22,8 +22,9 @@ const BillingAuditLog  = require('../models/BillingAuditLog');
 const Notification     = require('../models/Notification');
 const { assignDefaultPlan, logBillingAction } = require('../utils/billingUtils');
 const { CLIENT_URL }   = require('../config/env');
-const BillingCredit    = require('../models/BillingCredit');
-const { getPlanLimits } = require('../middleware/entitlements');
+const BillingCredit      = require('../models/BillingCredit');
+const CheckoutSession    = require('../models/CheckoutSession');
+const { getPlanLimits }  = require('../middleware/entitlements');
 
 const BILLING_WEBHOOK_SECRET = process.env.STRIPE_BILLING_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -102,7 +103,7 @@ router.post('/subscribe', authenticateToken, async (req, res) => {
       await user.save();
     }
 
-    const successUrl = `${CLIENT_URL}/billing?subscription=success&plan=${planSlug}`;
+    const successUrl = `${CLIENT_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}&type=subscription&plan=${planSlug}`;
     const cancelUrl  = `${CLIENT_URL}/pricing?subscription=cancelled`;
 
     const session = await stripeService.createCheckoutSession(
@@ -112,6 +113,19 @@ router.post('/subscribe', authenticateToken, async (req, res) => {
       cancelUrl,
       { userId: String(user._id), planSlug: plan.slug, planId: String(plan._id) }
     );
+
+    // Track session server-side for state queries + expiry management
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // Stripe default: 24h
+    CheckoutSession.create({
+      stripeSessionId:  session.id,
+      user:             user._id,
+      type:             'subscription',
+      status:           'open',
+      amountTotal:      null, // unknown until payment
+      metadata:         { planSlug: plan.slug, planId: String(plan._id) },
+      stripeCustomerId: user.stripeCustomerId,
+      expiresAt,
+    }).catch(e => console.error('CheckoutSession record failed (non-fatal):', e.message));
 
     res.json({ checkoutUrl: session.url, sessionId: session.id });
   } catch (err) {
@@ -401,11 +415,35 @@ async function webhookHandler(req, res) {
 
       case 'checkout.session.completed': {
         const session = event.data.object;
+
+        // Idempotency guard — skip if already fulfilled
+        const existing = await CheckoutSession.findOne({ stripeSessionId: session.id });
+        if (existing?.fulfilled) {
+          console.log(`Webhook replay skipped — session ${session.id} already fulfilled`);
+          break;
+        }
+
         if (session.metadata?.type === 'wallet_topup') {
           await handleWalletTopup(session);
         } else if (session.mode === 'subscription') {
           await handleSubscriptionActivated(session.subscription, session.metadata);
         }
+
+        // Mark fulfilled + sync status
+        await CheckoutSession.findOneAndUpdate(
+          { stripeSessionId: session.id },
+          { status: 'complete', fulfilled: true, fulfilledAt: new Date(), amountTotal: session.amount_total },
+          { upsert: true, setDefaultsOnInsert: true }
+        );
+        break;
+      }
+
+      case 'checkout.session.expired': {
+        const session = event.data.object;
+        await CheckoutSession.findOneAndUpdate(
+          { stripeSessionId: session.id },
+          { status: 'expired' }
+        );
         break;
       }
 
@@ -518,10 +556,21 @@ router.post('/wallet/add', authenticateToken, async (req, res) => {
       user.stripeCustomerId,
       amountCents,
       `Fetchwork Wallet — $${amount.toFixed(2)} credit`,
-      `${CLIENT_URL}/wallet?funded=1&amount=${amount}`,
+      `${CLIENT_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}&type=wallet&amount=${amount}`,
       `${CLIENT_URL}/wallet?cancelled=1`,
       { type: 'wallet_topup', userId: String(req.user.userId), amount: String(amount) }
     );
+
+    CheckoutSession.create({
+      stripeSessionId:  session.id,
+      user:             user._id,
+      type:             'wallet',
+      status:           'open',
+      amountTotal:      amountCents,
+      metadata:         { amount: String(amount) },
+      stripeCustomerId: user.stripeCustomerId,
+      expiresAt:        new Date(Date.now() + 24 * 60 * 60 * 1000),
+    }).catch(e => console.error('CheckoutSession record failed (non-fatal):', e.message));
 
     res.json({ checkoutUrl: session.url });
   } catch (err) {
@@ -557,6 +606,93 @@ async function handleWalletTopup(session) {
     console.error('handleWalletTopup error:', err.message);
   }
 }
+
+// ── GET /api/billing/sessions/:sessionId ───────────────────────
+// Retrieve a Checkout Session for success page display.
+// Fetches from Stripe (authoritative) and updates local record.
+router.get('/sessions/:sessionId', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    // Validate format — Stripe session IDs start with cs_
+    if (!sessionId || !sessionId.startsWith('cs_')) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
+
+    // Fetch from Stripe (authoritative source)
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['line_items', 'customer'],
+    });
+
+    // Verify ownership — session customer must match authenticated user
+    const user = await User.findById(req.user.userId).select('stripeCustomerId');
+    if (!user?.stripeCustomerId || session.customer?.id !== user.stripeCustomerId) {
+      return res.status(403).json({ error: 'Not authorized to view this session' });
+    }
+
+    // Sync status to local record (non-blocking)
+    CheckoutSession.findOneAndUpdate(
+      { stripeSessionId: sessionId },
+      { status: session.status, amountTotal: session.amount_total },
+      { new: true }
+    ).catch(() => {});
+
+    res.json({
+      id:          session.id,
+      status:      session.status,
+      mode:        session.mode,
+      amountTotal: session.amount_total,
+      currency:    session.currency,
+      customerEmail: session.customer_details?.email,
+      customerName:  session.customer_details?.name,
+      metadata:    session.metadata,
+      createdAt:   new Date(session.created * 1000).toISOString(),
+    });
+  } catch (err) {
+    if (err.type === 'StripeInvalidRequestError') {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    console.error('Session retrieve error:', err.message);
+    res.status(500).json({ error: 'Failed to retrieve session' });
+  }
+});
+
+// ── POST /api/billing/sessions/:sessionId/expire ────────────────
+// Server-side session expiry — e.g. when user cancels an order flow.
+router.post('/sessions/:sessionId/expire', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId?.startsWith('cs_')) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
+
+    const local = await CheckoutSession.findOne({ stripeSessionId: sessionId });
+    if (!local) return res.status(404).json({ error: 'Session not found' });
+
+    // Ownership check
+    if (local.user.toString() !== (req.user._id || req.user.userId).toString()) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    if (local.status !== 'open') {
+      return res.status(400).json({ error: `Session is already ${local.status}` });
+    }
+
+    // Expire on Stripe
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    await stripe.checkout.sessions.expire(sessionId);
+
+    local.status = 'expired';
+    await local.save();
+
+    res.json({ expired: true, sessionId });
+  } catch (err) {
+    if (err.code === 'resource_already_expired') {
+      return res.json({ expired: true, sessionId: req.params.sessionId });
+    }
+    console.error('Session expire error:', err.message);
+    res.status(500).json({ error: 'Failed to expire session' });
+  }
+});
 
 module.exports = router;
 module.exports.webhookHandler = webhookHandler;

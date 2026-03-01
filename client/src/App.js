@@ -60,6 +60,7 @@ const AvailabilitySettings = React.lazy(() => import('./components/Booking/Avail
 const CalendarConnect      = React.lazy(() => import('./components/Booking/CalendarConnect'));
 const PricingPage          = React.lazy(() => import('./components/Billing/PricingPage'));
 const BillingSettings      = React.lazy(() => import('./components/Billing/BillingSettings'));
+const BillingSuccess       = React.lazy(() => import('./components/Billing/BillingSuccess'));
 const WalletPage           = React.lazy(() => import('./components/Billing/WalletPage'));
 const UserAnalytics        = React.lazy(() => import('./components/Analytics/UserAnalytics'));
 
@@ -326,6 +327,7 @@ function AppContent() {
           <Route path="/calendar-connect"      element={<ProtectedRoute><CalendarConnect /></ProtectedRoute>} />
           <Route path="/pricing"               element={<PricingPage />} />
           <Route path="/billing"               element={<ProtectedRoute><BillingSettings /></ProtectedRoute>} />
+          <Route path="/billing/success"       element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />
           <Route path="/wallet"                element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
           <Route path="/analytics"             element={<ProtectedRoute><UserAnalytics /></ProtectedRoute>} />
           <Route path="/" element={<Home />} />

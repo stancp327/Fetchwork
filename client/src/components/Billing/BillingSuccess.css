@@ -1,0 +1,87 @@
+.bs-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background: var(--color-bg-primary);
+}
+
+.bs-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 16px);
+  padding: var(--space-2xl) var(--space-xl);
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+.bs-icon { font-size: 3rem; display: block; margin-bottom: var(--space-md); }
+.bs-icon-success { filter: drop-shadow(0 0 8px rgba(22,163,74,0.3)); }
+.bs-icon-warn    { filter: drop-shadow(0 0 8px rgba(217,119,6,0.3)); }
+
+.bs-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-heading);
+  margin: 0 0 var(--space-sm);
+}
+.bs-sub {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 var(--space-lg);
+}
+
+.bs-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+.bs-detail-row span:first-child { color: var(--color-text-secondary); }
+.bs-detail-row span:last-child  { font-weight: 600; color: var(--color-text-primary); }
+
+.bs-redirect-notice {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: var(--space-lg) 0 var(--space-sm);
+}
+
+.bs-btn {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  min-height: 44px;
+  line-height: 44px;
+  padding: 0 2rem;
+  transition: opacity 0.15s;
+}
+.bs-btn:hover { opacity: 0.88; }
+
+.bs-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  padding: var(--space-lg) 0;
+}
+.bs-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: bs-spin 0.7s linear infinite;
+}
+@keyframes bs-spin { to { transform: rotate(360deg); } }
