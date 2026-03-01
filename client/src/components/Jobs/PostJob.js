@@ -4,6 +4,7 @@ import { apiRequest } from '../../utils/api';
 import CategoryCombobox from '../common/CategoryCombobox';
 import UpgradePrompt from '../Billing/UpgradePrompt';
 import './PostJob.css';
+import SEO from '../common/SEO';
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -165,6 +166,7 @@ const PostJob = () => {
 
   return (
     <div className="post-job-page">
+      <SEO title="Post a Job" path="/post-job" noIndex={true} />
       <div className="post-job-header">
         <h1>Post a Job</h1>
         <p>Find the perfect freelancer for your project</p>
@@ -523,3 +525,5 @@ const PostJob = () => {
 };
 
 export default PostJob;
+
+

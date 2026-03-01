@@ -6,6 +6,7 @@ import { apiRequest } from '../../utils/api';
 import OnlineStatus, { formatLastSeen } from '../common/OnlineStatus';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import './Messages.css';
+import SEO from '../common/SEO';
 
 // ── Time Formatting ─────────────────────────────────────────────
 const formatTime = (ts) => {
@@ -650,6 +651,7 @@ const Messages = () => {
 
   return (
     <div className="messages-page">
+      <SEO title="Messages" path="/messages" noIndex={true} />
       {/* Header */}
       <div className="messages-header">
         <div className="messages-header-left">
@@ -840,3 +842,5 @@ const Messages = () => {
 };
 
 export default Messages;
+
+

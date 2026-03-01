@@ -1,8 +1,26 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /settings
-Disallow: /messages
+Allow: /jobs
+Allow: /services
+Allow: /freelancers
+Allow: /categories
+Allow: /pricing
+
 Disallow: /dashboard
+Disallow: /messages
+Disallow: /projects
+Disallow: /profile
+Disallow: /settings
+Disallow: /admin
+Disallow: /billing
+Disallow: /wallet
+Disallow: /payments
+Disallow: /disputes
+Disallow: /bookings
+Disallow: /post-job
+Disallow: /offers
+Disallow: /availability
+Disallow: /calendar-connect
+Disallow: /api/
 
 Sitemap: https://fetchwork.net/sitemap.xml

@@ -6,6 +6,7 @@ import { formatCategory } from '../../utils/formatters';
 import { apiRequest } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import EscrowModal from '../Payments/EscrowModal';
+import SEO from '../common/SEO';
 import './ServiceDetails.css';
 
 const ServiceDetails = () => {
@@ -165,8 +166,40 @@ const ServiceDetails = () => {
   const currentPackage = service.pricing[selectedPackage];
   const isOwnService = user && service.freelancer._id === user._id;
 
+  const freelancerName = service.user
+    ? `${service.user.firstName} ${service.user.lastName}`
+    : (service.freelancer?.firstName ? `${service.freelancer.firstName} ${service.freelancer.lastName}` : 'Freelancer');
+  const lowestPrice = Math.min(
+    ...['basic', 'standard', 'premium']
+      .map(p => service.pricing?.[p]?.price)
+      .filter(Boolean)
+  );
+  const seoDesc = service.description
+    ? service.description.slice(0, 155) + (service.description.length > 155 ? '...' : '')
+    : `${service.title} by ${freelancerName} on Fetchwork.`;
+
   return (
     <div className="service-details-page">
+      <SEO
+        title={service.title}
+        description={seoDesc}
+        keywords={`${service.category}, ${service.title}, freelance services, hire ${service.category} freelancer`}
+        path={`/services/${id}`}
+        type="product"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Service',
+          name: service.title,
+          description: service.description,
+          provider: { '@type': 'Person', name: freelancerName },
+          offers: lowestPrice ? {
+            '@type': 'Offer',
+            price: lowestPrice,
+            priceCurrency: 'USD',
+          } : undefined,
+          url: `https://fetchwork.net/services/${id}`,
+        }}
+      />
       <div className="service-details">
         <div className="service-header">
           <h1>{service.title}</h1>

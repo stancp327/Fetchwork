@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import CustomOfferModal from './CustomOfferModal';
 import './CustomOffer.css';
 import './MyOffers.css';
+import SEO from '../common/SEO';
 
 const OfferCard = ({ offer, userId, onAction }) => {
   const [showCounter, setShowCounter] = useState(false);
@@ -120,6 +121,7 @@ const MyOffers = () => {
 
   return (
     <div className="my-offers-container">
+      <SEO title="My Offers" path="/offers" noIndex={true} />
       <div className="my-offers-header">
         <div>
           <h1>My Offers</h1>
@@ -160,3 +162,5 @@ const MyOffers = () => {
 };
 
 export default MyOffers;
+
+

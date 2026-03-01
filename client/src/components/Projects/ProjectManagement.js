@@ -5,6 +5,7 @@ import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
 import { categoryLabelMap } from '../../utils/categories';
 import EscrowModal from '../Payments/EscrowModal';
+import SEO from '../common/SEO';
 import './ProjectManagement.css';
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -1195,6 +1196,7 @@ const ProjectManagement = () => {
   return (
     <>
     <div className="pm-container">
+      <SEO title="My Projects" path="/projects" noIndex={true} />
       {/* ── Page header ──────────────────────────────────────── */}
       <div className="pm-page-header">
         <div>
@@ -1391,3 +1393,4 @@ const ProjectManagement = () => {
 };
 
 export default ProjectManagement;
+

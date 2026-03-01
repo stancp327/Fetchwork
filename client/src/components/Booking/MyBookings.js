@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../../utils/api';
+import SEO from '../common/SEO';
 import './MyBookings.css';
 
 const STATUS_LABELS = {
@@ -157,6 +158,7 @@ const MyBookings = () => {
 
   return (
     <div className="my-bookings">
+      <SEO title="My Bookings" path="/bookings" noIndex={true} />
       <h2 className="my-bookings-title">My Bookings</h2>
 
       <div className="my-bookings-tabs">
@@ -191,3 +193,4 @@ const MyBookings = () => {
 };
 
 export default MyBookings;
+

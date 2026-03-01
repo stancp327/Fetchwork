@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
+import SEO from '../common/SEO';
 import { getApiBaseUrl } from '../../utils/api';
 
 const Login = () => {
@@ -83,6 +84,7 @@ const Login = () => {
 
   return (
     <div className="auth-split">
+      <SEO title="Sign In" description="Sign in to your Fetchwork account." path="/login" noIndex={true} />
       {/* Brand panel — visible on desktop only */}
       <div className="auth-brand">
         <div className="auth-brand-logo">
@@ -219,3 +221,5 @@ const Login = () => {
 };
 
 export default Login;
+
+

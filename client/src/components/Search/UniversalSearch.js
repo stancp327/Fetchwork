@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { categoryOptions } from '../../utils/categories';
+import SEO from '../common/SEO';
 import './UniversalSearch.css';
 
 const CATEGORIES = [
@@ -221,6 +222,7 @@ const UniversalSearch = () => {
 
   return (
     <div className="search-container">
+      <SEO title="Search" description="Search jobs, services, and freelancers on Fetchwork." path="/search" />
       {/* Search Bar */}
       <form onSubmit={handleSubmit}>
         <div className="search-bar-wrapper">
@@ -446,3 +448,4 @@ const UniversalSearch = () => {
 };
 
 export default UniversalSearch;
+

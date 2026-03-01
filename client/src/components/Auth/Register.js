@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
+import SEO from '../common/SEO';
 import { getApiBaseUrl } from '../../utils/api';
 
 const Register = () => {
@@ -110,6 +111,7 @@ const Register = () => {
 
   return (
     <div className="auth-split">
+      <SEO title="Create Account" description="Join Fetchwork — find freelancers or get hired." path="/register" noIndex={true} />
       {/* Brand panel â€” visible on desktop only */}
       <div className="auth-brand">
         <div className="auth-brand-logo">
@@ -339,3 +341,5 @@ const Register = () => {
 };
 
 export default Register;
+
+

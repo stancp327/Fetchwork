@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import './BillingSettings.css';
+import SEO from '../common/SEO';
 
 const TIER_LABELS = { free: 'Free', plus: 'Plus', pro: 'Pro / Business' };
 const TIER_COLORS = { free: 'muted', plus: 'primary', pro: 'gradient' };
@@ -67,6 +68,7 @@ const BillingSettings = () => {
 
   return (
     <div className="bs-wrap">
+      <SEO title="Billing &amp; Plans" path="/billing" noIndex={true} />
       <div className="bs-header">
         <h1 className="bs-title">Billing & Subscription</h1>
         <Link to="/pricing" className="bs-pricing-link">View all plans →</Link>
@@ -183,3 +185,5 @@ const BillingSettings = () => {
 };
 
 export default BillingSettings;
+
+

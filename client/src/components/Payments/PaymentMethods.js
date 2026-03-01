@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { apiRequest } from '../../utils/api';
 import './PaymentMethods.css';
+import SEO from '../common/SEO';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
@@ -182,6 +183,7 @@ const PaymentMethods = () => {
 
   return (
     <div className="payment-methods">
+      <SEO title="Payment Methods" path="/payment-methods" noIndex={true} />
       <div className="pm-section-header">
         <div>
           <h2>Payment Methods</h2>
@@ -249,3 +251,5 @@ const PaymentMethods = () => {
 };
 
 export default PaymentMethods;
+
+

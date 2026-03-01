@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import ProfileCompletion from '../Onboarding/ProfileCompletion';
 import { formatBudget } from '../../utils/formatters';
 import './Dashboard.css';
+import SEO from '../common/SEO';
 
 // ── Stat Card ───────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, sub, color = '#2563eb', to }) => {
@@ -116,6 +117,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="dash-container">
+      <SEO title="Dashboard" path="/dashboard" noIndex={true} />
         <div className="dash-loading">
           <div className="dash-skeleton dash-skeleton-context" />
           <div className="dash-skeleton-row">
@@ -133,6 +135,7 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="dash-container">
+      <SEO title="Dashboard" path="/dashboard" noIndex={true} />
         <div className="dash-error">
           <p>⚠️ {error}</p>
           <button onClick={fetchData} className="btn-dash-primary">Retry</button>
@@ -204,6 +207,7 @@ const Dashboard = () => {
 
   return (
     <div className="dash-container">
+      <SEO title="Dashboard" path="/dashboard" noIndex={true} />
       {/* ── Context Bar ────────────────────────────────────────── */}
       <div className="dash-context-bar">
         <div className="dash-welcome">
@@ -392,3 +396,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+

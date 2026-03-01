@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import UpgradePrompt from './UpgradePrompt';
+import SEO from '../common/SEO';
 import './WalletPage.css';
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
@@ -76,6 +77,7 @@ const WalletPage = () => {
   if (gated) {
     return (
       <div className="wallet-wrap">
+      <SEO title="Wallet" path="/wallet" noIndex={true} />
         <div className="wallet-header">
           <h1 className="wallet-title">Wallet</h1>
         </div>
@@ -93,6 +95,7 @@ const WalletPage = () => {
 
   return (
     <div className="wallet-wrap">
+      <SEO title="Wallet" path="/wallet" noIndex={true} />
       <div className="wallet-header">
         <h1 className="wallet-title">Wallet</h1>
         <Link to="/billing" className="wallet-billing-link">Billing settings →</Link>
@@ -198,3 +201,4 @@ const WalletPage = () => {
 };
 
 export default WalletPage;
+

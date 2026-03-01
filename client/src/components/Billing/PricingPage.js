@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
+import SEO from '../common/SEO';
 import './PricingPage.css';
 
 // ── Feature check rows per plan ─────────────────────────────────
@@ -116,6 +117,12 @@ const PricingPage = () => {
 
   return (
     <div className="pricing-page">
+      <SEO
+        title="Pricing"
+        description="Simple, transparent pricing for freelancers and clients on Fetchwork. Free to start — upgrade when you need more features."
+        keywords="fetchwork pricing, freelancer plans, client plans, freelance platform pricing"
+        path="/pricing"
+      />
       {/* ── Hero ── */}
       <div className="pricing-hero">
         <h1 className="pricing-title">Simple, transparent pricing</h1>

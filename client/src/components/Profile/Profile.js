@@ -659,6 +659,7 @@ const Profile = () => {
   if (loading) {
     return (
       <div className="profile-page">
+      <SEO title="My Profile" path="/profile" noIndex={true} />
         <div className="profile-page-loading">
           <div className="profile-skeleton profile-skeleton-header" />
           <div className="profile-skeleton profile-skeleton-body" />
@@ -679,6 +680,7 @@ const Profile = () => {
 
   return (
     <div className="profile-page">
+      <SEO title="My Profile" path="/profile" noIndex={true} />
       {/* Header */}
       <div className="profile-page-header">
         <div className="profile-page-header-left">
@@ -735,3 +737,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

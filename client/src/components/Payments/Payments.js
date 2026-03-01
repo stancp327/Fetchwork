@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import LoadingSkeleton from '../common/LoadingSkeleton';
 import { getApiBaseUrl } from '../../utils/api';
 import './Payments.css';
+import SEO from '../common/SEO';
 
 const Payments = () => {
   const { user } = useAuth();
@@ -139,6 +140,7 @@ const Payments = () => {
   if (loading && payments.length === 0) {
     return (
       <div className="user-container">
+      <SEO title="Payments" path="/payments" noIndex={true} />
         <div className="payments-header">
           <h1>Payment Management</h1>
           <LoadingSkeleton height="20px" width="200px" />
@@ -152,6 +154,7 @@ const Payments = () => {
 
   return (
     <div className="user-container">
+      <SEO title="Payments" path="/payments" noIndex={true} />
       <div className="payments-header">
         <h1>Payment Management</h1>
         <p>Manage your payments, earnings, and Stripe account</p>
@@ -276,3 +279,5 @@ const Payments = () => {
 };
 
 export default Payments;
+
+

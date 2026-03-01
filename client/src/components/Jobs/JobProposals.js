@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
+import SEO from '../common/SEO';
 import './JobProposals.css';
 
 const fmt = (n) =>
@@ -204,12 +205,14 @@ const JobProposals = () => {
 
   if (loading) return (
     <div className="jp-container">
+      <SEO title="Job Proposals" noIndex={true} />
       <div className="jp-loading">Loading proposals…</div>
     </div>
   );
 
   if (error) return (
     <div className="jp-container">
+      <SEO title="Job Proposals" noIndex={true} />
       <Link to="/projects?view=client" className="jp-back">← Back to My Jobs</Link>
       <div className="jp-empty">
         <div className="empty-icon">⚠️</div>
@@ -235,6 +238,7 @@ const JobProposals = () => {
 
   return (
     <div className="jp-container">
+      <SEO title="Job Proposals" noIndex={true} />
       {/* Back */}
       <Link to="/projects?view=client" className="jp-back">← Back to My Jobs</Link>
 
@@ -302,3 +306,4 @@ const JobProposals = () => {
 };
 
 export default JobProposals;
+

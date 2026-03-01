@@ -4,6 +4,7 @@ import { apiRequest } from '../../utils/api';
 import CategoryCombobox from '../common/CategoryCombobox';
 import { getCategoryLabel } from '../../utils/categories';
 import UpgradePrompt from '../Billing/UpgradePrompt';
+import SEO from '../common/SEO';
 import './CreateService.css';
 
 const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
@@ -429,6 +430,7 @@ const CreateService = () => {
 
   return (
     <div className="wizard-container">
+      <SEO title="Create Service" path="/services/create" noIndex={true} />
       {/* Header */}
       <div className="wizard-header">
         <div>
@@ -487,3 +489,4 @@ const CreateService = () => {
 };
 
 export default CreateService;
+

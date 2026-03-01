@@ -5,6 +5,7 @@ import { apiRequest } from '../../utils/api';
 import DisputeDetail from './DisputeDetail';
 import DisputeTimeline from './DisputeTimeline';
 import './DisputeCenter.css';
+import SEO from '../common/SEO';
 
 // ── Status Badge ────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -204,6 +205,7 @@ const DisputeCenter = () => {
 
   return (
     <div className="dispute-center">
+      <SEO title="Dispute Center" path="/disputes" noIndex={true} />
       <div className="dispute-center-header">
         <div>
           <h1>Dispute Center</h1>
@@ -265,3 +267,5 @@ const DisputeCenter = () => {
 };
 
 export default DisputeCenter;
+
+
