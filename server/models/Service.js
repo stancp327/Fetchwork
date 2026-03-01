@@ -3,6 +3,19 @@ const mongoose = require('mongoose');
 const { locationSchema } = require('../config/locationSchema');
 
 const serviceSchema = new mongoose.Schema({
+  serviceType: {
+    type: String,
+    enum: ['one_time', 'recurring'],
+    default: 'one_time',
+  },
+  recurring: {
+    sessionDuration:  { type: Number },                        // minutes: 30, 45, 60, 90, 120
+    billingCycle:     { type: String, enum: ['per_session', 'weekly', 'monthly'] },
+    sessionsPerCycle: { type: Number },                        // e.g. 3 sessions/week
+    locationType:     { type: String, enum: ['online', 'in_person', 'both'] },
+    trialEnabled:     { type: Boolean, default: false },
+    trialPrice:       { type: Number, min: 0 },
+  },
   title: {
     type: String,
     required: true,
@@ -34,22 +47,25 @@ const serviceSchema = new mongoose.Schema({
       title: { type: String, required: true },
       description: { type: String, required: true },
       price: { type: Number, required: true, min: [5, 'Price must be at least $5'] },
-      deliveryTime: { type: Number, required: true, min: [1, 'Delivery time must be at least 1 day'] },
-      revisions: { type: Number, default: 1 }
+      deliveryTime: { type: Number, min: [1, 'Delivery time must be at least 1 day'] },
+      revisions: { type: Number, default: 1 },
+      sessionsIncluded: { type: Number },
     },
     standard: {
       title: String,
       description: String,
       price: { type: Number, min: [5, 'Price must be at least $5'] },
       deliveryTime: { type: Number, min: [1, 'Delivery time must be at least 1 day'] },
-      revisions: { type: Number, default: 2 }
+      revisions: { type: Number, default: 2 },
+      sessionsIncluded: { type: Number },
     },
     premium: {
       title: String,
       description: String,
       price: { type: Number, min: [5, 'Price must be at least $5'] },
       deliveryTime: { type: Number, min: [1, 'Delivery time must be at least 1 day'] },
-      revisions: { type: Number, default: 3 }
+      revisions: { type: Number, default: 3 },
+      sessionsIncluded: { type: Number },
     }
   },
   location: locationSchema,
@@ -129,6 +145,7 @@ const serviceSchema = new mongoose.Schema({
   timestamps: true
 });
 
+serviceSchema.index({ serviceType: 1 });
 serviceSchema.index({ freelancer: 1 });
 serviceSchema.index({ category: 1 });
 serviceSchema.index({ skills: 1 });

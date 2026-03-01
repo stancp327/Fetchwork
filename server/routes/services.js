@@ -122,7 +122,9 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       gallery,
       faqs,
       requirements,
-      location
+      location,
+      serviceType,
+      recurring,
     } = req.body;
     
     if (!title || !description || !category || !pricing?.basic) {
@@ -143,7 +145,9 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       requirements,
       location: location || { locationType: 'remote' },
       freelancer: req.user._id,
-      status: 'active'
+      status: 'active',
+      serviceType: serviceType || 'one_time',
+      ...(serviceType === 'recurring' && recurring ? { recurring } : {}),
     });
     
     await service.save();

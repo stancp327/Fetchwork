@@ -473,6 +473,211 @@
   margin-top: 1rem;
 }
 
+/* ── Service Type Selector ────────────────────────────────────── */
+.wiz-field-label-standalone {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.75rem;
+}
+
+.service-type-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.service-type-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--color-border-medium);
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  width: 100%;
+  min-height: 44px;
+}
+
+.service-type-card:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.service-type-card.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.svc-type-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.service-type-card > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-type-card strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-darker);
+  margin-bottom: 0.2rem;
+}
+
+.service-type-card p {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.svc-type-check {
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  font-weight: 700;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+/* ── Recurring Settings Card ──────────────────────────────────── */
+.recurring-settings-card {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.recurring-settings-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.recurring-settings-header > span {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.recurring-settings-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.2rem;
+  color: #166534;
+}
+
+.recurring-settings-header p {
+  font-size: 0.8rem;
+  color: #16a34a;
+  margin: 0;
+}
+
+/* ── Trial Session Toggle ─────────────────────────────────────── */
+.trial-session-row {
+  border-top: 1px solid #bbf7d0;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trial-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.trial-toggle-wrapper > div strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-darker);
+}
+
+.trial-toggle-wrapper > div p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.toggle-label {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.toggle-label input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--color-border-medium);
+  border-radius: 24px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-label input:checked + .toggle-slider {
+  background: var(--color-primary);
+}
+
+.toggle-label input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.trial-price-field {
+  margin: 0;
+  max-width: 180px;
+}
+
+/* ── Recurring badge in preview ───────────────────────────────── */
+.preview-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.preview-badge-recurring {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #dcfce7;
+  color: #166534;
+}
+
 /* ── Responsive — mobile-first ────────────────────────────────── */
 /* Base (mobile): stepper compact, grids stacked */
 .wizard-header { flex-direction: column; align-items: flex-start; }
@@ -490,6 +695,9 @@
   .step-label { display: inline; }
   .wiz-row { grid-template-columns: 1fr 1fr; }
   .wiz-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .service-type-cards { flex-direction: row; }
+  .service-type-card { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .svc-type-check { align-self: flex-end; }
 }
 
 @media (min-width: 900px) {

@@ -9,6 +9,26 @@ import './CreateService.css';
 
 const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
 
+const SESSION_DURATIONS = [
+  { value: 30,  label: '30 minutes' },
+  { value: 45,  label: '45 minutes' },
+  { value: 60,  label: '1 hour' },
+  { value: 90,  label: '1.5 hours' },
+  { value: 120, label: '2 hours' },
+];
+
+const BILLING_CYCLES = [
+  { value: 'per_session', label: 'Per Session' },
+  { value: 'weekly',      label: 'Weekly Package' },
+  { value: 'monthly',     label: 'Monthly Package' },
+];
+
+const LOCATION_TYPES = [
+  { value: 'online',    label: '💻 Online Only' },
+  { value: 'in_person', label: '📍 In-Person Only' },
+  { value: 'both',      label: '🔀 Online & In-Person' },
+];
+
 // ── Stepper ─────────────────────────────────────────────────────
 const Stepper = ({ steps, current, onStepClick }) => (
   <div className="wizard-stepper">
@@ -27,53 +47,112 @@ const Stepper = ({ steps, current, onStepClick }) => (
 );
 
 // ── Live Preview ────────────────────────────────────────────────
-const LivePreview = ({ data }) => (
-  <div className="wizard-preview">
-    <h3 className="preview-heading">Live Preview</h3>
-    <div className="preview-card">
-      <div className="preview-card-img">
-        {data.imagePreview ? (
-          <img src={data.imagePreview} alt="" />
-        ) : (
-          <div className="preview-placeholder">📷 Service Image</div>
+const LivePreview = ({ data }) => {
+  const isRecurring = data.serviceType === 'recurring';
+  const billingLabel = BILLING_CYCLES.find(b => b.value === data.recurringBillingCycle)?.label || 'Per Session';
+  const durationLabel = SESSION_DURATIONS.find(d => d.value === Number(data.recurringSessionDuration))?.label || '1 hour';
+
+  return (
+    <div className="wizard-preview">
+      <h3 className="preview-heading">Live Preview</h3>
+      <div className="preview-card">
+        <div className="preview-card-img">
+          {data.imagePreview ? (
+            <img src={data.imagePreview} alt="" />
+          ) : (
+            <div className="preview-placeholder">📷 Service Image</div>
+          )}
+        </div>
+        <div className="preview-card-body">
+          <div className="preview-badges">
+            {isRecurring && <span className="preview-badge-recurring">🔄 Recurring</span>}
+            {data.category && <span className="preview-tag">{getCategoryLabel(data.category)}</span>}
+          </div>
+          <h4>{data.title || 'Your Service Title'}</h4>
+          <p className="preview-desc">
+            {data.description?.substring(0, 120) || 'Service description will appear here...'}
+            {data.description?.length > 120 ? '...' : ''}
+          </p>
+        </div>
+        {data.basicPrice && (
+          <div className="preview-card-footer">
+            <span className="preview-price">
+              {isRecurring
+                ? `$${data.basicPrice} / ${data.recurringBillingCycle === 'per_session' ? 'session' : data.recurringBillingCycle === 'weekly' ? 'week' : 'month'}`
+                : `Starting at $${data.basicPrice}`}
+            </span>
+            {isRecurring ? (
+              <span className="preview-delivery">⏱ {durationLabel}</span>
+            ) : (
+              data.basicDeliveryTime && <span className="preview-delivery">📦 {data.basicDeliveryTime} day{data.basicDeliveryTime > 1 ? 's' : ''}</span>
+            )}
+          </div>
         )}
       </div>
-      <div className="preview-card-body">
-        <h4>{data.title || 'Your Service Title'}</h4>
-        <p className="preview-desc">
-          {data.description?.substring(0, 120) || 'Service description will appear here...'}
-          {data.description?.length > 120 ? '...' : ''}
-        </p>
-        {data.category && (
-          <span className="preview-tag">{getCategoryLabel(data.category)}</span>
-        )}
-      </div>
-      {data.basicPrice && (
-        <div className="preview-card-footer">
-          <span className="preview-price">Starting at ${data.basicPrice}</span>
-          {data.basicDeliveryTime && <span className="preview-delivery">📦 {data.basicDeliveryTime} day{data.basicDeliveryTime > 1 ? 's' : ''}</span>}
+
+      {/* Package or Session Summary */}
+      {data.basicTitle && (
+        <div className="preview-package">
+          <h4>{isRecurring ? 'Session Details' : 'Basic Package'}</h4>
+          <div className="preview-pkg-row"><span>Title:</span><span>{data.basicTitle}</span></div>
+          {data.basicPrice && <div className="preview-pkg-row"><span>Price:</span><span>${data.basicPrice}{isRecurring ? ` / ${data.recurringBillingCycle === 'per_session' ? 'session' : data.recurringBillingCycle === 'weekly' ? 'wk' : 'mo'}` : ''}</span></div>}
+          {isRecurring ? (
+            <>
+              <div className="preview-pkg-row"><span>Duration:</span><span>{durationLabel}</span></div>
+              <div className="preview-pkg-row"><span>Billing:</span><span>{billingLabel}</span></div>
+              {data.recurringLocationType && <div className="preview-pkg-row"><span>Format:</span><span>{LOCATION_TYPES.find(l => l.value === data.recurringLocationType)?.label || '—'}</span></div>}
+              {data.recurringTrialEnabled && data.recurringTrialPrice && <div className="preview-pkg-row"><span>Trial Session:</span><span>${data.recurringTrialPrice}</span></div>}
+            </>
+          ) : (
+            <>
+              {data.basicDeliveryTime && <div className="preview-pkg-row"><span>Delivery:</span><span>{data.basicDeliveryTime} days</span></div>}
+              <div className="preview-pkg-row"><span>Revisions:</span><span>{data.basicRevisions || 0}</span></div>
+            </>
+          )}
+        </div>
+      )}
+
+      {data.skills && (
+        <div className="preview-skills">
+          {data.skills.split(',').filter(Boolean).map((s, i) => (
+            <span key={i} className="preview-skill-tag">{s.trim()}</span>
+          ))}
         </div>
       )}
     </div>
+  );
+};
 
-    {/* Package Summary */}
-    {data.basicTitle && (
-      <div className="preview-package">
-        <h4>Basic Package</h4>
-        <div className="preview-pkg-row"><span>Title:</span><span>{data.basicTitle}</span></div>
-        {data.basicPrice && <div className="preview-pkg-row"><span>Price:</span><span>${data.basicPrice}</span></div>}
-        {data.basicDeliveryTime && <div className="preview-pkg-row"><span>Delivery:</span><span>{data.basicDeliveryTime} days</span></div>}
-        <div className="preview-pkg-row"><span>Revisions:</span><span>{data.basicRevisions || 0}</span></div>
-      </div>
-    )}
-
-    {data.skills && (
-      <div className="preview-skills">
-        {data.skills.split(',').filter(Boolean).map((s, i) => (
-          <span key={i} className="preview-skill-tag">{s.trim()}</span>
-        ))}
-      </div>
-    )}
+// ── Service Type Selector ───────────────────────────────────────
+const ServiceTypeSelector = ({ value, onChange }) => (
+  <div className="service-type-selector">
+    <label className="wiz-field-label-standalone">What kind of service is this? *</label>
+    <div className="service-type-cards">
+      <button
+        type="button"
+        className={`service-type-card ${value === 'one_time' ? 'selected' : ''}`}
+        onClick={() => onChange('serviceType', 'one_time')}
+      >
+        <span className="svc-type-icon">📦</span>
+        <div>
+          <strong>One-Time Delivery</strong>
+          <p>Logo design, website build, video editing, writing...</p>
+        </div>
+        <span className="svc-type-check">{value === 'one_time' ? '✓' : ''}</span>
+      </button>
+      <button
+        type="button"
+        className={`service-type-card ${value === 'recurring' ? 'selected' : ''}`}
+        onClick={() => onChange('serviceType', 'recurring')}
+      >
+        <span className="svc-type-icon">🔄</span>
+        <div>
+          <strong>Recurring Sessions</strong>
+          <p>Tutoring, personal training, coaching, music lessons...</p>
+        </div>
+        <span className="svc-type-check">{value === 'recurring' ? '✓' : ''}</span>
+      </button>
+    </div>
   </div>
 );
 
@@ -83,12 +162,18 @@ const StepDetails = ({ data, onChange, errors }) => (
     <h2>Service Details</h2>
     <p className="wizard-tip">💡 A clear, descriptive title helps clients find your service.</p>
 
-    <div className="wiz-field">
+    <ServiceTypeSelector value={data.serviceType} onChange={onChange} />
+
+    <div className="wiz-field" style={{ marginTop: '1.5rem' }}>
       <label>Service Title *</label>
       <input
         type="text" value={data.title} maxLength={100}
         onChange={e => onChange('title', e.target.value)}
-        placeholder="e.g. I will create a professional website for your business"
+        placeholder={
+          data.serviceType === 'recurring'
+            ? 'e.g. 1-on-1 Math Tutoring Sessions (All Grades)'
+            : 'e.g. I will create a professional website for your business'
+        }
       />
       <div className="wiz-field-footer">
         <span className="wiz-error">{errors.title}</span>
@@ -101,7 +186,11 @@ const StepDetails = ({ data, onChange, errors }) => (
       <textarea
         value={data.description} maxLength={3000} rows={6}
         onChange={e => onChange('description', e.target.value)}
-        placeholder="Describe your service in detail — what you offer, your process, what makes you different..."
+        placeholder={
+          data.serviceType === 'recurring'
+            ? 'Describe your sessions — your background, what you cover, your teaching style, expected outcomes...'
+            : 'Describe your service in detail — what you offer, your process, what makes you different...'
+        }
       />
       <div className="wiz-field-footer">
         <span className="wiz-error">{errors.description}</span>
@@ -121,106 +210,234 @@ const StepDetails = ({ data, onChange, errors }) => (
       </div>
       <div className="wiz-field">
         <label>Subcategory</label>
-        <input type="text" value={data.subcategory} onChange={e => onChange('subcategory', e.target.value)} placeholder="e.g. React, WordPress" />
+        <input type="text" value={data.subcategory} onChange={e => onChange('subcategory', e.target.value)}
+          placeholder={data.serviceType === 'recurring' ? 'e.g. SAT Prep, HIIT, Life Coaching' : 'e.g. React, WordPress'} />
       </div>
     </div>
 
     <div className="wiz-field">
       <label>Tags / Skills</label>
-      <input type="text" value={data.skills} onChange={e => onChange('skills', e.target.value)} placeholder="React, Node.js, MongoDB (comma separated)" />
+      <input type="text" value={data.skills} onChange={e => onChange('skills', e.target.value)}
+        placeholder={data.serviceType === 'recurring' ? 'e.g. Algebra, Calculus, Test Prep (comma separated)' : 'React, Node.js, MongoDB (comma separated)'} />
     </div>
   </div>
 );
 
-const PackageTierForm = ({ prefix, label, data, onChange, errors, required, badge }) => (
-  <div className={`pricing-card pricing-card-${prefix}`}>
-    <div className="pkg-card-header">
-      <h3>{label} {badge && <span className="pkg-badge">{badge}</span>}</h3>
+// ── Recurring Session Settings ──────────────────────────────────
+const RecurringSessionSettings = ({ data, onChange, errors }) => (
+  <div className="recurring-settings-card">
+    <div className="recurring-settings-header">
+      <span>🔄</span>
+      <div>
+        <h3>Session Settings</h3>
+        <p>Define how your recurring sessions work</p>
+      </div>
     </div>
-    <div className="wiz-field">
-      <label>Package Title {required && '*'}</label>
-      <input
-        type="text"
-        value={data[`${prefix}Title`]}
-        onChange={e => onChange(`${prefix}Title`, e.target.value)}
-        placeholder={prefix === 'basic' ? 'e.g. Starter Package' : prefix === 'standard' ? 'e.g. Standard Package' : 'e.g. Premium Package'}
-      />
-      {errors[`${prefix}Title`] && <span className="wiz-error">{errors[`${prefix}Title`]}</span>}
-    </div>
-    <div className="wiz-field">
-      <label>What's Included {required && '*'}</label>
-      <textarea
-        rows={3}
-        value={data[`${prefix}Description`]}
-        onChange={e => onChange(`${prefix}Description`, e.target.value)}
-        placeholder="Describe what's included in this package..."
-      />
-      {errors[`${prefix}Description`] && <span className="wiz-error">{errors[`${prefix}Description`]}</span>}
-    </div>
-    <div className="wiz-row wiz-row-3">
+
+    <div className="wiz-row">
       <div className="wiz-field">
-        <label>Price ($) {required && '*'}</label>
-        <input type="number" value={data[`${prefix}Price`]} onChange={e => onChange(`${prefix}Price`, e.target.value)} placeholder="25" min="5" step="0.01" />
-        {errors[`${prefix}Price`] && <span className="wiz-error">{errors[`${prefix}Price`]}</span>}
+        <label>Session Duration *</label>
+        <select value={data.recurringSessionDuration} onChange={e => onChange('recurringSessionDuration', Number(e.target.value))}>
+          {SESSION_DURATIONS.map(d => (
+            <option key={d.value} value={d.value}>{d.label}</option>
+          ))}
+        </select>
+        {errors.recurringSessionDuration && <span className="wiz-error">{errors.recurringSessionDuration}</span>}
       </div>
       <div className="wiz-field">
-        <label>Delivery (days) {required && '*'}</label>
-        <input type="number" value={data[`${prefix}DeliveryTime`]} onChange={e => onChange(`${prefix}DeliveryTime`, e.target.value)} placeholder="3" min="1" />
-        {errors[`${prefix}DeliveryTime`] && <span className="wiz-error">{errors[`${prefix}DeliveryTime`]}</span>}
+        <label>Billing Cycle *</label>
+        <select value={data.recurringBillingCycle} onChange={e => onChange('recurringBillingCycle', e.target.value)}>
+          {BILLING_CYCLES.map(b => (
+            <option key={b.value} value={b.value}>{b.label}</option>
+          ))}
+        </select>
       </div>
+    </div>
+
+    <div className="wiz-row">
       <div className="wiz-field">
-        <label>Revisions</label>
-        <input type="number" value={data[`${prefix}Revisions`]} onChange={e => onChange(`${prefix}Revisions`, e.target.value)} min="0" max="20" />
+        <label>Format *</label>
+        <select value={data.recurringLocationType} onChange={e => onChange('recurringLocationType', e.target.value)}>
+          {LOCATION_TYPES.map(l => (
+            <option key={l.value} value={l.value}>{l.label}</option>
+          ))}
+        </select>
       </div>
+      {data.recurringBillingCycle !== 'per_session' && (
+        <div className="wiz-field">
+          <label>Sessions per {data.recurringBillingCycle === 'weekly' ? 'Week' : 'Month'}</label>
+          <input
+            type="number" min="1" max="30"
+            value={data.recurringSessionsPerCycle}
+            onChange={e => onChange('recurringSessionsPerCycle', e.target.value)}
+            placeholder="e.g. 3"
+          />
+        </div>
+      )}
+    </div>
+
+    {/* Trial session toggle */}
+    <div className="trial-session-row">
+      <div className="trial-toggle-wrapper">
+        <label className="toggle-label">
+          <input
+            type="checkbox"
+            checked={data.recurringTrialEnabled}
+            onChange={e => onChange('recurringTrialEnabled', e.target.checked)}
+          />
+          <span className="toggle-slider" />
+        </label>
+        <div>
+          <strong>Offer trial session</strong>
+          <p>Discounted first session to attract new clients</p>
+        </div>
+      </div>
+      {data.recurringTrialEnabled && (
+        <div className="wiz-field trial-price-field">
+          <label>Trial Price ($) *</label>
+          <input
+            type="number" min="1" step="0.01"
+            value={data.recurringTrialPrice}
+            onChange={e => onChange('recurringTrialPrice', e.target.value)}
+            placeholder="e.g. 25"
+          />
+          {errors.recurringTrialPrice && <span className="wiz-error">{errors.recurringTrialPrice}</span>}
+        </div>
+      )}
     </div>
   </div>
 );
 
-const StepPricing = ({ data, onChange, errors }) => (
-  <div className="wizard-step-content">
-    <h2>Pricing &amp; Packages</h2>
-    <p className="wizard-tip">💡 The Basic package is required. Standard and Premium are optional but help you earn more by offering tiers.</p>
+// ── Package Tier Form ───────────────────────────────────────────
+const PackageTierForm = ({ prefix, label, data, onChange, errors, required, badge, isRecurring }) => {
+  const billingCycle = data.recurringBillingCycle;
+  const priceLabel = isRecurring
+    ? billingCycle === 'per_session' ? 'Price per Session ($)'
+      : billingCycle === 'weekly'    ? 'Weekly Rate ($)'
+      : 'Monthly Rate ($)'
+    : `Price ($)`;
 
-    <PackageTierForm
-      prefix="basic" label="Basic Package" badge="Required"
-      data={data} onChange={onChange} errors={errors} required
-    />
-
-    {/* Standard toggle */}
-    {!data.standardEnabled ? (
-      <button type="button" className="pkg-add-btn" onClick={() => onChange('standardEnabled', true)}>
-        ✨ Add Standard Package <span className="pkg-add-hint">— offer more features at a higher price</span>
-      </button>
-    ) : (
-      <div style={{ position: 'relative' }}>
-        <PackageTierForm
-          prefix="standard" label="Standard Package" badge="Optional"
-          data={data} onChange={onChange} errors={errors}
+  return (
+    <div className={`pricing-card pricing-card-${prefix}`}>
+      <div className="pkg-card-header">
+        <h3>{label} {badge && <span className="pkg-badge">{badge}</span>}</h3>
+      </div>
+      <div className="wiz-field">
+        <label>Package Title {required && '*'}</label>
+        <input
+          type="text"
+          value={data[`${prefix}Title`]}
+          onChange={e => onChange(`${prefix}Title`, e.target.value)}
+          placeholder={
+            isRecurring
+              ? prefix === 'basic' ? 'e.g. Starter Session' : prefix === 'standard' ? 'e.g. Regular Plan' : 'e.g. Intensive Plan'
+              : prefix === 'basic' ? 'e.g. Starter Package' : prefix === 'standard' ? 'e.g. Standard Package' : 'e.g. Premium Package'
+          }
         />
-        <button type="button" className="pkg-remove-btn" onClick={() => { onChange('standardEnabled', false); }}>
-          Remove
-        </button>
+        {errors[`${prefix}Title`] && <span className="wiz-error">{errors[`${prefix}Title`]}</span>}
       </div>
-    )}
-
-    {/* Premium toggle — only show if standard is enabled */}
-    {data.standardEnabled && (!data.premiumEnabled ? (
-      <button type="button" className="pkg-add-btn" onClick={() => onChange('premiumEnabled', true)}>
-        🌟 Add Premium Package <span className="pkg-add-hint">— your best offer, highest price</span>
-      </button>
-    ) : (
-      <div style={{ position: 'relative' }}>
-        <PackageTierForm
-          prefix="premium" label="Premium Package" badge="Optional"
-          data={data} onChange={onChange} errors={errors}
+      <div className="wiz-field">
+        <label>What's Included {required && '*'}</label>
+        <textarea
+          rows={3}
+          value={data[`${prefix}Description`]}
+          onChange={e => onChange(`${prefix}Description`, e.target.value)}
+          placeholder={
+            isRecurring
+              ? 'e.g. 60-min session, personalized study plan, session notes sent after each class...'
+              : 'Describe what\'s included in this package...'
+          }
         />
-        <button type="button" className="pkg-remove-btn" onClick={() => onChange('premiumEnabled', false)}>
-          Remove
-        </button>
+        {errors[`${prefix}Description`] && <span className="wiz-error">{errors[`${prefix}Description`]}</span>}
       </div>
-    ))}
-  </div>
-);
+
+      {isRecurring ? (
+        <div className="wiz-row">
+          <div className="wiz-field">
+            <label>{priceLabel} {required && '*'}</label>
+            <input type="number" value={data[`${prefix}Price`]} onChange={e => onChange(`${prefix}Price`, e.target.value)} placeholder="60" min="1" step="0.01" />
+            {errors[`${prefix}Price`] && <span className="wiz-error">{errors[`${prefix}Price`]}</span>}
+          </div>
+          {billingCycle !== 'per_session' && (
+            <div className="wiz-field">
+              <label>Sessions Included</label>
+              <input type="number" value={data[`${prefix}SessionsIncluded`] || ''} onChange={e => onChange(`${prefix}SessionsIncluded`, e.target.value)} placeholder={billingCycle === 'weekly' ? 'e.g. 2' : 'e.g. 8'} min="1" />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="wiz-row wiz-row-3">
+          <div className="wiz-field">
+            <label>Price ($) {required && '*'}</label>
+            <input type="number" value={data[`${prefix}Price`]} onChange={e => onChange(`${prefix}Price`, e.target.value)} placeholder="25" min="5" step="0.01" />
+            {errors[`${prefix}Price`] && <span className="wiz-error">{errors[`${prefix}Price`]}</span>}
+          </div>
+          <div className="wiz-field">
+            <label>Delivery (days) {required && '*'}</label>
+            <input type="number" value={data[`${prefix}DeliveryTime`]} onChange={e => onChange(`${prefix}DeliveryTime`, e.target.value)} placeholder="3" min="1" />
+            {errors[`${prefix}DeliveryTime`] && <span className="wiz-error">{errors[`${prefix}DeliveryTime`]}</span>}
+          </div>
+          <div className="wiz-field">
+            <label>Revisions</label>
+            <input type="number" value={data[`${prefix}Revisions`]} onChange={e => onChange(`${prefix}Revisions`, e.target.value)} min="0" max="20" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const StepPricing = ({ data, onChange, errors }) => {
+  const isRecurring = data.serviceType === 'recurring';
+
+  return (
+    <div className="wizard-step-content">
+      <h2>Pricing &amp; Packages</h2>
+      <p className="wizard-tip">
+        {isRecurring
+          ? '💡 Set your session or package rate. You can offer Basic, Standard, and Premium tiers — e.g. single session, 4-pack, 8-pack.'
+          : '💡 The Basic package is required. Standard and Premium are optional but help you earn more by offering tiers.'}
+      </p>
+
+      {isRecurring && <RecurringSessionSettings data={data} onChange={onChange} errors={errors} />}
+
+      <PackageTierForm
+        prefix="basic" label={isRecurring ? 'Basic Tier' : 'Basic Package'} badge="Required"
+        data={data} onChange={onChange} errors={errors} required isRecurring={isRecurring}
+      />
+
+      {/* Standard toggle */}
+      {!data.standardEnabled ? (
+        <button type="button" className="pkg-add-btn" onClick={() => onChange('standardEnabled', true)}>
+          ✨ Add {isRecurring ? 'Standard Tier' : 'Standard Package'} <span className="pkg-add-hint">— {isRecurring ? 'e.g. a multi-session pack at a discount' : 'offer more features at a higher price'}</span>
+        </button>
+      ) : (
+        <div style={{ position: 'relative' }}>
+          <PackageTierForm
+            prefix="standard" label={isRecurring ? 'Standard Tier' : 'Standard Package'} badge="Optional"
+            data={data} onChange={onChange} errors={errors} isRecurring={isRecurring}
+          />
+          <button type="button" className="pkg-remove-btn" onClick={() => onChange('standardEnabled', false)}>Remove</button>
+        </div>
+      )}
+
+      {/* Premium toggle — only show if standard is enabled */}
+      {data.standardEnabled && (!data.premiumEnabled ? (
+        <button type="button" className="pkg-add-btn" onClick={() => onChange('premiumEnabled', true)}>
+          🌟 Add {isRecurring ? 'Premium Tier' : 'Premium Package'} <span className="pkg-add-hint">— {isRecurring ? 'your best value bundle' : 'your best offer, highest price'}</span>
+        </button>
+      ) : (
+        <div style={{ position: 'relative' }}>
+          <PackageTierForm
+            prefix="premium" label={isRecurring ? 'Premium Tier' : 'Premium Package'} badge="Optional"
+            data={data} onChange={onChange} errors={errors} isRecurring={isRecurring}
+          />
+          <button type="button" className="pkg-remove-btn" onClick={() => onChange('premiumEnabled', false)}>Remove</button>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const StepMedia = ({ data, onChange }) => (
   <div className="wizard-step-content">
@@ -229,7 +446,7 @@ const StepMedia = ({ data, onChange }) => (
     <div className="media-upload-area">
       <div className="media-dropzone">
         <span className="media-icon">📁</span>
-        <p>Drag & drop images here or click to browse</p>
+        <p>Drag &amp; drop images here or click to browse</p>
         <p className="media-hint">PNG, JPG, GIF up to 5MB. Recommended: 1280x720px</p>
         <input
           type="file" accept="image/*" className="media-file-input"
@@ -253,71 +470,111 @@ const StepMedia = ({ data, onChange }) => (
   </div>
 );
 
-const StepRequirements = ({ data, onChange }) => (
-  <div className="wizard-step-content">
-    <h2>Requirements</h2>
-    <p className="wizard-tip">💡 Clear requirements help set expectations and avoid revisions.</p>
-    <div className="wiz-field">
-      <label>What do you need from the buyer?</label>
-      <textarea
-        rows={5} value={data.requirements} maxLength={1000}
-        onChange={e => onChange('requirements', e.target.value)}
-        placeholder="e.g. Brand guidelines, logo files, content text, reference websites..."
-      />
-      <div className="wiz-field-footer">
-        <span />
-        <span className="wiz-count">{data.requirements.length}/1000</span>
+const StepRequirements = ({ data, onChange }) => {
+  const isRecurring = data.serviceType === 'recurring';
+  return (
+    <div className="wizard-step-content">
+      <h2>{isRecurring ? 'Before We Start' : 'Requirements'}</h2>
+      <p className="wizard-tip">
+        {isRecurring
+          ? '💡 Let clients know what to prepare before their first session — any materials, goals, or info you need.'
+          : '💡 Clear requirements help set expectations and avoid revisions.'}
+      </p>
+      <div className="wiz-field">
+        <label>{isRecurring ? 'What should clients bring or prepare?' : 'What do you need from the buyer?'}</label>
+        <textarea
+          rows={5} value={data.requirements} maxLength={1000}
+          onChange={e => onChange('requirements', e.target.value)}
+          placeholder={
+            isRecurring
+              ? 'e.g. Current grade level, recent test scores, specific topics to focus on, any learning goals...'
+              : 'e.g. Brand guidelines, logo files, content text, reference websites...'
+          }
+        />
+        <div className="wiz-field-footer">
+          <span />
+          <span className="wiz-count">{data.requirements.length}/1000</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-const StepReview = ({ data }) => (
-  <div className="wizard-step-content">
-    <h2>Review & Publish</h2>
-    <p className="wizard-tip">Double-check everything before publishing. You can edit anytime after.</p>
+const StepReview = ({ data }) => {
+  const isRecurring = data.serviceType === 'recurring';
+  const billingLabel = BILLING_CYCLES.find(b => b.value === data.recurringBillingCycle)?.label || 'Per Session';
+  const durationLabel = SESSION_DURATIONS.find(d => d.value === Number(data.recurringSessionDuration))?.label || '1 hour';
+  const locationLabel = LOCATION_TYPES.find(l => l.value === data.recurringLocationType)?.label || '—';
 
-    <div className="review-sections">
-      <div className="review-section">
-        <h4>Details</h4>
-        <div className="review-row"><span>Title:</span><span>{data.title || '—'}</span></div>
-        <div className="review-row"><span>Category:</span><span>{data.category ? getCategoryLabel(data.category) : '—'}</span></div>
-        <div className="review-row"><span>Description:</span><span>{data.description?.substring(0, 200) || '—'}{data.description?.length > 200 ? '...' : ''}</span></div>
+  return (
+    <div className="wizard-step-content">
+      <h2>Review &amp; Publish</h2>
+      <p className="wizard-tip">Double-check everything before publishing. You can edit anytime after.</p>
+
+      <div className="review-sections">
+        <div className="review-section">
+          <h4>Details</h4>
+          <div className="review-row"><span>Type:</span><span>{isRecurring ? '🔄 Recurring Sessions' : '📦 One-Time Delivery'}</span></div>
+          <div className="review-row"><span>Title:</span><span>{data.title || '—'}</span></div>
+          <div className="review-row"><span>Category:</span><span>{data.category ? getCategoryLabel(data.category) : '—'}</span></div>
+          <div className="review-row"><span>Description:</span><span>{data.description?.substring(0, 200) || '—'}{data.description?.length > 200 ? '...' : ''}</span></div>
+        </div>
+
+        {isRecurring && (
+          <div className="review-section">
+            <h4>Session Settings</h4>
+            <div className="review-row"><span>Duration:</span><span>{durationLabel}</span></div>
+            <div className="review-row"><span>Billing:</span><span>{billingLabel}</span></div>
+            <div className="review-row"><span>Format:</span><span>{locationLabel}</span></div>
+            {data.recurringBillingCycle !== 'per_session' && (
+              <div className="review-row"><span>Sessions per {data.recurringBillingCycle === 'weekly' ? 'week' : 'month'}:</span><span>{data.recurringSessionsPerCycle || '—'}</span></div>
+            )}
+            {data.recurringTrialEnabled && (
+              <div className="review-row"><span>Trial Session:</span><span>${data.recurringTrialPrice || '—'}</span></div>
+            )}
+          </div>
+        )}
+
+        <div className="review-section">
+          <h4>Basic {isRecurring ? 'Tier' : 'Package'}</h4>
+          <div className="review-row"><span>Title:</span><span>{data.basicTitle || '—'}</span></div>
+          <div className="review-row"><span>Price:</span><span>{data.basicPrice ? `$${data.basicPrice}` : '—'}</span></div>
+          {!isRecurring && <div className="review-row"><span>Delivery:</span><span>{data.basicDeliveryTime ? `${data.basicDeliveryTime} days` : '—'}</span></div>}
+          {!isRecurring && <div className="review-row"><span>Revisions:</span><span>{data.basicRevisions}</span></div>}
+          {isRecurring && data.recurringBillingCycle !== 'per_session' && data.basicSessionsIncluded && (
+            <div className="review-row"><span>Sessions included:</span><span>{data.basicSessionsIncluded}</span></div>
+          )}
+        </div>
+
+        {data.standardEnabled && data.standardTitle && (
+          <div className="review-section">
+            <h4>Standard {isRecurring ? 'Tier' : 'Package'}</h4>
+            <div className="review-row"><span>Title:</span><span>{data.standardTitle}</span></div>
+            <div className="review-row"><span>Price:</span><span>{data.standardPrice ? `$${data.standardPrice}` : '—'}</span></div>
+            {!isRecurring && <div className="review-row"><span>Delivery:</span><span>{data.standardDeliveryTime ? `${data.standardDeliveryTime} days` : '—'}</span></div>}
+            {!isRecurring && <div className="review-row"><span>Revisions:</span><span>{data.standardRevisions}</span></div>}
+          </div>
+        )}
+        {data.premiumEnabled && data.premiumTitle && (
+          <div className="review-section">
+            <h4>Premium {isRecurring ? 'Tier' : 'Package'}</h4>
+            <div className="review-row"><span>Title:</span><span>{data.premiumTitle}</span></div>
+            <div className="review-row"><span>Price:</span><span>{data.premiumPrice ? `$${data.premiumPrice}` : '—'}</span></div>
+            {!isRecurring && <div className="review-row"><span>Delivery:</span><span>{data.premiumDeliveryTime ? `${data.premiumDeliveryTime} days` : '—'}</span></div>}
+            {!isRecurring && <div className="review-row"><span>Revisions:</span><span>{data.premiumRevisions}</span></div>}
+          </div>
+        )}
+
+        {data.requirements && (
+          <div className="review-section">
+            <h4>{isRecurring ? 'Before We Start' : 'Requirements'}</h4>
+            <p style={{ color: '#4b5563', fontSize: '0.9rem' }}>{data.requirements}</p>
+          </div>
+        )}
       </div>
-      <div className="review-section">
-        <h4>Basic Package</h4>
-        <div className="review-row"><span>Title:</span><span>{data.basicTitle || '—'}</span></div>
-        <div className="review-row"><span>Price:</span><span>{data.basicPrice ? `$${data.basicPrice}` : '—'}</span></div>
-        <div className="review-row"><span>Delivery:</span><span>{data.basicDeliveryTime ? `${data.basicDeliveryTime} days` : '—'}</span></div>
-        <div className="review-row"><span>Revisions:</span><span>{data.basicRevisions}</span></div>
-      </div>
-      {data.standardEnabled && data.standardTitle && (
-        <div className="review-section">
-          <h4>Standard Package</h4>
-          <div className="review-row"><span>Title:</span><span>{data.standardTitle}</span></div>
-          <div className="review-row"><span>Price:</span><span>{data.standardPrice ? `$${data.standardPrice}` : '—'}</span></div>
-          <div className="review-row"><span>Delivery:</span><span>{data.standardDeliveryTime ? `${data.standardDeliveryTime} days` : '—'}</span></div>
-          <div className="review-row"><span>Revisions:</span><span>{data.standardRevisions}</span></div>
-        </div>
-      )}
-      {data.premiumEnabled && data.premiumTitle && (
-        <div className="review-section">
-          <h4>Premium Package</h4>
-          <div className="review-row"><span>Title:</span><span>{data.premiumTitle}</span></div>
-          <div className="review-row"><span>Price:</span><span>{data.premiumPrice ? `$${data.premiumPrice}` : '—'}</span></div>
-          <div className="review-row"><span>Delivery:</span><span>{data.premiumDeliveryTime ? `${data.premiumDeliveryTime} days` : '—'}</span></div>
-          <div className="review-row"><span>Revisions:</span><span>{data.premiumRevisions}</span></div>
-        </div>
-      )}
-      {data.requirements && (
-        <div className="review-section">
-          <h4>Requirements</h4>
-          <p style={{ color: '#4b5563', fontSize: '0.9rem' }}>{data.requirements}</p>
-        </div>
-      )}
     </div>
-  </div>
-);
+  );
+};
 
 // ── Main Wizard ─────────────────────────────────────────────────
 const CreateService = () => {
@@ -329,17 +586,35 @@ const CreateService = () => {
   const [showPreview, setShowPreview] = useState(true);
   const [upgradeLimit, setUpgradeLimit] = useState(null);
   const [data, setData] = useState({
+    // type
+    serviceType: 'one_time',
+    // details
     title: '', description: '', category: '', subcategory: '', skills: '',
     requirements: '', imagePreview: '',
+    // recurring settings
+    recurringSessionDuration: 60,
+    recurringBillingCycle: 'per_session',
+    recurringSessionsPerCycle: 1,
+    recurringLocationType: 'online',
+    recurringTrialEnabled: false,
+    recurringTrialPrice: '',
+    // one-time packages
     basicTitle: '', basicDescription: '', basicPrice: '', basicDeliveryTime: '', basicRevisions: 1,
-    standardEnabled: false, standardTitle: '', standardDescription: '', standardPrice: '', standardDeliveryTime: '', standardRevisions: 2,
-    premiumEnabled: false,  premiumTitle: '',  premiumDescription: '',  premiumPrice: '',  premiumDeliveryTime: '',  premiumRevisions: 3,
+    basicSessionsIncluded: '',
+    standardEnabled: false,
+    standardTitle: '', standardDescription: '', standardPrice: '', standardDeliveryTime: '', standardRevisions: 2,
+    standardSessionsIncluded: '',
+    premiumEnabled: false,
+    premiumTitle: '',  premiumDescription: '',  premiumPrice: '',  premiumDeliveryTime: '',  premiumRevisions: 3,
+    premiumSessionsIncluded: '',
   });
 
   const update = (key, value) => {
     setData(prev => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
   };
+
+  const isRecurring = data.serviceType === 'recurring';
 
   const validateStep = () => {
     const e = {};
@@ -351,8 +626,15 @@ const CreateService = () => {
     if (step === 1) {
       if (!data.basicTitle.trim()) e.basicTitle = 'Required';
       if (!data.basicDescription.trim()) e.basicDescription = 'Required';
-      if (!data.basicPrice || parseFloat(data.basicPrice) < 5) e.basicPrice = 'Min $5';
-      if (!data.basicDeliveryTime || parseInt(data.basicDeliveryTime) < 1) e.basicDeliveryTime = 'Min 1 day';
+      if (isRecurring) {
+        if (!data.basicPrice || parseFloat(data.basicPrice) < 1) e.basicPrice = 'Min $1';
+        if (data.recurringTrialEnabled && (!data.recurringTrialPrice || parseFloat(data.recurringTrialPrice) < 1)) {
+          e.recurringTrialPrice = 'Enter trial price';
+        }
+      } else {
+        if (!data.basicPrice || parseFloat(data.basicPrice) < 5) e.basicPrice = 'Min $5';
+        if (!data.basicDeliveryTime || parseInt(data.basicDeliveryTime) < 1) e.basicDeliveryTime = 'Min 1 day';
+      }
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -369,6 +651,23 @@ const CreateService = () => {
     setLoading(true);
     setError(null);
     try {
+      const buildPkg = (prefix, required) => {
+        const title = data[`${prefix}Title`]?.trim();
+        const desc  = data[`${prefix}Description`]?.trim();
+        const price = parseFloat(data[`${prefix}Price`]);
+        if (!required && (!title || isNaN(price))) return undefined;
+        return {
+          title,
+          description: desc,
+          price,
+          deliveryTime: isRecurring ? 1 : parseInt(data[`${prefix}DeliveryTime`]) || 1,
+          revisions: isRecurring ? 0 : parseInt(data[`${prefix}Revisions`]) || 0,
+          ...(isRecurring && data.recurringBillingCycle !== 'per_session'
+            ? { sessionsIncluded: parseInt(data[`${prefix}SessionsIncluded`]) || undefined }
+            : {}),
+        };
+      };
+
       const serviceData = {
         title: data.title.trim(),
         description: data.description.trim(),
@@ -376,33 +675,22 @@ const CreateService = () => {
         subcategory: data.subcategory.trim() || undefined,
         skills: data.skills.split(',').map(s => s.trim()).filter(Boolean),
         requirements: data.requirements.trim(),
+        serviceType: data.serviceType,
+        ...(isRecurring ? {
+          recurring: {
+            sessionDuration:    Number(data.recurringSessionDuration),
+            billingCycle:       data.recurringBillingCycle,
+            sessionsPerCycle:   data.recurringBillingCycle !== 'per_session' ? parseInt(data.recurringSessionsPerCycle) || 1 : undefined,
+            locationType:       data.recurringLocationType,
+            trialEnabled:       data.recurringTrialEnabled,
+            trialPrice:         data.recurringTrialEnabled ? parseFloat(data.recurringTrialPrice) : undefined,
+          }
+        } : {}),
         pricing: {
-          basic: {
-            title:        data.basicTitle.trim(),
-            description:  data.basicDescription.trim(),
-            price:        parseFloat(data.basicPrice),
-            deliveryTime: parseInt(data.basicDeliveryTime),
-            revisions:    parseInt(data.basicRevisions),
-          },
-          ...(data.standardEnabled && data.standardTitle ? {
-            standard: {
-              title:        data.standardTitle.trim(),
-              description:  data.standardDescription.trim(),
-              price:        parseFloat(data.standardPrice),
-              deliveryTime: parseInt(data.standardDeliveryTime),
-              revisions:    parseInt(data.standardRevisions),
-            }
-          } : {}),
-          ...(data.premiumEnabled && data.premiumTitle ? {
-            premium: {
-              title:        data.premiumTitle.trim(),
-              description:  data.premiumDescription.trim(),
-              price:        parseFloat(data.premiumPrice),
-              deliveryTime: parseInt(data.premiumDeliveryTime),
-              revisions:    parseInt(data.premiumRevisions),
-            }
-          } : {}),
-        }
+          basic: buildPkg('basic', true),
+          ...(data.standardEnabled ? { standard: buildPkg('standard', false) } : {}),
+          ...(data.premiumEnabled  ? { premium:  buildPkg('premium', false)  } : {}),
+        },
       };
 
       await apiRequest('/api/services', { method: 'POST', body: JSON.stringify(serviceData) });
@@ -489,4 +777,3 @@ const CreateService = () => {
 };
 
 export default CreateService;
-

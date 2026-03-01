@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { categoryOptions } from '../../utils/categories';
-import { getLocationDisplay, getLocationTypeBadge } from '../../utils/location';
+import { getLocationDisplay } from '../../utils/location';
 import SEO from '../common/SEO';
 import BrowseLayout, {
   SearchBar, FilterSelect, FilterInput,
@@ -52,12 +52,25 @@ const ServiceCard = ({ service }) => {
 
       <div className="browse-card-tags">
         {service.category && <span className="browse-tag primary">{service.category.replace(/_/g, ' ')}</span>}
-        {(!service.location || service.location?.locationType === 'remote') ? (
-          <span className="browse-tag" style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>🌐 Remote</span>
-        ) : (
-          <span className="browse-tag" style={{ background: '#ecfdf5', color: '#059669', fontWeight: 600 }}>📍 {getLocationDisplay(service.location)}</span>
+        {service.serviceType === 'recurring' && (
+          <span className="browse-tag" style={{ background: '#dcfce7', color: '#166534', fontWeight: 600 }}>🔄 Recurring</span>
         )}
-        {service.pricing?.basic?.deliveryTime && (
+        {service.serviceType !== 'recurring' && (!service.location || service.location?.locationType === 'remote') ? (
+          <span className="browse-tag" style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>🌐 Remote</span>
+        ) : service.serviceType !== 'recurring' ? (
+          <span className="browse-tag" style={{ background: '#ecfdf5', color: '#059669', fontWeight: 600 }}>📍 {getLocationDisplay(service.location)}</span>
+        ) : null}
+        {service.serviceType === 'recurring' && service.recurring?.locationType && (
+          <span className="browse-tag" style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 500 }}>
+            {service.recurring.locationType === 'online' ? '💻 Online' : service.recurring.locationType === 'in_person' ? '📍 In-Person' : '🔀 Online & In-Person'}
+          </span>
+        )}
+        {service.serviceType === 'recurring' && service.recurring?.sessionDuration && (
+          <span className="browse-tag" style={{ background: '#fefce8', color: '#a16207', fontWeight: 500 }}>
+            ⏱ {service.recurring.sessionDuration < 60 ? `${service.recurring.sessionDuration} min` : `${service.recurring.sessionDuration / 60} hr`} sessions
+          </span>
+        )}
+        {service.serviceType !== 'recurring' && service.pricing?.basic?.deliveryTime && (
           <span className="browse-tag" style={{ background: '#fefce8', color: '#a16207', fontWeight: 500 }}>
             ⏱️ {service.pricing.basic.deliveryTime} day{service.pricing.basic.deliveryTime > 1 ? 's' : ''} turnaround
           </span>
@@ -67,7 +80,10 @@ const ServiceCard = ({ service }) => {
 
       <div className="browse-card-footer">
         <span style={{ fontWeight: 700, color: '#111827' }}>
-          Starting at ${service.pricing?.basic?.price || service.packages?.[0]?.price || service.startingPrice || '—'}
+          {service.serviceType === 'recurring'
+            ? `$${service.pricing?.basic?.price || '—'} / ${service.recurring?.billingCycle === 'per_session' ? 'session' : service.recurring?.billingCycle === 'weekly' ? 'week' : 'month'}`
+            : `Starting at $${service.pricing?.basic?.price || service.packages?.[0]?.price || service.startingPrice || '—'}`
+          }
         </span>
         <button className="browse-card-cta" onClick={e => { e.stopPropagation(); navigate(`/services/${service._id}`); }}>
           View Service

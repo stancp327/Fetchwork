@@ -320,14 +320,52 @@ const ServiceDetails = () => {
                   
                   <div className="package-features">
                     <div className="feature">
-                      <span>💰 Price: <strong>${currentPackage.price}</strong></span>
+                      <span>💰 Price: <strong>
+                        ${currentPackage.price}
+                        {service.serviceType === 'recurring' && service.recurring?.billingCycle
+                          ? ` / ${service.recurring.billingCycle === 'per_session' ? 'session' : service.recurring.billingCycle === 'weekly' ? 'week' : 'month'}`
+                          : ''}
+                      </strong></span>
                     </div>
-                    <div className="feature">
-                      <span>⏱️ Delivery: <strong>{currentPackage.deliveryTime} days</strong></span>
-                    </div>
-                    <div className="feature">
-                      <span>🔄 Revisions: <strong>{currentPackage.revisions}</strong></span>
-                    </div>
+                    {service.serviceType === 'recurring' ? (
+                      <>
+                        {service.recurring?.sessionDuration && (
+                          <div className="feature">
+                            <span>⏱ Session: <strong>
+                              {service.recurring.sessionDuration < 60
+                                ? `${service.recurring.sessionDuration} min`
+                                : `${service.recurring.sessionDuration / 60} hr`}
+                            </strong></span>
+                          </div>
+                        )}
+                        {service.recurring?.locationType && (
+                          <div className="feature">
+                            <span>📍 Format: <strong>
+                              {service.recurring.locationType === 'online' ? 'Online' : service.recurring.locationType === 'in_person' ? 'In-Person' : 'Online & In-Person'}
+                            </strong></span>
+                          </div>
+                        )}
+                        {currentPackage.sessionsIncluded && (
+                          <div className="feature">
+                            <span>📅 Sessions included: <strong>{currentPackage.sessionsIncluded}</strong></span>
+                          </div>
+                        )}
+                        {service.recurring?.trialEnabled && service.recurring?.trialPrice && (
+                          <div className="feature" style={{ color: '#16a34a' }}>
+                            <span>🎯 Trial session available: <strong>${service.recurring.trialPrice}</strong></span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="feature">
+                          <span>⏱️ Delivery: <strong>{currentPackage.deliveryTime} days</strong></span>
+                        </div>
+                        <div className="feature">
+                          <span>🔄 Revisions: <strong>{currentPackage.revisions}</strong></span>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {service.requirements && (
