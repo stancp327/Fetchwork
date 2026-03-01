@@ -184,4 +184,44 @@ async function calcPlatformFeeAsync({ userId, role = 'freelancer', jobType = 're
   return result.fee;
 }
 
-module.exports = { getFee, calcPlatformFeeAsync, getLocalClientFlatFee, FALLBACK_RATES };
+// ── Tip / bonus: always fee-free ─────────────────────────────────
+async function getTipFee() {
+  return { fee: 0, feeRate: 0, source: 'tip_fee_free' };
+}
+
+// ── Recurring service fee (per billing cycle) ─────────────────────
+// Same priority chain as getFee, but always uses remote % rates.
+async function getRecurringFee({ userId, role, amount }) {
+  return getFee({ userId, role, jobType: 'remote', amount });
+}
+
+// ── Bundle fee (upfront full-price charge) ────────────────────────
+// Fee taken on full bundle amount at time of purchase.
+async function getBundleFee({ userId, role, jobType = 'remote', amount }) {
+  return getFee({ userId, role, jobType, amount });
+}
+
+// ── Human-readable fee display string ────────────────────────────
+function getFeeDisplay({ fee, feeRate, jobType, role }) {
+  if (fee === 0) return 'No platform fee';
+  if (jobType === 'local' && role === 'client') return `Platform fee: $${fee.toFixed(2)}`;
+  if (feeRate != null) return `${(feeRate * 100).toFixed(0)}% platform fee ($${fee.toFixed(2)})`;
+  return `Platform fee: $${fee.toFixed(2)}`;
+}
+
+// ── Cents helpers for Stripe ──────────────────────────────────────
+function toCents(dollars) { return Math.round(dollars * 100); }
+function fromCents(cents)  { return Math.round(cents) / 100; }
+
+module.exports = {
+  getFee,
+  calcPlatformFeeAsync,
+  getTipFee,
+  getRecurringFee,
+  getBundleFee,
+  getFeeDisplay,
+  getLocalClientFlatFee,
+  FALLBACK_RATES,
+  toCents,
+  fromCents,
+};
