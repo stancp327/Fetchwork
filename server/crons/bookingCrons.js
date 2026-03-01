@@ -49,7 +49,7 @@ function initBookingCrons() {
             type:      'booking_reminder',
             title:     'Booking tomorrow',
             message:   `Reminder: you have a booking tomorrow at ${new Date(b.startTime).toLocaleTimeString()}.`,
-            actionUrl: `/bookings/${b._id}`,
+            link: `/bookings/${b._id}`,
           });
 
           // Notify each participant
@@ -60,7 +60,7 @@ function initBookingCrons() {
                 type:      'booking_reminder',
                 title:     'Booking tomorrow',
                 message:   `Reminder: your booking with ${b.freelancer.firstName} is tomorrow.`,
-                actionUrl: `/bookings/${b._id}`,
+                link: `/bookings/${b._id}`,
               });
             }
           }
@@ -99,7 +99,7 @@ function initBookingCrons() {
             type:      'booking_reminder',
             title:     'Booking in 1 hour',
             message:   'You have a booking starting in about 1 hour.',
-            actionUrl: `/bookings/${b._id}`,
+            link: `/bookings/${b._id}`,
           });
 
           for (const p of b.participants) {
@@ -109,7 +109,7 @@ function initBookingCrons() {
                 type:      'booking_reminder',
                 title:     'Booking in 1 hour',
                 message:   `Your session with ${b.freelancer.firstName} starts in about 1 hour.`,
-                actionUrl: `/bookings/${b._id}`,
+                link: `/bookings/${b._id}`,
               });
             }
           }

@@ -89,7 +89,7 @@ const Payments = () => {
       }
     } catch (error) {
       console.error('Error connecting Stripe:', error);
-      setError('Failed to connect Stripe account');
+      setError('Failed to Add Bank Account ?');
     }
   };
 
@@ -185,7 +185,7 @@ const Payments = () => {
                     className="btn btn-primary"
                     onClick={handleConnectStripe}
                   >
-                    Connect Stripe Account
+                    Add Bank Account ?
                   </button>
                 </div>
               </div>
@@ -201,7 +201,7 @@ const Payments = () => {
                 className="btn btn-primary"
                 onClick={handleConnectStripe}
               >
-                Connect Stripe Account
+                Add Bank Account ?
               </button>
             </div>
           </div>

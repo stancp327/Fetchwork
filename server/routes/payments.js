@@ -528,7 +528,7 @@ router.webhookHandler = async (req, res) => {
               title:      'Payment not completed',
               message:    `Your payment for "${failedJob.title}" was declined or not completed. Please try again.`,
               relatedJob: failedJob._id,
-              actionUrl:  `/jobs/${failedJob._id}/progress`,
+              link:  `/jobs/${failedJob._id}/progress`,
             });
           } catch (notifErr) {
             console.error('Webhook: failed-payment notification error:', notifErr.message);

@@ -776,6 +776,7 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
             ));
             const payoutAmt = job.escrowAmount - platformFee;
             await stripeService.releasePayment(payoutAmt, freelancer.stripeAccountId, job.stripePaymentIntentId);
+            if (waived) await freelancer.useFeeWaiverJob();
             if (escrowPayment) { escrowPayment.status = 'completed'; await escrowPayment.save(); }
           }
         } catch (payErr) {
@@ -809,7 +810,7 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
           title: 'Job approved & payment released',
           message: `The client approved your work on "${job.title}" and released your payment!`,
           relatedJob: job._id,
-          actionUrl: `/jobs/${job._id}`,
+          link: `/jobs/${job._id}`,
         });
       } catch (notifErr) { console.error('Failed to create notification:', notifErr.message); }
 
@@ -848,7 +849,7 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
         title: 'Job marked complete',
         message: `${freelancerName} has marked "${job.title}" as complete. Please review and release payment.`,
         relatedJob: job._id,
-        actionUrl: `/jobs/${job._id}/progress`,
+        link: `/jobs/${job._id}/progress`,
       });
     } catch (notifErr) {
       console.error('Failed to create completion notification:', notifErr.message);
@@ -931,7 +932,7 @@ router.post('/:id/refund', authenticateToken, validateMongoId, async (req, res) 
         title:      'Job cancelled',
         message:    `${requesterName} cancelled "${job.title}".${refunded ? ' A refund has been issued.' : ''}`,
         relatedJob: job._id,
-        actionUrl:  `/jobs/${job._id}`,
+        link:  `/jobs/${job._id}`,
       });
     } catch (_) {}
 
@@ -1001,7 +1002,7 @@ router.post('/:id/milestones/request', authenticateToken, validateMongoId, async
       title:      'Milestone update proposed',
       message:    `${clientName} has proposed new milestones for "${job.title}". Review and accept or decline in Messages.`,
       relatedJob: job._id,
-      actionUrl:  '/messages',
+      link:  '/messages',
     });
 
     res.json({ message: 'Milestone change request sent', messageId: sysMsg._id });
@@ -1066,7 +1067,7 @@ router.post('/:id/milestones/request/accept', authenticateToken, validateMongoId
       title:      'Milestone changes accepted',
       message:    `${freelancerName} accepted your proposed milestones for "${job.title}".`,
       relatedJob: job._id,
-      actionUrl:  '/projects?view=client',
+      link:  '/projects?view=client',
     });
 
     res.json({ message: 'Milestones updated', milestones: job.milestones });
@@ -1111,7 +1112,7 @@ router.post('/:id/milestones/request/decline', authenticateToken, validateMongoI
       title:      'Milestone changes declined',
       message:    `${freelancerName} declined your proposed milestones for "${job.title}".${reason ? ` Reason: ${reason}` : ''}`,
       relatedJob: job._id,
-      actionUrl:  '/messages',
+      link:  '/messages',
     });
 
     res.json({ message: 'Milestone request declined' });
@@ -1205,7 +1206,7 @@ router.post('/:id/milestones/:index/fund/confirm', authenticateToken, validateMo
       title:      'Milestone funded',
       message:    `Milestone "${milestone.title}" has been funded ($${milestone.amount}).`,
       relatedJob: job._id,
-      actionUrl:  `/jobs/${job._id}/progress`,
+      link:  `/jobs/${job._id}/progress`,
     });
 
     res.json({ message: 'Milestone funded', milestone: { ...milestone.toObject(), _id: String(milestone._id) } });
@@ -1277,7 +1278,7 @@ router.post('/:id/milestones/:index/release', authenticateToken, validateMongoId
       title:      'Milestone payment released',
       message:    `$${payoutAmt.toFixed(2)} released for milestone "${milestone.title}".`,
       relatedJob: job._id,
-      actionUrl:  `/jobs/${job._id}/progress`,
+      link:  `/jobs/${job._id}/progress`,
     });
 
     res.json({ message: 'Milestone payment released', payoutAmt, transfer: transfer.id });
@@ -1402,7 +1403,7 @@ router.put('/:id/milestones/:index', authenticateToken, async (req, res) => {
           title: 'Milestone completed',
           message: `Milestone "${milestone.title}" has been marked complete on "${job.title}". Review and approve it.`,
           relatedJob: job._id,
-          actionUrl: `/jobs/${job._id}/progress`,
+          link: `/jobs/${job._id}/progress`,
         });
       }
       if (isClient && status === 'approved') {
@@ -1412,7 +1413,7 @@ router.put('/:id/milestones/:index', authenticateToken, async (req, res) => {
           title: 'Milestone approved',
           message: `The client approved milestone "${milestone.title}" on "${job.title}".`,
           relatedJob: job._id,
-          actionUrl: `/jobs/${job._id}/progress`,
+          link: `/jobs/${job._id}/progress`,
         });
       }
       if (isClient && status === 'in_progress') {
@@ -1422,7 +1423,7 @@ router.put('/:id/milestones/:index', authenticateToken, async (req, res) => {
           title: 'Revision requested',
           message: `The client requested a revision on milestone "${milestone.title}" for "${job.title}".`,
           relatedJob: job._id,
-          actionUrl: `/jobs/${job._id}/progress`,
+          link: `/jobs/${job._id}/progress`,
         });
       }
     } catch (notifErr) {
