@@ -81,8 +81,10 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    // In production, log but still allow (don't break the app)
-    // TODO: tighten to reject once confirmed working
+    // Block unknown origins in production; warn in development
+    if (process.env.NODE_ENV === 'production') {
+      return callback(new Error(`CORS blocked: ${origin}`));
+    }
     console.warn(`CORS warning - unexpected origin: ${origin}`);
     return callback(null, true);
   },

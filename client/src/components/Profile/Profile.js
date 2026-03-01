@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import SEO from '../common/SEO';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import FileUpload from '../common/FileUpload';

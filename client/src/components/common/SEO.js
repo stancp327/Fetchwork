@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 
 const SITE_NAME = 'Fetchwork';
 const DEFAULT_DESC = 'Find local freelancers and jobs near you. Fetchwork connects skilled professionals with clients for both remote and local projects.';

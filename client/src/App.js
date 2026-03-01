@@ -1,5 +1,6 @@
 import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppErrorBoundary from './components/common/AppErrorBoundary';
 import RouteErrorBoundary from './components/common/RouteErrorBoundary';
@@ -342,21 +343,23 @@ function App() {
   }, []);
 
   return (
-    <AppErrorBoundary>
-      <AuthErrorBoundary>
-        <AuthProvider>
-          <RoleProvider>
-            <MessagingProvider>
-              <ToastProvider>
-                <Router>
-                  <AppContent />
-                </Router>
-              </ToastProvider>
-            </MessagingProvider>
-          </RoleProvider>
-        </AuthProvider>
-      </AuthErrorBoundary>
-    </AppErrorBoundary>
+    <HelmetProvider>
+      <AppErrorBoundary>
+        <AuthErrorBoundary>
+          <AuthProvider>
+            <RoleProvider>
+              <MessagingProvider>
+                <ToastProvider>
+                  <Router>
+                    <AppContent />
+                  </Router>
+                </ToastProvider>
+              </MessagingProvider>
+            </RoleProvider>
+          </AuthProvider>
+        </AuthErrorBoundary>
+      </AppErrorBoundary>
+    </HelmetProvider>
   );
 }
 
