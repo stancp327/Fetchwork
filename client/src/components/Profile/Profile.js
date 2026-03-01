@@ -9,6 +9,7 @@ import CategoryCombobox from '../common/CategoryCombobox';
 import StripeConnect from '../Payments/StripeConnect';
 import PaymentMethods from '../Payments/PaymentMethods';
 import CalendarConnect from '../Booking/CalendarConnect';
+import { TrustBadge } from '../common/TrustBadges';
 import './Profile.css';
 
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
@@ -44,6 +45,21 @@ const SummaryCard = ({ data, completion }) => (
       )}
     </div>
     <h3 className="summary-name">{data.firstName} {data.lastName}</h3>
+
+    {/* Earned badges — only rendered if the user has at least one */}
+    {(() => {
+      const earned = [];
+      if (data.isEmailVerified || data.isVerified || data.badges?.includes('email_verified')) earned.push('email_verified');
+      if (data.verificationLevel === 'identity' || data.verificationLevel === 'full' || data.badges?.includes('id_verified')) earned.push('id_verified');
+      if (data.rating >= 4.5 && data.totalReviews >= 5) earned.push('top_rated');
+      if (data.backgroundCheck?.status === 'passed' || data.badges?.includes('bg_checked')) earned.push('bg_checked');
+      return earned.length > 0 ? (
+        <div className="summary-badges">
+          {earned.map(b => <TrustBadge key={b} type={b} size="sm" />)}
+        </div>
+      ) : null;
+    })()}
+
     {data.headline && <p className="summary-headline">{data.headline}</p>}
     {data.location && <p className="summary-location">📍 {getLocationDisplay(data.location)}</p>}
 
@@ -375,9 +391,74 @@ const TabVerification = ({ data, onRefresh }) => {
     }
   };
 
+  // ── Badge definitions ──────────────────────────────────────────
+  const BADGE_DEFS = [
+    {
+      key:    'email_verified',
+      icon:   '✉️',
+      label:  'Email Verified',
+      color:  '#2563eb',
+      earned: data.isEmailVerified || data.isVerified || data.badges?.includes('email_verified'),
+      how:    'Verify your email address from the link we send on signup.',
+    },
+    {
+      key:    'id_verified',
+      icon:   '🪪',
+      label:  'ID Verified',
+      color:  '#059669',
+      earned: status === 'approved' || data.badges?.includes('id_verified'),
+      how:    'Submit a government-issued ID below. Usually approved in 1–2 business days.',
+    },
+    {
+      key:    'top_rated',
+      icon:   '⭐',
+      label:  'Top Rated',
+      color:  '#d97706',
+      earned: (data.rating >= 4.5 && (data.totalReviews || 0) >= 5) || data.badges?.includes('top_rated'),
+      how:    `Maintain a 4.5+ star rating with at least 5 reviews. You're at ${data.rating?.toFixed(1) || '—'} ⭐ with ${data.totalReviews || 0} review${data.totalReviews !== 1 ? 's' : ''}.`,
+    },
+    {
+      key:    'bg_checked',
+      icon:   '🔍',
+      label:  'Background Checked',
+      color:  '#7c3aed',
+      earned: data.backgroundCheck?.status === 'passed' || data.badges?.includes('bg_checked'),
+      how:    'Background checks are coming soon.',
+    },
+  ];
+
+  const earnedCount = BADGE_DEFS.filter(b => b.earned).length;
+
   return (
     <div className="tab-content">
       <h2>Safety & Trust</h2>
+
+      {/* ── Badge Showcase ───────────────────────────────────────── */}
+      <div className="badge-showcase">
+        <div className="badge-showcase-header">
+          <div>
+            <h3>Your Badges</h3>
+            <p>{earnedCount} of {BADGE_DEFS.length} earned — badges appear on your public profile and build client trust.</p>
+          </div>
+          {earnedCount > 0 && <span className="badge-count-pill">{earnedCount} earned</span>}
+        </div>
+        <div className="badge-showcase-grid">
+          {BADGE_DEFS.map(b => (
+            <div key={b.key} className={`badge-showcase-item ${b.earned ? 'earned' : 'locked'}`}>
+              <div className="bsi-icon-wrap" style={{ '--badge-glow': b.color }}>
+                <span className="bsi-icon">{b.icon}</span>
+                {b.earned && <span className="bsi-check">✓</span>}
+              </div>
+              <strong className="bsi-label">{b.label}</strong>
+              {b.earned ? (
+                <span className="bsi-status earned">Earned ✓</span>
+              ) : (
+                <p className="bsi-how">{b.how}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Email + phone checks */}
       <div className="verify-list">
