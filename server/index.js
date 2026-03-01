@@ -27,7 +27,12 @@ const allowedSocketOrigins = (() => {
 
 const io = new Server(server, {
   cors: {
-    origin: allowedSocketOrigins,
+    origin: (origin, callback) => {
+      // Allow no-origin (React Native, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedSocketOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`Socket CORS blocked: ${origin}`));
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }

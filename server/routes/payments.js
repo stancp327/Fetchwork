@@ -717,4 +717,25 @@ router.webhookHandler = async (req, res) => {
   }
 };
 
+// ── POST /api/payments/ephemeral-key — Stripe React Native ──────
+router.post('/ephemeral-key', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId)
+      .select('stripeCustomerId email firstName lastName');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const customerId = await stripeService.ensureCustomer(user);
+    if (!user.stripeCustomerId) {
+      user.stripeCustomerId = customerId;
+      await user.save();
+    }
+
+    const ephemeralKey = await stripeService.createEphemeralKey(customerId);
+    res.json({ ephemeralKey: ephemeralKey.secret, customerId });
+  } catch (err) {
+    console.error('Ephemeral key error:', err);
+    res.status(500).json({ error: 'Failed to create ephemeral key' });
+  }
+});
+
 module.exports = router;

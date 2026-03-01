@@ -476,4 +476,38 @@ router.get('/verification-status', authenticateToken, async (req, res) => {
   }
 });
 
+// ── POST /api/users/push-token — register Expo push token ───────
+router.post('/push-token', authenticateToken, async (req, res) => {
+  const { token, deviceId } = req.body;
+  if (!token || !deviceId) return res.status(400).json({ error: 'token and deviceId required' });
+  try {
+    const userId = req.user._id || req.user.userId;
+    // Remove existing entry for this device, then add fresh one
+    await User.findByIdAndUpdate(userId, { $pull: { expoPushTokens: { deviceId } } });
+    await User.findByIdAndUpdate(userId, {
+      $push: { expoPushTokens: { token, deviceId, addedAt: new Date() } }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Push token register error:', err);
+    res.status(500).json({ error: 'Failed to register push token' });
+  }
+});
+
+// ── DELETE /api/users/push-token — unregister on logout ─────────
+router.delete('/push-token', authenticateToken, async (req, res) => {
+  const { deviceId } = req.body;
+  if (!deviceId) return res.status(400).json({ error: 'deviceId required' });
+  try {
+    await User.findByIdAndUpdate(
+      req.user._id || req.user.userId,
+      { $pull: { expoPushTokens: { deviceId } } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Push token remove error:', err);
+    res.status(500).json({ error: 'Failed to remove push token' });
+  }
+});
+
 module.exports = router;

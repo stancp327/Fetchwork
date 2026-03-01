@@ -115,7 +115,7 @@ router.post('/login', validateLogin, async (req, res) => {
       user.role = 'admin';
     }
     const token = await new Promise((resolve, reject) => {
-      jwt.sign({ userId: user._id, isAdmin, role: user.role }, JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
+      jwt.sign({ userId: user._id, isAdmin, role: user.role, tokenVersion: user.tokenVersion || 0 }, JWT_SECRET, { expiresIn: '7d' }, (err, token) => {
         if (err) reject(err);
         else resolve(token);
       });
@@ -431,5 +431,100 @@ router.get('/facebook/callback',
     }
   }
 );
+
+// ── POST /api/auth/refresh — exchange valid token for a new one ──
+router.post('/refresh', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.userId).select('tokenVersion role isAdmin email');
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted || user.role === 'admin';
+    const token = jwt.sign(
+      { userId: user._id, isAdmin, role: user.role, tokenVersion: user.tokenVersion || 0 },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    res.json({ token });
+  } catch (err) {
+    console.error('Token refresh error:', err);
+    res.status(500).json({ error: 'Failed to refresh token' });
+  }
+});
+
+// ── POST /api/auth/logout — invalidate all sessions ─────────────
+router.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(
+      req.user._id || req.user.userId,
+      { $inc: { tokenVersion: 1 } }
+    );
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    // Still return success — client should clear token regardless
+    res.json({ message: 'Logged out' });
+  }
+});
+
+// ── POST /api/auth/google/mobile — Google ID token for Expo ─────
+router.post('/google/mobile', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) return res.status(400).json({ error: 'idToken required' });
+
+    const { OAuth2Client } = require('google-auth-library');
+    const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, given_name, family_name, picture, sub: googleId } = payload;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({
+        email,
+        firstName: given_name || '',
+        lastName:  family_name || '',
+        profilePicture: picture || '',
+        googleId,
+        isEmailVerified: true,
+        isVerified: true,
+        verificationLevel: 'email',
+        badges: ['email_verified'],
+        role: 'freelancer',
+        tokenVersion: 0,
+      });
+      await user.save();
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      user.isEmailVerified = true;
+      if (!user.badges.includes('email_verified')) user.badges.push('email_verified');
+      await user.save();
+    }
+
+    const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted || user.role === 'admin';
+    const token = jwt.sign(
+      { userId: user._id, isAdmin, role: user.role, tokenVersion: user.tokenVersion || 0 },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        profilePicture: user.profilePicture,
+      }
+    });
+  } catch (err) {
+    console.error('Google mobile auth error:', err);
+    res.status(401).json({ error: 'Google authentication failed' });
+  }
+});
 
 module.exports = router;

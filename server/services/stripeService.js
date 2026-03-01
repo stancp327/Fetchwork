@@ -385,6 +385,15 @@ class StripeService {
   async createTransfer(amount, destination) {
     return this.releasePayment(amount, destination);
   }
+
+  /** Create an ephemeral key for Stripe React Native Payment Sheet */
+  async createEphemeralKey(customerId) {
+    this._ensureStripe();
+    return stripe.ephemeralKeys.create(
+      { customer: customerId },
+      { apiVersion: '2023-10-16' }
+    );
+  }
 }
 
 module.exports = new StripeService();
