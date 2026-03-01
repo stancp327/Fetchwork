@@ -441,6 +441,35 @@ router.delete('/:id', authenticateToken, validateMongoId, async (req, res) => {
   }
 });
 
+// ── Feature toggle (Pro plan only) ──────────────────────────────
+router.post('/:id/feature', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { requireFeature } = require('../middleware/entitlements');
+    const userId = (req.user._id || req.user.userId).toString();
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (job.client.toString() !== userId) return res.status(403).json({ error: 'Not authorized' });
+
+    // Check entitlement inline (avoids middleware chaining complexity)
+    const { getUserSubscription } = require('../utils/billingUtils');
+    const sub = await getUserSubscription(userId);
+    const features = sub?.plan?.features || [];
+    if (!features.includes('featured_placement_eligible')) {
+      return res.status(403).json({
+        error: 'Featured placement requires a Pro plan.',
+        upgradeRequired: true,
+      });
+    }
+
+    job.isFeatured = !job.isFeatured;
+    await job.save();
+    res.json({ isFeatured: job.isFeatured });
+  } catch (err) {
+    console.error('Feature toggle error:', err);
+    res.status(500).json({ error: 'Failed to update featured status' });
+  }
+});
+
 router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateMongoId, validateProposal, async (req, res) => {
   try {
     const { coverLetter, proposedBudget, proposedDuration } = req.body;

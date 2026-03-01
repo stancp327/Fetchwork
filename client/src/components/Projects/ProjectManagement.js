@@ -539,6 +539,25 @@ const FreelancerInProgressHeader = ({ job }) => {
 // ── Project Card ────────────────────────────────────────────────
 const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onFundMilestone, onReleaseMilestone, onProposeMilestones, onStartJob, onBeginJob, onRefresh }) => {
   const navigate = useNavigate();
+  const [featured, setFeatured]   = React.useState(!!job.isFeatured);
+  const [featuring, setFeaturing] = React.useState(false);
+
+  const handleFeatureToggle = async () => {
+    setFeaturing(true);
+    try {
+      const res = await apiRequest(`/api/jobs/${job._id}/feature`, { method: 'POST' });
+      setFeatured(res.isFeatured);
+    } catch (err) {
+      if (err.data?.upgradeRequired) {
+        alert('Featured placement requires a Pro plan. Upgrade at /pricing.');
+      } else {
+        alert(err.message || 'Failed to update');
+      }
+    } finally {
+      setFeaturing(false);
+    }
+  };
+
   const budget       = job.budget || {};
   const status       = job.status || 'draft';
   const isFreelancer = job._userRole === 'freelancer';
@@ -817,6 +836,16 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
         {isClient && status === 'in_progress' && (
           <button className="pm-btn-complete client" onClick={() => onComplete(job._id)}>
             {job.escrowAmount > 0 ? '✓ Approve & Release Payment' : '✓ Mark Job Complete'}
+          </button>
+        )}
+        {isClient && status === 'open' && !isArchived && (
+          <button
+            className={`pm-btn-feature ${featured ? 'active' : ''}`}
+            onClick={handleFeatureToggle}
+            disabled={featuring}
+            title={featured ? 'Remove featured placement' : 'Feature this job (Pro)'}
+          >
+            {featuring ? '…' : featured ? '⭐ Featured' : '☆ Feature Job'}
           </button>
         )}
       </div>
