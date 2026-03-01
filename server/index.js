@@ -260,6 +260,8 @@ app.use('/api/availability', require('./routes/availability'));
 app.use('/api/bookings',     require('./routes/bookings'));
 app.use('/api/calendar',     require('./routes/calendar'));
 app.use('/api/billing',      require('./routes/billing'));
+app.use('/api/job-alerts',   require('./routes/jobAlerts'));
+app.use('/api/referrals',    require('./routes/referrals'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {
@@ -298,6 +300,9 @@ initBookingCrons();
 
 const { initArchiveCrons } = require('./crons/archiveCrons');
 initArchiveCrons();
+
+const { init: initRecurringCron } = require('./crons/recurringCron');
+initRecurringCron();
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

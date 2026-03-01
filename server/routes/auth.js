@@ -8,13 +8,14 @@ const { authenticateToken } = require('../middleware/auth');
 const { validateRegister, validateLogin } = require('../middleware/validation');
 const { body } = require('express-validator');
 const { ADMIN_EMAILS, JWT_SECRET, CLIENT_URL } = require('../config/env');
+const { applyReferral } = require('./referrals');
 const { trackEvent } = require('../middleware/analytics');
 const { assignDefaultPlan } = require('../utils/billingUtils');
 
 // ── Register ────────────────────────────────────────────────────
 router.post('/register', validateRegister, async (req, res) => {
   try {
-    const { email, password, firstName, lastName, accountType } = req.body;
+    const { email, password, firstName, lastName, accountType, ref } = req.body;
     
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -45,6 +46,9 @@ router.post('/register', validateRegister, async (req, res) => {
     // Assign default (free) billing plan — non-fatal if plans not seeded yet
     const planAudience = (accountType === 'client') ? 'client' : 'freelancer';
     assignDefaultPlan(user._id, planAudience).catch(() => {});
+
+    // Apply referral if signup came via a ref link — fire-and-forget
+    if (ref) applyReferral(String(user._id), ref).catch(() => {});
 
     try {
       const emailService = require('../services/emailService');

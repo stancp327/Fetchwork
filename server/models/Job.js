@@ -280,7 +280,16 @@ const jobSchema = new mongoose.Schema({
     type: String,
     enum: ['completed', 'past_deadline', 'admin', null],
     default: null
-  }
+  },
+  // ── Recurring ────────────────────────────────────────────────────
+  recurring: {
+    enabled:       { type: Boolean, default: false },
+    interval:      { type: String, enum: ['weekly', 'biweekly', 'monthly'], default: 'monthly' },
+    endDate:       { type: Date },
+    nextRunDate:   { type: Date },           // when to spawn the next instance
+    parentJobId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Job' }, // links all instances
+    instanceCount: { type: Number, default: 0 }, // how many times spawned
+  },
 }, {
   timestamps: true
 });

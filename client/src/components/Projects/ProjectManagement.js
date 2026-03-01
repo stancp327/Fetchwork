@@ -5,6 +5,7 @@ import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
 import { categoryLabelMap } from '../../utils/categories';
 import EscrowModal from '../Payments/EscrowModal';
+import TipModal from '../Payments/TipModal';
 import SEO from '../common/SEO';
 import './ProjectManagement.css';
 
@@ -537,7 +538,7 @@ const FreelancerInProgressHeader = ({ job }) => {
 };
 
 // ── Project Card ────────────────────────────────────────────────
-const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onFundMilestone, onReleaseMilestone, onProposeMilestones, onStartJob, onBeginJob, onRefresh }) => {
+const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onFundMilestone, onReleaseMilestone, onProposeMilestones, onStartJob, onBeginJob, onRefresh, onTip }) => {
   const navigate = useNavigate();
   const [featured, setFeatured]   = React.useState(!!job.isFeatured);
   const [featuring, setFeaturing] = React.useState(false);
@@ -848,6 +849,14 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
             {featuring ? '…' : featured ? '⭐ Featured' : '☆ Feature Job'}
           </button>
         )}
+        {isClient && status === 'completed' && onTip && (
+          <button className="pm-btn-tip" onClick={() => onTip(job)}>
+            🎁 Send Tip
+          </button>
+        )}
+        {job.recurring?.enabled && (
+          <span className="pm-badge-recurring" title={`Recurring ${job.recurring.interval}`}>♻️ Recurring</span>
+        )}
       </div>
 
       <div className="pm-project-footer">
@@ -1111,6 +1120,7 @@ const ProjectManagement = () => {
 
   // ── Milestone change modal ─────────────────────────────────
   const [msModalJob, setMsModalJob] = useState(null);
+  const [tipJob,     setTipJob]     = useState(null);
 
   // ── Milestone fund / release ────────────────────────────────
   const [milestoneFunding, setMilestoneFunding] = useState(null);
@@ -1391,6 +1401,7 @@ const ProjectManagement = () => {
               onStartJob={handleStartJob}
               onBeginJob={handleBeginJob}
               onRefresh={fetchJobs}
+              onTip={setTipJob}
             />
           ))}
         </div>
@@ -1403,6 +1414,14 @@ const ProjectManagement = () => {
           job={msModalJob}
           onClose={() => setMsModalJob(null)}
           onSent={fetchJobs}
+        />
+      )}
+
+      {tipJob && (
+        <TipModal
+          job={tipJob}
+          onClose={() => setTipJob(null)}
+          onSuccess={fetchJobs}
         />
       )}
 

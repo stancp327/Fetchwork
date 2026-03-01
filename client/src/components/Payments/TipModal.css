@@ -1,0 +1,52 @@
+/* ── TipModal.css ─────────────────────────────────────────────── */
+.tip-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-md);
+}
+.tip-modal {
+  background: var(--color-bg-primary); border-radius: var(--radius-lg);
+  padding: var(--space-xl); width: 100%; max-width: 400px;
+  position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.tip-close {
+  position: absolute; top: var(--space-md); right: var(--space-md);
+  background: none; border: none; font-size: 1.1rem; cursor: pointer;
+  color: var(--color-text-muted); min-width: 36px; min-height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+}
+.tip-close:hover { background: var(--color-bg-secondary); }
+.tip-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 var(--space-xs); }
+.tip-sub   { font-size: 0.9rem; color: var(--color-text-secondary); margin: 0 0 var(--space-lg); }
+.tip-presets { display: flex; gap: var(--space-xs); margin-bottom: var(--space-md); flex-wrap: wrap; }
+.tip-preset {
+  flex: 1; min-width: 56px; padding: 0.5rem; border: 2px solid var(--color-border);
+  background: var(--color-bg-secondary); border-radius: var(--radius-sm);
+  font-size: 0.9rem; font-weight: 600; cursor: pointer; min-height: 44px;
+  transition: border-color 0.12s, background 0.12s;
+}
+.tip-preset:hover  { border-color: var(--color-primary); }
+.tip-preset.active { border-color: var(--color-primary); background: var(--color-primary-bg, #eff6ff); color: var(--color-primary); }
+.tip-field        { margin-bottom: var(--space-md); }
+.tip-field label  { display: block; font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.tip-input-wrap   { display: flex; align-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden; background: var(--color-bg-secondary); }
+.tip-prefix       { padding: 0 var(--space-sm); font-size: 1rem; color: var(--color-text-secondary); }
+.tip-input        { border: none; background: transparent; flex: 1; padding: 0.65rem var(--space-sm) 0.65rem 0; font-size: 1rem; outline: none; min-height: 44px; }
+.tip-select       { width: 100%; padding: 0.65rem var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg-secondary); font-size: 0.9rem; min-height: 44px; }
+.tip-no-pm        { font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: var(--space-md); }
+.tip-no-pm a      { color: var(--color-primary); }
+.tip-error        { color: var(--color-danger, #dc2626); font-size: 0.85rem; margin-bottom: var(--space-sm); }
+.tip-submit {
+  width: 100%; padding: 0.75rem; font-size: 1rem; font-weight: 600;
+  background: var(--color-primary); color: #fff; border: none;
+  border-radius: var(--radius-sm); cursor: pointer; min-height: 48px;
+  transition: opacity 0.15s;
+}
+.tip-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.tip-submit:hover:not(:disabled) { opacity: 0.88; }
+.tip-success      { text-align: center; padding: var(--space-xl) 0; }
+.tip-success-icon { font-size: 2.5rem; display: block; margin-bottom: var(--space-sm); }
+.tip-success h3   { font-size: 1.2rem; margin: 0 0 var(--space-xs); }
+.tip-success p    { color: var(--color-text-secondary); margin: 0; }

@@ -40,7 +40,10 @@ const notificationSchema = new mongoose.Schema({
       // System
       'system',
       'system_announcement',
-      'account_warning'
+      'account_warning',
+      // Alerts & Referrals
+      'job_alert',
+      'referral_reward',
     ],
     required: true
   },

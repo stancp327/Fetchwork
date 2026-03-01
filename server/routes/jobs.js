@@ -13,6 +13,8 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 const Payment = require('../models/Payment');
+const { checkJobAlerts }          = require('./jobAlerts');
+const { triggerReferralReward }   = require('./referrals');
 
 router.get('/', validateQueryParams, async (req, res) => {
   try {
@@ -301,7 +303,8 @@ router.post('/', authenticateToken, validateJobPost, checkJobLimit, async (req, 
       isRemote, // backward compat: accept old field
       isUrgent,
       jobType,
-      deadline
+      deadline,
+      recurring
     } = req.body;
 
     // Build location object — support both old format (string + isRemote) and new format (object)
@@ -336,11 +339,20 @@ router.post('/', authenticateToken, validateJobPost, checkJobLimit, async (req, 
       isUrgent: isUrgent || false,
       jobType: jobType || 'freelance',
       client: req.user._id,
-      status: 'open'
+      status: 'open',
+      recurring: recurring?.enabled ? {
+        enabled:  true,
+        interval: recurring.interval || 'monthly',
+        endDate:  recurring.endDate ? new Date(recurring.endDate) : undefined,
+        nextRunDate: null,
+      } : { enabled: false },
     });
     
     await job.save();
-    
+
+    // Fire job alerts async — non-blocking, never delays response
+    checkJobAlerts(job).catch(() => {});
+
     const populatedJob = await Job.findById(job._id)
       .populate('client', 'firstName lastName profilePicture rating totalJobs');
     
@@ -842,6 +854,19 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
           link: `/jobs/${job._id}`,
         });
       } catch (notifErr) { console.error('Failed to create notification:', notifErr.message); }
+
+      // Trigger referral reward if this is the freelancer's first completed job
+      triggerReferralReward(String(job.freelancer._id)).catch(() => {});
+
+      // Schedule next run for recurring jobs
+      if (job.recurring?.enabled) {
+        const now = new Date();
+        const next = new Date(now);
+        if (job.recurring.interval === 'weekly')        next.setDate(next.getDate() + 7);
+        else if (job.recurring.interval === 'biweekly') next.setDate(next.getDate() + 14);
+        else                                             next.setMonth(next.getMonth() + 1);
+        await require('../models/Job').updateOne({ _id: job._id }, { 'recurring.nextRunDate': next });
+      }
 
       return res.json({ message: 'Job approved and payment released', job: await Job.findById(job._id) });
     }

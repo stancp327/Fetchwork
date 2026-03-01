@@ -31,7 +31,10 @@ const PostJob = () => {
     deadline: '',
     scheduledDate: '',
     cancellationPolicy: 'flexible',
-    isUrgent: false
+    isUrgent: false,
+    recurringEnabled:  false,
+    recurringInterval: 'monthly',
+    recurringEndDate:  '',
   });
   const [errors, setErrors] = useState({});
 
@@ -132,7 +135,13 @@ const PostJob = () => {
         deadline: formData.deadline || null,
         scheduledDate: formData.scheduledDate || null,
         cancellationPolicy: formData.locationType !== 'remote' ? formData.cancellationPolicy : 'flexible',
-        isUrgent: formData.isUrgent
+        isUrgent: formData.isUrgent,
+        recurring: formData.recurringEnabled ? {
+          enabled:  true,
+          interval: formData.recurringInterval,
+          endDate:  formData.recurringEndDate || null,
+          nextRunDate: null, // set server-side on job completion
+        } : { enabled: false },
       };
 
       await apiRequest('/api/jobs', { method: 'POST', body: JSON.stringify(jobData) });
@@ -491,6 +500,49 @@ const PostJob = () => {
             />
             <label htmlFor="isUrgent">⚡ This is an urgent job</label>
           </div>
+
+          <div className="post-job-checkbox">
+            <input
+              type="checkbox"
+              id="recurringEnabled"
+              name="recurringEnabled"
+              checked={formData.recurringEnabled}
+              onChange={handleInputChange}
+            />
+            <label htmlFor="recurringEnabled">♻️ Make this a recurring job</label>
+          </div>
+
+          {formData.recurringEnabled && (
+            <div className="post-job-recurring">
+              <div className="form-group">
+                <label className="form-label">Repeat every</label>
+                <select
+                  name="recurringInterval"
+                  value={formData.recurringInterval}
+                  onChange={handleInputChange}
+                  className="form-input"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Every 2 weeks</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">End date (optional)</label>
+                <input
+                  type="date"
+                  name="recurringEndDate"
+                  value={formData.recurringEndDate}
+                  onChange={handleInputChange}
+                  className="form-input"
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <p className="post-job-recurring-hint">
+                After each job completes, a new one will be posted automatically and your previous freelancer will get first look.
+              </p>
+            </div>
+          )}
 
           {error && <div className="error-banner">{error}</div>}
           {upgradeLimit && (

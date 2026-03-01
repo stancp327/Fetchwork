@@ -1,0 +1,41 @@
+/* ── SaveSearchModal.css ─────────────────────────────────────── */
+.ss-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-md);
+}
+.ss-modal {
+  background: var(--color-bg-primary); border-radius: var(--radius-lg);
+  padding: var(--space-xl); width: 100%; max-width: 420px;
+  position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.ss-close {
+  position: absolute; top: var(--space-md); right: var(--space-md);
+  background: none; border: none; font-size: 1.1rem; cursor: pointer;
+  color: var(--color-text-muted); min-width: 36px; min-height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+}
+.ss-close:hover { background: var(--color-bg-secondary); }
+.ss-title    { font-size: 1.2rem; font-weight: 700; margin: 0 0 var(--space-md); }
+.ss-filters  { background: var(--color-bg-secondary); border-radius: var(--radius-sm); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-md); }
+.ss-filters-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-muted); margin: 0 0 4px; }
+.ss-filter-list   { margin: 0; padding: 0 0 0 var(--space-md); list-style: disc; font-size: 0.88rem; color: var(--color-text-secondary); }
+.ss-filter-list li { margin-bottom: 2px; }
+.ss-no-filters    { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: var(--space-md); }
+.ss-field         { margin-bottom: var(--space-md); }
+.ss-field label   { display: block; font-size: 0.82rem; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.ss-input         { width: 100%; padding: 0.65rem var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg-secondary); font-size: 0.9rem; min-height: 44px; box-sizing: border-box; }
+.ss-frequency     { display: flex; gap: var(--space-xs); }
+.ss-freq-btn      { flex: 1; padding: 0.5rem; border: 2px solid var(--color-border); background: var(--color-bg-secondary); border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 500; cursor: pointer; min-height: 44px; transition: border-color 0.12s; }
+.ss-freq-btn:hover  { border-color: var(--color-primary); }
+.ss-freq-btn.active { border-color: var(--color-primary); background: var(--color-primary-bg, #eff6ff); color: var(--color-primary); }
+.ss-error  { color: var(--color-danger, #dc2626); font-size: 0.85rem; margin-bottom: var(--space-sm); }
+.ss-submit { width: 100%; padding: 0.75rem; font-size: 1rem; font-weight: 600; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; min-height: 48px; margin-top: var(--space-xs); transition: opacity 0.15s; }
+.ss-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.ss-submit:hover:not(:disabled) { opacity: 0.88; }
+.ss-success      { text-align: center; padding: var(--space-xl) 0; }
+.ss-success span { font-size: 2rem; display: block; margin-bottom: var(--space-sm); }
+.ss-success h3   { font-size: 1.1rem; margin: 0 0 var(--space-xs); }
+.ss-success p    { color: var(--color-text-secondary); margin: 0; font-size: 0.9rem; }

@@ -401,6 +401,88 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
   }
 });
 
+// ── POST /tip — client sends a bonus tip to freelancer ──────────
+router.post('/tip', authenticateToken, async (req, res) => {
+  try {
+    const { jobId, amount, paymentMethodId } = req.body;
+    if (!jobId || !amount) return res.status(400).json({ error: 'jobId and amount required' });
+    if (typeof amount !== 'number' || amount < 1 || amount > 5000) {
+      return res.status(400).json({ error: 'Tip must be between $1 and $5,000' });
+    }
+
+    const job = await Job.findById(jobId).populate('freelancer');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (String(job.client) !== String(req.user.userId)) {
+      return res.status(403).json({ error: 'Only the client can send a tip' });
+    }
+    if (job.status !== 'completed') {
+      return res.status(400).json({ error: 'Tips can only be sent on completed jobs' });
+    }
+
+    const freelancerId = String(job.freelancer?._id || job.freelancer);
+    const clientUser   = await User.findById(req.user.userId);
+    const freelancer   = await User.findById(freelancerId).select('firstName lastName email stripeAccountId');
+
+    if (!freelancer?.stripeAccountId) {
+      return res.status(400).json({ error: 'Freelancer has not connected a bank account yet' });
+    }
+
+    const metadata = {
+      jobId:        String(jobId),
+      clientId:     String(req.user.userId),
+      freelancerId,
+      type:         'tip',
+    };
+
+    let paymentIntent;
+    if (paymentMethodId) {
+      if (!clientUser.stripeCustomerId) {
+        return res.status(400).json({ error: 'No saved payment methods on file' });
+      }
+      paymentIntent = await stripeService.chargeWithSavedMethod(
+        amount, clientUser.stripeCustomerId, paymentMethodId, metadata
+      );
+    } else {
+      paymentIntent = await stripeService.chargeForJob(amount, 'usd', metadata);
+    }
+
+    // Record payment
+    const payment = await Payment.create({
+      job:         jobId,
+      client:      req.user.userId,
+      freelancer:  freelancerId,
+      amount,
+      fees:        { platform: 0, payment: 0, total: 0 }, // tips are fee-free
+      netAmount:   amount,
+      type:        'bonus',
+      status:      paymentMethodId ? 'processing' : 'pending',
+      paymentMethod: 'stripe',
+      stripePaymentIntentId: paymentIntent.id,
+      transactionId: paymentIntent.id,
+    });
+
+    // If saved card → transfer immediately (PI already confirmed)
+    if (paymentMethodId && paymentIntent.status === 'succeeded') {
+      await stripeService.releasePayment(amount, freelancer.stripeAccountId, String(jobId));
+      await Payment.findByIdAndUpdate(payment._id, { status: 'completed' });
+    }
+
+    // Notify freelancer
+    const clientName = `${clientUser.firstName || ''} ${clientUser.lastName || ''}`.trim() || 'Your client';
+    await Notification.create({
+      user:    freelancerId,
+      type:    'payment_received',
+      message: `🎉 ${clientName} sent you a $${amount} tip for "${job.title}"!`,
+      link:    `/projects`,
+    });
+
+    res.json({ success: true, paymentIntentId: paymentIntent.id, clientSecret: paymentIntent.client_secret || null });
+  } catch (err) {
+    console.error('Tip error:', err);
+    res.status(500).json({ error: 'Failed to process tip' });
+  }
+});
+
 // ── Webhook handler (mounted in index.js before express.json) ──
 router.webhookHandler = async (req, res) => {
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;

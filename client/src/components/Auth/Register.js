@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 import SEO from '../common/SEO';
@@ -24,6 +24,8 @@ const Register = () => {
   const [resendMsg, setResendMsg] = useState('');
   const [resendCooldownUntil, setResendCooldownUntil] = useState(0);
   const { register } = useAuth();
+  const location = useLocation();
+  const refCode  = new URLSearchParams(location.search).get('ref') || '';
   const cooldownMs = 15000;
   const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
   const navigate = useNavigate();
@@ -58,7 +60,7 @@ const Register = () => {
       return;
     }
 
-    const result = await register(formData);
+    const result = await register({ ...formData, ...(refCode ? { ref: refCode } : {}) });
     
     if (result.success) {
       if (result.requiresVerification) {
@@ -111,7 +113,7 @@ const Register = () => {
 
   return (
     <div className="auth-split">
-      <SEO title="Create Account" description="Join Fetchwork — find freelancers or get hired." path="/register" noIndex={true} />
+      <SEO title="Create Account" description="Join Fetchwork ï¿½ find freelancers or get hired." path="/register" noIndex={true} />
       {/* Brand panel â€” visible on desktop only */}
       <div className="auth-brand">
         <div className="auth-brand-logo">

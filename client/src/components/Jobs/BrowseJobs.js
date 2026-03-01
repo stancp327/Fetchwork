@@ -11,6 +11,7 @@ import BrowseLayout, {
 } from '../common/BrowseLayout';
 import SaveButton from '../common/SaveButton';
 import QuickApply from './QuickApply';
+import SaveSearchModal from '../JobAlerts/SaveSearchModal';
 import { useAuth } from '../../context/AuthContext';
 import '../common/BrowseLayout.css';
 
@@ -134,6 +135,7 @@ const BrowseJobs = () => {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
   const [viewMode, setViewMode] = useState('list');
+  const [showSaveSearch, setShowSaveSearch] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -221,6 +223,19 @@ const BrowseJobs = () => {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+          <button
+            onClick={() => setShowSaveSearch(true)}
+            style={{
+              background: 'none', border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-sm)', padding: '0.4rem 0.9rem',
+              fontSize: '0.82rem', cursor: 'pointer', color: 'var(--color-text-secondary)',
+              display: 'flex', alignItems: 'center', gap: '4px', minHeight: '36px',
+            }}
+          >
+            🔔 Save Search
+          </button>
+        </div>
 
         {loading ? (
           <div className="browse-grid list-view">
@@ -258,6 +273,20 @@ const BrowseJobs = () => {
           job={quickApplyJob}
           onClose={() => setQuickApplyJob(null)}
           onSuccess={() => fetchJobs()}
+        />
+      )}
+
+      {showSaveSearch && (
+        <SaveSearchModal
+          currentFilters={{
+            category:  filters.category !== 'all' ? filters.category : '',
+            keywords:  search,
+            budgetMin: filters.minBudget ? Number(filters.minBudget) : undefined,
+            budgetMax: filters.maxBudget ? Number(filters.maxBudget) : undefined,
+            location:  filters.near,
+          }}
+          onClose={() => setShowSaveSearch(false)}
+          onSaved={() => setShowSaveSearch(false)}
         />
       )}
     </>
