@@ -207,3 +207,52 @@
   .aud-audit-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; }
   .aud-audit-date { white-space: nowrap; }
 }
+
+/* ── Feature Flags Panel ──────────────────────────────────── */
+.ffp-root { padding: var(--space-4) 0; }
+.ffp-title { font-size: var(--text-lg); font-weight: 700; margin: 0 0 var(--space-1); }
+.ffp-subtitle { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 var(--space-5); }
+.ffp-loading { padding: var(--space-6); text-align: center; color: var(--text-muted); }
+.ffp-msg { padding: var(--space-3) var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-md); font-size: var(--text-sm); margin-bottom: var(--space-4); font-weight: 600; }
+
+/* Active grants */
+.ffp-grants-section h4,
+.ffp-add-section h4,
+.ffp-resolved-section h4 { font-size: var(--text-sm); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 var(--space-3); }
+
+.ffp-grant-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-2); border: 1px solid var(--border-color); background: var(--bg-card); }
+.ffp-grant-row.revoked { opacity: 0.7; background: #fff5f5; border-color: #fecaca; }
+.ffp-grant-info { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); }
+.ffp-grant-badge { font-size: 16px; }
+.ffp-grant-reason { color: var(--text-muted); }
+.ffp-grant-expiry { color: var(--warning); }
+.ffp-grant-by { color: var(--text-muted); font-size: var(--text-xs); }
+.ffp-remove-btn { font-size: var(--text-xs); padding: 4px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-secondary); cursor: pointer; color: var(--danger); white-space: nowrap; }
+.ffp-remove-btn:hover { background: #fef2f2; }
+
+/* Add grant form */
+.ffp-add-section { margin: var(--space-6) 0; padding: var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-color); }
+.ffp-add-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
+.ffp-select { flex: 1; min-width: 180px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-card); }
+.ffp-select-sm { width: 120px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-card); }
+.ffp-input { flex: 1; min-width: 180px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-card); }
+.ffp-input-sm { width: 140px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-card); }
+.ffp-grant-btn { padding: var(--space-2) var(--space-5); background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; cursor: pointer; }
+.ffp-grant-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Resolved grid */
+.ffp-resolved-section { margin-top: var(--space-6); }
+.ffp-resolved-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.ffp-resolved-item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); font-size: var(--text-xs); border: 1px solid transparent; }
+.ffp-resolved-item.has { background: #f0fdf4; border-color: #bbf7d0; }
+.ffp-resolved-item.no  { background: var(--bg-secondary); color: var(--text-muted); }
+.ffp-resolved-item.overridden { border-color: var(--warning); }
+.ffp-resolved-icon { font-size: 14px; flex-shrink: 0; }
+.ffp-resolved-name { display: block; font-weight: 600; color: inherit; }
+.ffp-resolved-tier { display: block; color: var(--text-muted); font-size: 10px; }
+
+@media (max-width: 480px) {
+  .ffp-resolved-grid { grid-template-columns: 1fr; }
+  .ffp-add-row { flex-direction: column; }
+  .ffp-select-sm, .ffp-input-sm { width: 100%; }
+}

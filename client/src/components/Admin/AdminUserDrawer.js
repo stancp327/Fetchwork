@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../../utils/api';
 import { formatBudget } from '../../utils/formatters';
+import FeatureFlagsPanel from './FeatureFlagsPanel';
 import './AdminUserDrawer.css';
 
 const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
@@ -125,6 +126,7 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     { id: 'reviews', label: `⭐ Reviews (${data.reviews?.length || 0})` },
     { id: 'actions', label: '⚡ Actions' },
     { id: 'billing', label: '💳 Billing' },
+    { id: 'features', label: '🚩 Features' },
   ];
 
   if (!u) return null;
@@ -427,6 +429,11 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
                 </>
               )}
             </div>
+          )}
+
+          {/* ── Features Tab ─────────────────────────────────── */}
+          {activeSection === 'features' && (
+            <FeatureFlagsPanel userId={u._id} adminId={u._id} />
           )}
         </div>
       </div>
