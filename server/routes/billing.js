@@ -22,9 +22,10 @@ const BillingAuditLog  = require('../models/BillingAuditLog');
 const Notification     = require('../models/Notification');
 const { assignDefaultPlan, logBillingAction } = require('../utils/billingUtils');
 const { CLIENT_URL }   = require('../config/env');
-const BillingCredit      = require('../models/BillingCredit');
-const CheckoutSession    = require('../models/CheckoutSession');
-const { getPlanLimits }  = require('../middleware/entitlements');
+const BillingCredit           = require('../models/BillingCredit');
+const CheckoutSession         = require('../models/CheckoutSession');
+const ProcessedWebhookEvent   = require('../models/ProcessedWebhookEvent');
+const { getPlanLimits }       = require('../middleware/entitlements');
 
 const BILLING_WEBHOOK_SECRET = process.env.STRIPE_BILLING_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -282,7 +283,7 @@ async function handleSubscriptionDeleted(stripeSub) {
 
 async function handlePaymentFailed(invoice) {
   const customerId = invoice.customer;
-  const user = await User.findOne({ stripeCustomerId: customerId }).select('_id').lean();
+  const user = await User.findOne({ stripeCustomerId: customerId }).select('_id email firstName').lean();
   if (!user) return;
 
   await UserSubscription.findOneAndUpdate(
@@ -299,7 +300,10 @@ async function handlePaymentFailed(invoice) {
     metadata: { invoiceId: invoice.id },
   });
 
-  // Notify user
+  const firstName = user.firstName || 'there';
+  const billingUrl = `${CLIENT_URL}/billing`;
+
+  // In-app notification
   await Notification.create({
     recipient: user._id,
     type:      'system',
@@ -307,6 +311,22 @@ async function handlePaymentFailed(invoice) {
     message:   'We couldn\'t process your subscription payment. Please update your payment method to keep your plan benefits.',
     link:      '/billing',
   });
+
+  // Email — non-fatal
+  try {
+    const emailService = require('../services/emailService');
+    const subject = 'Action required: Your Fetchwork payment failed';
+    const content = `
+      <p>Hi ${firstName},</p>
+      <p>We were unable to process your subscription payment. To keep your plan benefits, please update your payment method as soon as possible.</p>
+      <p>Stripe will retry the charge automatically over the next few days. If all retries fail, your account will be downgraded to the Free plan.</p>
+      <p><a href="${billingUrl}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Update Payment Method</a></p>
+      <p>If you have questions, reply to this email or contact us at support@fetchwork.net.</p>
+    `;
+    await emailService.sendEmail(user.email, subject, content, 'Update your payment method to keep your plan');
+  } catch (emailErr) {
+    console.error('Payment failed email error (non-fatal):', emailErr.message);
+  }
 }
 
 async function activateSubscription(userId, plan, stripeSub) {
@@ -408,6 +428,20 @@ async function webhookHandler(req, res) {
   } catch (err) {
     console.error('Billing webhook signature error:', err.message);
     return res.status(400).json({ error: `Webhook error: ${err.message}` });
+  }
+
+  // ── Global idempotency guard ─────────────────────────────────
+  // Stripe may replay events on 5xx — reject duplicates instantly.
+  try {
+    await ProcessedWebhookEvent.create({ stripeEventId: event.id, type: event.type });
+  } catch (dupErr) {
+    if (dupErr.code === 11000) {
+      // Already processed — acknowledge silently
+      console.log(`Webhook duplicate skipped: ${event.id} (${event.type})`);
+      return res.json({ received: true, skipped: true });
+    }
+    // Any other error creating the record — still process but log
+    console.error('ProcessedWebhookEvent insert error:', dupErr.message);
   }
 
   try {
