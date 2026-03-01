@@ -52,13 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         sounds: [],
       },
     ],
-    [
-      '@sentry/react-native/expo',
-      {
-        url: 'https://sentry.io/',
-        project: 'fetchwork-mobile',
-        organization: 'fetchwork',
-      },
-    ],
+    // Sentry: add back when SENTRY_AUTH_TOKEN + DSN are configured
+    // ['@sentry/react-native/expo', { url: 'https://sentry.io/', project: 'fetchwork-mobile', organization: 'fetchwork' }],
   ],
 });
