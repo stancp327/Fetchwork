@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
+import StripeCatalogPanel from './StripeCatalogPanel';
 import './AdminBillingTab.css';
 
 const TIER_COLORS = { free: '#6c757d', plus: '#667eea', pro: '#764ba2' };
@@ -343,6 +344,11 @@ const AdminBillingTab = () => {
           onClose={() => setEditingPlan(null)}
         />
       )}
+
+      {/* ── Stripe Catalog ── */}
+      <section className="abt-section">
+        <StripeCatalogPanel />
+      </section>
     </div>
   );
 };

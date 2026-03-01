@@ -1249,4 +1249,148 @@ router.put('/billing/promo/:promoId', authenticateAdmin, requirePermission('paym
   }
 });
 
+// ── STRIPE CATALOG MANAGEMENT ─────────────────────────────────────
+// These endpoints create/update in Stripe AND sync to MongoDB in one step.
+// Igor (the AI) can call these directly when Chaz says "add a new plan".
+
+// GET /api/admin/stripe/catalog — list Stripe Products with their Prices
+router.get('/stripe/catalog', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const stripeService = require('../services/stripeService');
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+    const [products, prices, plans] = await Promise.all([
+      stripe.products.list({ limit: 50, active: true }),
+      stripe.prices.list({ limit: 100, active: true }),
+      Plan.find().lean(),
+    ]);
+
+    const priceMap = {};
+    prices.data.forEach(p => {
+      if (!priceMap[p.product]) priceMap[p.product] = [];
+      priceMap[p.product].push({
+        id:       p.id,
+        amount:   p.unit_amount / 100,
+        currency: p.currency,
+        interval: p.recurring?.interval || 'one_time',
+        active:   p.active,
+      });
+    });
+
+    const plansByProduct = {};
+    plans.forEach(p => { if (p.stripeProductId) plansByProduct[p.stripeProductId] = p; });
+
+    const catalog = products.data.map(prod => ({
+      id:          prod.id,
+      name:        prod.name,
+      description: prod.description,
+      active:      prod.active,
+      prices:      priceMap[prod.id] || [],
+      dbPlan:      plansByProduct[prod.id] || null,
+    }));
+
+    res.json({ catalog });
+  } catch (err) {
+    console.error('Stripe catalog error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch Stripe catalog' });
+  }
+});
+
+// POST /api/admin/stripe/plans — create plan in DB + Stripe Product + Price
+// Body: { name, description, slug, audience, tier, price, interval, features, limits }
+router.post('/stripe/plans', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const stripeService = require('../services/stripeService');
+    const { name, description, slug, audience, tier, price, interval = 'month', features, limits, sortOrder } = req.body;
+
+    if (!name || !slug || !tier || !price) {
+      return res.status(400).json({ error: 'name, slug, tier, and price are required' });
+    }
+    if (await Plan.findOne({ slug })) {
+      return res.status(409).json({ error: `Plan slug '${slug}' already exists` });
+    }
+
+    // 1. Create Stripe Product
+    const product = await stripeService.createProduct(name, description || '');
+
+    // 2. Create Stripe Price
+    const stripePrice = await stripeService.createPrice(
+      product.id,
+      Math.round(price * 100),
+      interval === 'year' ? 'year' : 'month'
+    );
+
+    // 3. Save to DB
+    const plan = await Plan.create({
+      name, description, slug, audience, tier, price,
+      interval,
+      features:        features || [],
+      limits:          limits || {},
+      sortOrder:       sortOrder || 99,
+      stripeProductId: product.id,
+      stripePriceId:   stripePrice.id,
+      active:          true,
+    });
+
+    res.status(201).json({ plan, stripeProductId: product.id, stripePriceId: stripePrice.id });
+  } catch (err) {
+    console.error('Create Stripe plan error:', err.message);
+    res.status(500).json({ error: err.message || 'Failed to create plan' });
+  }
+});
+
+// PUT /api/admin/stripe/plans/:planId/price — change price (creates new Stripe Price, archives old)
+// Body: { price, interval }
+router.put('/stripe/plans/:planId/price', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const stripeService = require('../services/stripeService');
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const plan = await Plan.findById(req.params.planId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+
+    const { price, interval } = req.body;
+    if (!price) return res.status(400).json({ error: 'price is required' });
+
+    // Archive old Price in Stripe
+    if (plan.stripePriceId) {
+      await stripe.prices.update(plan.stripePriceId, { active: false }).catch(() => {});
+    }
+
+    // Create new Price
+    const newPrice = await stripeService.createPrice(
+      plan.stripeProductId,
+      Math.round(price * 100),
+      (interval || plan.interval) === 'year' ? 'year' : 'month'
+    );
+
+    plan.price        = price;
+    plan.stripePriceId = newPrice.id;
+    if (interval) plan.interval = interval;
+    await plan.save();
+
+    res.json({ plan, newStripePriceId: newPrice.id });
+  } catch (err) {
+    console.error('Update plan price error:', err.message);
+    res.status(500).json({ error: err.message || 'Failed to update price' });
+  }
+});
+
+// PUT /api/admin/stripe/products/:productId — update Stripe product name/description
+router.put('/stripe/products/:productId', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const { name, description } = req.body;
+    const product = await stripe.products.update(req.params.productId, {
+      ...(name        && { name }),
+      ...(description && { description }),
+    });
+    // Sync name to local DB plan
+    if (name) await Plan.findOneAndUpdate({ stripeProductId: req.params.productId }, { name });
+    res.json({ product });
+  } catch (err) {
+    console.error('Update Stripe product error:', err.message);
+    res.status(500).json({ error: err.message || 'Failed to update product' });
+  }
+});
+
 module.exports = router;
