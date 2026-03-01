@@ -927,6 +927,7 @@ const CLIENT_TABS = [
   { key: 'awaiting_start', label: 'Awaiting Start' },  // freelancer accepted, start approval window
   { key: 'in_progress',    label: 'In Progress' },     // hired, work underway
   { key: 'completed',      label: 'Completed' },
+  { key: 'history',        label: 'History' },         // all archived (completed + past-deadline)
 ];
 
 const FREELANCER_TABS = [
@@ -935,6 +936,7 @@ const FREELANCER_TABS = [
   { key: 'proposals',      label: 'Proposals Sent' },
   { key: 'service_orders', label: 'Service Orders' },
   { key: 'completed',      label: 'Completed' },
+  { key: 'history',        label: 'History' },        // all archived jobs
 ];
 
 // ── Main ─────────────────────────────────────────────────────────
@@ -1125,19 +1127,24 @@ const ProjectManagement = () => {
     (acc, j) => acc + (j.proposals || []).filter(p => p.status === 'pending').length, 0
   );
 
+  // Note: completeJob() immediately sets isArchived=true on completed jobs.
+  // So "completed" tab intentionally shows status=completed regardless of isArchived.
+  // "history" tab shows non-completed archived jobs (past_deadline, etc.).
   const clientCounts = {
-    open:           clientJobs.filter(j => j.status === 'open').length,
-    awaiting_start: clientJobs.filter(j => ['accepted', 'pending_start'].includes(j.status)).length,
-    in_progress:    clientJobs.filter(j => j.status === 'in_progress').length,
+    open:           clientJobs.filter(j => j.status === 'open'           && !j.isArchived).length,
+    awaiting_start: clientJobs.filter(j => ['accepted', 'pending_start'].includes(j.status) && !j.isArchived).length,
+    in_progress:    clientJobs.filter(j => j.status === 'in_progress'    && !j.isArchived).length,
     completed:      clientJobs.filter(j => j.status === 'completed').length,
+    history:        clientJobs.filter(j => j.isArchived && j.status !== 'completed').length,
   };
 
   const freelancerCounts = {
-    awaiting_start: freelancerJobs.filter(j => ['accepted', 'pending_start'].includes(j.status)).length,
-    in_progress:    freelancerJobs.filter(j => j.status === 'in_progress').length,
+    awaiting_start: freelancerJobs.filter(j => ['accepted', 'pending_start'].includes(j.status) && !j.isArchived).length,
+    in_progress:    freelancerJobs.filter(j => j.status === 'in_progress' && !j.isArchived).length,
     proposals:      proposalJobs.length,
     service_orders: serviceOrders.filter(s => !['completed', 'cancelled'].includes(s.order.status)).length,
     completed:      freelancerJobs.filter(j => j.status === 'completed').length,
+    history:        freelancerJobs.filter(j => j.isArchived && j.status !== 'completed').length,
   };
 
   const counts = isClientView ? clientCounts : freelancerCounts;
@@ -1146,9 +1153,13 @@ const ProjectManagement = () => {
     ? proposalJobs
     : tab === 'service_orders'
       ? []
-      : tab === 'awaiting_start'
-        ? displayJobs.filter(j => ['accepted', 'pending_start'].includes(j.status))
-        : displayJobs.filter(j => j.status === tab);
+      : tab === 'history'
+        ? displayJobs.filter(j => j.isArchived && j.status !== 'completed')  // past-deadline / stale archived
+        : tab === 'completed'
+          ? displayJobs.filter(j => j.status === 'completed')                // completed (always archived, show regardless)
+          : tab === 'awaiting_start'
+            ? displayJobs.filter(j => ['accepted', 'pending_start'].includes(j.status) && !j.isArchived)
+            : displayJobs.filter(j => j.status === tab && !j.isArchived);    // active tabs hide archived
 
   const hasContent = isClientView
     ? (clientJobs.length > 0)
@@ -1162,6 +1173,9 @@ const ProjectManagement = () => {
     { label: 'Awaiting Start', value: clientCounts.awaiting_start, color: '#8b5cf6', tab: 'awaiting_start' },
     { label: 'In Progress',    value: clientCounts.in_progress,    color: '#2563eb', tab: 'in_progress' },
     { label: 'Completed',      value: clientCounts.completed,      color: '#10b981', tab: 'completed' },
+    ...(clientCounts.history > 0
+      ? [{ label: 'History', value: clientCounts.history, color: '#6b7280', tab: 'history' }]
+      : []),
   ];
 
   const freelancerStats = [
@@ -1169,6 +1183,9 @@ const ProjectManagement = () => {
     { label: 'Active Work',     value: freelancerCounts.in_progress,    color: '#2563eb', tab: 'in_progress' },
     { label: 'Proposals Sent',  value: freelancerCounts.proposals,       color: '#7c3aed', tab: 'proposals' },
     { label: 'Service Orders',  value: freelancerCounts.service_orders,  color: '#f59e0b', tab: 'service_orders' },
+    ...(freelancerCounts.history > 0
+      ? [{ label: 'History', value: freelancerCounts.history, color: '#6b7280', tab: 'history' }]
+      : []),
   ];
 
   const activeStats = isClientView ? clientStats : freelancerStats;
@@ -1241,16 +1258,19 @@ const ProjectManagement = () => {
 
       {/* ── Tabs ─────────────────────────────────────────────── */}
       <div className="pm-tabs">
-        {activeTabs.map(t => (
-          <button
-            key={t.key}
-            className={`pm-tab ${tab === t.key ? 'active' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-            {counts[t.key] > 0 && <span className="tab-count">{counts[t.key]}</span>}
-          </button>
-        ))}
+        {activeTabs
+          // Only show History tab if there are actually archived jobs
+          .filter(t => t.key !== 'history' || counts.history > 0)
+          .map(t => (
+            <button
+              key={t.key}
+              className={`pm-tab ${tab === t.key ? 'active' : ''}`}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+              {counts[t.key] > 0 && <span className="tab-count">{counts[t.key]}</span>}
+            </button>
+          ))}
       </div>
 
       {/* ── Content ──────────────────────────────────────────── */}
@@ -1317,6 +1337,12 @@ const ProjectManagement = () => {
           )}
           {(tab === 'completed') && (
             <p><strong>No completed {isClientView ? 'jobs' : 'work'} yet</strong></p>
+          )}
+          {(tab === 'history') && (
+            <>
+              <p><strong>No archived jobs</strong></p>
+              <p>Jobs that expired past their deadline or were auto-archived will appear here.</p>
+            </>
           )}
         </div>
       ) : (
