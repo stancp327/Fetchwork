@@ -9,7 +9,8 @@ const Job     = require('../models/Job');
 const Payment = require('../models/Payment');
 const Service = require('../models/Service');
 const { Message, Conversation } = require('../models/Message');
-const Notification = require('../models/Notification');
+const Notification           = require('../models/Notification');
+const ProcessedWebhookEvent  = require('../models/ProcessedWebhookEvent');
 
 const { getFee } = require('../services/feeEngine');
 
@@ -419,6 +420,17 @@ router.webhookHandler = async (req, res) => {
     return res.status(400).json({ error: 'Invalid signature' });
   }
 
+  // ── Global idempotency guard ────────────────────────────────
+  try {
+    await ProcessedWebhookEvent.create({ stripeEventId: event.id, type: event.type });
+  } catch (dupErr) {
+    if (dupErr.code === 11000) {
+      console.log(`Payments webhook duplicate skipped: ${event.id}`);
+      return res.json({ received: true, skipped: true });
+    }
+    console.error('ProcessedWebhookEvent insert error:', dupErr.message);
+  }
+
   try {
     switch (event.type) {
 
@@ -540,19 +552,59 @@ router.webhookHandler = async (req, res) => {
       }
 
       case 'account.updated': {
-        // Freelancer updated their Connect account
         const account = event.data.object;
-        if (account.id) {
-          await User.findOneAndUpdate(
-            { stripeAccountId: account.id },
-            {
-              'stripeConnected': account.charges_enabled && account.payouts_enabled
+        if (!account.id) break;
+
+        const fullyEnabled = account.charges_enabled && account.payouts_enabled;
+        const pastDue      = account.requirements?.past_due?.length > 0;
+        const currentlyDue = account.requirements?.currently_due?.length > 0;
+
+        const user = await User.findOneAndUpdate(
+          { stripeAccountId: account.id },
+          { stripeConnected: fullyEnabled },
+          { new: false } // get old doc to detect state change
+        );
+
+        if (user) {
+          const wasConnected = user.stripeConnected;
+
+          // Became fully enabled for the first time (or re-enabled)
+          if (fullyEnabled && !wasConnected) {
+            await Notification.create({
+              recipient: user._id,
+              type:      'system',
+              title:     '🎉 Payout account ready',
+              message:   'Your bank account is verified and ready to receive payments. You\'ll be paid automatically when clients approve work.',
+              link:      '/payments',
+            });
+          }
+
+          // Has past-due requirements that could block payouts
+          if (pastDue) {
+            const fields = account.requirements.past_due.slice(0, 3).join(', ');
+            await Notification.create({
+              recipient: user._id,
+              type:      'system',
+              title:     '⚠️ Action needed: payment account',
+              message:   `Your payout account needs attention. Missing: ${fields}. Payouts may be paused until resolved.`,
+              link:      '/payments',
+            });
+            // Email for past-due (more urgent)
+            try {
+              const content = `
+                <p>Hi ${user.firstName || 'there'},</p>
+                <p>Your Fetchwork payout account requires some information: <strong>${fields}</strong>.</p>
+                <p>If not resolved, your payouts may be paused. Please update your account details.</p>
+                <p><a href="${process.env.CLIENT_URL}/payments" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Update Payment Account</a></p>
+              `;
+              await emailService.sendEmail(user.email, 'Action required: Update your payout account', content, 'Your payout account needs attention');
+            } catch (emailErr) {
+              console.error('account.updated email error (non-fatal):', emailErr.message);
             }
-          );
-          console.log('🔄 account.updated:', account.id,
-            '| charges:', account.charges_enabled,
-            '| payouts:', account.payouts_enabled);
+          }
         }
+
+        console.log(`🔄 account.updated: ${account.id} | enabled=${fullyEnabled} | pastDue=${pastDue}`);
         break;
       }
 

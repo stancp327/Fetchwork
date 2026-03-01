@@ -196,3 +196,34 @@
   background: var(--color-bg-subtle);
   color: #111;
 }
+
+/* ── Connect Status Enhancements (Phase 5) ────────────────────── */
+.status-restricted { border-left: 3px solid var(--color-warning, #f59e0b); }
+
+.status-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs, 6px);
+  margin: var(--space-sm, 8px) 0;
+}
+.status-pill {
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-weight: 500;
+}
+.pill-ok   { background: var(--color-success-bg, #dcfce7); color: var(--color-success-text, #166534); }
+.pill-warn { background: var(--color-warning-bg, #fef9c3); color: var(--color-warning-text, #854d0e); }
+
+.status-requirements {
+  margin-top: var(--space-sm, 8px);
+  padding: var(--space-sm, 8px) var(--space-md, 16px);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.85rem;
+}
+.status-requirements ul { margin: 6px 0 10px 16px; padding: 0; }
+.status-requirements li { margin-bottom: 3px; text-transform: capitalize; }
+.past-due     { background: var(--color-danger-bg, #fee2e2); color: var(--color-danger, #dc2626); }
+.currently-due { background: var(--color-warning-bg, #fef9c3); color: var(--color-warning-text, #854d0e); }
+
+.btn-sm { padding: 0.35rem 0.9rem; font-size: 0.82rem; min-height: 32px; }

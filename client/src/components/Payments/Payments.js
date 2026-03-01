@@ -165,14 +165,53 @@ const Payments = () => {
         {stripeStatus ? (
           <div className="stripe-status-content">
             {stripeStatus.connected ? (
-              <div className="status-connected">
-                <span className="status-icon">✅</span>
+              <div className={`status-connected ${(!stripeStatus.chargesEnabled || !stripeStatus.payoutsEnabled) ? 'status-restricted' : ''}`}>
+                <span className="status-icon">
+                  {stripeStatus.chargesEnabled && stripeStatus.payoutsEnabled ? '✅' : '⚠️'}
+                </span>
                 <div className="status-details">
-                  <h3>Stripe Account Connected</h3>
-                  <p>
-                    Charges: {stripeStatus.chargesEnabled ? 'Enabled' : 'Disabled'} | 
-                    Payouts: {stripeStatus.payoutsEnabled ? 'Enabled' : 'Disabled'}
-                  </p>
+                  <h3>{stripeStatus.chargesEnabled && stripeStatus.payoutsEnabled
+                    ? 'Payout Account Active'
+                    : 'Account Needs Attention'}</h3>
+                  <div className="status-pills">
+                    <span className={`status-pill ${stripeStatus.chargesEnabled ? 'pill-ok' : 'pill-warn'}`}>
+                      {stripeStatus.chargesEnabled ? '✓ Charges enabled' : '✗ Charges disabled'}
+                    </span>
+                    <span className={`status-pill ${stripeStatus.payoutsEnabled ? 'pill-ok' : 'pill-warn'}`}>
+                      {stripeStatus.payoutsEnabled ? '✓ Payouts enabled' : '✗ Payouts disabled'}
+                    </span>
+                  </div>
+
+                  {/* Past-due requirements — payouts may be paused */}
+                  {stripeStatus.requirements?.past_due?.length > 0 && (
+                    <div className="status-requirements past-due">
+                      <strong>⚠️ Action required — payouts paused:</strong>
+                      <ul>
+                        {stripeStatus.requirements.past_due.map(r => (
+                          <li key={r}>{r.replace(/_/g, ' ')}</li>
+                        ))}
+                      </ul>
+                      <button className="btn btn-primary btn-sm" onClick={handleConnectStripe}>
+                        Fix Requirements →
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Currently-due requirements — action needed soon */}
+                  {!stripeStatus.requirements?.past_due?.length &&
+                    stripeStatus.requirements?.currently_due?.length > 0 && (
+                    <div className="status-requirements currently-due">
+                      <strong>📋 Due soon:</strong>
+                      <ul>
+                        {stripeStatus.requirements.currently_due.slice(0, 5).map(r => (
+                          <li key={r}>{r.replace(/_/g, ' ')}</li>
+                        ))}
+                      </ul>
+                      <button className="btn btn-outline btn-sm" onClick={handleConnectStripe}>
+                        Complete Verification →
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -185,7 +224,7 @@ const Payments = () => {
                     className="btn btn-primary"
                     onClick={handleConnectStripe}
                   >
-                    Add Bank Account ?
+                    Add Bank Account →
                   </button>
                 </div>
               </div>
@@ -201,7 +240,7 @@ const Payments = () => {
                 className="btn btn-primary"
                 onClick={handleConnectStripe}
               >
-                Add Bank Account ?
+                Add Bank Account →
               </button>
             </div>
           </div>
