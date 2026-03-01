@@ -5,6 +5,7 @@ import { ProfileStackParamList } from '../types/navigation';
 import MyProfileScreen from '../screens/Profile/MyProfileScreen';
 import EditProfileScreen from '../screens/Profile/EditProfileScreen';
 import VerificationScreen from '../screens/Profile/VerificationScreen';
+import SettingsScreen from '../screens/Profile/SettingsScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -21,6 +22,7 @@ export default function ProfileStackNavigator() {
       <Stack.Screen name="MyProfile"    component={MyProfileScreen}    options={{ headerShown: false }} />
       <Stack.Screen name="EditProfile"  component={EditProfileScreen}  options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="Verification" component={VerificationScreen} options={{ title: 'Verification & Badges' }} />
+      <Stack.Screen name="Settings"     component={SettingsScreen}     options={{ title: 'Settings' }} />
     </Stack.Navigator>
   );
 }

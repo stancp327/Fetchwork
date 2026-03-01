@@ -95,7 +95,7 @@ export default function MyProfileScreen({ navigation }: Props) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Skills</Text>
             <View style={styles.skills}>
-              {profile.skills.map(s => (
+              {profile.skills.map((s: string) => (
                 <View key={s} style={styles.skillTag}><Text style={styles.skillText}>{s}</Text></View>
               ))}
             </View>

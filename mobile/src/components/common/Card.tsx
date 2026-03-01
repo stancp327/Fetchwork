@@ -1,11 +1,11 @@
 import React from 'react';
-import { Pressable, View, StyleSheet, ViewStyle, Platform } from 'react-native';
+import { Pressable, View, StyleSheet, StyleProp, ViewStyle, Platform } from 'react-native';
 import { colors, radius, spacing } from '../../theme';
 
 interface CardProps {
   children: React.ReactNode;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   padding?: number;
 }
 

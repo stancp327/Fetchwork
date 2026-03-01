@@ -61,7 +61,7 @@ export default function VerificationScreen() {
         {/* Badge grid */}
         <View style={styles.grid}>
           {defs.map(b => (
-            <Card key={b.key} style={[styles.badgeCard, b.earned && styles.badgeCardEarned]}>
+            <Card key={b.key} style={b.earned ? [styles.badgeCard, styles.badgeCardEarned] : styles.badgeCard}>
               <View style={[styles.iconWrap, b.earned && { borderColor: b.color + '60', shadowColor: b.color }]}>
                 <Text style={[styles.badgeIcon, !b.earned && styles.badgeIconLocked]}>{b.icon}</Text>
                 {b.earned && (
