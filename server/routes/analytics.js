@@ -287,7 +287,7 @@ router.get('/me', authenticateToken, async (req, res) => {
         // ── Spend by category (budget vs actual) ─────────────────────────
         const categoryBudgetAgg = await Job.aggregate([
           { $match: { client: uid, status: { $in: ['in_progress', 'completed'] } } },
-          { $group: { _id: '$category', budgeted: { $sum: '$budget' }, actual: { $sum: '$escrowAmount' }, jobs: { $sum: 1 } } },
+          { $group: { _id: '$category', budgeted: { $sum: '$budget.amount' }, actual: { $sum: '$escrowAmount' }, jobs: { $sum: 1 } } },
           { $sort: { budgeted: -1 } },
           { $limit: 5 },
         ]);

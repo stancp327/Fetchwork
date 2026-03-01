@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
@@ -14,7 +13,6 @@ const fmt  = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency
 const pct  = (n) => `${n ?? 0}%`;
 const fmtH = (h) => { if (h == null) return '—'; if (h < 24) return `${h}h`; return `${Math.round(h / 24)}d`; };
 const fmtR = (m) => { if (m == null) return '—'; if (m < 60) return `${Math.round(m)}m`; if (m < 1440) return `${Math.round(m / 60)}h`; return `${Math.round(m / 1440)}d`; };
-const stars = (n) => n ? `${'★'.repeat(Math.round(n))}${'☆'.repeat(5 - Math.round(n))} ${n.toFixed(1)}` : '—';
 
 // ── Stat Card ─────────────────────────────────────────────────────
 const Stat = ({ icon, label, value, sub, accent }) => (
@@ -295,20 +293,22 @@ const UserAnalytics = () => {
     try {
       const res = await apiRequest(`/api/analytics/me?range=${r}`);
       setData(res);
-      if (!activeTab) {
-        if (res.freelancer && isFreelancerMode) setActiveTab('freelancer');
-        else if (res.client && isClientMode)    setActiveTab('client');
-        else if (res.freelancer)                setActiveTab('freelancer');
-        else                                    setActiveTab('client');
-      }
+      // Set initial tab once (functional update avoids stale closure)
+      setActiveTab(prev => {
+        if (prev) return prev;
+        if (res.freelancer && isFreelancerMode) return 'freelancer';
+        if (res.client && isClientMode)         return 'client';
+        if (res.freelancer)                     return 'freelancer';
+        return 'client';
+      });
     } catch (err) {
       setError(err.message || 'Failed to load analytics');
     } finally {
       setLoading(false);
     }
-  }, [isFreelancerMode, isClientMode, activeTab]);
+  }, [isFreelancerMode, isClientMode]);
 
-  useEffect(() => { if (user) load(range); }, [user, range]);
+  useEffect(() => { if (user) load(range); }, [user, range, load]);
 
   const hasBoth = data?.freelancer !== null && data?.client !== null;
   const rangeLabel = RANGES.find(r => r.value === range)?.label || range;
