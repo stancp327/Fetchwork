@@ -1,10 +1,10 @@
-﻿/* ── Profile Page ─────────────────────────────────────────────── */
+/* -- Profile Page ----------------------------------------------- */
 .profile-page {
   max-width: 1200px;
   margin: 0 auto;
   min-width: 0;
   padding: 1rem 1rem 5rem;
-  padding-top: calc(64px + 1rem);
+  padding-top: 1rem;
 }
 
 /* Loading */
@@ -18,7 +18,7 @@
 .profile-skeleton-header { height: 80px; }
 .profile-skeleton-body { height: 400px; }
 
-/* ── Header ───────────────────────────────────────────────────── */
+/* -- Header ----------------------------------------------------- */
 .profile-page-header {
   display: flex;
   flex-direction: column;
@@ -67,7 +67,7 @@
 
 .btn-preview:hover, .btn-share:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
-/* ── Tabs ─────────────────────────────────────────────────────── */
+/* -- Tabs ------------------------------------------------------- */
 .profile-tabs {
   display: flex;
   width: 100%;
@@ -102,7 +102,7 @@
   font-weight: 600;
 }
 
-/* ── Content Layout — mobile: single column ───────────────────── */
+/* -- Content Layout � mobile: single column --------------------- */
 .profile-content {
   display: grid;
   grid-template-columns: 1fr;
@@ -110,7 +110,7 @@
   align-items: start;
 }
 
-/* ── Summary Card ─────────────────────────────────────────────── */
+/* -- Summary Card ----------------------------------------------- */
 .profile-summary-card {
   background: white;
   border: 1px solid var(--color-border);
@@ -163,13 +163,13 @@
 .stat-val { display: block; font-weight: 700; color: var(--color-text-darker); font-size: 0.95rem; }
 .stat-lbl { font-size: 0.7rem; color: var(--color-text-muted); }
 
-/* ── Main Area ────────────────────────────────────────────────── */
+/* -- Main Area -------------------------------------------------- */
 .profile-main { min-width: 0; }
 
 .tab-content h2 { font-size: 1.2rem; font-weight: 600; margin: 0 0 1rem; color: var(--color-text-darker); }
 .tab-desc { color: var(--color-text-secondary); font-size: 0.9rem; margin: -0.5rem 0 1.5rem; }
 
-/* ── Form Fields ──────────────────────────────────────────────── */
+/* -- Form Fields ------------------------------------------------ */
 .prof-field { margin-bottom: 1.25rem; }
 .prof-field label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--color-text); margin-bottom: 0.4rem; }
 .prof-field input, .prof-field select, .prof-field textarea {
@@ -187,7 +187,7 @@
 .char-count { font-size: 0.75rem; color: var(--color-text-muted); }
 .input-disabled { background: var(--color-bg-muted); color: var(--color-text-secondary); }
 
-/* ── Overview Tab ─────────────────────────────────────────────── */
+/* -- Overview Tab ----------------------------------------------- */
 .overview-todo {
   background: #fffbeb;
   border: 1px solid var(--color-warning-light);
@@ -221,7 +221,7 @@
 .ov-skill-tag { background: var(--color-primary-light); color: var(--color-primary); padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 500; }
 .ov-empty { color: var(--color-text-muted); font-size: 0.85rem; }
 
-/* ── Skills Tab ───────────────────────────────────────────────── */
+/* -- Skills Tab ------------------------------------------------- */
 .skill-input-row { display: flex; gap: 0.5rem; }
 .skill-input-row input { flex: 1; }
 .btn-add-skill {
@@ -242,7 +242,7 @@
 .skill-remove:hover { opacity: 1; }
 .skills-empty { color: var(--color-text-muted); font-size: 0.9rem; }
 
-/* ── Portfolio Tab ────────────────────────────────────────────── */
+/* -- Portfolio Tab ---------------------------------------------- */
 .portfolio-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .portfolio-tile {
   border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; background: white;
@@ -324,7 +324,7 @@
   .portfolio-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* ── Rates Tab ────────────────────────────────────────────────── */
+/* -- Rates Tab -------------------------------------------------- */
 .rates-services { margin-top: 2rem; }
 .rates-services h3 { font-size: 1rem; margin: 0 0 0.5rem; }
 .btn-create-service {
@@ -335,7 +335,7 @@
 }
 .btn-create-service:hover { background: var(--color-primary-dark); }
 
-/* ── Verification Tab ─────────────────────────────────────────── */
+/* -- Verification Tab ------------------------------------------- */
 .verify-list { display: flex; flex-direction: column; gap: 0.75rem; }
 .verify-item {
   display: flex; align-items: center; gap: 1rem; padding: 1rem;
@@ -346,7 +346,7 @@
 .verify-item strong { display: block; font-size: 0.9rem; color: var(--color-text-darker); }
 .verify-item p { margin: 0.15rem 0 0; font-size: 0.8rem; color: var(--color-text-secondary); }
 
-/* ── ID Verification Section ─────────────────────────────────── */
+/* -- ID Verification Section ----------------------------------- */
 .verify-id-section {
   margin-top: 1.5rem;
   background: white;
@@ -413,7 +413,7 @@
 .verify-form-actions .btn { min-height: 44px; }
 .verify-privacy-note { margin: 0; font-size: 0.75rem; color: var(--color-text-muted); }
 
-/* ── Sticky Actions ───────────────────────────────────────────── */
+/* -- Sticky Actions --------------------------------------------- */
 .profile-sticky-actions {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: white; border-top: 1px solid var(--color-border);
@@ -440,7 +440,7 @@
 .sticky-error { color: var(--color-danger); font-size: 0.8rem; }
 .sticky-success { color: var(--color-success-dark); font-size: 0.8rem; }
 
-/* ── Tablet (≥640px) ──────────────────────────────────────────── */
+/* -- Tablet (=640px) -------------------------------------------- */
 @media (min-width: 640px) {
   .profile-page { padding: 2rem 1.5rem 5rem; }
   .profile-page-header {
@@ -454,10 +454,11 @@
   .profile-sticky-actions { padding: 0.75rem 2rem; }
 }
 
-/* ── Desktop (≥900px) ─────────────────────────────────────────── */
+/* -- Desktop (=900px) ------------------------------------------- */
 @media (min-width: 900px) {
   .profile-content { grid-template-columns: 280px 1fr; }
   .profile-summary-card { position: sticky; top: 80px; }
   .overview-grid { grid-template-columns: 1fr 1fr; }
   .portfolio-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+

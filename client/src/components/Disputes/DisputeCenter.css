@@ -1,9 +1,9 @@
-﻿.dispute-center {
+.dispute-center {
   max-width: 1000px;
   margin: 0 auto;
   min-width: 0;
   padding: 2rem 1.5rem;
-  padding-top: calc(64px + 2rem);
+  padding-top: 2rem;
 }
 
 .dispute-center-header {
@@ -23,7 +23,7 @@
   font-size: 0.95rem;
 }
 
-/* ── Filter Tabs ─────────────────────────────────────────────── */
+/* -- Filter Tabs ----------------------------------------------- */
 .dispute-filters {
   display: flex;
   justify-content: space-between;
@@ -88,7 +88,7 @@
   cursor: pointer;
 }
 
-/* ── Dispute List ────────────────────────────────────────────── */
+/* -- Dispute List ---------------------------------------------- */
 .dispute-list {
   display: flex;
   flex-direction: column;
@@ -192,7 +192,7 @@
   font-weight: 600;
 }
 
-/* ── Status Badges ───────────────────────────────────────────── */
+/* -- Status Badges --------------------------------------------- */
 .dispute-status-badge {
   padding: 0.2rem 0.65rem;
   border-radius: 12px;
@@ -211,7 +211,7 @@
 .status-resolved { background: #e8f5e9; color: #2e7d32; }
 .status-closed { background: #f5f5f5; color: #757575; }
 
-/* ── Loading / Error / Empty ─────────────────────────────────── */
+/* -- Loading / Error / Empty ----------------------------------- */
 .disputes-loading, .disputes-error, .disputes-empty {
   text-align: center;
   padding: 4rem 2rem;
@@ -265,3 +265,4 @@
   .dispute-filter-tabs { flex-wrap: wrap; width: auto; }
   .dispute-center-header h1 { font-size: 1.8rem; }
 }
+

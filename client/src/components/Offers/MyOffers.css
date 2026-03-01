@@ -1,15 +1,15 @@
-﻿/* ── My Offers Page — Mobile-first ──────────────────────────── */
+/* -- My Offers Page � Mobile-first ---------------------------- */
 .my-offers-container {
   width: 100%;
   min-width: 0;
   max-width: 800px;
   margin: 0 auto;
   padding: 1.25rem 1rem;
-  padding-top: calc(64px + 1.25rem); /* fixed nav */
+  padding-top: 1.25rem; /* fixed nav */
   box-sizing: border-box;
 }
 
-/* ── Page Header ─────────────────────────────────────────────── */
+/* -- Page Header ----------------------------------------------- */
 .my-offers-header {
   display: flex;
   flex-direction: column;
@@ -31,7 +31,7 @@
   font-weight: 500;
 }
 
-/* ── Filter Tabs ─────────────────────────────────────────────── */
+/* -- Filter Tabs ----------------------------------------------- */
 .my-offers-filters {
   display: flex;
   gap: 0.4rem;
@@ -68,7 +68,7 @@
   color: var(--color-primary);
 }
 
-/* ── States ──────────────────────────────────────────────────── */
+/* -- States ---------------------------------------------------- */
 .my-offers-loading {
   padding: 2rem;
   text-align: center;
@@ -91,13 +91,14 @@
   font-size: 0.85rem;
 }
 
-/* ── Tablet+ ─────────────────────────────────────────────────── */
+/* -- Tablet+ --------------------------------------------------- */
 @media (min-width: 480px) {
-  .my-offers-container { padding: 1.5rem 1.25rem; padding-top: calc(64px + 1.5rem); }
+  .my-offers-container { padding: 1.5rem 1.25rem; padding-top: 1.5rem; }
   .my-offers-header { flex-direction: row; justify-content: space-between; align-items: flex-start; }
   .my-offers-filters { overflow-x: visible; flex-wrap: wrap; }
 }
 
 @media (min-width: 768px) {
-  .my-offers-container { padding: 2rem 1.5rem; padding-top: calc(64px + 2rem); }
+  .my-offers-container { padding: 2rem 1.5rem; padding-top: 2rem; }
 }
+

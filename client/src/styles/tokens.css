@@ -1,30 +1,33 @@
-﻿:root {
-  /* ── Brand Colors ──────────────────────────────────────────── */
-  --color-primary:       #2563eb;   /* Tailwind blue-600 — canonical primary */
-  --color-primary-dark:  #1d4ed8;   /* Tailwind blue-700 — hover/active state */
-  --color-primary-light:    #eff6ff;   /* Tailwind blue-50  — tinted bg */
-  --color-primary-bg:       #dbeafe;   /* Tailwind blue-100 — chip/tag bg */
-  --color-primary-disabled: #93c5fd;   /* Tailwind blue-300 — disabled btn */
+:root {
+  /* -- Layout ------------------------------------------------ */
+  --nav-height: 64px;   /* matches Navigation height; update both together */
+
+  /* -- Brand Colors -------------------------------------------- */
+  --color-primary:       #2563eb;   /* Tailwind blue-600 � canonical primary */
+  --color-primary-dark:  #1d4ed8;   /* Tailwind blue-700 � hover/active state */
+  --color-primary-light:    #eff6ff;   /* Tailwind blue-50  � tinted bg */
+  --color-primary-bg:       #dbeafe;   /* Tailwind blue-100 � chip/tag bg */
+  --color-primary-disabled: #93c5fd;   /* Tailwind blue-300 � disabled btn */
   --color-primary-ring:     rgba(37, 99, 235, 0.2); /* focus ring */
 
-  /* ── Semantic Colors ───────────────────────────────────────── */
-  --color-success:       #10b981;   /* Tailwind emerald-500 — was #28a745 */
-  --color-success-dark:  #059669;   /* Tailwind emerald-600 — hover */
-  --color-success-light: #ecfdf5;   /* Tailwind emerald-50  — tinted bg */
+  /* -- Semantic Colors ----------------------------------------- */
+  --color-success:       #10b981;   /* Tailwind emerald-500 � was #28a745 */
+  --color-success-dark:  #059669;   /* Tailwind emerald-600 � hover */
+  --color-success-light: #ecfdf5;   /* Tailwind emerald-50  � tinted bg */
 
-  --color-danger:        #dc2626;   /* Tailwind red-600     — was #dc3545 */
-  --color-danger-dark:   #b91c1c;   /* Tailwind red-700     — hover */
-  --color-danger-light:  #fee2e2;   /* Tailwind red-100     — tinted bg */
-  --color-danger-subtle: #fef2f2;   /* Tailwind red-50      — softest bg */
+  --color-danger:        #dc2626;   /* Tailwind red-600     � was #dc3545 */
+  --color-danger-dark:   #b91c1c;   /* Tailwind red-700     � hover */
+  --color-danger-light:  #fee2e2;   /* Tailwind red-100     � tinted bg */
+  --color-danger-subtle: #fef2f2;   /* Tailwind red-50      � softest bg */
 
-  --color-warning:       #f59e0b;   /* Tailwind amber-500   — was #ffc107 */
-  --color-warning-dark:  #d97706;   /* Tailwind amber-600   — hover */
-  --color-warning-light: #fef3c7;   /* Tailwind amber-100   — tinted bg */
+  --color-warning:       #f59e0b;   /* Tailwind amber-500   � was #ffc107 */
+  --color-warning-dark:  #d97706;   /* Tailwind amber-600   � hover */
+  --color-warning-light: #fef3c7;   /* Tailwind amber-100   � tinted bg */
 
   --color-info:          #0ea5e9;   /* Tailwind sky-500 */
   --color-info-light:    #f0f9ff;   /* Tailwind sky-50  */
 
-  /* ── Text Colors ───────────────────────────────────────────── */
+  /* -- Text Colors --------------------------------------------- */
   --color-text-darker:    #111827;  /* near-black, hero headings (gray-900) */
   --color-text-dark:      #1e293b;  /* headings, high emphasis (slate-800) */
   --color-text-heading:   #1f2937;  /* section headings (gray-800) */
@@ -35,24 +38,24 @@
   --color-text-light:     #d1d5db;  /* disabled, very faint (gray-300) */
   --color-text-inverse:   #ffffff;  /* on dark backgrounds */
 
-  /* ── Background Colors ─────────────────────────────────────── */
+  /* -- Background Colors --------------------------------------- */
   --color-bg-primary:   #ffffff;
   --color-bg-secondary: #f8fafc;    /* page background */
-  --color-bg-subtle:    #f8fafc;    /* alias — near-white surface */
+  --color-bg-subtle:    #f8fafc;    /* alias � near-white surface */
   --color-bg-muted:     #f3f4f6;    /* light card, input bg */
   --color-bg-hover:     #f1f5f9;    /* hover state bg */
 
-  /* ── Border Colors ─────────────────────────────────────────── */
-  --color-border:        #e5e7eb;   /* default border — was #e1e5e9 */
+  /* -- Border Colors ------------------------------------------- */
+  --color-border:        #e5e7eb;   /* default border � was #e1e5e9 */
   --color-border-medium: #d1d5db;   /* input borders, table dividers (gray-300) */
   --color-border-light:  #f3f4f6;   /* subtle divider */
   --color-border-focus:  var(--color-primary);
 
-  /* ── Surface / Glassmorphism ───────────────────────────────── */
+  /* -- Surface / Glassmorphism --------------------------------- */
   --color-surface-glass:      rgba(255, 255, 255, 0.85);
   --color-surface-glass-dark: rgba(15, 23, 42, 0.85);
 
-  /* ── Typography — fluid scaling (mobile-first, clamp) ─────── */
+  /* -- Typography � fluid scaling (mobile-first, clamp) ------- */
   --font-size-xs:   clamp(0.7rem,   0.65rem  + 0.25vw, 0.75rem);
   --font-size-sm:   clamp(0.8rem,   0.75rem  + 0.25vw, 0.875rem);
   --font-size-base: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);
@@ -72,7 +75,7 @@
   --line-height-base:    1.4;
   --line-height-relaxed: 1.6;
 
-  /* ── Spacing ───────────────────────────────────────────────── */
+  /* -- Spacing ------------------------------------------------- */
   --space-xs:  0.25rem;
   --space-sm:  0.5rem;
   --space-md:  0.75rem;
@@ -90,7 +93,7 @@
   --space-px-60: 60px;
   --space-px-80: 80px;
 
-  /* ── Border Radius ─────────────────────────────────────────── */
+  /* -- Border Radius ------------------------------------------- */
   --radius-sm:   4px;
   --radius-md:   6px;
   --radius-lg:   8px;
@@ -98,7 +101,7 @@
   --radius-2xl:  20px;
   --radius-full: 9999px;
 
-  /* ── Shadows ───────────────────────────────────────────────── */
+  /* -- Shadows ------------------------------------------------- */
   --shadow-sm:  0 1px 3px  rgba(0, 0, 0, 0.08);
   --shadow-md:  0 2px 8px  rgba(0, 0, 0, 0.10);
   --shadow-lg:  0 4px 16px rgba(0, 0, 0, 0.10);
@@ -110,15 +113,15 @@
   --shadow-glow:        0 0 20px rgba(37, 99, 235, 0.25);    /* was indigo purple */
   --shadow-glow-lg:     0 0 40px rgba(37, 99, 235, 0.30);
 
-  /* ── Gradients ─────────────────────────────────────────────── */
+  /* -- Gradients ----------------------------------------------- */
   --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  --gradient-hero:    linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);  /* was var(--color-primary)→#764ba2 */
+  --gradient-hero:    linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);  /* was var(--color-primary)?#764ba2 */
   --gradient-success: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
   --gradient-danger:  linear-gradient(135deg, var(--color-danger)  0%, var(--color-danger-dark)  100%);
   --gradient-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
   --gradient-glass:   linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
 
-  /* ── Transitions ───────────────────────────────────────────── */
+  /* -- Transitions --------------------------------------------- */
   --transition-fast:   0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.3s  cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow:   0.5s  cubic-bezier(0.4, 0, 0.2, 1);
@@ -130,13 +133,13 @@
   --duration-slow:   500ms;
   --duration-slower: 750ms;
 
-  /* ── Blur ──────────────────────────────────────────────────── */
+  /* -- Blur ---------------------------------------------------- */
   --blur-sm: 4px;
   --blur-md: 8px;
   --blur-lg: 16px;
   --blur-xl: 24px;
 
-  /* ── Layout ────────────────────────────────────────────────── */
+  /* -- Layout -------------------------------------------------- */
   --container-max:     1200px;
   --container-padding: clamp(1rem, 2vw, 2rem);
 
@@ -147,3 +150,4 @@
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1280px;
 }
+

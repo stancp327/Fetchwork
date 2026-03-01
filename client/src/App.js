@@ -171,6 +171,7 @@ function AppContent() {
       <ChatBot />
       <NotificationListener />
       <MessagePreview />
+      <main className="page-content">
       <Suspense fallback={
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -329,6 +330,7 @@ function AppContent() {
         </Routes>
         </RouteErrorBoundary>
       </Suspense>
+      </main>
       <Footer />
     </div>
   );

@@ -5,6 +5,17 @@
   flex-direction: column;
 }
 
+/* ── Global nav offset ────────────────────────────────────────────
+   Nav is position:fixed at --nav-height (64px). Every page starts
+   inside .page-content which pushes content below the nav once.
+   Individual pages must NOT add their own 64px offset on top.
+   Messages page (.messages-page) uses height:100vh internally and
+   works correctly because it starts exactly at --nav-height from top.
+   ─────────────────────────────────────────────────────────────── */
+.page-content {
+  padding-top: var(--nav-height, 64px);
+}
+
 .App-logo {
   height: 40vmin;
   pointer-events: none;

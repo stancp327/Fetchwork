@@ -4,7 +4,9 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: var(--space-sm);
-  height: calc(100vh - 64px);
+  /* .page-content already adds padding-top: var(--nav-height).
+     This height fills exactly the remaining viewport space below nav. */
+  height: calc(100vh - var(--nav-height, 64px));
   display: flex;
   flex-direction: column;
 }
