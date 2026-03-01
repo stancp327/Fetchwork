@@ -14,6 +14,7 @@ const emailWorkflowService = require('../services/emailWorkflowService');
 const emailService  = require('../services/emailService');
 const { checkServiceLimit } = require('../middleware/entitlements');
 const { getFee, getFeeIncluded, getFeeDisplay } = require('../services/feeEngine');
+const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 
 router.get('/', async (req, res) => {
   try {
@@ -135,7 +136,48 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
         error: 'Title, description, category, and basic pricing are required' 
       });
     }
-    
+
+    const userId = req.user.userId || req.user.id;
+
+    // ── Feature gating ─────────────────────────────────────────────
+    if (serviceType === 'recurring') {
+      const canRecurring = await hasFeature(userId, FEATURES.RECURRING_SERVICES);
+      if (!canRecurring) {
+        return res.status(403).json({
+          error:      'Recurring services require a Plus or Pro plan.',
+          reason:     'feature_gated',
+          feature:    FEATURES.RECURRING_SERVICES,
+          upgradeUrl: '/pricing',
+        });
+      }
+    }
+    const { bundles, feesIncluded } = req.body;
+    if (bundles?.length > 0) {
+      const canBundles = await hasFeature(userId, FEATURES.BUNDLE_CREATION);
+      if (!canBundles) {
+        return res.status(403).json({
+          error:      'Session bundles require a Plus or Pro plan.',
+          reason:     'feature_gated',
+          feature:    FEATURES.BUNDLE_CREATION,
+          upgradeUrl: '/pricing',
+        });
+      }
+      // Check if any bundle has expiration (Pro only)
+      const hasExpiry = bundles.some((b) => b.expiresInDays);
+      if (hasExpiry) {
+        const canExpiry = await hasFeature(userId, FEATURES.BUNDLE_EXPIRATION);
+        if (!canExpiry) {
+          return res.status(403).json({
+            error:      'Bundle expiration rules require a Pro plan.',
+            reason:     'feature_gated',
+            feature:    FEATURES.BUNDLE_EXPIRATION,
+            upgradeUrl: '/pricing',
+          });
+        }
+      }
+    }
+    // ──────────────────────────────────────────────────────────────
+
     const service = new Service({
       title,
       description,
@@ -149,8 +191,10 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       location: location || { locationType: 'remote' },
       freelancer: req.user._id,
       status: 'active',
-      serviceType: serviceType || 'one_time',
+      serviceType:  serviceType || 'one_time',
+      feesIncluded: feesIncluded === true,
       ...(serviceType === 'recurring' && recurring ? { recurring } : {}),
+      ...(bundles?.length > 0 ? { bundles } : {}),
     });
     
     await service.save();

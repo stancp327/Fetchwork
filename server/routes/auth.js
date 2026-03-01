@@ -140,6 +140,19 @@ router.post('/login', validateLogin, async (req, res) => {
 });
 
 // ── Get Current User ────────────────────────────────────────────
+// GET /api/auth/me/features — return all feature flags for the current user
+// Used by frontend to conditionally show/hide premium UI elements
+router.get('/me/features', authenticateToken, async (req, res) => {
+  try {
+    const { getUserFeatures } = require('../services/entitlementEngine');
+    const features = await getUserFeatures(req.user.userId || req.user._id);
+    res.json({ features });
+  } catch (err) {
+    console.error('Error getting user features:', err.message);
+    res.status(500).json({ error: 'Failed to fetch feature flags' });
+  }
+});
+
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);

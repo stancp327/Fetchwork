@@ -115,35 +115,16 @@ async function checkServiceLimit(req, res, next) {
 }
 
 /**
- * Middleware factory: gate a route by a feature slug on the plan's features array.
+ * Middleware factory: gate a route by a feature slug.
+ * Delegates to entitlementEngine for full priority chain:
+ *   individual grant → group grant → plan features → free baseline
  *
  * Usage: router.get('/some-route', requireFeature('booking_calendar'), handler)
- *
- * Returns 403 { error, reason: 'feature_gated', feature, upgradeUrl }
  */
 function requireFeature(feature) {
-  return async (req, res, next) => {
-    try {
-      const userId = req.user?.id || req.user?._id;
-      if (!userId) return next();
-
-      const sub = await getUserSubscription(userId);
-      const features = sub?.plan?.features || [];
-
-      if (!features.includes(feature)) {
-        return res.status(403).json({
-          error:      `This feature requires a higher plan.`,
-          reason:     'feature_gated',
-          feature,
-          upgradeUrl: '/pricing',
-        });
-      }
-
-      next();
-    } catch {
-      next(); // fail open
-    }
-  };
+  // Lazy-require to avoid circular dependency at startup
+  const { requireFeature: engineRequireFeature } = require('../services/entitlementEngine');
+  return engineRequireFeature(feature);
 }
 
 module.exports = { checkJobLimit, checkServiceLimit, requireFeature, getPlanLimits, getAnalyticsLevel };

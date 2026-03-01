@@ -1440,4 +1440,158 @@ router.put('/stripe/products/:productId', authenticateAdmin, requirePermission('
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE GRANTS — per-user admin overrides
+// ─────────────────────────────────────────────────────────────────────────────
+
+const { setUserFeature, removeUserFeature, getUserGrants, getUserFeatures, FEATURES } = require('../services/entitlementEngine');
+
+// GET /admin/users/:userId/features — get all feature grants + resolved access for a user
+router.get('/users/:userId/features', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const [grants, resolved] = await Promise.all([
+      getUserGrants(req.params.userId),
+      getUserFeatures(req.params.userId),
+    ]);
+    res.json({ grants, resolved, availableFeatures: Object.values(FEATURES) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /admin/users/:userId/features — grant or revoke a feature for a user
+router.post('/users/:userId/features', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { feature, enabled = true, reason, expiresAt } = req.body;
+    if (!feature) return res.status(400).json({ error: 'feature is required' });
+    if (!Object.values(FEATURES).includes(feature)) {
+      return res.status(400).json({ error: `Unknown feature: ${feature}`, availableFeatures: Object.values(FEATURES) });
+    }
+
+    const grant = await setUserFeature({
+      userId:    req.params.userId,
+      feature,
+      enabled:   enabled !== false,
+      grantedBy: req.user._id || req.user.id,
+      reason,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    });
+
+    const User = require('../models/User');
+    const user = await User.findById(req.params.userId).select('firstName lastName email').lean();
+    console.log(`[admin] Feature grant: ${feature}=${enabled} for user ${user?.email} by admin ${req.user.email}`);
+
+    res.json({ message: `Feature "${feature}" ${enabled ? 'granted' : 'revoked'} successfully`, grant });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /admin/users/:userId/features/:feature — remove a feature grant (revert to plan)
+router.delete('/users/:userId/features/:feature', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
+  try {
+    await removeUserFeature(req.params.userId, req.params.feature);
+    res.json({ message: `Feature grant for "${req.params.feature}" removed — user reverts to plan default` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE GROUPS — cohort-level feature access
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FeatureGroup = require('../models/FeatureGroup');
+
+// GET /admin/feature-groups — list all groups
+router.get('/feature-groups', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    const groups = await FeatureGroup.find()
+      .populate('createdBy', 'firstName lastName email')
+      .sort({ createdAt: -1 }).lean();
+    res.json({ groups });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /admin/feature-groups — create a group
+router.post('/feature-groups', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    const { name, description, features = [], members = [], expiresAt } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'name is required' });
+
+    const group = await FeatureGroup.create({
+      name: name.trim(),
+      description,
+      features,
+      members,
+      createdBy:  req.user._id || req.user.id,
+      expiresAt:  expiresAt ? new Date(expiresAt) : null,
+    });
+    res.status(201).json({ message: 'Feature group created', group });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /admin/feature-groups/:groupId — update a group (features, members, expiry)
+router.put('/feature-groups/:groupId', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    const { name, description, features, active, expiresAt } = req.body;
+    const group = await FeatureGroup.findByIdAndUpdate(
+      req.params.groupId,
+      { $set: { name, description, features, active, expiresAt: expiresAt ? new Date(expiresAt) : null } },
+      { new: true }
+    );
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    res.json({ message: 'Group updated', group });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /admin/feature-groups/:groupId/members — add users to a group
+router.post('/feature-groups/:groupId/members', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    const { userIds = [] } = req.body;
+    if (!userIds.length) return res.status(400).json({ error: 'userIds array required' });
+
+    const group = await FeatureGroup.findByIdAndUpdate(
+      req.params.groupId,
+      { $addToSet: { members: { $each: userIds } } },
+      { new: true }
+    );
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    res.json({ message: `${userIds.length} user(s) added to group "${group.name}"`, memberCount: group.members.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /admin/feature-groups/:groupId/members/:userId — remove a user from a group
+router.delete('/feature-groups/:groupId/members/:userId', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    const group = await FeatureGroup.findByIdAndUpdate(
+      req.params.groupId,
+      { $pull: { members: req.params.userId } },
+      { new: true }
+    );
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    res.json({ message: 'User removed from group', memberCount: group.members.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /admin/feature-groups/:groupId — delete a group
+router.delete('/feature-groups/:groupId', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    await FeatureGroup.findByIdAndDelete(req.params.groupId);
+    res.json({ message: 'Feature group deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
