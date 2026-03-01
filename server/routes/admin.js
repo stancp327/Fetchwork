@@ -1441,6 +1441,33 @@ router.put('/stripe/products/:productId', authenticateAdmin, requirePermission('
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// USER SEARCH — for admin panels (feature groups, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/users/search', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
+  try {
+    const { q, limit = 10 } = req.query;
+    if (!q || q.length < 2) return res.json({ users: [] });
+
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const users = await User.find({
+      $or: [
+        { email: regex },
+        { firstName: regex },
+        { lastName: regex },
+      ],
+    })
+      .select('firstName lastName email accountType role profilePicture')
+      .limit(Math.min(Number(limit), 25))
+      .lean();
+
+    res.json({ users });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // FEATURE GRANTS — per-user admin overrides
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1508,6 +1535,7 @@ router.get('/feature-groups', authenticateAdmin, requirePermission('user_managem
   try {
     const groups = await FeatureGroup.find()
       .populate('createdBy', 'firstName lastName email')
+      .populate('members', 'firstName lastName email')
       .sort({ createdAt: -1 }).lean();
     res.json({ groups });
   } catch (err) {

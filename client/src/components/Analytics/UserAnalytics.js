@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
+import { useFeatures } from '../../hooks/useFeatures';
 import { apiRequest } from '../../utils/api';
 import SEO from '../common/SEO';
 import {
@@ -279,9 +280,23 @@ const ClientDashboard = ({ data, range }) => {
 // ═══════════════════════════════════════════════════════════════════
 // PAGE
 // ═══════════════════════════════════════════════════════════════════
+const UpgradeGate = () => (
+  <div className="ua-upgrade-gate">
+    <SEO title="Analytics | Fetchwork" />
+    <div className="ua-upgrade-card">
+      <span style={{ fontSize: '3rem' }}>📊</span>
+      <h2>Advanced Analytics</h2>
+      <p>Get detailed insights into your earnings, response times, proposal success rates, and more.</p>
+      <p className="ua-upgrade-tier">Available on <strong>Pro</strong> and <strong>Business</strong> plans.</p>
+      <a href="/pricing" className="btn btn-primary" style={{ marginTop: '1rem' }}>View Plans</a>
+    </div>
+  </div>
+);
+
 const UserAnalytics = () => {
   const { user }                       = useAuth();
   const { isFreelancerMode, isClientMode } = useRole();
+  const { hasFeature, loading: featuresLoading } = useFeatures();
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
@@ -312,6 +327,8 @@ const UserAnalytics = () => {
 
   const hasBoth = data?.freelancer !== null && data?.client !== null;
   const rangeLabel = RANGES.find(r => r.value === range)?.label || range;
+
+  if (!featuresLoading && !hasFeature('advanced_analytics')) return <UpgradeGate />;
 
   return (
     <div className="ua-page">

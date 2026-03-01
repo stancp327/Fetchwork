@@ -256,3 +256,80 @@
   .ffp-add-row { flex-direction: column; }
   .ffp-select-sm, .ffp-input-sm { width: 100%; }
 }
+
+/* ── Feature Groups Panel ─────────────────────────────────── */
+.fgp-root { padding: var(--space-4); }
+.fgp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-5); }
+.fgp-title { font-size: var(--text-xl); font-weight: 700; margin: 0; }
+.fgp-subtitle { font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-1) 0 0; }
+.fgp-loading { padding: var(--space-8); text-align: center; color: var(--text-muted); }
+.fgp-msg { padding: var(--space-3) var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-4); }
+.fgp-new-btn { padding: var(--space-2) var(--space-4); background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.fgp-empty { padding: var(--space-8); text-align: center; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius: var(--radius-lg); }
+
+/* Create form */
+.fgp-create-form { padding: var(--space-5); background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin-bottom: var(--space-5); }
+.fgp-create-form h3 { margin: 0 0 var(--space-4); font-size: var(--text-base); }
+.fgp-form-row { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
+.fgp-input { flex: 1; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-card); }
+.fgp-input-sm { width: 140px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-card); }
+.fgp-feat-label { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 0 0 var(--space-2); }
+.fgp-feat-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+.fgp-feat-chip { padding: 4px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-full); font-size: var(--text-xs); cursor: pointer; background: var(--bg-card); transition: all 0.15s; }
+.fgp-feat-chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+.fgp-create-btn { padding: var(--space-2) var(--space-5); background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; }
+.fgp-create-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Group cards */
+.fgp-group-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.fgp-group-card { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); overflow: hidden; }
+.fgp-group-card.inactive { opacity: 0.6; }
+.fgp-group-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4); cursor: pointer; }
+.fgp-group-header:hover { background: var(--bg-secondary); }
+.fgp-group-meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.fgp-group-name { font-weight: 700; font-size: var(--text-base); }
+.fgp-status-badge { font-size: var(--text-xs); padding: 2px 8px; border-radius: var(--radius-full); }
+.fgp-status-badge.active { background: #dcfce7; color: #166534; }
+.fgp-status-badge.inactive { background: #f3f4f6; color: #6b7280; }
+.fgp-expiry-badge { font-size: var(--text-xs); color: var(--warning); }
+.fgp-group-counts { display: flex; gap: var(--space-4); font-size: var(--text-xs); color: var(--text-muted); align-items: center; }
+.fgp-expand-icon { font-size: 10px; }
+
+/* Group body (expanded) */
+.fgp-group-body { padding: 0 var(--space-4) var(--space-4); border-top: 1px solid var(--border-color); }
+.fgp-group-desc { font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-3) 0; }
+.fgp-group-section { margin-top: var(--space-4); }
+.fgp-group-section strong { font-size: var(--text-xs); text-transform: uppercase; color: var(--text-muted); }
+.fgp-feat-tags { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-2); }
+.fgp-feat-tag { padding: 2px 8px; background: #eff6ff; color: #1d4ed8; border-radius: var(--radius-full); font-size: var(--text-xs); }
+.fgp-none { font-size: var(--text-xs); color: var(--text-muted); }
+
+/* Members */
+.fgp-member-list { margin-top: var(--space-2); }
+.fgp-member-row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; font-size: var(--text-sm); border-bottom: 1px solid var(--bg-secondary); }
+.fgp-member-name { font-weight: 600; }
+.fgp-member-email { color: var(--text-muted); font-size: var(--text-xs); }
+.fgp-rm-member { background: none; border: none; cursor: pointer; color: var(--danger); font-size: 14px; padding: 2px 6px; }
+.fgp-more { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
+
+/* Add member */
+.fgp-add-member { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+.fgp-search-btn { padding: var(--space-2) var(--space-3); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; font-size: var(--text-sm); }
+.fgp-search-results { margin-top: var(--space-2); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+.fgp-search-row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) var(--space-3); font-size: var(--text-sm); border-bottom: 1px solid var(--bg-secondary); }
+.fgp-search-row:last-child { border-bottom: none; }
+.fgp-add-member-btn { padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-size: var(--text-xs); cursor: pointer; }
+
+/* Group actions */
+.fgp-group-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
+.fgp-action-btn { padding: var(--space-2) var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-card); cursor: pointer; font-size: var(--text-sm); }
+.fgp-action-btn.danger { color: var(--danger); border-color: var(--danger); }
+.fgp-action-btn.danger:hover { background: #fef2f2; }
+
+@media (max-width: 480px) {
+  .fgp-header { flex-direction: column; gap: var(--space-3); }
+  .fgp-form-row { flex-direction: column; }
+  .fgp-input-sm { width: 100%; }
+  .fgp-group-header { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+  .fgp-add-member { flex-direction: column; }
+}

@@ -128,3 +128,19 @@
 
 /* ── Error ───────────────────────────────────────────────────── */
 .ua-error { padding: var(--space-md); background: var(--color-danger-bg, #fee2e2); color: var(--color-danger, #dc2626); border-radius: var(--radius-md); font-size: 0.9rem; }
+
+/* -- Upgrade gate -------------------------------------------- */
+.ua-upgrade-gate {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 60vh; padding: var(--space-6);
+}
+.ua-upgrade-card {
+  text-align: center; max-width: 420px;
+  padding: var(--space-8) var(--space-6);
+  background: var(--bg-card); border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+.ua-upgrade-card h2 { margin: var(--space-3) 0 var(--space-2); }
+.ua-upgrade-card p { color: var(--text-muted); font-size: var(--text-sm); margin: 0 0 var(--space-2); }
+.ua-upgrade-tier { font-size: var(--text-base); color: var(--text-primary); }
