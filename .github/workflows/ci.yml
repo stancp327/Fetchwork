@@ -63,6 +63,10 @@ jobs:
       - name: Install server deps
         run: npm ci
 
+      - name: Install root test-utils deps
+        run: npm ci
+        working-directory: .
+
       - name: Run integration tests + coverage
         env:
           NODE_ENV:                test
