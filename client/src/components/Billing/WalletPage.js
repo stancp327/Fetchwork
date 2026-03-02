@@ -17,6 +17,9 @@ const WalletPage = () => {
   const [error, setError]         = useState('');
   const [gated, setGated]         = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [payoutStatus, setPayoutStatus] = useState(null); // { connected, payoutsEnabled }
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawing, setWithdrawing]     = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -31,6 +34,10 @@ const WalletPage = () => {
     }
 
     fetchWallet();
+    // Check if user has Stripe Connect (for withdraw section)
+    apiRequest('/api/payments/status')
+      .then(d => setPayoutStatus(d))
+      .catch(() => {});
   }, []);
 
   const fetchWallet = async () => {
@@ -45,6 +52,27 @@ const WalletPage = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const amt = parseFloat(withdrawAmount);
+    if (!amt || amt < 1) { setError('Minimum withdrawal is $1'); return; }
+    if (amt > balance) { setError('Withdrawal exceeds wallet balance'); return; }
+    setWithdrawing(true);
+    setError('');
+    try {
+      const data = await apiRequest('/api/billing/wallet/withdraw', {
+        method: 'POST',
+        body: JSON.stringify({ amount: amt }),
+      });
+      setSuccessMsg(`$${data.withdrawn.toFixed(2)} withdrawn to your bank account`);
+      setWithdrawAmount('');
+      fetchWallet();
+    } catch (err) {
+      setError(err.message || 'Withdrawal failed');
+    } finally {
+      setWithdrawing(false);
     }
   };
 
@@ -146,6 +174,36 @@ const WalletPage = () => {
         </div>
         <p className="wallet-add-note">Funds are added instantly via Stripe. No expiry.</p>
       </div>
+
+      {/* ── Withdraw funds (freelancers with Stripe Connect) ── */}
+      {payoutStatus?.connected && payoutStatus?.payoutsEnabled && balance > 0 && (
+        <div className="wallet-card">
+          <div className="wallet-card-title">Withdraw to bank</div>
+          <div className="wallet-custom-row">
+            <input
+              className="wallet-custom-input"
+              type="number"
+              placeholder="Amount to withdraw"
+              min="1"
+              max={balance}
+              step="0.01"
+              value={withdrawAmount}
+              onChange={e => { setWithdrawAmount(e.target.value); setError(''); }}
+            />
+            <button
+              className="wallet-add-btn"
+              onClick={handleWithdraw}
+              disabled={withdrawing || !withdrawAmount}
+              style={{ background: '#059669' }}
+            >
+              {withdrawing ? 'Processing…' : `Withdraw $${parseFloat(withdrawAmount || 0).toFixed(2)}`}
+            </button>
+          </div>
+          <p className="wallet-add-note">
+            Transferred to your connected Stripe account. May take 1–2 business days.
+          </p>
+        </div>
+      )}
 
       {/* ── Active credits ── */}
       {active.length > 0 && (

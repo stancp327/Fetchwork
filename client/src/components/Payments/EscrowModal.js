@@ -28,26 +28,54 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState('');
   const [savedMethods,  setSavedMethods]  = useState([]);
-  const [selectedPmId,  setSelectedPmId]  = useState(null);  // 'new' or pm_xxx
+  const [selectedPmId,  setSelectedPmId]  = useState(null);  // 'wallet', 'new', or pm_xxx
   const [savedLoading,  setSavedLoading]  = useState(true);
+  const [walletBalance, setWalletBalance] = useState(null);
 
-  // Always fetch saved cards on mount
+  // Fetch saved cards + wallet balance on mount
   useEffect(() => {
-    apiRequest('/api/payments/methods')
-      .then(d => {
-        const methods = d.methods || [];
-        setSavedMethods(methods);
+    Promise.all([
+      apiRequest('/api/payments/methods').catch(() => ({ methods: [] })),
+      apiRequest('/api/billing/wallet/balance').catch(() => ({ balance: 0 })),
+    ]).then(([cardData, walletData]) => {
+      const methods = cardData.methods || [];
+      setSavedMethods(methods);
+      setWalletBalance(walletData.balance || 0);
+
+      // Default selection: wallet if sufficient, else default card, else new
+      if (walletData.balance >= Number(amount)) {
+        setSelectedPmId('wallet');
+      } else {
         const def = methods.find(m => m.isDefault) || methods[0];
-        if (def) setSelectedPmId(def.id);
-        else setSelectedPmId('new');
-      })
-      .catch(() => setSelectedPmId('new'))
-      .finally(() => setSavedLoading(false));
-  }, []);
+        setSelectedPmId(def ? def.id : 'new');
+      }
+    }).finally(() => setSavedLoading(false));
+  }, [amount]);
 
   const handleContinue = async () => {
     setLoading(true);
     setError('');
+
+    // ── Wallet path ──
+    if (selectedPmId === 'wallet') {
+      try {
+        const data = await apiRequest('/api/billing/wallet/pay', {
+          method: 'POST',
+          body: JSON.stringify({
+            amount: Number(amount),
+            reason: `Payment for ${job.title}`,
+            ref:    job._id,
+          }),
+        });
+        if (onPaid) onPaid({ walletPayment: true, paid: data.paid, balance: data.balance });
+        onClose();
+      } catch (err) {
+        setError(err.message || 'Wallet payment failed');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     // ── Saved card path ──
     if (selectedPmId && selectedPmId !== 'new') {
@@ -143,10 +171,30 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                 <span>${(Number(amount) * 0.90).toFixed(2)}</span>
               </div>
 
-              {/* Saved cards */}
-              {savedMethods.length > 0 && (
+              {/* Payment methods */}
+              {(walletBalance > 0 || savedMethods.length > 0) && (
                 <div className="escrow-saved-cards">
                   <p className="escrow-saved-label">Pay with:</p>
+
+                  {/* Wallet option */}
+                  {walletBalance > 0 && (
+                    <label className={`escrow-card-option ${selectedPmId === 'wallet' ? 'selected' : ''} ${walletBalance < Number(amount) ? 'escrow-card-disabled' : ''}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="wallet"
+                        checked={selectedPmId === 'wallet'}
+                        onChange={() => setSelectedPmId('wallet')}
+                        disabled={walletBalance < Number(amount)}
+                      />
+                      <span className="escrow-card-brand">Wallet</span>
+                      <span className="escrow-card-num">${walletBalance.toFixed(2)} available</span>
+                      {walletBalance < Number(amount) && (
+                        <span className="escrow-card-exp" style={{ color: '#ef4444' }}>Insufficient</span>
+                      )}
+                    </label>
+                  )}
+
                   {savedMethods.map(m => (
                     <label key={m.id} className={`escrow-card-option ${selectedPmId === m.id ? 'selected' : ''}`}>
                       <input
@@ -184,9 +232,11 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
               <div className="escrow-init-actions">
                 <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
                 <button className="btn btn-primary" onClick={handleContinue} disabled={loading}>
-                  {selectedPmId && selectedPmId !== 'new'
-                    ? `Pay $${Number(amount).toFixed(2)} →`
-                    : 'Continue to Payment →'
+                  {selectedPmId === 'wallet'
+                    ? `Pay $${Number(amount).toFixed(2)} from Wallet →`
+                    : selectedPmId && selectedPmId !== 'new'
+                      ? `Pay $${Number(amount).toFixed(2)} →`
+                      : 'Continue to Payment →'
                   }
                 </button>
               </div>

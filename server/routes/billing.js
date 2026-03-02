@@ -641,6 +641,160 @@ async function handleWalletTopup(session) {
   }
 }
 
+// POST /api/billing/wallet/pay — deduct from wallet (FIFO from oldest credits)
+// Body: { amount, reason, ref } — dollar amount, description, optional reference ID
+router.post('/wallet/pay', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const amount = parseFloat(req.body.amount);
+    const { reason, ref } = req.body;
+
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'amount must be positive' });
+    if (!reason) return res.status(400).json({ error: 'reason is required' });
+
+    // Fetch active credits FIFO (oldest first)
+    const credits = await BillingCredit.find({
+      user:      userId,
+      status:    'active',
+      remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).sort({ createdAt: 1 });
+
+    const balance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+    if (balance < amount) {
+      return res.status(400).json({
+        error:   'Insufficient wallet balance',
+        balance: Math.round(balance * 100) / 100,
+        needed:  amount,
+      });
+    }
+
+    // Deduct FIFO
+    let remaining = amount;
+    const deductions = [];
+    for (const credit of credits) {
+      if (remaining <= 0) break;
+      const deduct = Math.min(credit.remaining, remaining);
+      credit.remaining = Math.round((credit.remaining - deduct) * 100) / 100;
+      if (credit.remaining <= 0) {
+        credit.status = 'used';
+        credit.usedAt = new Date();
+        credit.usedOn = ref || reason;
+      }
+      await credit.save();
+      deductions.push({ creditId: credit._id, deducted: deduct });
+      remaining = Math.round((remaining - deduct) * 100) / 100;
+    }
+
+    await logBillingAction({
+      userId,
+      action: 'wallet_payment',
+      after:  { amount, reason, ref, deductions },
+      note:   `$${amount} deducted from wallet — ${reason}`,
+    });
+
+    // Return updated balance
+    const newBalance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+
+    res.json({
+      success:    true,
+      paid:       amount,
+      balance:    Math.round(newBalance * 100) / 100,
+      deductions,
+    });
+  } catch (err) {
+    console.error('Wallet pay error:', err.message);
+    res.status(500).json({ error: 'Wallet payment failed' });
+  }
+});
+
+// POST /api/billing/wallet/withdraw — transfer wallet balance to Stripe Connect account
+// Body: { amount } — dollar amount to withdraw
+router.post('/wallet/withdraw', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const amount = parseFloat(req.body.amount);
+
+    if (!amount || amount < 1) return res.status(400).json({ error: 'Minimum withdrawal is $1' });
+
+    const user = await User.findById(userId).select('stripeAccountId firstName lastName');
+    if (!user?.stripeAccountId) {
+      return res.status(400).json({ error: 'No Stripe Connect account. Set up payouts first.' });
+    }
+
+    // Fetch active credits FIFO
+    const credits = await BillingCredit.find({
+      user:      userId,
+      status:    'active',
+      remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).sort({ createdAt: 1 });
+
+    const balance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+    if (balance < amount) {
+      return res.status(400).json({
+        error:   'Insufficient wallet balance',
+        balance: Math.round(balance * 100) / 100,
+      });
+    }
+
+    // Deduct FIFO
+    let remaining = amount;
+    for (const credit of credits) {
+      if (remaining <= 0) break;
+      const deduct = Math.min(credit.remaining, remaining);
+      credit.remaining = Math.round((credit.remaining - deduct) * 100) / 100;
+      if (credit.remaining <= 0) {
+        credit.status = 'used';
+        credit.usedAt = new Date();
+        credit.usedOn = 'wallet_withdrawal';
+      }
+      await credit.save();
+      remaining = Math.round((remaining - deduct) * 100) / 100;
+    }
+
+    // Transfer via Stripe Connect
+    const transfer = await stripeService.releasePayment(
+      amount,
+      user.stripeAccountId,
+      `wallet-withdraw-${userId}-${Date.now()}`,
+    );
+
+    await logBillingAction({
+      userId,
+      action: 'wallet_withdrawal',
+      after:  { amount, transferId: transfer.id, stripeAccountId: user.stripeAccountId },
+      note:   `$${amount} withdrawn to Stripe Connect`,
+    });
+
+    res.json({
+      success:    true,
+      withdrawn:  amount,
+      transferId: transfer.id,
+    });
+  } catch (err) {
+    console.error('Wallet withdraw error:', err.message);
+    res.status(500).json({ error: 'Withdrawal failed' });
+  }
+});
+
+// GET /api/billing/wallet/balance — lightweight balance-only endpoint
+router.get('/wallet/balance', authenticateToken, async (req, res) => {
+  try {
+    const credits = await BillingCredit.find({
+      user:      req.user.userId,
+      status:    'active',
+      remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).sort({ createdAt: 1 }).lean();
+
+    const balance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+    res.json({ balance: Math.round(balance * 100) / 100 });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch balance' });
+  }
+});
+
 // ── GET /api/billing/sessions/:sessionId ───────────────────────
 // Retrieve a Checkout Session for success page display.
 // Fetches from Stripe (authoritative) and updates local record.

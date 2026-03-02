@@ -1980,4 +1980,147 @@ router.get('/orders', authenticateAdmin, requirePermission('job_management'), as
   }
 });
 
+// ── GET /api/admin/wallets — aggregate wallet balances by user ──
+router.get('/wallets', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const matchStage = {
+      status:    'active',
+      remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    };
+
+    const agg = await BillingCredit.aggregate([
+      { $match: matchStage },
+      { $group: {
+        _id:     '$user',
+        balance: { $sum: '$remaining' },
+        credits: { $sum: 1 },
+        oldest:  { $min: '$createdAt' },
+        newest:  { $max: '$createdAt' },
+      }},
+      { $sort: { balance: -1 } },
+      { $facet: {
+        total: [{ $count: 'count' }],
+        data:  [{ $skip: skip }, { $limit: Number(limit) }],
+      }},
+    ]);
+
+    const total = agg[0]?.total[0]?.count || 0;
+    let wallets = agg[0]?.data || [];
+
+    // Populate user info
+    const userIds = wallets.map(w => w._id);
+    const users = await User.find({ _id: { $in: userIds } })
+      .select('firstName lastName email stripeAccountId')
+      .lean();
+    const userMap = {};
+    users.forEach(u => { userMap[String(u._id)] = u; });
+
+    wallets = wallets.map(w => ({
+      userId:   w._id,
+      user:     userMap[String(w._id)] || null,
+      balance:  Math.round(w.balance * 100) / 100,
+      credits:  w.credits,
+      oldest:   w.oldest,
+      newest:   w.newest,
+    }));
+
+    // Optional search filter (post-aggregate for simplicity)
+    if (search) {
+      const q = search.toLowerCase();
+      wallets = wallets.filter(w => {
+        const u = w.user;
+        if (!u) return false;
+        return (u.firstName + ' ' + u.lastName).toLowerCase().includes(q) ||
+               u.email.toLowerCase().includes(q);
+      });
+    }
+
+    res.json({ wallets, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch wallets' });
+  }
+});
+
+// ── POST /api/admin/wallets/:userId/adjust — admin adjust wallet balance ──
+// Body: { amount, reason } — positive to add, negative to deduct
+router.post('/wallets/:userId/adjust', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { amount, reason } = req.body;
+    const parsedAmount = parseFloat(amount);
+
+    if (!parsedAmount || parsedAmount === 0) return res.status(400).json({ error: 'amount must be non-zero' });
+    if (!reason) return res.status(400).json({ error: 'reason is required' });
+
+    const user = await User.findById(userId).select('firstName lastName email');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (parsedAmount > 0) {
+      // Add credit
+      const credit = await BillingCredit.create({
+        user:      userId,
+        amount:    parsedAmount,
+        reason:    `Admin adjustment: ${reason}`,
+        appliedBy: req.user.userId,
+      });
+
+      await logBillingAction({
+        userId,
+        action:  'wallet_admin_credit',
+        before:  null,
+        after:   { amount: parsedAmount, reason },
+        adminId: req.user.userId,
+        note:    `Admin added $${parsedAmount} — ${reason}`,
+      });
+
+      res.status(201).json({ credit, message: `$${parsedAmount} added to wallet` });
+    } else {
+      // Deduct from wallet FIFO
+      const deductAmt = Math.abs(parsedAmount);
+      const credits = await BillingCredit.find({
+        user:      userId,
+        status:    'active',
+        remaining: { $gt: 0 },
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+      }).sort({ createdAt: 1 });
+
+      const balance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+      if (balance < deductAmt) {
+        return res.status(400).json({ error: `Insufficient balance ($${balance.toFixed(2)} available)` });
+      }
+
+      let remaining = deductAmt;
+      for (const credit of credits) {
+        if (remaining <= 0) break;
+        const deduct = Math.min(credit.remaining, remaining);
+        credit.remaining = Math.round((credit.remaining - deduct) * 100) / 100;
+        if (credit.remaining <= 0) {
+          credit.status = 'used';
+          credit.usedAt = new Date();
+          credit.usedOn = `admin_adjustment`;
+        }
+        await credit.save();
+        remaining = Math.round((remaining - deduct) * 100) / 100;
+      }
+
+      await logBillingAction({
+        userId,
+        action:  'wallet_admin_debit',
+        before:  { balance },
+        after:   { deducted: deductAmt, reason },
+        adminId: req.user.userId,
+        note:    `Admin deducted $${deductAmt} — ${reason}`,
+      });
+
+      res.json({ message: `$${deductAmt} deducted from wallet` });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to adjust wallet' });
+  }
+});
+
 module.exports = router;
