@@ -5,7 +5,7 @@ const reportError = async (errorData) => {
     const token = localStorage.getItem('token');
     if (!token) return; // Don't report if not logged in
 
-    await fetch(`${getApiBaseUrl()}/api/errors/client`, {
+    await fetch(`${getApiBaseUrl()}/api/errors`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

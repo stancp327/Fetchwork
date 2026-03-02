@@ -6,6 +6,7 @@ import AppErrorBoundary from './components/common/AppErrorBoundary';
 import RouteErrorBoundary from './components/common/RouteErrorBoundary';
 import { setupGlobalErrorHandlers } from './utils/errorReporter';
 import { RoleProvider } from './context/RoleContext';
+import { QueryProvider } from './context/QueryProvider';
 import { MessagingProvider } from './context/MessagingContext';
 import { ToastProvider } from './components/common/Toast';
 import usePageTracker from './hooks/usePageTracker';
@@ -360,6 +361,7 @@ function App() {
   }, []);
 
   return (
+    <QueryProvider>
     <HelmetProvider>
       <AppErrorBoundary>
         <AuthErrorBoundary>
@@ -377,6 +379,7 @@ function App() {
         </AuthErrorBoundary>
       </AppErrorBoundary>
     </HelmetProvider>
+    </QueryProvider>
   );
 }
 
