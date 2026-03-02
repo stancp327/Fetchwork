@@ -179,8 +179,39 @@ async function getFee({ userId, role, jobType, amount }) {
   return { fee: 0, feeRate: 0, source: 'unknown' };
 }
 
+// Wrap getFee to enforce minimum — the actual export
+async function getFeeWithFloor(opts) {
+  const result = await getFee(opts);
+  if (result.fee > 0 && result.source !== 'fee_waiver' && result.source !== 'local_freelancer_free') {
+    result.fee = enforceMinimumFee(result.fee, opts.amount);
+  }
+  return result;
+}
+
 function roundFee(n) {
   return Math.round(n * 100) / 100;
+}
+
+// ── Stripe processing cost estimate ─────────────────────────────
+// Stripe charges 2.9% + $0.30 per transaction.
+// Our platform fee must cover this or we lose money.
+const STRIPE_RATE = 0.029;
+const STRIPE_FIXED = 0.30;
+const MIN_PLATFORM_FEE = 1.00; // absolute minimum we charge (covers Stripe + small margin)
+
+function estimateStripeCost(chargeAmount) {
+  return roundFee(chargeAmount * STRIPE_RATE + STRIPE_FIXED);
+}
+
+/**
+ * Ensure a calculated fee covers Stripe processing costs.
+ * Applied to all non-zero, non-waived fees.
+ */
+function enforceMinimumFee(fee, amount) {
+  if (fee === 0) return 0; // waived/free — don't override
+  const stripeCost = estimateStripeCost(amount + fee);
+  const floor = Math.max(MIN_PLATFORM_FEE, stripeCost);
+  return Math.max(fee, roundFee(floor));
 }
 
 /**
@@ -189,7 +220,7 @@ function roundFee(n) {
  * Defaults to remote + freelancer (the most common call site).
  */
 async function calcPlatformFeeAsync({ userId, role = 'freelancer', jobType = 'remote', amount }) {
-  const result = await getFee({ userId, role, jobType, amount });
+  const result = await getFeeWithFloor({ userId, role, jobType, amount });
   return result.fee;
 }
 
@@ -259,12 +290,25 @@ async function getFeeIncluded({ userId, role, jobType, listedPrice }) {
   const totalPlatformFee = roundFee(clientFee + freelancerFee);
   const freelancerPayout = roundFee(listedPrice - clientFee - freelancerFee);
 
+  // Ensure total platform take covers Stripe processing
+  let adjClientFee = clientFee;
+  let adjFreelancerFee = freelancerFee;
+  const stripeCost = estimateStripeCost(listedPrice);
+  const adjTotalFee = adjClientFee + adjFreelancerFee;
+  if (adjTotalFee > 0 && adjTotalFee < Math.max(MIN_PLATFORM_FEE, stripeCost)) {
+    // Bump client fee to cover the gap
+    const shortfall = roundFee(Math.max(MIN_PLATFORM_FEE, stripeCost) - adjTotalFee);
+    adjClientFee = roundFee(adjClientFee + shortfall);
+  }
+  const adjTotalPlatformFee = roundFee(adjClientFee + adjFreelancerFee);
+  const adjFreelancerPayout = roundFee(listedPrice - adjClientFee - adjFreelancerFee);
+
   return {
     base, listedPrice,
-    clientFee, freelancerFee,
-    totalPlatformFee,
+    clientFee: adjClientFee, freelancerFee: adjFreelancerFee,
+    totalPlatformFee: adjTotalPlatformFee,
     clientCharges:    listedPrice,  // client pays exactly the listed price
-    freelancerPayout,
+    freelancerPayout: adjFreelancerPayout,
     feesIncluded:     true,
     source:           'fees_included_remote',
   };
@@ -278,13 +322,13 @@ async function getTipFee() {
 // ── Recurring service fee (per billing cycle) ─────────────────────
 // Same priority chain as getFee, but always uses remote % rates.
 async function getRecurringFee({ userId, role, amount }) {
-  return getFee({ userId, role, jobType: 'remote', amount });
+  return getFeeWithFloor({ userId, role, jobType: 'remote', amount });
 }
 
 // ── Bundle fee (upfront full-price charge) ────────────────────────
 // Fee taken on full bundle amount at time of purchase.
 async function getBundleFee({ userId, role, jobType = 'remote', amount }) {
-  return getFee({ userId, role, jobType, amount });
+  return getFeeWithFloor({ userId, role, jobType, amount });
 }
 
 // ── Human-readable fee display string ────────────────────────────
@@ -300,7 +344,8 @@ function toCents(dollars) { return Math.round(dollars * 100); }
 function fromCents(cents)  { return Math.round(cents) / 100; }
 
 module.exports = {
-  getFee,
+  getFee: getFeeWithFloor,  // all callers get the floor-enforced version
+  getFeeRaw: getFee,        // raw version for testing/display
   getFeeIncluded,
   calcPlatformFeeAsync,
   getTipFee,
@@ -308,7 +353,10 @@ module.exports = {
   getBundleFee,
   getFeeDisplay,
   getLocalClientFlatFee,
+  enforceMinimumFee,
+  estimateStripeCost,
   FALLBACK_RATES,
+  MIN_PLATFORM_FEE,
   toCents,
   fromCents,
 };
