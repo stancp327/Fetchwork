@@ -290,7 +290,8 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
       'location', 'timezone', 'portfolio', 'socialLinks', 'phone',
       'headline', 'tagline', 'languages', 'experience', 'education',
       'certifications', 'preferencesExtended', 'socialLinksExtended',
-      'bannerUrl', 'visibility', 'modes'
+      'bannerUrl', 'visibility', 'modes',
+      'interests', 'lookingFor'
     ];
     
     allowedUpdates.forEach(field => {
@@ -321,6 +322,49 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// ── PUT /api/users/me/discovery — Update discovery/notification preferences
+router.put('/me/discovery', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { enabled, notifyJobs, notifyServices, notifyClasses, categories, blockedProviders, frequency } = req.body;
+
+    if (!user.preferences) user.preferences = {};
+    user.preferences.discovery = {
+      enabled:          enabled !== undefined ? enabled : user.preferences.discovery?.enabled || false,
+      notifyJobs:       notifyJobs !== undefined ? notifyJobs : user.preferences.discovery?.notifyJobs ?? true,
+      notifyServices:   notifyServices !== undefined ? notifyServices : user.preferences.discovery?.notifyServices ?? true,
+      notifyClasses:    notifyClasses !== undefined ? notifyClasses : user.preferences.discovery?.notifyClasses ?? true,
+      categories:       categories || user.preferences.discovery?.categories || [],
+      blockedProviders: blockedProviders || user.preferences.discovery?.blockedProviders || [],
+      frequency:        frequency || user.preferences.discovery?.frequency || 'daily',
+    };
+
+    user.markModified('preferences');
+    await user.save();
+    res.json({ message: 'Discovery preferences updated', discovery: user.preferences.discovery });
+  } catch (err) {
+    console.error('Discovery prefs error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/users/me/discovery — Get discovery preferences
+router.get('/me/discovery', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('preferences.discovery interests lookingFor').lean();
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({
+      discovery: user.preferences?.discovery || { enabled: false },
+      interests: user.interests || [],
+      lookingFor: user.lookingFor || [],
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -175,6 +175,63 @@ const CATEGORIES = [
     icon: 'camera',
     subcategories: ['Portraits', 'Events', 'Real Estate', 'Product Photography', 'Headshots']
   },
+  // ── Classes ───
+  {
+    id: 'cooking_classes',
+    label: 'Cooking Classes',
+    type: 'both',
+    icon: 'chef-hat',
+    subcategories: ['Baking', 'International Cuisine', 'Meal Prep', 'BBQ & Grilling', 'Pastry', 'Vegan/Vegetarian']
+  },
+  {
+    id: 'fitness_classes',
+    label: 'Fitness & Training',
+    type: 'both',
+    icon: 'dumbbell',
+    subcategories: ['Personal Training', 'Group Fitness', 'CrossFit', 'Pilates', 'Boxing', 'Swimming']
+  },
+  {
+    id: 'art_classes',
+    label: 'Art & Crafts',
+    type: 'both',
+    icon: 'palette',
+    subcategories: ['Painting', 'Drawing', 'Pottery', 'Jewelry Making', 'Woodworking', 'Sewing']
+  },
+  {
+    id: 'music_lessons',
+    label: 'Music Lessons',
+    type: 'both',
+    icon: 'music',
+    subcategories: ['Guitar', 'Piano', 'Drums', 'Voice', 'Music Theory', 'Production']
+  },
+  {
+    id: 'language_classes',
+    label: 'Language Classes',
+    type: 'both',
+    icon: 'globe',
+    subcategories: ['Spanish', 'French', 'Mandarin', 'Japanese', 'ESL', 'Sign Language']
+  },
+  {
+    id: 'dance_classes',
+    label: 'Dance Classes',
+    type: 'both',
+    icon: 'music',
+    subcategories: ['Salsa', 'Hip Hop', 'Ballet', 'Contemporary', 'Ballroom', 'Swing']
+  },
+  {
+    id: 'tech_workshops',
+    label: 'Tech Workshops',
+    type: 'both',
+    icon: 'laptop',
+    subcategories: ['Coding', '3D Printing', 'Electronics', 'Robotics', 'AI/ML', 'App Development']
+  },
+  {
+    id: 'yoga_meditation',
+    label: 'Yoga & Meditation',
+    type: 'both',
+    icon: 'heart',
+    subcategories: ['Vinyasa', 'Hot Yoga', 'Restorative', 'Meditation', 'Breathwork', 'Mindfulness']
+  },
   {
     id: 'other',
     label: 'Other',

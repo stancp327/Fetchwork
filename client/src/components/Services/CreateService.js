@@ -155,6 +155,18 @@ const ServiceTypeSelector = ({ value, onChange, hasFeature = () => true }) => (
         </div>
         <span className="svc-type-check">{value === 'recurring' ? '✓' : ''}</span>
       </button>
+      <button
+        type="button"
+        className={`service-type-card ${value === 'class' ? 'selected' : ''}`}
+        onClick={() => onChange('serviceType', 'class')}
+      >
+        <span className="svc-type-icon">📚</span>
+        <div>
+          <strong>Class / Workshop</strong>
+          <p>Cooking classes, fitness groups, art workshops, tech bootcamps...</p>
+        </div>
+        <span className="svc-type-check">{value === 'class' ? '✓' : ''}</span>
+      </button>
     </div>
   </div>
 );
@@ -506,6 +518,68 @@ const StepPricing = ({ data, onChange, errors, hasFeature = () => true }) => {
 
       {isRecurring && <RecurringSessionSettings data={data} onChange={onChange} errors={errors} />}
 
+      {data.serviceType === 'class' && (
+        <div className="wiz-section">
+          <h3>📚 Class Details</h3>
+          <div className="wiz-grid-2">
+            <div className="wiz-field">
+              <label>Location</label>
+              <select value={data.classLocationType || 'both'} onChange={e => onChange('classLocationType', e.target.value)}>
+                <option value="in_person">In Person</option>
+                <option value="online">Online</option>
+                <option value="both">Both (Hybrid)</option>
+              </select>
+            </div>
+            <div className="wiz-field">
+              <label>Max Students</label>
+              <input type="number" min="1" max="100" value={data.classMaxStudents || 10} onChange={e => onChange('classMaxStudents', parseInt(e.target.value) || 10)} />
+            </div>
+            <div className="wiz-field">
+              <label>Skill Level</label>
+              <select value={data.classSkillLevel || 'all_levels'} onChange={e => onChange('classSkillLevel', e.target.value)}>
+                <option value="all_levels">All Levels</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div className="wiz-field">
+              <label>Age Group</label>
+              <select value={data.classAgeGroup || 'all_ages'} onChange={e => onChange('classAgeGroup', e.target.value)}>
+                <option value="all_ages">All Ages</option>
+                <option value="kids">Kids</option>
+                <option value="teens">Teens</option>
+                <option value="adults">Adults</option>
+              </select>
+            </div>
+          </div>
+          <div className="wiz-field">
+            <label className="wiz-checkbox">
+              <input type="checkbox" checked={data.classMaterialsIncluded || false} onChange={e => onChange('classMaterialsIncluded', e.target.checked)} />
+              Materials included in price
+            </label>
+          </div>
+          {data.classMaterialsIncluded && (
+            <div className="wiz-field">
+              <label>What's included?</label>
+              <input type="text" value={data.classMaterialsNote || ''} onChange={e => onChange('classMaterialsNote', e.target.value)} placeholder="e.g. All ingredients provided, art supplies included" />
+            </div>
+          )}
+          <div className="wiz-field">
+            <label className="wiz-checkbox">
+              <input type="checkbox" checked={data.classRecurring || false} onChange={e => onChange('classRecurring', e.target.checked)} />
+              This is a recurring class series
+            </label>
+          </div>
+          {data.classRecurring && (
+            <div className="wiz-field">
+              <label>Total sessions in series</label>
+              <input type="number" min="2" max="52" value={data.classTotalSessions || 4} onChange={e => onChange('classTotalSessions', parseInt(e.target.value) || 4)} />
+            </div>
+          )}
+        </div>
+      )}
+
       <PackageTierForm
         prefix="basic" label={isRecurring ? 'Basic Tier' : 'Basic Package'} badge="Required"
         data={data} onChange={onChange} errors={errors} required isRecurring={isRecurring}
@@ -829,6 +903,15 @@ const CreateService = () => {
     recurringLocationType: 'online',
     recurringTrialEnabled: false,
     recurringTrialPrice: '',
+    // class settings
+    classLocationType: 'both',
+    classMaxStudents: 10,
+    classSkillLevel: 'all_levels',
+    classAgeGroup: 'all_ages',
+    classMaterialsIncluded: false,
+    classMaterialsNote: '',
+    classRecurring: false,
+    classTotalSessions: 4,
     // one-time packages
     basicTitle: '', basicDescription: '', basicPrice: '', basicDeliveryTime: '', basicRevisions: 1,
     basicSessionsIncluded: '',
@@ -936,6 +1019,18 @@ const CreateService = () => {
             locationType:       data.recurringLocationType,
             trialEnabled:       data.recurringTrialEnabled,
             trialPrice:         data.recurringTrialEnabled ? parseFloat(data.recurringTrialPrice) : undefined,
+          }
+        } : {}),
+        ...(data.serviceType === 'class' ? {
+          classDetails: {
+            locationType:      data.classLocationType,
+            maxStudents:       parseInt(data.classMaxStudents) || 10,
+            skillLevel:        data.classSkillLevel,
+            ageGroup:          data.classAgeGroup,
+            materialsIncluded: data.classMaterialsIncluded,
+            materialsNote:     data.classMaterialsNote || undefined,
+            recurring:         data.classRecurring,
+            totalSessions:     data.classRecurring ? parseInt(data.classTotalSessions) || 4 : undefined,
           }
         } : {}),
         pricing: {

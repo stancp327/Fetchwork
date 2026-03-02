@@ -121,8 +121,21 @@ const userSchema = new mongoose.Schema({
       enum: ['immediate', 'daily', 'weekly'],
       default: 'immediate'
     },
-    smsNotifications: { type: Boolean, default: false }
+    smsNotifications: { type: Boolean, default: false },
+    // Discovery notifications
+    discovery: {
+      enabled:           { type: Boolean, default: false },  // master toggle
+      notifyJobs:        { type: Boolean, default: true },
+      notifyServices:    { type: Boolean, default: true },
+      notifyClasses:     { type: Boolean, default: true },
+      categories:        [{ type: String }],                 // empty = all categories
+      blockedProviders:  [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+      frequency:         { type: String, enum: ['realtime', 'daily', 'weekly'], default: 'daily' },
+    },
   },
+  // User interests (for discovery algorithm)
+  interests: [{ type: String, trim: true }],  // e.g. ['cooking', 'fitness', 'web design']
+  lookingFor: [{ type: String, trim: true }],  // skills/services they want to hire
   socialLinks: {
     linkedin: String,
     github: String,

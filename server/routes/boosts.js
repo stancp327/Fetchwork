@@ -4,6 +4,8 @@ const { authenticateToken } = require('../middleware/auth');
 const Job = require('../models/Job');
 const Service = require('../models/Service');
 const BoostCredit = require('../models/BoostCredit');
+const BoostImpression = require('../models/BoostImpression');
+const { notifyMatchingUsers } = require('../services/discoveryEngine');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Boost config
@@ -52,7 +54,7 @@ async function getMonthlyCredits(userId) {
 }
 
 // ── Helper: activate a boost on a target
-async function activateBoost(targetType, targetId, days, paymentId) {
+async function activateBoost(targetType, targetId, days, paymentId, ownerId, plan, usedCredit) {
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   const Model = targetType === 'service' ? Service : Job;
   await Model.findByIdAndUpdate(targetId, {
@@ -61,6 +63,25 @@ async function activateBoost(targetType, targetId, days, paymentId) {
     boostPaymentId: paymentId || 'credit',
     isFeatured: true,
   });
+
+  // Create analytics record
+  if (ownerId) {
+    await BoostImpression.create({
+      targetType,
+      targetId,
+      owner: ownerId,
+      boostPlan: plan || '7day',
+      boostStart: new Date(),
+      boostEnd: expiresAt,
+      paid: !usedCredit,
+    });
+  }
+
+  // Trigger discovery notifications (async, don't block response)
+  notifyMatchingUsers(targetType, targetId).catch(err =>
+    console.error('Discovery notify error:', err.message)
+  );
+
   return expiresAt;
 }
 
@@ -84,7 +105,7 @@ router.post('/job/:id', authenticateToken, async (req, res) => {
       if (credits.creditsUsed < credits.creditsTotal) {
         credits.creditsUsed += 1;
         await credits.save();
-        const expiresAt = await activateBoost('job', job._id, 7, 'credit');
+        const expiresAt = await activateBoost('job', job._id, 7, 'credit', req.user.userId, '7day', true);
         return res.json({
           boosted: true,
           usedCredit: true,
@@ -137,7 +158,7 @@ router.post('/service/:id', authenticateToken, async (req, res) => {
       if (credits.creditsUsed < credits.creditsTotal) {
         credits.creditsUsed += 1;
         await credits.save();
-        const expiresAt = await activateBoost('service', service._id, 7, 'credit');
+        const expiresAt = await activateBoost('service', service._id, 7, 'credit', req.user.userId, '7day', true);
         return res.json({
           boosted: true,
           usedCredit: true,
@@ -186,12 +207,61 @@ router.get('/credits', authenticateToken, async (req, res) => {
   }
 });
 
+// ── POST /api/boosts/track/impression — Record impression
+router.post('/track/impression', async (req, res) => {
+  try {
+    const { targetType, targetId } = req.body;
+    if (!targetType || !targetId) return res.status(400).json({ error: 'Missing fields' });
+    await BoostImpression.findOneAndUpdate(
+      { targetType, targetId },
+      { $inc: { impressions: 1 } }
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/boosts/track/click — Record click
+router.post('/track/click', async (req, res) => {
+  try {
+    const { targetType, targetId } = req.body;
+    if (!targetType || !targetId) return res.status(400).json({ error: 'Missing fields' });
+    await BoostImpression.findOneAndUpdate(
+      { targetType, targetId },
+      { $inc: { clicks: 1 } }
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/boosts/analytics — Get boost performance for the user
+router.get('/analytics', authenticateToken, async (req, res) => {
+  try {
+    const analytics = await BoostImpression.find({ owner: req.user.userId })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+    res.json({ analytics });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GET /api/boosts/options
 router.get('/options', (req, res) => {
   const options = Object.entries(BOOST_OPTIONS).map(([key, val]) => ({
     id: key, ...val, price: val.price / 100,
   }));
   res.json({ options, planCredits: PLAN_BOOST_CREDITS });
+});
+
+// ── GET /api/boosts/algorithm-status — Check if algorithm is on
+router.get('/algorithm-status', (req, res) => {
+  const { isAlgorithmEnabled } = require('../services/discoveryEngine');
+  res.json({ enabled: isAlgorithmEnabled() });
 });
 
 module.exports = router;

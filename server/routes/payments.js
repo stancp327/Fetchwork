@@ -540,6 +540,7 @@ router.webhookHandler = async (req, res) => {
 
         // ── Boost activation ──
         if (pi.metadata?.type === 'boost') {
+          const { activateBoost } = require('./boosts');  // won't work — use inline
           const days = parseInt(pi.metadata.boostDays) || 7;
           const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
           const Model = pi.metadata.targetType === 'service' ? Service : Job;
@@ -547,8 +548,22 @@ router.webhookHandler = async (req, res) => {
             isBoosted: true,
             boostExpiresAt: expiresAt,
             boostPaymentId: pi.id,
-            isFeatured: true, // backward compat with existing sort
+            isFeatured: true,
           });
+          // Create analytics record
+          const BoostImpression = require('../models/BoostImpression');
+          await BoostImpression.create({
+            targetType: pi.metadata.targetType,
+            targetId: pi.metadata.targetId,
+            owner: pi.metadata.userId,
+            boostPlan: pi.metadata.boostPlan,
+            boostStart: new Date(),
+            boostEnd: expiresAt,
+            paid: true,
+          });
+          // Trigger discovery
+          const { notifyMatchingUsers } = require('../services/discoveryEngine');
+          notifyMatchingUsers(pi.metadata.targetType, pi.metadata.targetId).catch(() => {});
           console.log(`✅ Boost activated: ${pi.metadata.targetType} ${pi.metadata.targetId} for ${days} days`);
           break;
         }

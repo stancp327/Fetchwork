@@ -5,7 +5,7 @@ const { locationSchema } = require('../config/locationSchema');
 const serviceSchema = new mongoose.Schema({
   serviceType: {
     type: String,
-    enum: ['one_time', 'recurring'],
+    enum: ['one_time', 'recurring', 'class'],
     default: 'one_time',
   },
   recurring: {
@@ -15,6 +15,19 @@ const serviceSchema = new mongoose.Schema({
     locationType:     { type: String, enum: ['online', 'in_person', 'both'] },
     trialEnabled:     { type: Boolean, default: false },
     trialPrice:       { type: Number, min: 0 },
+  },
+
+  // Class-specific fields
+  classDetails: {
+    locationType:    { type: String, enum: ['online', 'in_person', 'both'] },
+    maxStudents:     { type: Number, default: 10 },
+    minStudents:     { type: Number, default: 1 },
+    skillLevel:      { type: String, enum: ['beginner', 'intermediate', 'advanced', 'all_levels'], default: 'all_levels' },
+    materialsIncluded: { type: Boolean, default: false },
+    materialsNote:   { type: String, maxlength: 500 },
+    ageGroup:        { type: String, enum: ['kids', 'teens', 'adults', 'all_ages'], default: 'all_ages' },
+    recurring:       { type: Boolean, default: false },  // is this a recurring class series?
+    totalSessions:   { type: Number },                   // for series: how many sessions total
   },
 
   // Whether listed prices include platform fees (fees-included = client pays exactly the listed price)

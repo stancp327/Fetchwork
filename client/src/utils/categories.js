@@ -32,6 +32,17 @@ export const CATEGORIES = [
   { id: 'event_help', label: 'Event Help', type: 'local', icon: '🎉' },
   { id: 'personal_care', label: 'Personal Care', type: 'local', icon: '💇' },
   { id: 'photography', label: 'Photography', type: 'local', icon: '📷' },
+
+  // ── Classes ───
+  { id: 'cooking_classes', label: 'Cooking Classes', type: 'both', icon: '👨‍🍳' },
+  { id: 'fitness_classes', label: 'Fitness & Training', type: 'both', icon: '💪' },
+  { id: 'art_classes', label: 'Art & Crafts', type: 'both', icon: '🎨' },
+  { id: 'music_lessons', label: 'Music Lessons', type: 'both', icon: '🎵' },
+  { id: 'language_classes', label: 'Language Classes', type: 'both', icon: '🗣️' },
+  { id: 'dance_classes', label: 'Dance Classes', type: 'both', icon: '💃' },
+  { id: 'tech_workshops', label: 'Tech Workshops', type: 'both', icon: '💻' },
+  { id: 'yoga_meditation', label: 'Yoga & Meditation', type: 'both', icon: '🧘' },
+
   { id: 'other', label: 'Other', type: 'both', icon: '📋' },
 ];
 
