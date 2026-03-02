@@ -19,6 +19,11 @@ import AdminServicesTab from './AdminServicesTab';
 import AdminPaymentsTab from './AdminPaymentsTab';
 import AdminReviewsTab from './AdminReviewsTab';
 import AdminMonitoringTab from './AdminMonitoringTab';
+import AdminBookingsTab from './AdminBookingsTab';
+import AdminBoostsTab from './AdminBoostsTab';
+import AdminContractsTab from './AdminContractsTab';
+import AdminMessagesTab from './AdminMessagesTab';
+import AdminOrdersTab from './AdminOrdersTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -553,6 +558,36 @@ const AdminDashboard = () => {
           active={activeTab === 'feature-groups'}
           onClick={setActiveTab}
         />
+        <TabButton
+          id="bookings"
+          label="Bookings"
+          active={activeTab === 'bookings'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="boosts"
+          label="Boosts"
+          active={activeTab === 'boosts'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="contracts"
+          label="Contracts"
+          active={activeTab === 'contracts'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="messages"
+          label="Messages"
+          active={activeTab === 'messages'}
+          onClick={setActiveTab}
+        />
+        <TabButton
+          id="orders"
+          label="Orders"
+          active={activeTab === 'orders'}
+          onClick={setActiveTab}
+        />
       </div>
 
       <div className="dashboard-content">
@@ -712,6 +747,36 @@ const AdminDashboard = () => {
               <FeatureGroupsPanel />
             </TracingErrorBoundary>
           </div>
+        )}
+
+        {activeTab === 'bookings' && (
+          <TracingErrorBoundary componentName="AdminBookingsTab">
+            <AdminBookingsTab />
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'boosts' && (
+          <TracingErrorBoundary componentName="AdminBoostsTab">
+            <AdminBoostsTab />
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'contracts' && (
+          <TracingErrorBoundary componentName="AdminContractsTab">
+            <AdminContractsTab />
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'messages' && (
+          <TracingErrorBoundary componentName="AdminMessagesTab">
+            <AdminMessagesTab />
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'orders' && (
+          <TracingErrorBoundary componentName="AdminOrdersTab">
+            <AdminOrdersTab />
+          </TracingErrorBoundary>
         )}
       </div>
     </div>
