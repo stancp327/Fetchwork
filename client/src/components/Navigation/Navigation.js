@@ -116,6 +116,7 @@ const Navigation = () => {
                 <NavLink to="/messages" badge={notifications.unreadMessages}>
                   Messages
                 </NavLink>
+                <NavLink to="/teams">Teams</NavLink>
 
                 <div className="notif-bell-wrapper" ref={notifRef} style={{ position: 'relative' }}>
                   <button 

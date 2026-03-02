@@ -25,6 +25,7 @@ import AdminContractsTab from './AdminContractsTab';
 import AdminMessagesTab from './AdminMessagesTab';
 import AdminOrdersTab from './AdminOrdersTab';
 import AdminWalletsTab from './AdminWalletsTab';
+import AdminTeamsTab from './AdminTeamsTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
 
@@ -595,6 +596,12 @@ const AdminDashboard = () => {
           active={activeTab === 'wallets'}
           onClick={setActiveTab}
         />
+        <TabButton
+          id="teams"
+          label="Teams"
+          active={activeTab === 'teams'}
+          onClick={setActiveTab}
+        />
       </div>
 
       <div className="dashboard-content">
@@ -789,6 +796,12 @@ const AdminDashboard = () => {
         {activeTab === 'wallets' && (
           <TracingErrorBoundary componentName="AdminWalletsTab">
             <AdminWalletsTab />
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'teams' && (
+          <TracingErrorBoundary componentName="AdminTeamsTab">
+            <AdminTeamsTab />
           </TracingErrorBoundary>
         )}
       </div>
