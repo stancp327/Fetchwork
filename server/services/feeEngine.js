@@ -25,7 +25,7 @@ const BillingAuditLog  = require('../models/BillingAuditLog');
 const FALLBACK_RATES = {
   remoteClient:     0.05,
   remoteFreelancer: 0.10,
-  localClient: { upTo50: 4, upTo150: 6, upTo400: 10, above400: 15 },
+  localClient: { upTo50: 4, upTo150: 6, upTo400: 10 },  // $400+ uses remoteClient %
 };
 
 // ── Local flat fee lookup ───────────────────────────────────────
@@ -33,7 +33,8 @@ function getLocalClientFlatFee(localRates, amount) {
   if (amount < 50)  return localRates.upTo50   ?? FALLBACK_RATES.localClient.upTo50;
   if (amount < 150) return localRates.upTo150  ?? FALLBACK_RATES.localClient.upTo150;
   if (amount < 400) return localRates.upTo400  ?? FALLBACK_RATES.localClient.upTo400;
-  return              localRates.above400 ?? FALLBACK_RATES.localClient.above400;
+  // $400+ uses percentage (same as remote client rate) — returns null to signal caller
+  return null;
 }
 
 // ── Check active promo rules for a user ────────────────────────
@@ -155,8 +156,12 @@ async function getFee({ userId, role, jobType, amount }) {
       return { fee: roundFee(amount * r.remoteClient),     feeRate: r.remoteClient,     source: `plan:${plan.slug}` };
     if (jobType === 'remote' && role === 'freelancer')
       return { fee: roundFee(amount * r.remoteFreelancer), feeRate: r.remoteFreelancer, source: `plan:${plan.slug}` };
-    if (jobType === 'local'  && role === 'client' && r.localClient)
-      return { fee: getLocalClientFlatFee(r.localClient, amount), feeRate: null, source: `plan:${plan.slug}` };
+    if (jobType === 'local'  && role === 'client' && r.localClient) {
+      const flatFee = getLocalClientFlatFee(r.localClient, amount);
+      if (flatFee != null) return { fee: flatFee, feeRate: null, source: `plan:${plan.slug}` };
+      // $400+ falls through to percentage
+      return { fee: roundFee(amount * r.remoteClient), feeRate: r.remoteClient, source: `plan:${plan.slug}:pct` };
+    }
   }
 
   // ── 5. Hardcoded fallback ──────────────────────────────────────
@@ -164,8 +169,12 @@ async function getFee({ userId, role, jobType, amount }) {
     return { fee: roundFee(amount * FALLBACK_RATES.remoteClient),     feeRate: FALLBACK_RATES.remoteClient,     source: 'fallback' };
   if (jobType === 'remote' && role === 'freelancer')
     return { fee: roundFee(amount * FALLBACK_RATES.remoteFreelancer), feeRate: FALLBACK_RATES.remoteFreelancer, source: 'fallback' };
-  if (jobType === 'local' && role === 'client')
-    return { fee: getLocalClientFlatFee(FALLBACK_RATES.localClient, amount), feeRate: null, source: 'fallback' };
+  if (jobType === 'local' && role === 'client') {
+    const flatFee = getLocalClientFlatFee(FALLBACK_RATES.localClient, amount);
+    if (flatFee != null) return { fee: flatFee, feeRate: null, source: 'fallback' };
+    // $400+ falls through to percentage
+    return { fee: roundFee(amount * FALLBACK_RATES.remoteClient), feeRate: FALLBACK_RATES.remoteClient, source: 'fallback:pct' };
+  }
 
   return { fee: 0, feeRate: 0, source: 'unknown' };
 }
@@ -219,20 +228,23 @@ async function getFeeIncluded({ userId, role, jobType, listedPrice }) {
   } catch { /* use defaults */ }
 
   if (jobType === 'local') {
-    // Look up the flat fee for this bracket, then reverse
-    const flatFee     = getLocalClientFlatFee(FALLBACK_RATES.localClient, listedPrice);
-    const base        = Math.max(0, listedPrice - flatFee);
-    const clientFee   = flatFee;
-    const freelancerFee = 0; // always $0 for local
-    return {
-      base, listedPrice,
-      clientFee, freelancerFee,
-      totalPlatformFee: clientFee,
-      clientCharges:    listedPrice,
-      freelancerPayout: roundFee(base),
-      feesIncluded:     true,
-      source:           'fees_included_local',
-    };
+    const flatFee = getLocalClientFlatFee(FALLBACK_RATES.localClient, listedPrice);
+    if (flatFee != null) {
+      // Under $400: flat fee
+      const base        = Math.max(0, listedPrice - flatFee);
+      const clientFee   = flatFee;
+      const freelancerFee = 0;
+      return {
+        base, listedPrice,
+        clientFee, freelancerFee,
+        totalPlatformFee: clientFee,
+        clientCharges:    listedPrice,
+        freelancerPayout: roundFee(base),
+        feesIncluded:     true,
+        source:           'fees_included_local',
+      };
+    }
+    // $400+: fall through to percentage (same as remote)
   }
 
   // Remote: reverse-calculate from listed price

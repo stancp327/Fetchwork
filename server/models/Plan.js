@@ -10,7 +10,7 @@ const localFeeSchema = new mongoose.Schema({
   upTo50:   { type: Number, default: 4 },   // bookings < $50
   upTo150:  { type: Number, default: 6 },   // $50–$149.99
   upTo400:  { type: Number, default: 10 },  // $150–$399.99
-  above400: { type: Number, default: 15 },  // $400+
+  // $400+ uses percentage (same as remoteClient rate)
 }, { _id: false });
 
 const planSchema = new mongoose.Schema({
