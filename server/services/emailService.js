@@ -2,7 +2,14 @@ const { Resend } = require('resend');
 
 class EmailService {
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+    const apiKey = process.env.RESEND_API_KEY;
+    this.enabled = !!apiKey;
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
+    } else {
+      console.warn('⚠️ RESEND_API_KEY not set — email service disabled');
+      this.resend = null;
+    }
     this.fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.net';
     this.brandColors = {
       primary: '#4285f4',
@@ -60,6 +67,10 @@ class EmailService {
   }
 
   async sendEmail(to, subject, content, title, color) {
+    if (!this.resend) {
+      console.log(`[Email disabled] Would send "${subject}" to ${to}`);
+      return { success: false, error: 'Email service not configured' };
+    }
     try {
       const { data, error } = await this.resend.emails.send({
         from: this.fromEmail,
