@@ -171,10 +171,9 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                 <span>${(Number(amount) * 0.90).toFixed(2)}</span>
               </div>
 
-              {/* Payment methods */}
-              {(walletBalance > 0 || savedMethods.length > 0) && (
-                <div className="escrow-saved-cards">
-                  <p className="escrow-saved-label">Pay with:</p>
+              {/* Payment methods — always show */}
+              <div className="escrow-saved-cards">
+                <p className="escrow-saved-label">Pay with:</p>
 
                   {/* Wallet option */}
                   {walletBalance > 0 && (
@@ -224,8 +223,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                     />
                     <span>+ Use a new card</span>
                   </label>
-                </div>
-              )}
+              </div>
 
               {error && <div className="checkout-error">{error}</div>}
 
@@ -236,7 +234,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                     ? `Pay $${Number(amount).toFixed(2)} from Wallet →`
                     : selectedPmId && selectedPmId !== 'new'
                       ? `Pay $${Number(amount).toFixed(2)} →`
-                      : 'Continue to Payment →'
+                      : `Pay with Card — $${Number(amount).toFixed(2)} →`
                   }
                 </button>
               </div>
