@@ -81,6 +81,13 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     apiRequest(`/api/admin/users/${u._id}/promote`, { method: 'PUT' })
   );
 
+  const handleDemoteAdmin = () => {
+    if (!window.confirm(`Remove admin access from ${u.firstName} ${u.lastName}?`)) return;
+    doAction('admin', () =>
+      apiRequest(`/api/admin/users/${u._id}/demote`, { method: 'PUT' })
+    );
+  };
+
   useEffect(() => {
     if (!u || activeSection !== 'billing') return;
     setBillingLoading(true);
@@ -337,9 +344,13 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
                   🛡️ Make Moderator
                 </button>
               )}
-              {u.role !== 'admin' && (
+              {u.role !== 'admin' ? (
                 <button className="aud-action-btn" onClick={handlePromoteAdmin} disabled={actionLoading === 'admin'}>
                   👑 Promote to Admin
+                </button>
+              ) : (
+                <button className="aud-action-btn warning" onClick={handleDemoteAdmin} disabled={actionLoading === 'admin'}>
+                  👑 Demote from Admin
                 </button>
               )}
 

@@ -808,24 +808,37 @@ router.get('/monitoring', authenticateAdmin, async (req, res) => {
 router.put('/users/:userId/promote', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
+    // Only hardcoded admins can promote to admin (prevent privilege escalation)
+    const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : ['stancp327@gmail.com'];
+    if (!ADMIN_EMAILS.includes(req.admin.email)) {
+      return res.status(403).json({ error: 'Only the platform owner can promote admins' });
+    }
+
+    // Can't promote yourself
+    if (userId === req.admin._id.toString()) {
+      return res.status(400).json({ error: 'Cannot promote yourself' });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : ['stancp327@gmail.com'];
-    if (ADMIN_EMAILS.includes(user.email)) {
+
+    if (user.role === 'admin' || ADMIN_EMAILS.includes(user.email)) {
       return res.status(400).json({ error: 'User is already an admin' });
     }
-    
-    await User.updateOne({ _id: userId }, { $set: { isAdminPromoted: true, role: 'admin' } });
-    user.isAdminPromoted = true;
-    user.role = 'admin';
-    
+
+    await User.updateOne({ _id: userId }, {
+      $set: { isAdminPromoted: true, role: 'admin' },
+      $inc: { tokenVersion: 1 }  // Invalidate existing JWTs
+    });
+
+    console.log(`[AUDIT] User ${user.email} promoted to admin by ${req.admin.email}`);
+
     res.json({
       message: 'User promoted to admin successfully',
-      user: user.getPublicProfile()
+      user: { ...user.toObject(), role: 'admin', isAdminPromoted: true }
     });
   } catch (error) {
     console.error('Admin promote user error:', error);
@@ -836,24 +849,37 @@ router.put('/users/:userId/promote', authenticateAdmin, requirePermission('user_
 router.put('/users/:userId/demote', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
+    // Only hardcoded admins can demote (prevent privilege escalation)
+    const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : ['stancp327@gmail.com'];
+    if (!ADMIN_EMAILS.includes(req.admin.email)) {
+      return res.status(403).json({ error: 'Only the platform owner can demote admins' });
+    }
+
+    // Can't demote yourself
+    if (userId === req.admin._id.toString()) {
+      return res.status(400).json({ error: 'Cannot demote yourself' });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    const ADMIN_EMAILS = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : ['stancp327@gmail.com'];
+
     if (ADMIN_EMAILS.includes(user.email)) {
       return res.status(400).json({ error: 'Cannot demote hardcoded admin user' });
     }
-    
-    await User.updateOne({ _id: userId }, { $set: { isAdminPromoted: false, role: 'user' } });
-    user.isAdminPromoted = false;
-    user.role = 'user';
-    
+
+    await User.updateOne({ _id: userId }, {
+      $set: { isAdminPromoted: false, role: 'user' },
+      $inc: { tokenVersion: 1 }  // Invalidate existing JWTs
+    });
+
+    console.log(`[AUDIT] User ${user.email} demoted from admin by ${req.admin.email}`);
+
     res.json({
       message: 'User demoted from admin successfully',
-      user: user.getPublicProfile()
+      user: { ...user.toObject(), role: 'user', isAdminPromoted: false }
     });
   } catch (error) {
     console.error('Admin demote user error:', error);
@@ -894,10 +920,12 @@ router.put('/users/:userId/make-moderator', authenticateAdmin, requirePermission
     if (!user) return res.status(404).json({ error: 'User not found' });
     
     const customPerms = req.body.permissions || [];
-    user.role = 'moderator';
-    user.permissions = customPerms;
-    await user.save();
-    
+    await User.updateOne({ _id: req.params.userId }, {
+      $set: { role: 'moderator', permissions: customPerms },
+      $inc: { tokenVersion: 1 }
+    });
+
+    console.log(`[AUDIT] User ${user.email} made moderator by ${req.admin.email}`);
     res.json({ message: `${user.firstName} is now a moderator`, permissions: customPerms });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update role' });
@@ -909,10 +937,12 @@ router.put('/users/:userId/remove-moderator', authenticateAdmin, requirePermissi
     const user = await User.findById(req.params.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    user.role = 'user';
-    user.permissions = [];
-    await user.save();
-    
+    await User.updateOne({ _id: req.params.userId }, {
+      $set: { role: 'user', permissions: [] },
+      $inc: { tokenVersion: 1 }
+    });
+
+    console.log(`[AUDIT] User ${user.email} removed as moderator by ${req.admin.email}`);
     res.json({ message: `${user.firstName} is no longer a moderator` });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update role' });

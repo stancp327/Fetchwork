@@ -59,8 +59,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { data } = await apiFetch('GET', '/api/auth/me');
-      const decoded  = jwtDecode(currentToken);
-      setUser({ ...data.user, isAdmin: decoded.isAdmin });
+      setUser({ ...data.user, isAdmin: data.user.isAdmin });
     } catch (error) {
       console.error('❌ AuthContext - fetchUser error:', error);
       const status = error.response?.status;
