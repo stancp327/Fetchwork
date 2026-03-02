@@ -417,6 +417,99 @@ module.exports = (io) => {
       }
     });
 
+    // ═══════════════════════════════════════════════════════════════
+    // VIDEO/AUDIO CALL EVENTS (WebRTC signaling)
+    // ═══════════════════════════════════════════════════════════════
+
+    socket.on('call:initiate', async ({ recipientId, type = 'video', jobId, conversationId }) => {
+      try {
+        if (!recipientId) return socket.emit('call:error', { message: 'recipientId required' });
+        if (!activeUsers.has(recipientId)) {
+          return socket.emit('call:error', { message: 'User is offline' });
+        }
+
+        const call = await Call.create({
+          caller: senderId, recipient: recipientId, type, status: 'ringing',
+          job: jobId || null, conversation: conversationId || null,
+        });
+
+        const caller = await User.findById(senderId).select('firstName lastName profileImage').lean();
+        io.to(recipientId).emit('call:incoming', { callId: call._id, caller: { _id: senderId, ...caller }, type });
+        socket.emit('call:initiated', { callId: call._id });
+
+        setTimeout(async () => {
+          const c = await Call.findById(call._id);
+          if (c && c.status === 'ringing') {
+            c.status = 'missed'; c.endReason = 'timeout'; await c.save();
+            io.to(senderId).emit('call:ended', { callId: call._id, reason: 'timeout' });
+            io.to(recipientId).emit('call:ended', { callId: call._id, reason: 'timeout' });
+          }
+        }, 30000);
+      } catch (err) {
+        console.error('call:initiate error:', err.message);
+        socket.emit('call:error', { message: 'Failed to initiate call' });
+      }
+    });
+
+    socket.on('call:accept', async ({ callId }) => {
+      try {
+        const call = await Call.findById(callId);
+        if (!call || call.recipient.toString() !== senderId) return socket.emit('call:error', { message: 'Call not found' });
+        if (call.status !== 'ringing') return socket.emit('call:error', { message: 'Call is no longer ringing' });
+
+        call.status = 'active'; call.startedAt = new Date(); await call.save();
+        const recipient = await User.findById(senderId).select('firstName lastName profileImage').lean();
+        io.to(call.caller.toString()).emit('call:accepted', { callId, recipient: { _id: senderId, ...recipient } });
+        socket.emit('call:accepted', { callId });
+      } catch (err) {
+        console.error('call:accept error:', err.message);
+        socket.emit('call:error', { message: 'Failed to accept call' });
+      }
+    });
+
+    socket.on('call:reject', async ({ callId }) => {
+      try {
+        const call = await Call.findById(callId);
+        if (!call || call.recipient.toString() !== senderId) return;
+        call.status = 'rejected'; call.endReason = 'recipient_rejected'; await call.save();
+        io.to(call.caller.toString()).emit('call:ended', { callId, reason: 'rejected' });
+        socket.emit('call:ended', { callId, reason: 'rejected' });
+      } catch (err) { console.error('call:reject error:', err.message); }
+    });
+
+    socket.on('call:end', async ({ callId }) => {
+      try {
+        const call = await Call.findById(callId);
+        if (!call) return;
+        const isCaller = call.caller.toString() === senderId;
+        const isRecipient = call.recipient.toString() === senderId;
+        if (!isCaller && !isRecipient) return;
+
+        call.status = 'ended'; call.endedAt = new Date();
+        call.endReason = isCaller ? 'caller_ended' : 'recipient_ended';
+        if (call.startedAt) call.duration = Math.round((call.endedAt - call.startedAt) / 1000);
+        await call.save();
+
+        const otherUserId = isCaller ? call.recipient.toString() : call.caller.toString();
+        io.to(otherUserId).emit('call:ended', { callId, reason: call.endReason, duration: call.duration });
+        socket.emit('call:ended', { callId, reason: call.endReason, duration: call.duration });
+      } catch (err) { console.error('call:end error:', err.message); }
+    });
+
+    // WebRTC signaling passthrough
+    socket.on('call:offer', ({ callId, targetUserId, offer }) => {
+      io.to(targetUserId).emit('call:offer', { callId, fromUserId: senderId, offer });
+    });
+    socket.on('call:answer', ({ callId, targetUserId, answer }) => {
+      io.to(targetUserId).emit('call:answer', { callId, fromUserId: senderId, answer });
+    });
+    socket.on('call:ice-candidate', ({ callId, targetUserId, candidate }) => {
+      io.to(targetUserId).emit('call:ice-candidate', { callId, fromUserId: senderId, candidate });
+    });
+    socket.on('call:media-toggle', ({ callId, targetUserId, kind, enabled }) => {
+      io.to(targetUserId).emit('call:media-toggle', { callId, fromUserId: senderId, kind, enabled });
+    });
+
     socket.on('disconnect', () => {
       console.log(`❌ User disconnected: ${senderId}`);
       
@@ -464,155 +557,4 @@ module.exports = (io) => {
       console.error('🔄 Error rejoining rooms:', error);
     }
   }
-
-    // ═══════════════════════════════════════════════════════════════
-    // VIDEO/AUDIO CALL EVENTS (WebRTC signaling)
-    // ═══════════════════════════════════════════════════════════════
-
-    // Initiate a call
-    socket.on('call:initiate', async ({ recipientId, type = 'video', jobId, conversationId }) => {
-      try {
-        if (!recipientId) return socket.emit('call:error', { message: 'recipientId required' });
-
-        // Check if recipient is online
-        if (!activeUsers.has(recipientId)) {
-          return socket.emit('call:error', { message: 'User is offline' });
-        }
-
-        // Create call record
-        const call = await Call.create({
-          caller: senderId,
-          recipient: recipientId,
-          type,
-          status: 'ringing',
-          job: jobId || null,
-          conversation: conversationId || null,
-        });
-
-        const caller = await User.findById(senderId).select('firstName lastName profileImage').lean();
-
-        // Notify recipient
-        io.to(recipientId).emit('call:incoming', {
-          callId: call._id,
-          caller: { _id: senderId, ...caller },
-          type,
-        });
-
-        // Confirm to caller
-        socket.emit('call:initiated', { callId: call._id });
-
-        // Auto-timeout after 30 seconds if not answered
-        setTimeout(async () => {
-          const c = await Call.findById(call._id);
-          if (c && c.status === 'ringing') {
-            c.status = 'missed';
-            c.endReason = 'timeout';
-            await c.save();
-            io.to(senderId).emit('call:ended', { callId: call._id, reason: 'timeout' });
-            io.to(recipientId).emit('call:ended', { callId: call._id, reason: 'timeout' });
-          }
-        }, 30000);
-      } catch (err) {
-        console.error('call:initiate error:', err.message);
-        socket.emit('call:error', { message: 'Failed to initiate call' });
-      }
-    });
-
-    // Accept a call
-    socket.on('call:accept', async ({ callId }) => {
-      try {
-        const call = await Call.findById(callId);
-        if (!call || call.recipient.toString() !== senderId) {
-          return socket.emit('call:error', { message: 'Call not found' });
-        }
-        if (call.status !== 'ringing') {
-          return socket.emit('call:error', { message: 'Call is no longer ringing' });
-        }
-
-        call.status = 'active';
-        call.startedAt = new Date();
-        await call.save();
-
-        const recipient = await User.findById(senderId).select('firstName lastName profileImage').lean();
-
-        // Notify caller that call was accepted
-        io.to(call.caller.toString()).emit('call:accepted', {
-          callId,
-          recipient: { _id: senderId, ...recipient },
-        });
-
-        socket.emit('call:accepted', { callId });
-      } catch (err) {
-        console.error('call:accept error:', err.message);
-        socket.emit('call:error', { message: 'Failed to accept call' });
-      }
-    });
-
-    // Reject a call
-    socket.on('call:reject', async ({ callId }) => {
-      try {
-        const call = await Call.findById(callId);
-        if (!call || call.recipient.toString() !== senderId) return;
-
-        call.status = 'rejected';
-        call.endReason = 'recipient_rejected';
-        await call.save();
-
-        io.to(call.caller.toString()).emit('call:ended', { callId, reason: 'rejected' });
-        socket.emit('call:ended', { callId, reason: 'rejected' });
-      } catch (err) {
-        console.error('call:reject error:', err.message);
-      }
-    });
-
-    // End an active call
-    socket.on('call:end', async ({ callId }) => {
-      try {
-        const call = await Call.findById(callId);
-        if (!call) return;
-
-        const isCaller = call.caller.toString() === senderId;
-        const isRecipient = call.recipient.toString() === senderId;
-        if (!isCaller && !isRecipient) return;
-
-        call.status = 'ended';
-        call.endedAt = new Date();
-        call.endReason = isCaller ? 'caller_ended' : 'recipient_ended';
-        if (call.startedAt) {
-          call.duration = Math.round((call.endedAt - call.startedAt) / 1000);
-        }
-        await call.save();
-
-        const otherUserId = isCaller ? call.recipient.toString() : call.caller.toString();
-        io.to(otherUserId).emit('call:ended', { callId, reason: call.endReason, duration: call.duration });
-        socket.emit('call:ended', { callId, reason: call.endReason, duration: call.duration });
-      } catch (err) {
-        console.error('call:end error:', err.message);
-      }
-    });
-
-    // WebRTC signaling: offer
-    socket.on('call:offer', ({ callId, targetUserId, offer }) => {
-      io.to(targetUserId).emit('call:offer', { callId, fromUserId: senderId, offer });
-    });
-
-    // WebRTC signaling: answer
-    socket.on('call:answer', ({ callId, targetUserId, answer }) => {
-      io.to(targetUserId).emit('call:answer', { callId, fromUserId: senderId, answer });
-    });
-
-    // WebRTC signaling: ICE candidate
-    socket.on('call:ice-candidate', ({ callId, targetUserId, candidate }) => {
-      io.to(targetUserId).emit('call:ice-candidate', { callId, fromUserId: senderId, candidate });
-    });
-
-    // Toggle media (notify other party)
-    socket.on('call:media-toggle', ({ callId, targetUserId, kind, enabled }) => {
-      io.to(targetUserId).emit('call:media-toggle', { callId, fromUserId: senderId, kind, enabled });
-    });
-
-  });
-
-  io.getActiveUsers = () => activeUsers;
-  io.isUserOnline = (userId) => activeUsers.has(userId);
 };
