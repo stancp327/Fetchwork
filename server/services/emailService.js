@@ -24,7 +24,7 @@ class EmailService {
         </div>
         <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
           <p style="color: #666; font-size: 14px; margin: 0;">
-            © 2025 FetchWork. Professional freelance marketplace.
+            © 2026 FetchWork. Professional freelance marketplace.
           </p>
           <p style="color: #666; font-size: 12px; margin: 10px 0 0 0;">
             <a href="${process.env.CLIENT_URL}/unsubscribe" style="color: #666;">Unsubscribe</a> | 
