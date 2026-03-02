@@ -331,10 +331,11 @@ router.post('/:id/order', authenticateToken, async (req, res) => {
       client:                req.user._id,
       package:               pkg,
       status:                'pending',
-      price,
+      price:                 chargeAmount,
       requirements:          requirements?.trim() || '',
       stripePaymentIntentId: paymentIntent.id,
-      escrowAmount:          price,
+      escrowAmount:          freelancerPayout,
+      platformFee,
     };
     await service.addOrder(order);
     const newOrder = service.orders[service.orders.length - 1];
@@ -344,7 +345,7 @@ router.post('/:id/order', authenticateToken, async (req, res) => {
       orderId:         newOrder._id,
       clientSecret:    paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount:          price,
+      amount:          chargeAmount,
       serviceName:     service.title,
       packageName:     selectedPackage.title,
       deliveryDays:    selectedPackage.deliveryTime,
