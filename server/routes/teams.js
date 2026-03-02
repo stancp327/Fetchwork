@@ -324,4 +324,223 @@ router.get('/agencies/public', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// PHASE 2: Agency Profile, Shared Billing, Work Assignment
+// ═══════════════════════════════════════════════════════════════
+
+// ── GET /api/teams/agency/:slug — public agency profile ──
+router.get('/agency/:slug', async (req, res) => {
+  try {
+    const team = await Team.findOne({ slug: req.params.slug, type: 'agency', isPublic: true, isActive: true })
+      .populate('owner', 'firstName lastName profileImage averageRating reviewCount skills')
+      .populate('members.user', 'firstName lastName profileImage averageRating reviewCount skills title')
+      .lean();
+
+    if (!team) return res.status(404).json({ error: 'Agency not found' });
+
+    // Aggregate stats
+    const memberIds = team.members.filter(m => m.status === 'active').map(m => m.user?._id);
+    const Job = require('../models/Job');
+    const Review = require('../models/Review');
+
+    const [completedJobs, reviews] = await Promise.all([
+      Job.countDocuments({ freelancer: { $in: memberIds }, status: 'completed' }),
+      Review.find({ reviewee: { $in: memberIds } }).sort({ createdAt: -1 }).limit(10)
+        .populate('reviewer', 'firstName lastName profileImage').lean(),
+    ]);
+
+    const avgRating = reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+      : null;
+
+    res.json({
+      agency: {
+        ...team,
+        stats: { completedJobs, reviewCount: reviews.length, avgRating },
+        recentReviews: reviews.slice(0, 5),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load agency profile' });
+  }
+});
+
+// ── POST /api/teams/:id/portfolio — add portfolio item (agency only) ──
+router.post('/:id/portfolio', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (team.type !== 'agency') return res.status(400).json({ error: 'Only agencies have portfolios' });
+    if (!team.hasPermission(req.user.userId, 'manage_services')) return res.status(403).json({ error: 'No permission' });
+
+    const { title, description, image, url } = req.body;
+    if (!title) return res.status(400).json({ error: 'Title is required' });
+    if (team.portfolio.length >= 20) return res.status(400).json({ error: 'Maximum 20 portfolio items' });
+
+    team.portfolio.push({ title, description: description || '', image: image || '', url: url || '' });
+    await team.save();
+    res.json({ message: 'Portfolio item added', portfolio: team.portfolio });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add portfolio item' });
+  }
+});
+
+// ── DELETE /api/teams/:id/portfolio/:itemId — remove portfolio item ──
+router.delete('/:id/portfolio/:itemId', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.hasPermission(req.user.userId, 'manage_services')) return res.status(403).json({ error: 'No permission' });
+
+    team.portfolio = team.portfolio.filter(p => p._id.toString() !== req.params.itemId);
+    await team.save();
+    res.json({ message: 'Portfolio item removed' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to remove portfolio item' });
+  }
+});
+
+// ── Shared Billing: team wallet top-up ──
+router.post('/:id/billing/add-funds', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.hasPermission(req.user.userId, 'manage_billing')) return res.status(403).json({ error: 'No billing permission' });
+
+    const amount = parseFloat(req.body.amount);
+    if (!amount || amount < 5 || amount > 500) return res.status(400).json({ error: 'Amount must be $5–$500' });
+
+    const BillingCredit = require('../models/BillingCredit');
+    const stripeService = require('../services/stripeService');
+
+    // Create Stripe Checkout for team
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+    if (!team.stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        name: team.name,
+        email: team.billingEmail || undefined,
+        metadata: { teamId: team._id.toString() },
+      });
+      team.stripeCustomerId = customer.id;
+      await team.save();
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      customer: team.stripeCustomerId,
+      mode: 'payment',
+      line_items: [{ price_data: { currency: 'usd', unit_amount: Math.round(amount * 100), product_data: { name: `${team.name} — Wallet Top-Up` } }, quantity: 1 }],
+      success_url: `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}?funded=true`,
+      cancel_url: `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}`,
+      metadata: { type: 'team_wallet', teamId: team._id.toString(), amount: String(amount) },
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Team billing error:', err.message);
+    res.status(500).json({ error: 'Failed to initiate payment' });
+  }
+});
+
+// ── GET /api/teams/:id/billing — team wallet balance + history ──
+router.get('/:id/billing', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.hasPermission(req.user.userId, 'manage_billing') && !team.hasPermission(req.user.userId, 'view_analytics')) {
+      return res.status(403).json({ error: 'No permission' });
+    }
+
+    const BillingCredit = require('../models/BillingCredit');
+    const credits = await BillingCredit.find({
+      team: team._id, status: 'active', remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).sort({ createdAt: 1 }).lean();
+
+    const balance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+    const history = await BillingCredit.find({ team: team._id }).sort({ createdAt: -1 }).limit(50).lean();
+
+    res.json({ balance: Math.round(balance * 100) / 100, credits: history });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load billing' });
+  }
+});
+
+// ── Work Assignment: POST /api/teams/:id/assign ──
+router.post('/:id/assign', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.hasPermission(req.user.userId, 'assign_work')) return res.status(403).json({ error: 'No permission to assign work' });
+
+    const { memberId, jobId, serviceOrderId, note } = req.body;
+    if (!memberId) return res.status(400).json({ error: 'memberId required' });
+    if (!jobId && !serviceOrderId) return res.status(400).json({ error: 'jobId or serviceOrderId required' });
+
+    const member = team.getMember(memberId);
+    if (!member) return res.status(404).json({ error: 'Member not found in team' });
+
+    // Assign job
+    if (jobId) {
+      const Job = require('../models/Job');
+      const job = await Job.findById(jobId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      job.assignedTo = memberId;
+      job.assignedBy = req.user.userId;
+      job.assignedAt = new Date();
+      job.assignmentNote = note || '';
+      await job.save();
+
+      return res.json({ message: `Job assigned to ${member.user}`, job: { _id: job._id, title: job.title, assignedTo: memberId } });
+    }
+
+    // Assign service order
+    if (serviceOrderId) {
+      const Service = require('../models/Service');
+      const service = await Service.findOne({ 'orders._id': serviceOrderId });
+      if (!service) return res.status(404).json({ error: 'Service order not found' });
+
+      const order = service.orders.id(serviceOrderId);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+
+      order.assignedTo = memberId;
+      order.assignedBy = req.user.userId;
+      order.assignedAt = new Date();
+      await service.save();
+
+      return res.json({ message: 'Order assigned', orderId: serviceOrderId, assignedTo: memberId });
+    }
+  } catch (err) {
+    console.error('Assignment error:', err.message);
+    res.status(500).json({ error: 'Failed to assign work' });
+  }
+});
+
+// ── GET /api/teams/:id/assignments — view team work assignments ──
+router.get('/:id/assignments', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const memberIds = team.members.filter(m => m.status === 'active').map(m => m.user);
+    const Job = require('../models/Job');
+
+    const jobs = await Job.find({
+      assignedTo: { $in: memberIds },
+      status: { $in: ['open', 'in_progress', 'assigned'] },
+    })
+      .populate('assignedTo', 'firstName lastName profileImage')
+      .populate('client', 'firstName lastName')
+      .select('title status assignedTo assignedAt assignmentNote budget client')
+      .sort({ assignedAt: -1 })
+      .lean();
+
+    res.json({ assignments: jobs });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load assignments' });
+  }
+});
+
 module.exports = router;

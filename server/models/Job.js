@@ -71,6 +71,11 @@ const jobSchema = new mongoose.Schema({
     ref: 'User',
     default: null
   },
+  assignedTo:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignedBy:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  assignedAt:     { type: Date, default: null },
+  assignmentNote: { type: String, default: '' },
+  team:           { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
   status: {
     type: String,
     enum: ['draft', 'open', 'accepted', 'pending_start', 'in_progress', 'completed', 'cancelled', 'disputed'],

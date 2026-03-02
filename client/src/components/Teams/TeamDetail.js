@@ -16,6 +16,8 @@ const TeamDetail = () => {
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [billing, setBilling] = useState(null);
+  const [assignments, setAssignments] = useState([]);
 
   const fetchTeam = useCallback(async () => {
     try {
@@ -160,14 +162,14 @@ const TeamDetail = () => {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
-        {['members', 'activity'].map(tab => (
+        {['members', 'billing', 'assignments', 'activity'].map(tab => (
           <button
             key={tab}
             className={`btn btn-ghost btn-sm ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
             style={{ fontWeight: activeTab === tab ? 700 : 400, borderBottom: activeTab === tab ? '2px solid #3b82f6' : 'none' }}
           >
-            {tab === 'members' ? `Members (${activeMembers.length})` : 'Activity'}
+            {tab === 'members' ? `Members (${activeMembers.length})` : tab === 'billing' ? '💰 Billing' : tab === 'assignments' ? '📋 Assignments' : 'Activity'}
           </button>
         ))}
       </div>
@@ -239,10 +241,125 @@ const TeamDetail = () => {
         </div>
       )}
 
+      {/* Billing tab */}
+      {activeTab === 'billing' && (
+        <div style={{ marginTop: '1rem' }}>
+          <BillingSection teamId={id} canManage={team.hasPermission?.(user?._id, 'manage_billing') || isOwnerOrAdmin} />
+        </div>
+      )}
+
+      {/* Assignments tab */}
+      {activeTab === 'assignments' && (
+        <div style={{ marginTop: '1rem' }}>
+          <AssignmentsSection teamId={id} members={activeMembers} canAssign={team.hasPermission?.(user?._id, 'assign_work') || isOwnerOrAdmin} />
+        </div>
+      )}
+
       {/* Activity tab placeholder */}
       {activeTab === 'activity' && (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
           <p>Team activity feed coming soon</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Billing sub-component ──
+const BillingSection = ({ teamId, canManage }) => {
+  const [billing, setBilling] = useState(null);
+  const [addAmount, setAddAmount] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiRequest(`/api/teams/${teamId}/billing`)
+      .then(setBilling)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [teamId]);
+
+  const addFunds = async () => {
+    const amt = parseFloat(addAmount);
+    if (!amt || amt < 5) return alert('Minimum $5');
+    try {
+      const data = await apiRequest(`/api/teams/${teamId}/billing/add-funds`, {
+        method: 'POST', body: JSON.stringify({ amount: amt }),
+      });
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      alert(err.message || 'Failed');
+    }
+  };
+
+  if (loading) return <p>Loading billing…</p>;
+
+  return (
+    <div>
+      <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Team Wallet Balance</div>
+        <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#16a34a' }}>${billing?.balance?.toFixed(2) || '0.00'}</div>
+      </div>
+      {canManage && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <input type="number" min="5" max="500" step="5" placeholder="Amount ($5–$500)" value={addAmount}
+            onChange={e => setAddAmount(e.target.value)}
+            style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: 8 }} />
+          <button className="btn btn-primary btn-sm" onClick={addFunds}>Add Funds</button>
+        </div>
+      )}
+      {billing?.credits?.length > 0 && (
+        <div>
+          <h4>Transaction History</h4>
+          {billing.credits.slice(0, 20).map((c, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
+              <span>{c.reason || 'Credit'}</span>
+              <span style={{ fontWeight: 600, color: c.remaining > 0 ? '#16a34a' : '#6b7280' }}>${c.amount?.toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Assignments sub-component ──
+const AssignmentsSection = ({ teamId, members, canAssign }) => {
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiRequest(`/api/teams/${teamId}/assignments`)
+      .then(data => setAssignments(data.assignments || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [teamId]);
+
+  if (loading) return <p>Loading assignments…</p>;
+
+  return (
+    <div>
+      {assignments.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
+          <p>No active work assignments</p>
+          {canAssign && <p style={{ fontSize: '0.85rem' }}>Use the "Assign" feature on jobs to distribute work to team members.</p>}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {assignments.map(a => (
+            <div key={a._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>{a.title}</div>
+                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                  Client: {a.client?.firstName} {a.client?.lastName} · {a.status}
+                </div>
+                {a.assignmentNote && <div style={{ fontSize: '0.8rem', color: '#3b82f6', marginTop: '0.25rem' }}>📝 {a.assignmentNote}</div>}
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{a.assignedTo?.firstName} {a.assignedTo?.lastName}</div>
+                <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{a.assignedAt ? new Date(a.assignedAt).toLocaleDateString() : ''}</div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

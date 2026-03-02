@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 
 const billingCreditSchema = new mongoose.Schema({
   user:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  team:        { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
   amount:      { type: Number, required: true },   // USD
   remaining:   { type: Number },                   // starts = amount, decrements as used
   reason:      { type: String, required: true },
