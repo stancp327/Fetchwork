@@ -140,6 +140,9 @@ const jobSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isBoosted: { type: Boolean, default: false },
+  boostExpiresAt: { type: Date, default: null },
+  boostPaymentId: { type: String, default: null },
   views: {
     type: Number,
     default: 0

@@ -540,22 +540,23 @@ const FreelancerInProgressHeader = ({ job }) => {
 // ── Project Card ────────────────────────────────────────────────
 const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onFundMilestone, onReleaseMilestone, onProposeMilestones, onStartJob, onBeginJob, onRefresh, onTip }) => {
   const navigate = useNavigate();
-  const [featured, setFeatured]   = React.useState(!!job.isFeatured);
-  const [featuring, setFeaturing] = React.useState(false);
+  const [boosted, setBoosted]     = React.useState(!!job.isBoosted && job.boostExpiresAt && new Date(job.boostExpiresAt) > new Date());
+  const [boosting, setBoosting]   = React.useState(false);
+  const [showBoostModal, setShowBoostModal] = React.useState(false);
 
-  const handleFeatureToggle = async () => {
-    setFeaturing(true);
+  const handleBoost = async (plan = '7day') => {
+    setBoosting(true);
     try {
-      const res = await apiRequest(`/api/jobs/${job._id}/feature`, { method: 'POST' });
-      setFeatured(res.isFeatured);
+      const res = await apiRequest(`/api/boosts/job/${job._id}`, {
+        method: 'POST',
+        body: JSON.stringify({ plan }),
+      });
+      // Redirect to Stripe or use Elements — for now, open checkout
+      window.location.href = `/boost-checkout?secret=${res.clientSecret}&amount=${res.amount}&type=job&id=${job._id}`;
     } catch (err) {
-      if (err.data?.upgradeRequired) {
-        alert('Featured placement requires a Pro plan. Upgrade at /pricing.');
-      } else {
-        alert(err.message || 'Failed to update');
-      }
+      alert(err.message || 'Failed to create boost');
     } finally {
-      setFeaturing(false);
+      setBoosting(false);
     }
   };
 
@@ -841,12 +842,12 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
         )}
         {isClient && status === 'open' && !isArchived && (
           <button
-            className={`pm-btn-feature ${featured ? 'active' : ''}`}
-            onClick={handleFeatureToggle}
-            disabled={featuring}
-            title={featured ? 'Remove featured placement' : 'Feature this job (Pro)'}
+            className={`pm-btn-feature ${boosted ? 'active' : ''}`}
+            onClick={() => boosted ? null : handleBoost('7day')}
+            disabled={boosting || boosted}
+            title={boosted ? `Boosted until ${new Date(job.boostExpiresAt).toLocaleDateString()}` : 'Boost this job for more visibility'}
           >
-            {featuring ? '…' : featured ? '⭐ Featured' : '☆ Feature Job'}
+            {boosting ? '…' : boosted ? '🚀 Boosted' : '🚀 Boost Job — $4.99'}
           </button>
         )}
         {isClient && status === 'completed' && onTip && (

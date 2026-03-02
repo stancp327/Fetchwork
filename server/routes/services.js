@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
     
     const services = await Service.find(filters)
       .populate('freelancer', 'firstName lastName profilePicture rating totalJobs')
-      .sort({ createdAt: -1, rating: -1 })
+      .sort({ isBoosted: -1, createdAt: -1, rating: -1 })
       .skip(skip)
       .limit(limit);
     

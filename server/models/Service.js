@@ -197,6 +197,10 @@ const serviceSchema = new mongoose.Schema({
     default: 0
   },
 
+  isBoosted: { type: Boolean, default: false },
+  boostExpiresAt: { type: Date, default: null },
+  boostPaymentId: { type: String, default: null },
+
   // ── Booking availability ────────────────────────────────────────
   availability: {
     enabled:      { type: Boolean, default: false },

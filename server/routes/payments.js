@@ -538,6 +538,21 @@ router.webhookHandler = async (req, res) => {
           { status: 'processing' }
         );
 
+        // ── Boost activation ──
+        if (pi.metadata?.type === 'boost') {
+          const days = parseInt(pi.metadata.boostDays) || 7;
+          const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+          const Model = pi.metadata.targetType === 'service' ? Service : Job;
+          await Model.findByIdAndUpdate(pi.metadata.targetId, {
+            isBoosted: true,
+            boostExpiresAt: expiresAt,
+            boostPaymentId: pi.id,
+            isFeatured: true, // backward compat with existing sort
+          });
+          console.log(`✅ Boost activated: ${pi.metadata.targetType} ${pi.metadata.targetId} for ${days} days`);
+          break;
+        }
+
         // ── Failsafe: auto-activate any pending service order tied to this PI ──
         try {
           const service = await Service.findOne({ 'orders.stripePaymentIntentId': pi.id })

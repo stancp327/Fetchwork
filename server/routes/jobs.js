@@ -153,7 +153,7 @@ router.get('/', validateQueryParams, async (req, res) => {
       filters.$or = filters.$or ? [...filters.$or, ...searchFilters] : searchFilters;
     }
 
-    let sortOptions = { createdAt: -1, isFeatured: -1, isUrgent: -1 };
+    let sortOptions = { isBoosted: -1, isFeatured: -1, isUrgent: -1, createdAt: -1 };
     if (req.query.sortBy) {
       switch (req.query.sortBy) {
         case 'oldest':
@@ -453,32 +453,15 @@ router.delete('/:id', authenticateToken, validateMongoId, async (req, res) => {
   }
 });
 
-// ── Feature toggle (Pro plan only) ──────────────────────────────
-router.post('/:id/feature', authenticateToken, validateMongoId, async (req, res) => {
+// ── Boost status check ─────────────────────────────────────────
+router.get('/:id/boost', authenticateToken, validateMongoId, async (req, res) => {
   try {
-    const { requireFeature } = require('../middleware/entitlements');
-    const userId = (req.user._id || req.user.userId).toString();
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findById(req.params.id).select('isBoosted boostExpiresAt').lean();
     if (!job) return res.status(404).json({ error: 'Job not found' });
-    if (job.client.toString() !== userId) return res.status(403).json({ error: 'Not authorized' });
-
-    // Check entitlement inline (avoids middleware chaining complexity)
-    const { getUserSubscription } = require('../utils/billingUtils');
-    const sub = await getUserSubscription(userId);
-    const features = sub?.plan?.features || [];
-    if (!features.includes('featured_placement_eligible')) {
-      return res.status(403).json({
-        error: 'Featured placement requires a Pro plan.',
-        upgradeRequired: true,
-      });
-    }
-
-    job.isFeatured = !job.isFeatured;
-    await job.save();
-    res.json({ isFeatured: job.isFeatured });
+    const active = job.isBoosted && job.boostExpiresAt && new Date(job.boostExpiresAt) > new Date();
+    res.json({ isBoosted: active, expiresAt: job.boostExpiresAt });
   } catch (err) {
-    console.error('Feature toggle error:', err);
-    res.status(500).json({ error: 'Failed to update featured status' });
+    res.status(500).json({ error: err.message });
   }
 });
 
