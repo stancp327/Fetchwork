@@ -42,9 +42,11 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
       setSavedMethods(methods);
       setWalletBalance(walletData.balance || 0);
 
-      // Default selection: wallet if sufficient, else default card, else new
+      // Default selection: wallet if sufficient, else wallet+card split if partial, else default card, else new
       if (walletData.balance >= Number(amount)) {
         setSelectedPmId('wallet');
+      } else if (walletData.balance > 0) {
+        setSelectedPmId('wallet+card');
       } else {
         const def = methods.find(m => m.isDefault) || methods[0];
         setSelectedPmId(def ? def.id : 'new');
@@ -56,7 +58,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
     setLoading(true);
     setError('');
 
-    // ── Wallet path ──
+    // ── Full wallet path ──
     if (selectedPmId === 'wallet') {
       try {
         const data = await apiRequest('/api/billing/wallet/pay', {
@@ -71,6 +73,35 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
         onClose();
       } catch (err) {
         setError(err.message || 'Wallet payment failed');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // ── Wallet + Card split path ──
+    if (selectedPmId === 'wallet+card') {
+      try {
+        const data = await apiRequest('/api/billing/wallet/split-pay', {
+          method: 'POST',
+          body: JSON.stringify({
+            totalAmount: Number(amount),
+            reason: `Payment for ${job.title}`,
+            ref: job._id,
+          }),
+        });
+        if (data.splitPayment && data.clientSecret) {
+          // Wallet deducted, now show card form for remainder
+          setClientSecret(data.clientSecret);
+          // Store split info for display
+          setError(''); // clear any previous errors
+        } else if (data.success) {
+          // Fully covered by wallet after all
+          if (onPaid) onPaid({ walletPayment: true, paid: data.paid });
+          onClose();
+        }
+      } catch (err) {
+        setError(err.message || 'Split payment failed');
       } finally {
         setLoading(false);
       }
@@ -175,22 +206,33 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
               <div className="escrow-saved-cards">
                 <p className="escrow-saved-label">Pay with:</p>
 
-                  {/* Wallet option */}
-                  {walletBalance > 0 && (
-                    <label className={`escrow-card-option ${selectedPmId === 'wallet' ? 'selected' : ''} ${walletBalance < Number(amount) ? 'escrow-card-disabled' : ''}`}>
+                  {/* Wallet options */}
+                  {walletBalance > 0 && walletBalance >= Number(amount) && (
+                    <label className={`escrow-card-option ${selectedPmId === 'wallet' ? 'selected' : ''}`}>
                       <input
                         type="radio"
                         name="paymentMethod"
                         value="wallet"
                         checked={selectedPmId === 'wallet'}
                         onChange={() => setSelectedPmId('wallet')}
-                        disabled={walletBalance < Number(amount)}
                       />
-                      <span className="escrow-card-brand">Wallet</span>
-                      <span className="escrow-card-num">${walletBalance.toFixed(2)} available</span>
-                      {walletBalance < Number(amount) && (
-                        <span className="escrow-card-exp" style={{ color: '#ef4444' }}>Insufficient</span>
-                      )}
+                      <span className="escrow-card-brand">💰 Wallet</span>
+                      <span className="escrow-card-num">${walletBalance.toFixed(2)} — covers full amount</span>
+                    </label>
+                  )}
+                  {walletBalance > 0 && walletBalance < Number(amount) && (
+                    <label className={`escrow-card-option ${selectedPmId === 'wallet+card' ? 'selected' : ''}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="wallet+card"
+                        checked={selectedPmId === 'wallet+card'}
+                        onChange={() => setSelectedPmId('wallet+card')}
+                      />
+                      <span className="escrow-card-brand">💰 Wallet + 💳 Card</span>
+                      <span className="escrow-card-num">
+                        ${walletBalance.toFixed(2)} wallet + ${(Number(amount) - walletBalance).toFixed(2)} card
+                      </span>
                     </label>
                   )}
 
@@ -232,9 +274,11 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                 <button className="btn btn-primary" onClick={handleContinue} disabled={loading}>
                   {selectedPmId === 'wallet'
                     ? `Pay $${Number(amount).toFixed(2)} from Wallet →`
-                    : selectedPmId && selectedPmId !== 'new'
-                      ? `Pay $${Number(amount).toFixed(2)} →`
-                      : `Pay with Card — $${Number(amount).toFixed(2)} →`
+                    : selectedPmId === 'wallet+card'
+                      ? `Pay $${Number(amount).toFixed(2)} (Split) →`
+                      : selectedPmId && selectedPmId !== 'new'
+                        ? `Pay $${Number(amount).toFixed(2)} →`
+                        : `Pay with Card — $${Number(amount).toFixed(2)} →`
                   }
                 </button>
               </div>

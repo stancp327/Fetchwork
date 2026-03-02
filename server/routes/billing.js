@@ -742,6 +742,145 @@ router.post('/wallet/pay', authenticateToken, async (req, res) => {
   }
 });
 
+// POST /api/billing/wallet/split-pay — pay with wallet + card for remainder
+// Body: { totalAmount, reason, ref, paymentMethodId? }
+router.post('/wallet/split-pay', authenticateToken, async (req, res) => {
+  const mongoose = require('mongoose');
+  const txnSession = await mongoose.startSession();
+
+  try {
+    const userId = req.user.userId;
+    const totalAmount = parseFloat(req.body.totalAmount);
+    const { reason, ref, paymentMethodId } = req.body;
+
+    if (!totalAmount || totalAmount <= 0) return res.status(400).json({ error: 'totalAmount must be positive' });
+    if (!reason) return res.status(400).json({ error: 'reason is required' });
+
+    const credits = await BillingCredit.find({
+      user: userId, status: 'active', remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).sort({ createdAt: 1 }).lean();
+
+    const walletBalance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+    const walletPortion = Math.min(walletBalance, totalAmount);
+    const cardPortion = Math.round((totalAmount - walletPortion) * 100) / 100;
+
+    if (walletPortion <= 0) {
+      txnSession.endSession();
+      return res.status(400).json({ error: 'No wallet balance to apply.' });
+    }
+
+    // Step 1: Deduct wallet atomically
+    let deductions = [];
+    await txnSession.withTransaction(async () => {
+      const liveCredits = await BillingCredit.find({
+        user: userId, status: 'active', remaining: { $gt: 0 },
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+      }).sort({ createdAt: 1 }).session(txnSession);
+
+      const liveBalance = liveCredits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+      if (liveBalance < walletPortion) {
+        throw Object.assign(new Error('Wallet balance changed. Please try again.'), { statusCode: 409 });
+      }
+
+      let rem = walletPortion;
+      for (const credit of liveCredits) {
+        if (rem <= 0) break;
+        const deduct = Math.min(credit.remaining, rem);
+        const newRem = Math.round((credit.remaining - deduct) * 100) / 100;
+        const updated = await BillingCredit.findOneAndUpdate(
+          { _id: credit._id, remaining: credit.remaining },
+          { $set: { remaining: newRem, ...(newRem <= 0 ? { status: 'used', usedAt: new Date(), usedOn: ref || reason } : {}) } },
+          { new: true, session: txnSession }
+        );
+        if (!updated) throw Object.assign(new Error('Balance changed. Please try again.'), { statusCode: 409 });
+        deductions.push({ creditId: credit._id, deducted: deduct });
+        rem = Math.round((rem - deduct) * 100) / 100;
+      }
+    });
+
+    // Step 2: Charge card for remainder
+    if (cardPortion > 0) {
+      const user = await User.findById(userId).select('stripeCustomerId email');
+      if (!user.stripeCustomerId) {
+        const customerId = await stripeService.ensureCustomer(user);
+        user.stripeCustomerId = customerId;
+        await user.save();
+      }
+
+      if (paymentMethodId) {
+        // Saved card — charge immediately
+        try {
+          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+          const pi = await stripe.paymentIntents.create({
+            amount: Math.round(cardPortion * 100),
+            currency: 'usd',
+            customer: user.stripeCustomerId,
+            payment_method: paymentMethodId,
+            confirm: true,
+            automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+            metadata: { type: 'split_payment', walletPortion: String(walletPortion), ref: ref || '' },
+          });
+
+          if (pi.status !== 'succeeded') {
+            await _rollbackWalletDeductions(userId, deductions, 'Card charge failed');
+            txnSession.endSession();
+            return res.status(400).json({ error: 'Card charge failed. Transaction cancelled.' });
+          }
+
+          await logBillingAction({ userId, action: 'wallet_split_payment', after: { totalAmount, walletPortion, cardPortion, reason, ref, deductions, paymentIntentId: pi.id }, note: `$${totalAmount} split: $${walletPortion} wallet + $${cardPortion} card` });
+          txnSession.endSession();
+          return res.json({ success: true, paid: totalAmount, walletPaid: walletPortion, cardPaid: cardPortion, paymentIntentId: pi.id });
+        } catch (stripeErr) {
+          await _rollbackWalletDeductions(userId, deductions, `Card error: ${stripeErr.message}`);
+          txnSession.endSession();
+          return res.status(400).json({ error: 'Card charge failed. Transaction cancelled.' });
+        }
+      } else {
+        // No saved card — return clientSecret for Stripe Elements (card portion only)
+        try {
+          const pi = await stripeService.chargeForJob(cardPortion, 'usd', {
+            type: 'split_payment', walletPortion: String(walletPortion), userId, ref: ref || '',
+          });
+
+          await logBillingAction({ userId, action: 'wallet_split_pending', after: { totalAmount, walletPortion, cardPortion, reason, ref, deductions, paymentIntentId: pi.id }, note: `$${walletPortion} wallet deducted, awaiting $${cardPortion} card` });
+          txnSession.endSession();
+          return res.json({ splitPayment: true, walletPaid: walletPortion, cardAmount: cardPortion, clientSecret: pi.client_secret, paymentIntentId: pi.id });
+        } catch (stripeErr) {
+          await _rollbackWalletDeductions(userId, deductions, `PI creation failed: ${stripeErr.message}`);
+          txnSession.endSession();
+          return res.status(500).json({ error: 'Could not initialize card payment. Transaction cancelled.' });
+        }
+      }
+    }
+
+    // Full wallet payment
+    await logBillingAction({ userId, action: 'wallet_payment', after: { amount: totalAmount, reason, ref, deductions }, note: `$${totalAmount} paid from wallet` });
+    txnSession.endSession();
+    res.json({ success: true, paid: totalAmount, walletPaid: totalAmount, cardPaid: 0 });
+  } catch (err) {
+    txnSession.endSession();
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message, ...(err.data || {}) });
+    console.error('Split pay error:', err.message);
+    res.status(500).json({ error: 'Split payment failed' });
+  }
+});
+
+// Helper: rollback wallet deductions
+async function _rollbackWalletDeductions(userId, deductions, reason) {
+  try {
+    for (const d of deductions) {
+      await BillingCredit.findByIdAndUpdate(d.creditId, {
+        $inc: { remaining: d.deducted },
+        $set: { status: 'active', usedAt: null, usedOn: null },
+      });
+    }
+    await logBillingAction({ userId, action: 'wallet_rollback', after: { deductions, reason }, note: `Rollback: ${reason}` });
+  } catch (err) {
+    console.error('CRITICAL: Wallet rollback failed:', err.message, { userId, deductions });
+  }
+}
+
 // POST /api/billing/wallet/withdraw — transfer wallet balance to Stripe Connect account
 // Body: { amount } — dollar amount to withdraw
 // Uses transaction to prevent race conditions (same as wallet/pay)
@@ -809,15 +948,20 @@ router.post('/wallet/withdraw', authenticateToken, async (req, res) => {
         `wallet-withdraw-${userId}-${Date.now()}`,
       );
     } catch (stripeErr) {
-      // Stripe failed — refund the credits back
+      // Stripe failed — rollback wallet deductions, cancel withdrawal
+      for (const credit of await BillingCredit.find({ user: userId, usedOn: 'wallet_withdrawal', usedAt: { $gte: new Date(Date.now() - 10000) } })) {
+        // Rough rollback — find recently used credits and restore them
+      }
+      // More reliable: re-credit the amount
       await BillingCredit.create({
         user: userId, amount, remaining: amount,
-        reason: `Refund: withdrawal failed (${stripeErr.message})`,
+        reason: `Withdrawal cancelled — bank transfer failed`,
         status: 'active',
       });
+      await logBillingAction({ userId, action: 'wallet_withdraw_failed', after: { amount, error: stripeErr.message }, note: `Withdrawal of $${amount} cancelled — Stripe error` });
       session.endSession();
-      console.error('Wallet withdraw Stripe error (credits refunded):', stripeErr.message);
-      return res.status(500).json({ error: 'Bank transfer failed. Your balance has been restored.' });
+      console.error('Wallet withdraw failed:', stripeErr.message);
+      return res.status(500).json({ error: 'Bank transfer failed. Withdrawal cancelled — your balance is unchanged.' });
     }
 
     await logBillingAction({
