@@ -198,6 +198,8 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
 
 // POST /conversations/:conversationId/messages/upload — send message with file attachments
 const { uploadMessageAttachments } = require('../middleware/upload');
+const { watermarkAttachments } = require('../services/watermarkService');
+
 router.post('/conversations/:conversationId/messages/upload', authenticateToken, uploadMessageAttachments, async (req, res) => {
   try {
     const { content } = req.body;
@@ -208,16 +210,15 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
 
     const recipientId = conversation.participants.find(p => p.toString() !== req.user._id.toString());
 
-    const attachments = (req.files || []).map(file => ({
-      filename: file.originalname,
-      url: file.path?.startsWith('http') ? file.path : `/uploads/${file.filename}`,
-      size: file.size,
-      mimeType: file.mimetype
-    }));
-
-    if (!content && attachments.length === 0) {
+    if (!content && (!req.files || req.files.length === 0)) {
       return res.status(400).json({ error: 'Message or attachment required' });
     }
+
+    // Watermark images — originals stored separately, watermarked versions served
+    // Watermarks are removed when the associated job is completed
+    const attachments = req.files?.length > 0
+      ? await watermarkAttachments(req.files, req.files.map(f => f.filename))
+      : [];
 
     const message = new Message({
       conversation: conversation._id,

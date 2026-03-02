@@ -105,8 +105,10 @@ const messageSchema = new mongoose.Schema({
   attachments: [{
     filename: String,
     url: String,
+    originalUrl: String,      // unwatermarked original (available after job completion)
     size: Number,
-    mimeType: String
+    mimeType: String,
+    watermarked: { type: Boolean, default: false },
   }],
   isRead: {
     type: Boolean,

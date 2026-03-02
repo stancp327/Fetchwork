@@ -842,6 +842,13 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
         await Job.updateOne({ _id: job._id }, { 'recurring.nextRunDate': next });
       }
 
+      // Remove watermarks from shared images now that job is complete
+      try {
+        const { removeWatermarksForJob } = require('../services/watermarkService');
+        const wmResult = await removeWatermarksForJob(job._id);
+        if (wmResult.updated > 0) console.log(`Removed watermarks from ${wmResult.updated} messages for job ${job._id}`);
+      } catch (wmErr) { console.error('Watermark removal failed:', wmErr.message); }
+
       return res.json({ message: 'Job approved and payment released', job: await Job.findById(job._id) });
     }
 

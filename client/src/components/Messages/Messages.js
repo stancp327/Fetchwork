@@ -311,11 +311,23 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
 
         {msg.attachments?.length > 0 && (
           <div className="msg-attachments">
-            {msg.attachments.map((a, i) => (
-              <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="msg-attach-link">
-                📎 {a.filename || 'Attachment'}
-              </a>
-            ))}
+            {msg.attachments.map((a, i) => {
+              const isImage = a.mimeType?.startsWith('image/');
+              return (
+                <div key={i} className="msg-attach-item">
+                  {isImage ? (
+                    <div className="msg-attach-image-wrap">
+                      <img src={a.url} alt={a.filename} className="msg-attach-image" loading="lazy" />
+                      {a.watermarked && <span className="msg-watermark-badge">🔒 Watermarked</span>}
+                    </div>
+                  ) : (
+                    <a href={a.url} target="_blank" rel="noopener noreferrer" className="msg-attach-link">
+                      📄 {a.filename || 'Attachment'}
+                    </a>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         <div className="msg-meta">

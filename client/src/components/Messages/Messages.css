@@ -677,3 +677,16 @@
   text-decoration: none; padding: 0.2rem 0;
 }
 .msg-attachment-link:hover { text-decoration: underline; }
+
+/* Image attachments in messages */
+.msg-attach-item { margin-bottom: 0.3rem; }
+.msg-attach-image-wrap { position: relative; display: inline-block; max-width: 280px; }
+.msg-attach-image {
+  max-width: 100%; border-radius: 8px; display: block;
+  max-height: 300px; object-fit: cover;
+}
+.msg-watermark-badge {
+  position: absolute; bottom: 6px; left: 6px;
+  background: rgba(0,0,0,0.6); color: #fff; font-size: 0.7rem;
+  padding: 2px 8px; border-radius: 4px; font-weight: 500;
+}
