@@ -381,7 +381,7 @@ router.get('/online-status', authenticateToken, async (req, res) => {
     users.forEach(u => {
       const id = u._id.toString();
       statuses[id] = {
-        isOnline: global.io?.isUserOnline?.(id) ?? false,
+        isOnline: typeof global.io?.isUserOnline === 'function' ? global.io.isUserOnline(id) : false,
         lastSeen: u.lastSeen || null
       };
     });
