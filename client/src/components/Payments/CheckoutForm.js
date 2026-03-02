@@ -19,7 +19,10 @@ const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel, showFeeBre
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      setError('Payment system is still loading. Please wait a moment and try again.');
+      return;
+    }
     setProcessing(true);
     setError('');
 
@@ -86,8 +89,8 @@ const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel, showFeeBre
         <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={processing}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary" disabled={processing || !stripe}>
-          {processing ? 'Processing…' : `Pay & Protect $${amount?.toFixed(2)} →`}
+        <button type="submit" className="btn btn-primary" disabled={processing || !stripe || !elements}>
+          {!stripe || !elements ? 'Loading…' : processing ? 'Processing…' : `Pay & Protect $${amount?.toFixed(2)} →`}
         </button>
       </div>
 
