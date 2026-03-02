@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { authenticateAdmin } = require('../middleware/auth');
 
 // In-memory error buffer (last 100 errors) — no external dependency needed
 const MAX_ERRORS = 100;
@@ -35,11 +36,7 @@ router.post('/', (req, res) => {
 });
 
 // GET /api/errors — admin retrieves recent errors
-router.get('/', (req, res) => {
-  // Simple auth check — only admin
-  if (!req.user?.isAdmin) {
-    return res.status(403).json({ error: 'Admin only' });
-  }
+router.get('/', authenticateAdmin, (req, res) => {
   res.json({ errors: errorBuffer, count: errorBuffer.length });
 });
 

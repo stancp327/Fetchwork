@@ -1622,4 +1622,362 @@ router.delete('/feature-groups/:groupId', authenticateAdmin, requirePermission('
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// BOOST MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+const Boost = Job; // Boosts are stored on Job/Service models
+
+// GET /admin/boosts — list all active/recent boosts
+router.get('/boosts', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const { status = 'active', page = 1, limit = 50 } = req.query;
+    const now = new Date();
+    
+    let query = {};
+    if (status === 'active') {
+      query = { 'boost.active': true, 'boost.expiresAt': { $gt: now } };
+    } else if (status === 'expired') {
+      query = { 'boost.active': false, 'boost.startedAt': { $exists: true } };
+    } else {
+      query = { 'boost.startedAt': { $exists: true } };
+    }
+
+    const [jobs, services] = await Promise.all([
+      Job.find(query).select('title boost client category createdAt')
+        .populate('client', 'firstName lastName email').sort({ 'boost.startedAt': -1 })
+        .skip((page - 1) * limit).limit(Number(limit)).lean(),
+      Service.find(query).select('title boost freelancer category createdAt')
+        .populate('freelancer', 'firstName lastName email').sort({ 'boost.startedAt': -1 })
+        .skip((page - 1) * limit).limit(Number(limit)).lean()
+    ]);
+
+    const boostedJobs = jobs.map(j => ({ ...j, type: 'job' }));
+    const boostedServices = services.map(s => ({ ...s, type: 'service' }));
+    const all = [...boostedJobs, ...boostedServices].sort((a, b) => 
+      new Date(b.boost?.startedAt || 0) - new Date(a.boost?.startedAt || 0)
+    );
+
+    res.json({ boosts: all, count: all.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /admin/boosts/:type/:id/cancel — cancel an active boost
+router.put('/boosts/:type/:id/cancel', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const Model = req.params.type === 'service' ? Service : Job;
+    const item = await Model.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+    if (!item.boost?.active) return res.status(400).json({ error: 'No active boost' });
+
+    item.boost.active = false;
+    item.boost.cancelledBy = 'admin';
+    item.boost.cancelledAt = new Date();
+    item.boost.cancelReason = req.body.reason || 'Cancelled by admin';
+    await item.save();
+
+    res.json({ message: 'Boost cancelled', item: { _id: item._id, boost: item.boost } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// BOOKING MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+const Booking = require('../models/Booking');
+
+// GET /admin/bookings — list all bookings
+router.get('/bookings', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const { status, page = 1, limit = 50 } = req.query;
+    const query = status ? { status } : {};
+    
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .populate('client', 'firstName lastName email')
+        .populate('freelancer', 'firstName lastName email')
+        .populate('service', 'title')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit).limit(Number(limit)).lean(),
+      Booking.countDocuments(query)
+    ]);
+
+    res.json({ bookings, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /admin/bookings/:id — booking detail
+router.get('/bookings/:id', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate('client', 'firstName lastName email')
+      .populate('freelancer', 'firstName lastName email')
+      .populate('service', 'title price');
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json({ booking });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /admin/bookings/:id/cancel — admin cancel a booking
+router.patch('/bookings/:id/cancel', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (['cancelled', 'completed'].includes(booking.status)) {
+      return res.status(400).json({ error: `Booking already ${booking.status}` });
+    }
+
+    booking.status = 'cancelled';
+    booking.cancelledBy = 'admin';
+    booking.cancelReason = req.body.reason || 'Cancelled by admin';
+    booking.cancelledAt = new Date();
+    await booking.save();
+
+    res.json({ message: 'Booking cancelled', booking });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PAYMENT MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+// GET /admin/payments/all — list all payments (already exists at /admin/payments, adding search)
+router.get('/payments/search', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const { userId, type, status, minAmount, maxAmount, page = 1, limit = 50 } = req.query;
+    const query = {};
+    if (userId) query.$or = [{ client: userId }, { freelancer: userId }];
+    if (type) query.type = type;
+    if (status) query.status = status;
+    if (minAmount || maxAmount) {
+      query.amount = {};
+      if (minAmount) query.amount.$gte = Number(minAmount);
+      if (maxAmount) query.amount.$lte = Number(maxAmount);
+    }
+
+    const [payments, total] = await Promise.all([
+      Payment.find(query)
+        .populate('client', 'firstName lastName email')
+        .populate('freelancer', 'firstName lastName email')
+        .populate('job', 'title')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit).limit(Number(limit)).lean(),
+      Payment.countDocuments(query)
+    ]);
+
+    res.json({ payments, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /admin/payments/:id/refund — admin-initiated refund
+router.post('/payments/:id/refund', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+    if (payment.status === 'refunded') return res.status(400).json({ error: 'Already refunded' });
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    
+    if (payment.stripePaymentIntentId) {
+      await stripe.refunds.create({
+        payment_intent: payment.stripePaymentIntentId,
+        reason: 'requested_by_customer',
+        metadata: { adminRefund: 'true', reason: req.body.reason || 'Admin refund' }
+      });
+    }
+
+    payment.status = 'refunded';
+    payment.refundedAt = new Date();
+    payment.refundReason = req.body.reason || 'Admin refund';
+    payment.refundedBy = req.admin.id;
+    await payment.save();
+
+    res.json({ message: 'Payment refunded', payment });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CONTRACT MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+const Contract = require('../models/Contract');
+
+// GET /admin/contracts — list all contracts
+router.get('/contracts', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+  try {
+    const { status, page = 1, limit = 50 } = req.query;
+    const query = status ? { status } : {};
+
+    const [contracts, total] = await Promise.all([
+      Contract.find(query)
+        .populate('creator', 'firstName lastName email')
+        .populate('recipient', 'firstName lastName email')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit).limit(Number(limit)).lean(),
+      Contract.countDocuments(query)
+    ]);
+
+    res.json({ contracts, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /admin/contracts/:id — contract detail
+router.get('/contracts/:id', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+  try {
+    const contract = await Contract.findById(req.params.id)
+      .populate('creator', 'firstName lastName email')
+      .populate('recipient', 'firstName lastName email')
+      .populate('job', 'title');
+    if (!contract) return res.status(404).json({ error: 'Contract not found' });
+    res.json({ contract });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /admin/contracts/:id/void — admin void a contract
+router.patch('/contracts/:id/void', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+  try {
+    const contract = await Contract.findById(req.params.id);
+    if (!contract) return res.status(404).json({ error: 'Contract not found' });
+
+    contract.status = 'voided';
+    contract.voidedBy = 'admin';
+    contract.voidReason = req.body.reason || 'Voided by admin';
+    contract.voidedAt = new Date();
+    await contract.save();
+
+    res.json({ message: 'Contract voided', contract });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MESSAGE MODERATION
+// ═══════════════════════════════════════════════════════════════
+
+// GET /admin/messages/conversations — list conversations with flags
+router.get('/messages/conversations', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+  try {
+    const { page = 1, limit = 50, flagged } = req.query;
+    const query = flagged === 'true' ? { flagged: true } : {};
+
+    const [conversations, total] = await Promise.all([
+      ChatRoom.find(query)
+        .populate('participants', 'firstName lastName email')
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * limit).limit(Number(limit)).lean(),
+      ChatRoom.countDocuments(query)
+    ]);
+
+    res.json({ conversations, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /admin/messages/conversation/:id — read messages in a conversation
+router.get('/messages/conversation/:id', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+  try {
+    const messages = await Message.find({ conversation: req.params.id })
+      .populate('sender', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .limit(100).lean();
+
+    res.json({ messages, conversationId: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /admin/messages/:id — remove a specific message
+router.delete('/messages/:id', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    if (!message) return res.status(404).json({ error: 'Message not found' });
+
+    message.content = '[Removed by moderator]';
+    message.moderatedAt = new Date();
+    message.moderatedBy = req.admin.id;
+    message.moderationReason = req.body.reason || 'Content violation';
+    message.attachments = [];
+    await message.save();
+
+    res.json({ message: 'Message removed' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SERVICE ORDER MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+// GET /admin/orders — list all service orders
+router.get('/orders', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const { status, page = 1, limit = 50 } = req.query;
+    
+    const matchStage = {};
+    if (status) matchStage['orders.status'] = status;
+
+    const services = await Service.find({ 'orders.0': { $exists: true } })
+      .populate('freelancer', 'firstName lastName email')
+      .select('title orders freelancer')
+      .sort({ 'orders.createdAt': -1 })
+      .lean();
+
+    // Flatten orders with service context
+    const allOrders = [];
+    for (const svc of services) {
+      for (const order of (svc.orders || [])) {
+        if (status && order.status !== status) continue;
+        allOrders.push({
+          orderId: order._id,
+          serviceId: svc._id,
+          serviceTitle: svc.title,
+          freelancer: svc.freelancer,
+          client: order.client,
+          status: order.status,
+          amount: order.amount,
+          createdAt: order.createdAt
+        });
+      }
+    }
+
+    // Sort and paginate
+    allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const total = allOrders.length;
+    const paginated = allOrders.slice((page - 1) * limit, page * limit);
+
+    // Populate client info
+    const clientIds = [...new Set(paginated.map(o => o.client?.toString()).filter(Boolean))];
+    const clients = await User.find({ _id: { $in: clientIds } }).select('firstName lastName email').lean();
+    const clientMap = {};
+    clients.forEach(c => { clientMap[c._id.toString()] = c; });
+    paginated.forEach(o => { o.client = clientMap[o.client?.toString()] || o.client; });
+
+    res.json({ orders: paginated, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
