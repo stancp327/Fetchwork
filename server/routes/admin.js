@@ -819,8 +819,9 @@ router.put('/users/:userId/promote', authenticateAdmin, requirePermission('user_
       return res.status(400).json({ error: 'User is already an admin' });
     }
     
+    await User.updateOne({ _id: userId }, { $set: { isAdminPromoted: true, role: 'admin' } });
     user.isAdminPromoted = true;
-    await user.save();
+    user.role = 'admin';
     
     res.json({
       message: 'User promoted to admin successfully',
@@ -846,8 +847,9 @@ router.put('/users/:userId/demote', authenticateAdmin, requirePermission('user_m
       return res.status(400).json({ error: 'Cannot demote hardcoded admin user' });
     }
     
+    await User.updateOne({ _id: userId }, { $set: { isAdminPromoted: false, role: 'user' } });
     user.isAdminPromoted = false;
-    await user.save();
+    user.role = 'user';
     
     res.json({
       message: 'User demoted from admin successfully',
