@@ -7,9 +7,15 @@ const ICE_SERVERS = [
   { urls: 'stun:stun2.l.google.com:19302' },
 ];
 
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const hasWebRTC = !!(navigator.mediaDevices?.getUserMedia && window.RTCPeerConnection);
+
 const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false, onClose }) => {
   const socket = window.__fetchworkSocket;
-  const [callStatus, setCallStatus] = useState(isIncoming ? 'incoming' : 'ringing');
+  const [callStatus, setCallStatus] = useState(() => {
+    if (!hasWebRTC) return 'failed';
+    return isIncoming ? 'incoming' : 'ringing';
+  });
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(type === 'audio');
@@ -81,6 +87,11 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       return stream;
     } catch (err) {
       console.error('Failed to get media:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        alert('Camera/microphone permission denied. Please allow access in your browser settings and try again.');
+      } else if (err.name === 'NotFoundError') {
+        alert('No camera or microphone found. Please connect a device and try again.');
+      }
       setCallStatus('failed');
       return null;
     }
@@ -266,7 +277,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
               {callStatus === 'connecting' && <div className="videocall-status">Connecting…</div>}
               {callStatus === 'incoming' && <div className="videocall-status">Incoming {type} call…</div>}
               {callStatus === 'ended' && <div className="videocall-status">Call ended</div>}
-              {callStatus === 'failed' && <div className="videocall-status">Call failed</div>}
+              {callStatus === 'failed' && <div className="videocall-status">{!hasWebRTC ? 'Video calls not supported in this browser' : 'Call failed — check camera/mic permissions'}</div>}
             </div>
           )}
           {!remoteMediaState.audio && callStatus === 'active' && (
@@ -308,7 +319,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
                   {isCameraOff ? '📷' : '🎥'}
                 </button>
               )}
-              {type === 'video' && callStatus === 'active' && (
+              {type === 'video' && callStatus === 'active' && !isMobile && navigator.mediaDevices?.getDisplayMedia && (
                 <button className={`videocall-btn ${isScreenSharing ? 'active' : ''}`} onClick={toggleScreenShare} title="Screen share">
                   🖥️
                 </button>
