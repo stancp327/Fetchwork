@@ -52,10 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(token);
     setUser(user);
 
-    // Register push token for this device
+    // Register for push notifications
     try {
-      const deviceId = await getDeviceId();
-      await usersApi.registerPushToken('pending', deviceId); // actual token registered by usePushToken hook
+      const { registerForPushNotifications } = require('../utils/pushNotifications');
+      await registerForPushNotifications();
     } catch { /* non-fatal */ }
   }, []);
 

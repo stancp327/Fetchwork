@@ -29,6 +29,8 @@ export interface Job {
   location?: string;
   isRemote?: boolean;
   isFeatured?: boolean;
+  isBoosted?: boolean;
+  boostExpiresAt?: string;
   recurring?: {
     enabled: boolean;
     interval?: string;
