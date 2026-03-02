@@ -31,4 +31,7 @@ export const servicesApi = {
 
   completeSession: (purchaseId: string, sessionIndex: number, notes?: string) =>
     client.post(`/api/services/bundles/${purchaseId}/sessions/${sessionIndex}/complete`, { notes }).then(r => r.data),
+
+  myServices: () =>
+    client.get('/api/services/me').then(r => r.data),
 };

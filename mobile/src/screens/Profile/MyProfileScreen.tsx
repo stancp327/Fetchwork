@@ -105,6 +105,8 @@ export default function MyProfileScreen({ navigation }: Props) {
         {/* Settings links */}
         <View style={styles.section}>
           {[
+            { label: '🔔 Notifications',           onPress: () => navigation.navigate('Notifications') },
+            { label: '🔍 Discovery Settings',     onPress: () => navigation.navigate('DiscoverySettings') },
             { label: '🔒 Verification & Badges', onPress: () => navigation.navigate('Verification') },
             { label: '⚙️ Account Settings',       onPress: () => navigation.navigate('Settings') },
           ].map(item => (

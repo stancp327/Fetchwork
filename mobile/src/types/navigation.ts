@@ -19,6 +19,7 @@ export type ServicesStackParamList = {
   BrowseServices: undefined;
   ServiceDetail:  { id: string };
   BookService:    { serviceId: string; pkg: 'basic' | 'standard' | 'premium' };
+  MyServices:     undefined;
 };
 
 export type MessagesStackParamList = {
@@ -27,10 +28,12 @@ export type MessagesStackParamList = {
 };
 
 export type ProfileStackParamList = {
-  MyProfile:    undefined;
-  EditProfile:  undefined;
-  Verification: undefined;
-  Settings:     undefined;
+  MyProfile:         undefined;
+  EditProfile:       undefined;
+  Verification:      undefined;
+  Settings:          undefined;
+  DiscoverySettings: undefined;
+  Notifications:     undefined;
 };
 
 export type MoreStackParamList = {

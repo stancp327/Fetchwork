@@ -16,6 +16,19 @@ const { checkServiceLimit } = require('../middleware/entitlements');
 const { getFee, getFeeIncluded, getFeeDisplay } = require('../services/feeEngine');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 
+// GET /api/services/me — List current user's own services
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const services = await Service.find({ freelancer: req.user.userId })
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json({ services });
+  } catch (err) {
+    console.error('My services error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
