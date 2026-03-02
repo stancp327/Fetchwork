@@ -423,6 +423,8 @@ const Messages = () => {
   const [selectedConvo, setSelectedConvo] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [attachFiles, setAttachFiles] = useState([]);
+  const fileInputRef = React.useRef(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
@@ -572,24 +574,44 @@ const Messages = () => {
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConvo || sending) return;
+    if ((!newMessage.trim() && attachFiles.length === 0) || !selectedConvo || sending) return;
 
     setSending(true);
+    const content = newMessage.trim();
+    const hasFiles = attachFiles.length > 0;
     const optimistic = {
       _id: `temp-${Date.now()}`,
-      content: newMessage.trim(),
+      content: content || (hasFiles ? `📎 Sent ${attachFiles.length} file${attachFiles.length > 1 ? 's' : ''}` : ''),
       sender: { _id: userId, firstName: user?.firstName, lastName: user?.lastName },
       createdAt: new Date().toISOString(),
       isRead: false,
-      conversation: selectedConvo._id
+      conversation: selectedConvo._id,
+      attachments: attachFiles.map(f => ({ filename: f.name, url: URL.createObjectURL(f), size: f.size, mimeType: f.type }))
     };
     setMessages(prev => [...prev, optimistic]);
-    const content = newMessage.trim();
     setNewMessage('');
+    setAttachFiles([]);
 
     try {
       const other = selectedConvo.participants?.find(p => p._id !== userId);
-      if (socketRef.current) {
+
+      if (hasFiles) {
+        // Use upload endpoint for files
+        const formData = new FormData();
+        if (content) formData.append('content', content);
+        attachFiles.forEach(f => formData.append('attachments', f));
+
+        const token = localStorage.getItem('token');
+        const baseUrl = process.env.REACT_APP_API_URL || '';
+        const resp = await fetch(
+          `${baseUrl}/api/messages/conversations/${selectedConvo._id}/messages/upload`,
+          { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData }
+        );
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Upload failed');
+        setMessages(prev => prev.map(m => m._id === optimistic._id ? data.data : m));
+        fetchConversations();
+      } else if (socketRef.current) {
         socketRef.current.emit('message:send', {
           recipientId: other?._id,
           content,
@@ -765,7 +787,30 @@ const Messages = () => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {attachFiles.length > 0 && (
+                <div className="attach-preview">
+                  {attachFiles.map((f, i) => (
+                    <div key={i} className="attach-preview-item">
+                      <span className="attach-preview-name">{f.type?.startsWith('image/') ? '🖼️' : '📄'} {f.name}</span>
+                      <span className="attach-preview-size">{(f.size / 1024).toFixed(0)}KB</span>
+                      <button type="button" className="attach-preview-remove" onClick={() => setAttachFiles(prev => prev.filter((_, idx) => idx !== i))}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <form className="chat-composer" onSubmit={sendMessage}>
+                <input
+                  type="file" ref={fileInputRef} multiple hidden
+                  accept="image/*,.pdf,.doc,.docx,.txt"
+                  onChange={e => {
+                    const files = Array.from(e.target.files || []).slice(0, 5);
+                    setAttachFiles(prev => [...prev, ...files].slice(0, 5));
+                    e.target.value = '';
+                  }}
+                />
+                <button type="button" className="attach-btn" onClick={() => fileInputRef.current?.click()} title="Attach file">
+                  📎
+                </button>
                 <input
                   type="text" value={newMessage} onChange={handleTyping}
                   placeholder="Type a message..."
@@ -776,7 +821,7 @@ const Messages = () => {
                     clearTimeout(typingTimeoutRef.current);
                   }}
                 />
-                <button type="submit" disabled={!newMessage.trim() || sending} className="send-btn">
+                <button type="submit" disabled={(!newMessage.trim() && attachFiles.length === 0) || sending} className="send-btn">
                   {sending ? '...' : '→'}
                 </button>
               </form>

@@ -270,7 +270,9 @@ app.use('/api/calendar',     require('./routes/calendar'));
 app.use('/api/billing',      require('./routes/billing'));
 app.use('/api/job-alerts',   require('./routes/jobAlerts'));
 app.use('/api/referrals',    require('./routes/referrals'));
-app.use('/api/errors',       require('./routes/errors'));
+app.use('/api/errors',             require('./routes/errors'));
+app.use('/api/contracts',          require('./routes/contracts'));
+app.use('/api/background-checks', require('./routes/backgroundChecks'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {

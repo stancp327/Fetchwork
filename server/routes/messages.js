@@ -161,12 +161,21 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
     const recipientId = conversation.participants.find(
       p => p.toString() !== req.user._id.toString()
     );
+
+    // Handle file attachments if present
+    const attachments = req.files ? req.files.map(file => ({
+      filename: file.originalname,
+      url: file.path?.startsWith('http') ? file.path : `/uploads/${file.filename}`,
+      size: file.size,
+      mimeType: file.mimetype
+    })) : [];
     
     const message = new Message({
       conversation: conversation._id,
       sender: req.user._id,
       recipient: recipientId,
-      content
+      content: content || (attachments.length > 0 ? `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : ''),
+      ...(attachments.length > 0 ? { attachments } : {})
     });
     
     await message.save();
@@ -183,6 +192,51 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
     });
   } catch (error) {
     console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// POST /conversations/:conversationId/messages/upload — send message with file attachments
+const { uploadMessageAttachments } = require('../middleware/upload');
+router.post('/conversations/:conversationId/messages/upload', authenticateToken, uploadMessageAttachments, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const conversation = await Conversation.findById(req.params.conversationId);
+    if (!conversation || !conversation.participants.some(p => p.toString() === req.user._id.toString())) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const recipientId = conversation.participants.find(p => p.toString() !== req.user._id.toString());
+
+    const attachments = (req.files || []).map(file => ({
+      filename: file.originalname,
+      url: file.path?.startsWith('http') ? file.path : `/uploads/${file.filename}`,
+      size: file.size,
+      mimeType: file.mimetype
+    }));
+
+    if (!content && attachments.length === 0) {
+      return res.status(400).json({ error: 'Message or attachment required' });
+    }
+
+    const message = new Message({
+      conversation: conversation._id,
+      sender: req.user._id,
+      recipient: recipientId,
+      content: content || `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}`,
+      attachments
+    });
+
+    await message.save();
+    conversation.lastMessage = message._id;
+    await conversation.updateLastActivity();
+
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'firstName lastName profilePicture');
+
+    res.status(201).json({ message: 'Message sent', data: populatedMessage });
+  } catch (error) {
+    console.error('Error sending message with attachments:', error);
     res.status(500).json({ error: 'Failed to send message' });
   }
 });

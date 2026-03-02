@@ -67,6 +67,10 @@ const WalletPage           = React.lazy(() => import('./components/Billing/Walle
 const UserAnalytics        = React.lazy(() => import('./components/Analytics/UserAnalytics'));
 const SpendDashboard       = React.lazy(() => import('./components/Analytics/SpendDashboard'));
 const BoostCheckout        = React.lazy(() => import('./components/Boosts/BoostCheckout'));
+const ContractsList        = React.lazy(() => import('./components/Contracts/ContractsList'));
+const ContractDetail       = React.lazy(() => import('./components/Contracts/ContractDetail'));
+const CreateContract       = React.lazy(() => import('./components/Contracts/CreateContract'));
+const BackgroundCheckPage  = React.lazy(() => import('./components/Verification/BackgroundCheck'));
 const DiscoverySettings    = React.lazy(() => import('./components/Settings/DiscoverySettings'));
 const JobAlertsPage        = React.lazy(() => import('./components/JobAlerts/JobAlertsPage'));
 const ReferralPage         = React.lazy(() => import('./components/Referrals/ReferralPage'));
@@ -341,6 +345,10 @@ function AppContent() {
           <Route path="/spend"                element={<ProtectedRoute><SpendDashboard /></ProtectedRoute>} />
               <Route path="/boost-checkout"       element={<ProtectedRoute><BoostCheckout /></ProtectedRoute>} />
               <Route path="/boost-success"        element={<ProtectedRoute><BoostCheckout /></ProtectedRoute>} />
+              <Route path="/contracts"            element={<ProtectedRoute><ContractsList /></ProtectedRoute>} />
+              <Route path="/contracts/new"        element={<ProtectedRoute><CreateContract /></ProtectedRoute>} />
+              <Route path="/contracts/:id"        element={<ProtectedRoute><ContractDetail /></ProtectedRoute>} />
+              <Route path="/background-check"     element={<ProtectedRoute><BackgroundCheckPage /></ProtectedRoute>} />
           <Route path="/discovery-settings"   element={<ProtectedRoute><DiscoverySettings /></ProtectedRoute>} />
           <Route path="/job-alerts"            element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
           <Route path="/referrals"             element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />

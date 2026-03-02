@@ -641,3 +641,39 @@
   color: var(--color-text-muted);
   margin-bottom: 0.15rem;
 }
+
+/* Attachment UI */
+.attach-btn {
+  background: none; border: none; font-size: 1.2rem; cursor: pointer;
+  padding: 0.5rem; min-width: 40px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.6; transition: opacity 0.2s;
+}
+.attach-btn:hover { opacity: 1; }
+
+.attach-preview {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  padding: 0.5rem 1rem; background: var(--color-bg-secondary, #f9fafb);
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+.attach-preview-item {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: var(--color-bg-primary, #fff); border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px; padding: 0.3rem 0.6rem; font-size: 0.8rem;
+}
+.attach-preview-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-preview-size { color: var(--color-text-muted, #9ca3af); font-size: 0.7rem; }
+.attach-preview-remove {
+  background: none; border: none; cursor: pointer; font-size: 0.8rem;
+  color: var(--color-danger, #ef4444); padding: 2px 4px;
+}
+
+.msg-attachments {
+  display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.4rem;
+}
+.msg-attachment-link {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  color: var(--color-primary, #2563eb); font-size: 0.82rem;
+  text-decoration: none; padding: 0.2rem 0;
+}
+.msg-attachment-link:hover { text-decoration: underline; }
