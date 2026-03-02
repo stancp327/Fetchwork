@@ -13,14 +13,14 @@ WebBrowser.maybeCompleteAuthSession();
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 const ANDROID_CLIENT_ID = '172864514556-oi6ichcg5c6j5rag79ibpid5rjuvu9td.apps.googleusercontent.com';
-const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
+const WEB_CLIENT_ID = '172864514556-eelidki0hadeg4t4us9n6bumhqnvqgp7.apps.googleusercontent.com';
 
 export default function WelcomeScreen({ navigation }: Props) {
   const { loginWithGoogle } = useAuth();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: ANDROID_CLIENT_ID,
-    webClientId: WEB_CLIENT_ID || undefined,
+    webClientId: WEB_CLIENT_ID,
     scopes: ['openid', 'profile', 'email'],
   });
 
