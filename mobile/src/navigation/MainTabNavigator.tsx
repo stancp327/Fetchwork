@@ -31,14 +31,14 @@ export default function MainTabNavigator() {
   useEffect(() => {
     if (!isAuthenticated) return;
     // Fetch unread notification count
-    api.get('/api/notifications/count')
-      .then(res => setUnreadCount(res.data?.count || 0))
+    api.get('/api/messages/unread-count')
+      .then(res => setUnreadCount(res.data?.unreadCount || 0))
       .catch(() => {});
 
     // Poll every 30s
     const interval = setInterval(() => {
-      api.get('/api/notifications/count')
-        .then(res => setUnreadCount(res.data?.count || 0))
+      api.get('/api/messages/unread-count')
+        .then(res => setUnreadCount(res.data?.unreadCount || 0))
         .catch(() => {});
     }, 30000);
     return () => clearInterval(interval);

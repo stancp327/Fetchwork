@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { storage } from '../utils/storage';
+import { useAuthStore } from '../store/authStore';
 
 export const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://fetchwork-1.onrender.com';
 
@@ -69,8 +70,8 @@ client.interceptors.response.use(
       } catch (refreshError) {
         processQueue(null, refreshError);
         await storage.clearAll();
-        // Signal auth context to clear session
-        // (AuthContext listens for this via event emitter or zustand)
+        // Clear zustand auth state → triggers RootNavigator to show login
+        useAuthStore.getState().clear();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
