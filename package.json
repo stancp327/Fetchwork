@@ -11,6 +11,7 @@
     "install-all": "npm install && cd client && npm install && cd ../server && npm install"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
     "concurrently": "^8.2.2"
   },
   "dependencies": {

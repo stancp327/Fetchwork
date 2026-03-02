@@ -59,8 +59,10 @@ const STATUS_LABELS = {
 
 // ── Helper: get actor role for a dispute ────────────────────────
 const getRole = (dispute, userId) => {
-  if (dispute.client.toString() === userId) return 'client';
-  if (dispute.freelancer.toString() === userId) return 'freelancer';
+  const clientId = (dispute.client?._id || dispute.client)?.toString();
+  const freelancerId = (dispute.freelancer?._id || dispute.freelancer)?.toString();
+  if (clientId === userId) return 'client';
+  if (freelancerId === userId) return 'freelancer';
   return null;
 };
 
@@ -189,8 +191,8 @@ router.get('/user', authenticateToken, async (req, res) => {
       obj.messages = obj.messages.filter(m => {
         if (m.isInternal) return false;
         if (m.visibility === 'admin_only') return false;
-        if (m.visibility === 'client_only' && d.client.toString() !== req.user.userId) return false;
-        if (m.visibility === 'freelancer_only' && d.freelancer.toString() !== req.user.userId) return false;
+        if (m.visibility === 'client_only' && (d.client?._id || d.client)?.toString() !== req.user.userId) return false;
+        if (m.visibility === 'freelancer_only' && (d.freelancer?._id || d.freelancer)?.toString() !== req.user.userId) return false;
         return true;
       });
       // Strip original URLs from evidence — users only see watermarked

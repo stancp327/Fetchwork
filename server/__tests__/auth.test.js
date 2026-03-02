@@ -38,6 +38,9 @@ jest.mock('../models/User', () => {
   }));
   UserMock.findOne = jest.fn();
   UserMock.findById = jest.fn();
+  UserMock.updateOne = jest.fn().mockResolvedValue({ modifiedCount: 1 });
+  UserMock.findOneAndUpdate = jest.fn();
+  UserMock.countDocuments = jest.fn().mockResolvedValue(0);
   return UserMock;
 });
 
@@ -62,6 +65,11 @@ jest.mock('../middleware/auth', () => ({
     req.user = { _id: '507f1f77bcf86cd799439011' };
     next();
   },
+}));
+
+jest.mock('../middleware/analytics', () => ({
+  trackEvent: jest.fn(),
+  analyticsMiddleware: (req, res, next) => next(),
 }));
 
 // Simpler validation mock — just pass through
@@ -270,7 +278,8 @@ describe('Auth Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.message).toMatch(/verified successfully/i);
-      expect(verifyUser.save).toHaveBeenCalled();
+      // Route uses User.updateOne, not user.save
+      expect(User.updateOne).toHaveBeenCalled();
     });
 
     it('should reject invalid/expired token', async () => {

@@ -137,9 +137,16 @@ describe('Disputes API', () => {
     });
 
     it('should return user disputes', async () => {
+      const disputeDoc = {
+        ...mockDispute,
+        client: mockUser._id,
+        freelancer: '507f1f77bcf86cd799439066',
+        toObject() { return { ...this, toObject: undefined }; },
+        messages: [],
+      };
       const chainMock = {
         populate: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue([mockDispute]),
+        sort: jest.fn().mockResolvedValue([disputeDoc]),
       };
       Dispute.find.mockReturnValue(chainMock);
 

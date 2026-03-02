@@ -34,26 +34,44 @@ const mockAdmin = {
   isActive: true,
   isSuspended: false,
   role: 'admin',
-  toObject() {
-    return { ...this };
-  },
+  id: '507f1f77bcf86cd799439033',
+  toObject() { return { ...this }; },
   getPublicProfile: jest.fn(),
   hasPermission: () => true,
 };
 
-const mockError = {
-  _id: '507f1f77bcf86cd799439044',
-  message: 'Cannot read properties of undefined',
-  stack: 'Error: Cannot read properties...',
-  name: 'TypeError',
-  source: 'server',
-  severity: 'high',
-  resolved: false,
-  occurrences: 3,
-  lastSeenAt: new Date(),
-  createdAt: new Date(),
-  save: jest.fn().mockResolvedValue(true),
-};
+// Mock auth middleware — authenticateToken populates req.user, authenticateAdmin populates req.admin
+jest.mock('../middleware/auth', () => ({
+  authenticateToken: (req, res, next) => {
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: 'No token' });
+    try {
+      const decoded = require('jsonwebtoken').verify(auth.replace('Bearer ', ''), 'test-secret-key-for-jest');
+      req.user = { userId: decoded.userId, email: decoded.email };
+      next();
+    } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+  },
+  authenticateAdmin: (req, res, next) => {
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: 'No token' });
+    try {
+      const decoded = require('jsonwebtoken').verify(auth.replace('Bearer ', ''), 'test-secret-key-for-jest');
+      if (!decoded.isAdmin) return res.status(401).json({ error: 'Admin access required' });
+      req.admin = {
+        id: decoded.userId,
+        email: decoded.email,
+        role: 'admin',
+        hasPermission: () => true,
+      };
+      next();
+    } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+  },
+  requirePermission: () => (req, res, next) => next(),
+}));
 
 jest.mock('../models/ServerError', () => {
   const Mock = jest.fn().mockImplementation((data) => ({
@@ -80,7 +98,6 @@ jest.mock('../models/User', () => {
 });
 
 const ServerError = require('../models/ServerError');
-const User = require('../models/User');
 
 const createApp = () => {
   const app = express();
@@ -118,9 +135,26 @@ describe('Errors API', () => {
     token = generateToken();
     adminToken = generateAdminToken();
     jest.clearAllMocks();
-    User.findById.mockImplementation((id) => {
-      if (id === mockAdmin._id || id?.toString() === mockAdmin._id) return Promise.resolve(mockAdmin);
-      return Promise.resolve(mockUser);
+  });
+
+  describe('POST /api/errors', () => {
+    it('should accept error report without auth', async () => {
+      ServerError.findOneAndUpdate.mockResolvedValue({ _id: 'test' });
+
+      const res = await request(app)
+        .post('/api/errors')
+        .send({ message: 'Test error', component: 'Dashboard' });
+
+      expect(res.status).toBe(201);
+      expect(res.body.received).toBe(true);
+    });
+
+    it('should require message field', async () => {
+      const res = await request(app)
+        .post('/api/errors')
+        .send({});
+
+      expect(res.status).toBe(400);
     });
   });
 
@@ -134,8 +168,9 @@ describe('Errors API', () => {
     });
 
     it('should log a client error', async () => {
-      ServerError.findOneAndUpdate.mockResolvedValue(null);
-      ServerError.create.mockResolvedValue(mockError);
+      ServerError.findOneAndUpdate.mockResolvedValue({
+        _id: '507f1f77bcf86cd799439044',
+      });
 
       const res = await request(app)
         .post('/api/errors/client')
@@ -200,7 +235,7 @@ describe('Errors API', () => {
         populate: jest.fn().mockReturnThis(),
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        skip: jest.fn().mockResolvedValue([mockError]),
+        skip: jest.fn().mockResolvedValue([{ _id: 'err1', message: 'test' }]),
       };
       ServerError.find.mockReturnValue(chainMock);
       ServerError.countDocuments.mockResolvedValue(1);
@@ -235,12 +270,13 @@ describe('Errors API', () => {
   describe('PATCH /api/errors/admin/:id/resolve', () => {
     it('should resolve an error', async () => {
       ServerError.findById.mockResolvedValue({
-        ...mockError,
+        _id: '507f1f77bcf86cd799439044',
+        resolved: false,
         save: jest.fn().mockResolvedValue(true),
       });
 
       const res = await request(app)
-        .patch(`/api/errors/admin/${mockError._id}/resolve`)
+        .patch('/api/errors/admin/507f1f77bcf86cd799439044/resolve')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ resolved: true, notes: 'Fixed in PR #110' });
 
