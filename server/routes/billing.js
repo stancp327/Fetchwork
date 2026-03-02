@@ -23,6 +23,7 @@ const Notification     = require('../models/Notification');
 const { assignDefaultPlan, logBillingAction } = require('../utils/billingUtils');
 const { CLIENT_URL }   = require('../config/env');
 const BillingCredit           = require('../models/BillingCredit');
+const Team                    = require('../models/Team');
 const CheckoutSession         = require('../models/CheckoutSession');
 const ProcessedWebhookEvent   = require('../models/ProcessedWebhookEvent');
 const { getPlanLimits }       = require('../middleware/entitlements');
@@ -459,6 +460,8 @@ async function webhookHandler(req, res) {
 
         if (session.metadata?.type === 'wallet_topup') {
           await handleWalletTopup(session);
+        } else if (session.metadata?.type === 'team_wallet') {
+          await handleTeamWalletTopup(session);
         } else if (session.mode === 'subscription') {
           await handleSubscriptionActivated(session.subscription, session.metadata);
         }
@@ -638,6 +641,37 @@ async function handleWalletTopup(session) {
     });
   } catch (err) {
     console.error('handleWalletTopup error:', err.message);
+  }
+}
+
+async function handleTeamWalletTopup(session) {
+  try {
+    const { teamId, amount } = session.metadata || {};
+    if (!teamId || !amount) return;
+
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount) return;
+
+    const team = await Team.findById(teamId).select('_id owner');
+    if (!team) return;
+
+    await BillingCredit.create({
+      user: team.owner,
+      team: team._id,
+      amount: parsedAmount,
+      remaining: parsedAmount,
+      reason: `Team wallet top-up via Stripe (session ${session.id})`,
+      status: 'active',
+    });
+
+    await logBillingAction({
+      userId: team.owner,
+      action: 'team_wallet_topup',
+      after: { teamId: team._id, amount: parsedAmount, sessionId: session.id },
+      note: `$${parsedAmount.toFixed(2)} added to team wallet`,
+    });
+  } catch (err) {
+    console.error('handleTeamWalletTopup error:', err.message);
   }
 }
 

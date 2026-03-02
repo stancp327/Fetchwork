@@ -3,6 +3,8 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const Team = require('../models/Team');
 const User = require('../models/User');
+const BillingCredit = require('../models/BillingCredit');
+const emailService = require('../services/emailService');
 
 // All routes require auth
 router.use(authenticateToken);
@@ -149,7 +151,18 @@ router.post('/:id/invite', async (req, res) => {
 
     await team.save();
 
-    // TODO: Send invitation email/notification to invitee
+    const inviteLink = `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams`;
+    await emailService.sendEmail(
+      invitee.email,
+      `You're invited to join ${team.name} on FetchWork`,
+      `<p>Hi ${invitee.firstName || 'there'},</p>
+       <p>${req.user.email || 'A team admin'} invited you to join <strong>${team.name}</strong> as <strong>${role}</strong>.</p>
+       <p>Open your Teams page to accept or decline this invite.</p>
+       <div style="text-align:center; margin:24px 0;">
+         <a href="${inviteLink}" style="background:#4285f4;color:white;padding:10px 18px;border-radius:6px;text-decoration:none;display:inline-block;">View Team Invitation</a>
+       </div>`,
+      'Team Invitation'
+    );
 
     res.json({ message: `Invitation sent to ${invitee.firstName} ${invitee.lastName}`, team });
   } catch (err) {
@@ -540,6 +553,57 @@ router.get('/:id/assignments', async (req, res) => {
     res.json({ assignments: jobs });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load assignments' });
+  }
+});
+
+// ── GET /api/teams/:id/activity — combined team activity feed ──
+router.get('/:id/activity', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id)
+      .populate('members.user', 'firstName lastName')
+      .lean();
+
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    const isMember = (team.members || []).some(m => String(m.user?._id || m.user) === String(req.user.userId) && m.status === 'active');
+    if (!isMember) return res.status(403).json({ error: 'Not a team member' });
+
+    const memberEvents = (team.members || [])
+      .filter(m => m.status !== 'removed')
+      .flatMap(m => {
+        const name = `${m.user?.firstName || ''} ${m.user?.lastName || ''}`.trim() || 'Team member';
+        const events = [];
+        if (m.invitedAt) events.push({
+          type: 'member_invited',
+          at: m.invitedAt,
+          message: `${name} was invited as ${m.role}`,
+        });
+        if (m.status === 'active' && m.joinedAt) events.push({
+          type: 'member_joined',
+          at: m.joinedAt,
+          message: `${name} joined the team`,
+        });
+        return events;
+      });
+
+    const credits = await BillingCredit.find({ team: team._id })
+      .sort({ createdAt: -1 })
+      .limit(25)
+      .lean();
+
+    const billingEvents = credits.map(c => ({
+      type: 'wallet_credit',
+      at: c.createdAt,
+      message: `${c.reason || 'Wallet credit'} (+$${Number(c.amount || 0).toFixed(2)})`,
+    }));
+
+    const activity = [...memberEvents, ...billingEvents]
+      .filter(a => !!a.at)
+      .sort((a, b) => new Date(b.at) - new Date(a.at))
+      .slice(0, 50);
+
+    res.json({ activity });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load activity' });
   }
 });
 

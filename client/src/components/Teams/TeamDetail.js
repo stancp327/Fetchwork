@@ -255,10 +255,10 @@ const TeamDetail = () => {
         </div>
       )}
 
-      {/* Activity tab placeholder */}
+      {/* Activity tab */}
       {activeTab === 'activity' && (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
-          <p>Team activity feed coming soon</p>
+        <div style={{ marginTop: '1rem' }}>
+          <ActivitySection teamId={id} />
         </div>
       )}
     </div>
@@ -362,6 +362,39 @@ const AssignmentsSection = ({ teamId, members, canAssign }) => {
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+const ActivitySection = ({ teamId }) => {
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiRequest(`/api/teams/${teamId}/activity`)
+      .then(data => setActivity(data.activity || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [teamId]);
+
+  if (loading) return <p>Loading activity…</p>;
+
+  if (!activity.length) {
+    return (
+      <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+        <p>No recent team activity yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      {activity.map((item, idx) => (
+        <div key={`${item.type}-${item.at}-${idx}`} style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+          <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>{item.message}</div>
+          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{new Date(item.at).toLocaleString()}</div>
+        </div>
+      ))}
     </div>
   );
 };

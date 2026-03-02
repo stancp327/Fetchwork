@@ -109,7 +109,7 @@ router.get('/', validateQueryParams, async (req, res) => {
     
     const withStatus = freelancers.map(f => {
       const obj = f.toObject();
-      obj.isOnline = global.io?.isUserOnline(f._id.toString()) ?? false;
+      obj.isOnline = global.io?.isUserOnline?.(f._id.toString()) ?? false;
       return obj;
     });
 
@@ -183,7 +183,7 @@ router.get('/:id', async (req, res) => {
     const completedJobs = await Job.countDocuments({ freelancer: user._id, status: 'completed' });
 
     const freelancerObj = user.toObject();
-    freelancerObj.isOnline = global.io?.isUserOnline(user._id.toString()) ?? false;
+    freelancerObj.isOnline = global.io?.isUserOnline?.(user._id.toString()) ?? false;
 
     res.json({
       freelancer: freelancerObj,

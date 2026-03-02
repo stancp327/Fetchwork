@@ -9,6 +9,7 @@ const Job = require('../models/Job');
 const Service = require('../models/Service');
 const Payment = require('../models/Payment');
 const Review = require('../models/Review');
+const Team = require('../models/Team');
 const { Message, ChatRoom } = require('../models/Message');
 
 router.get('/profile', authenticateAdmin, async (req, res) => {
@@ -2152,6 +2153,27 @@ router.post('/wallets/:userId/adjust', authenticateAdmin, requirePermission('pay
     }
   } catch (err) {
     res.status(500).json({ error: 'Failed to adjust wallet' });
+  }
+});
+
+// Teams summary for Admin Dashboard
+router.get('/teams', authenticateAdmin, async (req, res) => {
+  try {
+    const teams = await Team.find({ isActive: true })
+      .populate('owner', 'firstName lastName email')
+      .select('name type owner members createdAt')
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+
+    const normalized = teams.map((t) => ({
+      ...t,
+      activeMembers: (t.members || []).filter((m) => m.status === 'active').length,
+    }));
+
+    res.json({ teams: normalized });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load teams' });
   }
 });
 
