@@ -1,0 +1,58 @@
+.ds-page { max-width: 720px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+.ds-loading { text-align: center; padding: var(--space-8); color: var(--text-secondary); }
+.ds-header { margin-bottom: var(--space-6); }
+.ds-title { font-size: var(--text-2xl); font-weight: 700; margin: 0; }
+.ds-subtitle { color: var(--text-secondary); margin: var(--space-1) 0 0; }
+
+.ds-error { background: var(--error-bg, #fef2f2); color: var(--error, #dc2626); padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4); }
+.ds-success { background: var(--success-bg, #f0fdf4); color: var(--success, #16a34a); padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4); }
+
+.ds-section { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: var(--space-5); margin-bottom: var(--space-4); }
+.ds-section h3 { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); }
+.ds-hint { font-size: var(--text-sm); color: var(--text-secondary); margin: 0 0 var(--space-3); }
+
+/* Toggle */
+.ds-toggle-row { display: flex; gap: var(--space-4); align-items: flex-start; }
+.ds-toggle { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+.ds-toggle input { opacity: 0; width: 0; height: 0; }
+.ds-toggle-slider { position: absolute; inset: 0; background: var(--border-color); border-radius: 28px; cursor: pointer; transition: 0.2s; }
+.ds-toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; background: white; border-radius: 50%; transition: 0.2s; }
+.ds-toggle input:checked + .ds-toggle-slider { background: var(--primary); }
+.ds-toggle input:checked + .ds-toggle-slider::before { transform: translateX(20px); }
+
+/* Checkboxes */
+.ds-checkbox-group { display: flex; flex-direction: column; gap: var(--space-3); }
+.ds-checkbox { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-base); cursor: pointer; }
+.ds-checkbox input { width: 18px; height: 18px; accent-color: var(--primary); }
+
+/* Radio group */
+.ds-radio-group { display: flex; flex-direction: column; gap: var(--space-2); }
+.ds-radio { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-lg); cursor: pointer; transition: 0.15s; }
+.ds-radio:hover { border-color: var(--primary-light, var(--primary)); }
+.ds-radio.selected { border-color: var(--primary); background: var(--primary-ghost, rgba(79,70,229,0.04)); }
+.ds-radio input { margin-top: 3px; accent-color: var(--primary); }
+.ds-radio strong { display: block; }
+.ds-radio p { font-size: var(--text-sm); color: var(--text-secondary); margin: 2px 0 0; }
+
+/* Category grid */
+.ds-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-2); }
+.ds-cat-btn { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); cursor: pointer; transition: 0.15s; font-size: var(--text-sm); min-height: 44px; }
+.ds-cat-btn:hover { border-color: var(--primary); }
+.ds-cat-btn.selected { border-color: var(--primary); background: var(--primary-ghost, rgba(79,70,229,0.06)); color: var(--primary); font-weight: 600; }
+.ds-cat-icon { font-size: 1.1rem; }
+
+/* Fields */
+.ds-field { margin-bottom: var(--space-3); }
+.ds-field label { display: block; font-size: var(--text-sm); font-weight: 500; margin-bottom: var(--space-1); }
+.ds-field input { width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-lg); font-size: var(--text-base); background: var(--bg-base); }
+.ds-field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-ghost, rgba(79,70,229,0.1)); }
+
+/* Save button */
+.ds-save-btn { width: 100%; padding: var(--space-3); background: var(--primary); color: white; border: none; border-radius: var(--radius-lg); font-size: var(--text-base); font-weight: 600; cursor: pointer; min-height: 44px; }
+.ds-save-btn:hover { opacity: 0.9; }
+.ds-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Mobile */
+@media (max-width: 480px) {
+  .ds-cat-grid { grid-template-columns: repeat(2, 1fr); }
+}

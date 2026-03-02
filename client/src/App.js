@@ -65,6 +65,7 @@ const BillingSuccess       = React.lazy(() => import('./components/Billing/Billi
 const WalletPage           = React.lazy(() => import('./components/Billing/WalletPage'));
 const UserAnalytics        = React.lazy(() => import('./components/Analytics/UserAnalytics'));
 const SpendDashboard       = React.lazy(() => import('./components/Analytics/SpendDashboard'));
+const DiscoverySettings    = React.lazy(() => import('./components/Settings/DiscoverySettings'));
 const JobAlertsPage        = React.lazy(() => import('./components/JobAlerts/JobAlertsPage'));
 const ReferralPage         = React.lazy(() => import('./components/Referrals/ReferralPage'));
 
@@ -336,6 +337,7 @@ function AppContent() {
           <Route path="/wallet"                element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
           <Route path="/analytics"             element={<ProtectedRoute><UserAnalytics /></ProtectedRoute>} />
           <Route path="/spend"                element={<ProtectedRoute><SpendDashboard /></ProtectedRoute>} />
+          <Route path="/discovery-settings"   element={<ProtectedRoute><DiscoverySettings /></ProtectedRoute>} />
           <Route path="/job-alerts"            element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
           <Route path="/referrals"             element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
           <Route path="/" element={<Home />} />
