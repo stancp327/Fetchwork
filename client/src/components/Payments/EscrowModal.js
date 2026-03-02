@@ -24,42 +24,52 @@ const CARD_BRANDS = {
  *   title           — optional modal title override
  */
 const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, returnUrl }) => {
-  const [clientSecret,  setClientSecret]  = useState(preloadedSecret || null);
+  const [clientSecret,  setClientSecret]  = useState(null);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState('');
   const [savedMethods,  setSavedMethods]  = useState([]);
   const [selectedPmId,  setSelectedPmId]  = useState(null);  // 'new' or pm_xxx
   const [savedLoading,  setSavedLoading]  = useState(true);
 
-  // Fetch saved cards on mount
+  // Always fetch saved cards on mount
   useEffect(() => {
-    if (preloadedSecret) { setSavedLoading(false); return; }
     apiRequest('/api/payments/methods')
       .then(d => {
         const methods = d.methods || [];
         setSavedMethods(methods);
-        // Pre-select default card if one exists
         const def = methods.find(m => m.isDefault) || methods[0];
         if (def) setSelectedPmId(def.id);
         else setSelectedPmId('new');
       })
       .catch(() => setSelectedPmId('new'))
       .finally(() => setSavedLoading(false));
-  }, [preloadedSecret]);
+  }, []);
 
   const handleContinue = async () => {
     setLoading(true);
     setError('');
 
-    // ── Saved card path: server confirms instantly, no Elements needed ──
+    // ── Saved card path ──
     if (selectedPmId && selectedPmId !== 'new') {
       try {
-        await apiRequest('/api/payments/fund-escrow', {
-          method: 'POST',
-          body: JSON.stringify({ jobId: job._id, amount, paymentMethodId: selectedPmId }),
-        });
-        if (onPaid) onPaid({ paymentMethod: selectedPmId });
-        onClose();
+        if (preloadedSecret) {
+          // Service order flow: confirm the existing PaymentIntent with saved card
+          const stripeInstance = await stripePromise;
+          const { error: stripeError, paymentIntent } = await stripeInstance.confirmCardPayment(preloadedSecret, {
+            payment_method: selectedPmId,
+          });
+          if (stripeError) throw new Error(stripeError.message);
+          if (onPaid) onPaid(paymentIntent);
+          onClose();
+        } else {
+          // Job flow: server creates + confirms in one step
+          await apiRequest('/api/payments/fund-escrow', {
+            method: 'POST',
+            body: JSON.stringify({ jobId: job._id, amount, paymentMethodId: selectedPmId }),
+          });
+          if (onPaid) onPaid({ paymentMethod: selectedPmId });
+          onClose();
+        }
       } catch (err) {
         setError(err.message || 'Payment failed. Please try a different card.');
       } finally {
@@ -68,7 +78,14 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
       return;
     }
 
-    // ── New card path: get clientSecret → show PaymentElement ──
+    // ── New card path: show PaymentElement ──
+    if (preloadedSecret) {
+      // Service order: already have clientSecret
+      setClientSecret(preloadedSecret);
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await apiRequest('/api/payments/fund-escrow', {
         method: 'POST',
