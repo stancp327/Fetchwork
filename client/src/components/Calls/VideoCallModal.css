@@ -1,0 +1,221 @@
+.videocall-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videocall-modal {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remote video */
+.videocall-remote {
+  flex: 1;
+  position: relative;
+  background: #1a1a2e;
+  overflow: hidden;
+}
+
+.videocall-remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.videocall-remote-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.videocall-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: #fff;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.videocall-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.videocall-remote-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.videocall-status {
+  font-size: 1rem;
+  color: #94a3b8;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.videocall-muted-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+}
+
+/* Local video (PiP) */
+.videocall-local {
+  position: absolute;
+  bottom: 100px;
+  right: 1rem;
+  width: 150px;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: #000;
+  z-index: 2;
+}
+
+.videocall-local-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.videocall-local-off {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1e293b;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+/* Duration */
+.videocall-duration {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 0.25rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  z-index: 2;
+}
+
+/* Controls */
+.videocall-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  z-index: 3;
+}
+
+.videocall-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.videocall-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.videocall-btn:active {
+  transform: scale(0.95);
+}
+
+.videocall-btn.active {
+  background: rgba(239, 68, 68, 0.6);
+}
+
+.videocall-btn.end {
+  background: #ef4444;
+}
+
+.videocall-btn.end:hover {
+  background: #dc2626;
+}
+
+.videocall-btn.accept {
+  background: #22c55e;
+  width: 64px;
+  height: 64px;
+  font-size: 1.75rem;
+}
+
+.videocall-btn.accept:hover {
+  background: #16a34a;
+}
+
+.videocall-btn.reject {
+  background: #ef4444;
+  width: 64px;
+  height: 64px;
+  font-size: 1.75rem;
+}
+
+/* Mobile responsive */
+@media (min-width: 768px) {
+  .videocall-local {
+    width: 200px;
+    height: 260px;
+    bottom: 120px;
+    right: 2rem;
+  }
+
+  .videocall-btn {
+    width: 64px;
+    height: 64px;
+    font-size: 1.75rem;
+  }
+}

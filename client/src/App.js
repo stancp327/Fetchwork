@@ -16,6 +16,7 @@ import Footer from './components/common/Footer';
 import ChatBot from './components/ChatBot/ChatBot';
 import NotificationListener from './components/common/NotificationListener';
 import MessagePreview from './components/common/MessagePreview';
+import IncomingCallOverlay from './components/Calls/IncomingCallOverlay';
 import './App.css';
 
 // Route components — lazy-loaded, only downloaded when the route is visited
@@ -185,6 +186,7 @@ function AppContent() {
       <ChatBot />
       <NotificationListener />
       <MessagePreview />
+      <IncomingCallOverlay />
       <main className="page-content">
       <Suspense fallback={
         <div className="loading-container">

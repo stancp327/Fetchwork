@@ -21,6 +21,14 @@ const SOCKET_EVENTS = [
   'message:delivered',
   'user:online_status',
   'notification:new',
+  'call:incoming',
+  'call:accepted',
+  'call:ended',
+  'call:offer',
+  'call:answer',
+  'call:ice-candidate',
+  'call:media-toggle',
+  'call:error',
 ];
 
 export const useSocket = (options) => {
@@ -52,6 +60,7 @@ export const useSocket = (options) => {
       });
 
       socketRef.current = socket;
+      window.__fetchworkSocket = socket;
 
       socket.on('disconnect', (reason) => {
         console.warn('[SOCKET] Disconnected:', reason);
@@ -67,6 +76,10 @@ export const useSocket = (options) => {
       SOCKET_EVENTS.forEach((event) => {
         socket.on(event, (data) => {
           if (typeof onEventRef.current === 'function') onEventRef.current(event, data);
+          // Dispatch call events as window events for IncomingCallOverlay
+          if (event.startsWith('call:')) {
+            window.dispatchEvent(new CustomEvent(`socket:${event}`, { detail: data }));
+          }
         });
       });
     });
@@ -77,6 +90,7 @@ export const useSocket = (options) => {
         SOCKET_EVENTS.forEach((event) => socket.off(event));
         socket.disconnect();
         socketRef.current = null;
+        window.__fetchworkSocket = null;
       }
     };
   // Only reconnect when the token changes — NOT when onEvent changes

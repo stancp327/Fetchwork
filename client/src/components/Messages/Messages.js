@@ -565,6 +565,33 @@ const Messages = () => {
 
   const socketRef = useSocket({ token, onEvent: handleSocketEvent });
 
+  const initiateCall = useCallback((recipient, type = 'video') => {
+    if (!socketRef.current || !recipient?._id) return;
+
+    socketRef.current.emit('call:initiate', {
+      recipientId: recipient._id,
+      type,
+      conversationId: selectedConvo?._id,
+    });
+
+    // Listen for call initiated response
+    const handler = ({ callId }) => {
+      window.dispatchEvent(new CustomEvent('fetchwork:start-call', {
+        detail: { callId, remoteUser: recipient, type },
+      }));
+      socketRef.current.off('call:initiated', handler);
+    };
+    socketRef.current.on('call:initiated', handler);
+
+    // Handle error
+    const errHandler = ({ message }) => {
+      alert(message || 'Could not start call');
+      socketRef.current.off('call:error', errHandler);
+    };
+    socketRef.current.on('call:error', errHandler);
+    setTimeout(() => socketRef.current.off('call:error', errHandler), 5000);
+  }, [socketRef, selectedConvo]);
+
   const fetchMessages = useCallback(async (convo) => {
     try {
       const data = await apiRequest(`/api/messages/conversations/${convo._id}`);
@@ -772,9 +799,25 @@ const Messages = () => {
                     )}
                   </div>
                 </div>
-                <button className="context-toggle" onClick={() => setShowContext(!showContext)}>
-                  ℹ️
-                </button>
+                <div className="chat-header-actions">
+                  <button
+                    className="call-btn"
+                    title="Voice call"
+                    onClick={() => initiateCall(otherParticipant, 'audio')}
+                  >
+                    📞
+                  </button>
+                  <button
+                    className="call-btn"
+                    title="Video call"
+                    onClick={() => initiateCall(otherParticipant, 'video')}
+                  >
+                    🎥
+                  </button>
+                  <button className="context-toggle" onClick={() => setShowContext(!showContext)}>
+                    ℹ️
+                  </button>
+                </div>
               </div>
 
               <div className="chat-messages">
