@@ -7,6 +7,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
     screens: {
       Auth: {
         screens: {
+          Welcome:        'welcome',
           Login:          'login',
           Register:       'register',
           ForgotPassword: 'forgot-password',
@@ -27,6 +28,8 @@ export const linking: LinkingOptions<RootStackParamList> = {
             screens: {
               BrowseServices: 'services',
               ServiceDetail:  'services/:id',
+              MyServices:     'my-services',
+              MyBundles:      'my-bundles',
             },
           },
           Messages: {
@@ -37,9 +40,12 @@ export const linking: LinkingOptions<RootStackParamList> = {
           },
           Profile: {
             screens: {
-              MyProfile:    'profile',
-              EditProfile:  'profile/edit',
-              Verification: 'profile/verification',
+              MyProfile:         'profile',
+              EditProfile:       'profile/edit',
+              Verification:      'profile/verification',
+              Settings:          'settings',
+              Notifications:     'notifications',
+              DiscoverySettings: 'discovery-settings',
             },
           },
         },

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import { MainTabParamList } from '../types/navigation';
+import { useAuthStore } from '../store/authStore';
+import api from '../api/client';
 
 import HomeScreen from '../screens/HomeScreen';
 import JobsStackNavigator from './JobsStackNavigator';
@@ -23,6 +25,25 @@ const TAB_ICONS: Record<string, { focused: IoniconName; unfocused: IoniconName }
 };
 
 export default function MainTabNavigator() {
+  const { isAuthenticated } = useAuthStore();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Fetch unread notification count
+    api.get('/api/notifications/count')
+      .then(res => setUnreadCount(res.data?.count || 0))
+      .catch(() => {});
+
+    // Poll every 30s
+    const interval = setInterval(() => {
+      api.get('/api/notifications/count')
+        .then(res => setUnreadCount(res.data?.count || 0))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -46,7 +67,7 @@ export default function MainTabNavigator() {
       <Tab.Screen name="Home"     component={HomeScreen}             options={{ title: 'Home' }} />
       <Tab.Screen name="Jobs"     component={JobsStackNavigator}     options={{ title: 'Jobs' }} />
       <Tab.Screen name="Services" component={ServicesStackNavigator} options={{ title: 'Services' }} />
-      <Tab.Screen name="Messages" component={MessagesStackNavigator} options={{ title: 'Messages' }} />
+      <Tab.Screen name="Messages" component={MessagesStackNavigator} options={{ title: 'Messages', tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} />
       <Tab.Screen name="Profile"  component={ProfileStackNavigator}  options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

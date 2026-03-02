@@ -6,6 +6,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'fetchwork',
   owner: 'zestyfresh925s-organization',
   version: '1.0.0',
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'fetchwork',
@@ -15,9 +18,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     resizeMode: 'contain',
     backgroundColor: '#2563eb',
   },
+  updates: {
+    enabled: true,
+    fallbackToCacheTimeout: 5000,
+    url: `https://u.expo.dev/7550a4f8-a14b-4568-a588-989666852755`,
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.fetchwork.app',
+    buildNumber: '1',
     infoPlist: {
       NSCameraUsageDescription: 'Used for profile photo and ID verification uploads.',
       NSPhotoLibraryUsageDescription: 'Used for profile photo and portfolio uploads.',
@@ -31,7 +40,25 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#2563eb',
     },
     package: 'com.fetchwork.app',
-    permissions: ['CAMERA', 'READ_EXTERNAL_STORAGE', 'WRITE_EXTERNAL_STORAGE'],
+    versionCode: 7,
+    permissions: [
+      'CAMERA',
+      'READ_EXTERNAL_STORAGE',
+      'WRITE_EXTERNAL_STORAGE',
+      'RECEIVE_BOOT_COMPLETED',
+      'VIBRATE',
+    ],
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: [
+          { scheme: 'fetchwork' },
+          { scheme: 'https', host: 'fetchwork.net', pathPrefix: '/' },
+        ],
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
   },
   web: {
     favicon: './assets/favicon.png',
@@ -52,7 +79,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         sounds: [],
       },
     ],
-    // Sentry: add back when SENTRY_AUTH_TOKEN + DSN are configured
-    // ['@sentry/react-native/expo', { url: 'https://sentry.io/', project: 'fetchwork-mobile', organization: 'fetchwork' }],
+    'expo-splash-screen',
   ],
 });
