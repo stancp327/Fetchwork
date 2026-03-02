@@ -65,6 +65,8 @@ const PricingPage          = React.lazy(() => import('./components/Billing/Prici
 const BillingSettings      = React.lazy(() => import('./components/Billing/BillingSettings'));
 const BillingSuccess       = React.lazy(() => import('./components/Billing/BillingSuccess'));
 const WalletPage           = React.lazy(() => import('./components/Billing/WalletPage'));
+const TeamsPage            = React.lazy(() => import('./components/Teams/TeamsPage'));
+const TeamDetail           = React.lazy(() => import('./components/Teams/TeamDetail'));
 const UserAnalytics        = React.lazy(() => import('./components/Analytics/UserAnalytics'));
 const SpendDashboard       = React.lazy(() => import('./components/Analytics/SpendDashboard'));
 const BoostCheckout        = React.lazy(() => import('./components/Boosts/BoostCheckout'));
@@ -343,6 +345,8 @@ function AppContent() {
           <Route path="/billing"               element={<ProtectedRoute><BillingSettings /></ProtectedRoute>} />
           <Route path="/billing/success"       element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />
           <Route path="/wallet"                element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+                <Route path="/teams"                 element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />
+                <Route path="/teams/:id"             element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
           <Route path="/analytics"             element={<ProtectedRoute><UserAnalytics /></ProtectedRoute>} />
           <Route path="/spend"                element={<ProtectedRoute><SpendDashboard /></ProtectedRoute>} />
               <Route path="/boost-checkout"       element={<ProtectedRoute><BoostCheckout /></ProtectedRoute>} />

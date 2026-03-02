@@ -161,6 +161,7 @@ const userSchema = new mongoose.Schema({
 
   stripeConnected:  { type: Boolean, default: false },
   stripeCustomerId: String,           // Customer ID (client saved payment methods)
+  teams:            [{ type: mongoose.Schema.Types.ObjectId, ref: 'Team' }],
   referralCode:     { type: String, unique: true, sparse: true },   // e.g. "chaz42"
   referralCredits:  { type: Number, default: 0 },                   // wallet credits from referrals ($)
   resetPasswordToken: String,
