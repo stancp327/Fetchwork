@@ -85,6 +85,11 @@ async function hasFeature(userId, feature) {
   if (!userId || !feature) return false;
 
   try {
+    // Admin bypass — admins have access to all features
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('role isAdmin isAdminPromoted').lean();
+    if (user?.role === 'admin' || user?.isAdmin || user?.isAdminPromoted) return true;
+
     const FeatureGrant = require('../models/FeatureGrant');
     const FeatureGroup = require('../models/FeatureGroup');
 

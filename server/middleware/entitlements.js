@@ -34,6 +34,13 @@ async function getPlanLimits(userId) {
  * Returns 'basic' | 'standard' | 'full'
  */
 async function getAnalyticsLevel(userId) {
+  // Admin bypass — full analytics access
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('role isAdmin isAdminPromoted').lean();
+    if (user?.role === 'admin' || user?.isAdmin || user?.isAdminPromoted) return 'full';
+  } catch { /* fall through */ }
+
   const limits = await getPlanLimits(userId);
   return limits.analyticsLevel;
 }
@@ -48,6 +55,9 @@ async function checkJobLimit(req, res, next) {
   try {
     const userId = req.user?.id || req.user?._id;
     if (!userId) return next(); // auth middleware handles unauthenticated
+
+    // Admin bypass — no limits for admins
+    if (req.user?.role === 'admin' || req.user?.isAdmin || req.user?.isAdminPromoted) return next();
 
     const limits = await getPlanLimits(userId);
     req.planLimits = limits;
@@ -86,6 +96,9 @@ async function checkServiceLimit(req, res, next) {
   try {
     const userId = req.user?.id || req.user?._id;
     if (!userId) return next();
+
+    // Admin bypass — no limits for admins
+    if (req.user?.role === 'admin' || req.user?.isAdmin || req.user?.isAdminPromoted) return next();
 
     const limits = await getPlanLimits(userId);
     req.planLimits = limits;
