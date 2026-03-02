@@ -542,17 +542,28 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
   const navigate = useNavigate();
   const [boosted, setBoosted]     = React.useState(!!job.isBoosted && job.boostExpiresAt && new Date(job.boostExpiresAt) > new Date());
   const [boosting, setBoosting]   = React.useState(false);
-  const [showBoostModal, setShowBoostModal] = React.useState(false);
+  const [boostCredits, setBoostCredits] = React.useState(null);
 
-  const handleBoost = async (plan = '7day') => {
+  React.useEffect(() => {
+    apiRequest('/api/boosts/credits').then(c => setBoostCredits(c)).catch(() => {});
+  }, []);
+
+  const handleBoost = async () => {
     setBoosting(true);
     try {
+      const hasCredits = boostCredits && boostCredits.remaining > 0;
       const res = await apiRequest(`/api/boosts/job/${job._id}`, {
         method: 'POST',
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan: '7day', useCredit: hasCredits }),
       });
-      // Redirect to Stripe or use Elements — for now, open checkout
-      window.location.href = `/boost-checkout?secret=${res.clientSecret}&amount=${res.amount}&type=job&id=${job._id}`;
+      if (res.boosted) {
+        // Used a free credit — instant boost
+        setBoosted(true);
+        setBoostCredits(prev => prev ? { ...prev, remaining: res.creditsRemaining, used: prev.used + 1 } : prev);
+      } else {
+        // Paid boost — redirect to checkout
+        window.location.href = `/boost-checkout?secret=${res.clientSecret}&amount=${res.amount}&type=job&id=${job._id}`;
+      }
     } catch (err) {
       alert(err.message || 'Failed to create boost');
     } finally {
@@ -847,7 +858,7 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
             disabled={boosting || boosted}
             title={boosted ? `Boosted until ${new Date(job.boostExpiresAt).toLocaleDateString()}` : 'Boost this job for more visibility'}
           >
-            {boosting ? '…' : boosted ? '🚀 Boosted' : '🚀 Boost Job — $4.99'}
+            {boosting ? '…' : boosted ? '🚀 Boosted' : boostCredits?.remaining > 0 ? `🚀 Boost Job (${boostCredits.remaining} free)` : '🚀 Boost Job — $4.99'}
           </button>
         )}
         {isClient && status === 'completed' && onTip && (
