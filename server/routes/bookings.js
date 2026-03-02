@@ -41,6 +41,15 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
 
     const { enabled, timezone, windows, slotDuration, bufferTime, maxAdvanceDays, maxPerSlot } = req.body;
 
+    // Group bookings (maxPerSlot > 1) require Pro
+    if (maxPerSlot && maxPerSlot > 1) {
+      const { hasFeature } = require('../services/entitlementEngine');
+      const canGroup = await hasFeature(req.user.userId, 'capacity_controls');
+      if (!canGroup) {
+        return res.status(403).json({ error: 'Group booking slots require a Pro plan upgrade' });
+      }
+    }
+
     service.availability = {
       enabled:        enabled !== false,
       timezone:       timezone || service.availability?.timezone || 'America/Los_Angeles',

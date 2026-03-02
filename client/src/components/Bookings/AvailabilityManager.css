@@ -44,3 +44,8 @@
 @media (min-width: 480px) {
   .am-week-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
 }
+
+/* Upgrade hint */
+.am-upgrade-hint { display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); }
+.am-upgrade-link { color: var(--primary); font-size: var(--text-xs); text-decoration: none; }
+.am-upgrade-link:hover { text-decoration: underline; }

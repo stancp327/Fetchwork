@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
+import { useFeatures } from '../../hooks/useFeatures';
 import './AvailabilityManager.css';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -10,6 +11,8 @@ const BUFFER_OPTIONS = [0, 15, 30, 45, 60];
 const AvailabilityManager = () => {
   const { serviceId } = useParams();
   const navigate = useNavigate();
+  const { hasFeature } = useFeatures();
+  const canGroupBooking = hasFeature('capacity_controls');
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState(null);
@@ -134,11 +137,18 @@ const AvailabilityManager = () => {
             </div>
             <div className="am-setting">
               <label>Spots Per Slot</label>
-              <select value={maxPerSlot} onChange={e => setMaxPerSlot(Number(e.target.value))}>
-                {[1, 2, 3, 5, 10, 15, 20, 25, 30, 50].map(n => (
-                  <option key={n} value={n}>{n === 1 ? '1 (Private)' : `${n} (Group)`}</option>
-                ))}
-              </select>
+              {canGroupBooking ? (
+                <select value={maxPerSlot} onChange={e => setMaxPerSlot(Number(e.target.value))}>
+                  {[1, 2, 3, 5, 10, 15, 20, 25, 30, 50].map(n => (
+                    <option key={n} value={n}>{n === 1 ? '1 (Private)' : `${n} (Group)`}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="am-upgrade-hint">
+                  <span>1 (Private)</span>
+                  <a href="/pricing" className="am-upgrade-link">Upgrade to Pro for group sessions →</a>
+                </div>
+              )}
             </div>
           </div>
 
