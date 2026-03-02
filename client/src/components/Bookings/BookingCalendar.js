@@ -140,7 +140,12 @@ const BookingCalendar = ({ serviceId, availability }) => {
                   className={`bc-slot-btn ${selectedSlot?.startTime === s.startTime ? 'selected' : ''}`}
                   onClick={() => setSelectedSlot(s)}
                 >
-                  {formatTime12(s.startTime)}
+                  <span>{formatTime12(s.startTime)}</span>
+                  {s.totalSpots > 1 && (
+                    <span className="bc-slot-spots">
+                      {s.spotsLeft}/{s.totalSpots} spots
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

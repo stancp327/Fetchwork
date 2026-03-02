@@ -44,6 +44,7 @@ const serviceSchema = new mongoose.Schema({
     maxPerDay:     { type: Number, default: null },  // null = unlimited
     maxPerWeek:    { type: Number, default: null },
     maxConcurrent: { type: Number, default: null },  // max active orders at once
+    maxPerSlot:    { type: Number, default: 1 },     // 1 = 1:1 session; >1 = group/class
   },
 
   // Intake form — custom questions clients answer when ordering/booking
@@ -208,6 +209,7 @@ const serviceSchema = new mongoose.Schema({
     slotDuration:   { type: Number, default: 60 },  // minutes
     bufferTime:     { type: Number, default: 0 },    // minutes between slots
     maxAdvanceDays: { type: Number, default: 30 },   // how far ahead clients can book
+    maxPerSlot:     { type: Number, default: 1 },    // 1 = private; >1 = group/class
   }
 }, {
   timestamps: true

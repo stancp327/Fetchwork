@@ -39,7 +39,7 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
     if (service.freelancer.toString() !== req.user.userId.toString())
       return res.status(403).json({ error: 'Not your service' });
 
-    const { enabled, timezone, windows, slotDuration, bufferTime, maxAdvanceDays } = req.body;
+    const { enabled, timezone, windows, slotDuration, bufferTime, maxAdvanceDays, maxPerSlot } = req.body;
 
     service.availability = {
       enabled:        enabled !== false,
@@ -48,6 +48,7 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
       slotDuration:   slotDuration || 60,
       bufferTime:     bufferTime || 0,
       maxAdvanceDays: maxAdvanceDays || 30,
+      maxPerSlot:     maxPerSlot || 1,
     };
 
     await service.save();
@@ -107,10 +108,24 @@ router.get('/slots/:serviceId', async (req, res) => {
       status:  { $in: ['pending', 'confirmed'] },
     }).select('startTime endTime').lean();
 
-    const bookedTimes = new Set(existingBookings.map(b => b.startTime));
+    // Count bookings per slot
+    const bookingCounts = {};
+    for (const b of existingBookings) {
+      bookingCounts[b.startTime] = (bookingCounts[b.startTime] || 0) + 1;
+    }
 
-    // Filter out booked slots
-    const availableSlots = allSlots.filter(s => !bookedTimes.has(s.startTime));
+    const maxPerSlot = service.availability.maxPerSlot
+      || service.capacity?.maxPerSlot
+      || 1;
+
+    // Build slots with availability info
+    const availableSlots = allSlots
+      .map(s => {
+        const booked = bookingCounts[s.startTime] || 0;
+        const spotsLeft = Math.max(0, maxPerSlot - booked);
+        return { ...s, spotsLeft, totalSpots: maxPerSlot };
+      })
+      .filter(s => s.spotsLeft > 0);
 
     res.json({ date, dayOfWeek, slots: availableSlots, totalSlots: allSlots.length });
   } catch (err) {
@@ -133,16 +148,44 @@ router.post('/:serviceId', authenticateToken, async (req, res) => {
     if (service.freelancer._id.toString() === req.user.userId.toString())
       return res.status(400).json({ error: 'Cannot book your own service' });
 
-    // Check for double-booking (atomic with unique compound)
+    // Check capacity for this slot
     const startOfDay = new Date(date + 'T00:00:00Z');
     const endOfDay   = new Date(date + 'T23:59:59Z');
-    const conflict = await Booking.findOne({
+    const maxPerSlot = service.availability.maxPerSlot
+      || service.capacity?.maxPerSlot
+      || 1;
+
+    const existingCount = await Booking.countDocuments({
       service:   req.params.serviceId,
       date:      { $gte: startOfDay, $lte: endOfDay },
       startTime,
       status:    { $in: ['pending', 'confirmed'] },
     });
-    if (conflict) return res.status(409).json({ error: 'This time slot is already booked' });
+
+    if (existingCount >= maxPerSlot) {
+      // Check waitlist
+      if (service.capacity?.waitlistEnabled) {
+        // Allow booking with waitlisted status (handled below)
+      } else {
+        return res.status(409).json({
+          error: maxPerSlot === 1
+            ? 'This time slot is already booked'
+            : `This slot is full (${maxPerSlot} spots taken)`,
+        });
+      }
+    }
+
+    // Prevent same client from double-booking the same slot
+    const alreadyBooked = await Booking.findOne({
+      service: req.params.serviceId,
+      client:  req.user.userId,
+      date:    { $gte: startOfDay, $lte: endOfDay },
+      startTime,
+      status:  { $in: ['pending', 'confirmed'] },
+    });
+    if (alreadyBooked) return res.status(409).json({ error: 'You already have a booking for this slot' });
+
+    const isWaitlisted = existingCount >= maxPerSlot && service.capacity?.waitlistEnabled;
 
     const booking = await Booking.create({
       service:    req.params.serviceId,
@@ -152,18 +195,25 @@ router.post('/:serviceId', authenticateToken, async (req, res) => {
       startTime,
       endTime,
       notes:      notes || '',
+      status:     isWaitlisted ? 'waitlisted' : 'pending',
     });
 
     // Notify freelancer
     await Notification.create({
       recipient: service.freelancer._id,
-      title:     'New Booking Request',
-      message:   `New booking for "${service.title}" on ${date} at ${startTime}`,
+      title:     isWaitlisted ? 'New Waitlist Entry' : 'New Booking Request',
+      message:   isWaitlisted
+        ? `Someone joined the waitlist for "${service.title}" on ${date} at ${startTime}`
+        : `New booking for "${service.title}" on ${date} at ${startTime}`,
       link:      '/bookings',
       type:      'booking',
     });
 
-    res.status(201).json({ message: 'Booking created', booking });
+    res.status(201).json({
+      message: isWaitlisted ? 'Added to waitlist' : 'Booking created',
+      booking,
+      waitlisted: isWaitlisted,
+    });
   } catch (err) {
     console.error('Error creating booking:', err);
     res.status(500).json({ error: err.message });

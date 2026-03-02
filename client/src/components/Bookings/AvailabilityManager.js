@@ -21,6 +21,7 @@ const AvailabilityManager = () => {
   const [slotDuration, setSlotDuration] = useState(60);
   const [bufferTime, setBufferTime]     = useState(0);
   const [maxAdvanceDays, setMaxAdvanceDays] = useState(30);
+  const [maxPerSlot, setMaxPerSlot]     = useState(1);
   const [timezone, setTimezone]         = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   const load = useCallback(async () => {
@@ -33,6 +34,7 @@ const AvailabilityManager = () => {
       setSlotDuration(a.slotDuration || 60);
       setBufferTime(a.bufferTime || 0);
       setMaxAdvanceDays(a.maxAdvanceDays || 30);
+      setMaxPerSlot(a.maxPerSlot || 1);
       if (a.timezone) setTimezone(a.timezone);
 
       // Get service name
@@ -64,7 +66,7 @@ const AvailabilityManager = () => {
     try {
       await apiRequest(`/api/bookings/availability/${serviceId}`, {
         method: 'PUT',
-        body: JSON.stringify({ enabled, windows, slotDuration, bufferTime, maxAdvanceDays, timezone }),
+        body: JSON.stringify({ enabled, windows, slotDuration, bufferTime, maxAdvanceDays, maxPerSlot, timezone }),
       });
       setSuccess('Availability saved!');
       setTimeout(() => setSuccess(''), 3000);
@@ -128,6 +130,14 @@ const AvailabilityManager = () => {
               <label>Max Advance</label>
               <select value={maxAdvanceDays} onChange={e => setMaxAdvanceDays(Number(e.target.value))}>
                 {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>{d} days</option>)}
+              </select>
+            </div>
+            <div className="am-setting">
+              <label>Spots Per Slot</label>
+              <select value={maxPerSlot} onChange={e => setMaxPerSlot(Number(e.target.value))}>
+                {[1, 2, 3, 5, 10, 15, 20, 25, 30, 50].map(n => (
+                  <option key={n} value={n}>{n === 1 ? '1 (Private)' : `${n} (Group)`}</option>
+                ))}
               </select>
             </div>
           </div>
