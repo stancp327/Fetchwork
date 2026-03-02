@@ -114,7 +114,12 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: userWithAdmin };
     } catch (error) {
       console.error('Registration failed:', error);
-      return { success: false, error: error.response?.data?.error || 'Registration failed' };
+      const errData = error.response?.data;
+      let msg = errData?.error || 'Registration failed';
+      if (errData?.details?.length) {
+        msg = errData.details.map(d => d.msg).join('. ');
+      }
+      return { success: false, error: msg };
     }
   };
 
