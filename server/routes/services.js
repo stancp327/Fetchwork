@@ -22,6 +22,7 @@ const { findServiceConversation } = require('./services.conversation.helpers');
 const { markOrderDelivered, markOrderCompleted, markOrderRevisionRequested, markOrderCancelled } = require('./services.transitions.helpers');
 const { loadActiveService, ensureNotSelfService } = require('./services.lookup.helpers');
 const { computeServiceFeeBreakdown } = require('./services.fees.helpers');
+const { buildServiceOrderMetadata, buildBundlePurchaseMetadata, buildSubscriptionMetadata } = require('./services.metadata.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -274,12 +275,15 @@ router.post('/:id/order', authenticateToken, async (req, res) => {
     const freelancerPayout = feeBreakdown.freelancerPayout;
 
     // Create PaymentIntent — client confirms on frontend
-    const paymentIntent = await stripeService.chargeForJob(chargeAmount, 'usd', {
-      type:       'service_order',
-      serviceId:  String(service._id),
-      clientId:   String(req.user._id),
-      freelancerId: String(service.freelancer._id),
-    });
+    const paymentIntent = await stripeService.chargeForJob(
+      chargeAmount,
+      'usd',
+      buildServiceOrderMetadata({
+        serviceId: service._id,
+        clientId: req.user._id,
+        freelancerId: service.freelancer._id,
+      })
+    );
 
     // Add order with 'pending' status (activated on payment confirmation)
     const order = {
@@ -778,14 +782,17 @@ router.post('/:id/bundle/purchase', authenticateToken, async (req, res) => {
     const perSessionPayout = parseFloat((freelancerTotal / bundle.sessions).toFixed(2));
 
     // Create PaymentIntent — funds captured immediately, held in platform balance
-    const paymentIntent = await stripeService.chargeForJob(clientCharges, 'usd', {
-      type:          'bundle_purchase',
-      serviceId:     String(service._id),
-      clientId:      String(req.user.userId),
-      freelancerId:  String(service.freelancer._id),
-      bundleId:      String(bundle._id),
-      sessionsTotal: String(bundle.sessions),
-    });
+    const paymentIntent = await stripeService.chargeForJob(
+      clientCharges,
+      'usd',
+      buildBundlePurchaseMetadata({
+        serviceId: service._id,
+        clientId: req.user.userId,
+        freelancerId: service.freelancer._id,
+        bundleId: bundle._id,
+        sessionsTotal: bundle.sessions,
+      })
+    );
 
     // Compute optional expiry
     const expiresAt = bundle.expiresInDays
@@ -1024,15 +1031,15 @@ router.post('/:id/subscribe', authenticateToken, async (req, res) => {
     // Create Stripe Subscription
     const stripeSub = await stripeService.createServiceSubscription({
       customerId: stripeCustomerId,
-      priceId:    stripePriceId,
-      metadata: {
-        serviceId:       String(service._id),
-        clientId:        String(req.user.userId),
-        freelancerId:    String(service.freelancer._id),
+      priceId: stripePriceId,
+      metadata: buildSubscriptionMetadata({
+        serviceId: service._id,
+        clientId: req.user.userId,
+        freelancerId: service.freelancer._id,
         tier,
         billingCycle,
-        platformFeeRate: String(platformFeeRate),
-      },
+        platformFeeRate,
+      }),
     });
 
     // Save ServiceSubscription to DB
