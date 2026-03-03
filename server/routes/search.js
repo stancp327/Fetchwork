@@ -4,6 +4,46 @@ const Job = require('../models/Job');
 const User = require('../models/User');
 const { trackEvent } = require('../middleware/analytics');
 
+// Backward-compatible search root endpoint
+// GET /api/search?q=design&limit=10
+router.get('/', async (req, res) => {
+  trackEvent('searches');
+  try {
+    const q = (req.query.q || req.query.query || '').trim();
+    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+
+    if (!q || q.length < 2) {
+      return res.json({ jobs: [], total: 0 });
+    }
+
+    const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(safe, 'i');
+
+    const filters = {
+      isActive: true,
+      status: 'open',
+      $or: [
+        { title: regex },
+        { description: regex },
+        { skills: { $in: [regex] } },
+        { category: regex },
+      ],
+    };
+
+    const jobs = await Job.find(filters)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select('title description category skills budget location createdAt proposalCount isUrgent')
+      .lean();
+
+    const total = await Job.countDocuments(filters);
+    res.json({ jobs, total });
+  } catch (error) {
+    console.error('Error searching jobs:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 router.get('/suggestions', async (req, res) => {
   trackEvent('searches');
   try {
