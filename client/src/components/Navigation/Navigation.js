@@ -152,10 +152,14 @@ const Navigation = () => {
                             <div 
                               key={n._id} 
                               className={`notif-item ${n.read ? 'read' : 'unread'}`}
-                              onClick={() => {
-                                if (!n.read) markAsRead(n._id);
-                                if (n.link) { window.location.href = n.link; }
+                              onClick={async () => {
+                                if (!n.read) {
+                                  await markAsRead(n._id);
+                                }
                                 setShowNotifDropdown(false);
+                                if (n.link) {
+                                  window.location.assign(n.link);
+                                }
                               }}
                             >
                               <div className="notif-item-title">{n.title}</div>

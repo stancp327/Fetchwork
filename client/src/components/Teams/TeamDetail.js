@@ -44,6 +44,31 @@ const TeamDetail = () => {
 
   useEffect(() => { fetchTeam(); }, [fetchTeam]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchTeam();
+      if (activeTab === 'audit' && isOwnerOrAdmin) fetchAuditLogs();
+    }, 15000);
+
+    const onFocus = () => {
+      fetchTeam();
+      if (activeTab === 'audit' && isOwnerOrAdmin) fetchAuditLogs();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') onFocus();
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [fetchTeam, fetchAuditLogs, activeTab, isOwnerOrAdmin]);
+
   const currentUserId = String(user?._id || user?.id || '');
   const myMember = team?.members?.find((m) => String(m.user?._id || m.user?.id || m.user || '') === currentUserId);
   const ownerId = String(team?.owner?._id || team?.owner?.id || team?.owner || '');
