@@ -123,6 +123,7 @@ const Navigation = () => {
                 <NavLink to="/saved">Saved</NavLink>
                 <NavLink to="/offers">Offers</NavLink>
                 <NavLink to="/teams">Teams</NavLink>
+                <NavLink to="/agencies">Agencies</NavLink>
 
                 <div className="notif-bell-wrapper" ref={notifRef} style={{ position: 'relative' }}>
                   <button 
