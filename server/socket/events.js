@@ -9,6 +9,20 @@ module.exports = (io) => {
   io.on('connection', (socket) => {
     const senderId = socket.user.userId;
     console.log(`🔌 User connected: ${senderId}`);
+
+    // Lightweight per-socket rate limiter (anti-spam / abuse control)
+    const rateBuckets = new Map();
+    const consumeRate = (key, limit, windowMs) => {
+      const now = Date.now();
+      const bucket = rateBuckets.get(key) || { count: 0, resetAt: now + windowMs };
+      if (now > bucket.resetAt) {
+        bucket.count = 0;
+        bucket.resetAt = now + windowMs;
+      }
+      bucket.count += 1;
+      rateBuckets.set(key, bucket);
+      return bucket.count <= limit;
+    };
     
     socket.join(senderId);
     console.log(`🏠 User ${senderId} joined room: ${senderId}`);
@@ -25,6 +39,11 @@ module.exports = (io) => {
     rejoinUserRooms(socket, senderId);
 
     socket.on('message:send', async (data) => {
+      if (!consumeRate('message:send', 30, 10_000)) {
+        socket.emit('error', { message: 'Rate limit exceeded for sending messages' });
+        return;
+      }
+
       const { recipientId, roomId, content, messageType = 'text', attachments = [], jobId, mentions = [] } = data || {};
       if (typeof content !== 'string' || !content.trim()) {
         socket.emit('error', { message: 'Message content is required' });
@@ -205,6 +224,11 @@ module.exports = (io) => {
     });
 
     socket.on('message:read', async (data) => {
+      if (!consumeRate('message:read', 50, 10_000)) {
+        socket.emit('error', { message: 'Rate limit exceeded for read receipts' });
+        return;
+      }
+
       const { conversationId, roomId, messageIds } = data;
       const readerId = senderId;
 
@@ -276,6 +300,8 @@ module.exports = (io) => {
     });
 
     socket.on('typing:start', (data) => {
+      if (!consumeRate('typing:start', 40, 10_000)) return;
+
       const { conversationId, roomId } = data;
       const userId = senderId;
 
@@ -302,6 +328,8 @@ module.exports = (io) => {
     });
 
     socket.on('typing:stop', (data) => {
+      if (!consumeRate('typing:stop', 40, 10_000)) return;
+
       const { conversationId, roomId } = data;
       const userId = senderId;
 
@@ -512,7 +540,8 @@ module.exports = (io) => {
 
     socket.on('disconnect', () => {
       console.log(`❌ User disconnected: ${senderId}`);
-      
+      rateBuckets.clear();
+
       const userId = socketToUser.get(socket.id);
       if (userId && activeUsers.has(userId)) {
         const userSockets = activeUsers.get(userId);
