@@ -14,6 +14,7 @@ const emailService  = require('../services/emailService');
 const { checkServiceLimit } = require('../middleware/entitlements');
 const { getFee, getFeeIncluded, getFeeDisplay } = require('../services/feeEngine');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
+const { postServiceSystemMessage } = require('./services.messaging.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -406,17 +407,15 @@ router.put('/:id/orders/:orderId/deliver', authenticateToken, async (req, res) =
     // Notify client via message
     const conversation = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
     if (conversation) {
-      const msg = new Message({
-        conversation: conversation._id,
-        sender:       req.user._id,
-        recipient:    order.client,
-        content:      `📦 Delivery submitted!\n\n${deliveryNote || 'Your order has been delivered. Please review and mark complete when satisfied.'}\n\nIf you're happy with the work, click "Mark Complete" to release payment. If you need changes, click "Request Revision".`,
-        messageType:  'system',
-        metadata: { type: 'delivery_submitted', serviceId: service._id, orderId: order._id }
+      await postServiceSystemMessage({
+        conversation,
+        sender: req.user._id,
+        recipient: order.client,
+        content: `📦 Delivery submitted!\n\n${deliveryNote || 'Your order has been delivered. Please review and mark complete when satisfied.'}\n\nIf you're happy with the work, click "Mark Complete" to release payment. If you need changes, click "Request Revision".`,
+        type: 'delivery_submitted',
+        serviceId: service._id,
+        orderId: order._id,
       });
-      await msg.save();
-      conversation.lastMessage = msg._id;
-      await conversation.updateLastActivity();
     }
 
     res.json({ message: 'Order marked as delivered', order });
@@ -528,17 +527,15 @@ router.put('/:id/orders/:orderId/revision', authenticateToken, async (req, res) 
 
     const conversation = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
     if (conversation) {
-      const msg = new Message({
-        conversation: conversation._id,
-        sender:       req.user._id,
-        recipient:    service.freelancer,
-        content:      `🔄 Revision Requested (revision #${order.revisionCount})\n\n${note || 'Please review the requirements and resubmit.'}`,
-        messageType:  'system',
-        metadata: { type: 'revision_requested', serviceId: service._id, orderId: order._id }
+      await postServiceSystemMessage({
+        conversation,
+        sender: req.user._id,
+        recipient: service.freelancer,
+        content: `🔄 Revision Requested (revision #${order.revisionCount})\n\n${note || 'Please review the requirements and resubmit.'}`,
+        type: 'revision_requested',
+        serviceId: service._id,
+        orderId: order._id,
       });
-      await msg.save();
-      conversation.lastMessage = msg._id;
-      await conversation.updateLastActivity();
     }
 
     res.json({ message: 'Revision requested', revisionCount: order.revisionCount });
@@ -593,17 +590,15 @@ router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) =>
     // Post cancellation message
     const conv = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
     if (conv) {
-      const msg = new Message({
-        conversation: conv._id,
-        sender:       req.user._id,
-        recipient:    isClient ? service.freelancer._id : order.client,
-        content:      `❌ Order cancelled by ${isClient ? 'the client' : 'the freelancer'}.${refunded ? ' A full refund has been issued.' : ''}`,
-        messageType:  'system',
-        metadata: { type: 'order_cancelled', serviceId: service._id, orderId: order._id }
+      await postServiceSystemMessage({
+        conversation: conv,
+        sender: req.user._id,
+        recipient: isClient ? service.freelancer._id : order.client,
+        content: `❌ Order cancelled by ${isClient ? 'the client' : 'the freelancer'}.${refunded ? ' A full refund has been issued.' : ''}`,
+        type: 'order_cancelled',
+        serviceId: service._id,
+        orderId: order._id,
       });
-      await msg.save();
-      conv.lastMessage = msg._id;
-      await conv.updateLastActivity();
     }
 
     res.json({ message: 'Order cancelled', refunded });
@@ -632,17 +627,15 @@ router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) =>
                  await Conversation.findOne({ participants: { $all: [service.freelancer, order.client] } });
     if (conv) {
       const note = req.body.message?.trim();
-      const msg = new Message({
-        conversation: conv._id,
-        sender:       req.user._id,
-        recipient:    order.client,
-        content:      `🔔 Payment Reminder\n\nHi! Just a friendly reminder that your order for "${service.title}" is awaiting payment to get started.${note ? `\n\n${note}` : ''}`,
-        messageType:  'system',
-        metadata: { type: 'payment_reminder', serviceId: service._id, orderId: order._id }
+      await postServiceSystemMessage({
+        conversation: conv,
+        sender: req.user._id,
+        recipient: order.client,
+        content: `🔔 Payment Reminder\n\nHi! Just a friendly reminder that your order for "${service.title}" is awaiting payment to get started.${note ? `\n\n${note}` : ''}`,
+        type: 'payment_reminder',
+        serviceId: service._id,
+        orderId: order._id,
       });
-      await msg.save();
-      conv.lastMessage = msg._id;
-      await conv.updateLastActivity();
     }
 
     await Notification.create({
