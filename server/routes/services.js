@@ -12,7 +12,7 @@ const stripeService = require('../services/stripeService');
 const emailWorkflowService = require('../services/emailWorkflowService');
 const emailService  = require('../services/emailService');
 const { checkServiceLimit } = require('../middleware/entitlements');
-const { getFee, getFeeIncluded, getFeeDisplay } = require('../services/feeEngine');
+const { getFeeDisplay } = require('../services/feeEngine');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { postServiceSystemMessage } = require('./services.messaging.helpers');
 const { loadServiceOrderContext } = require('./services.order.helpers');
@@ -21,6 +21,7 @@ const { markPaymentCompletedByIntent, markPaymentRefundedByIntent } = require('.
 const { findServiceConversation } = require('./services.conversation.helpers');
 const { markOrderDelivered, markOrderCompleted, markOrderRevisionRequested, markOrderCancelled } = require('./services.transitions.helpers');
 const { loadActiveService, ensureNotSelfService } = require('./services.lookup.helpers');
+const { computeServiceFeeBreakdown } = require('./services.fees.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -261,19 +262,16 @@ router.post('/:id/order', authenticateToken, async (req, res) => {
     const listedPrice = selectedPackage.price;
     const feesIncluded = service.feesIncluded === true;
 
-    let chargeAmount, platformFee, freelancerPayout;
-    if (feesIncluded) {
-      const feeResult = await getFeeIncluded({ userId: String(req.user.userId), role: 'client', jobType: 'remote', listedPrice });
-      chargeAmount    = feeResult.clientCharges;
-      platformFee     = feeResult.totalPlatformFee;
-      freelancerPayout = feeResult.freelancerPayout;
-    } else {
-      const clientFeeResult     = await getFee({ userId: String(req.user.userId),           role: 'client',     jobType: 'remote', amount: listedPrice });
-      const freelancerFeeResult = await getFee({ userId: String(service.freelancer._id),    role: 'freelancer', jobType: 'remote', amount: listedPrice });
-      chargeAmount    = parseFloat((listedPrice + clientFeeResult.fee).toFixed(2));
-      platformFee     = parseFloat((clientFeeResult.fee + freelancerFeeResult.fee).toFixed(2));
-      freelancerPayout = parseFloat((listedPrice - freelancerFeeResult.fee).toFixed(2));
-    }
+    const feeBreakdown = await computeServiceFeeBreakdown({
+      clientUserId: req.user.userId,
+      freelancerUserId: service.freelancer._id,
+      listedPrice,
+      feesIncluded,
+    });
+
+    const chargeAmount = feeBreakdown.clientCharges;
+    const platformFee = feeBreakdown.totalPlatformFee;
+    const freelancerPayout = feeBreakdown.freelancerPayout;
 
     // Create PaymentIntent — client confirms on frontend
     const paymentIntent = await stripeService.chargeForJob(chargeAmount, 'usd', {
@@ -765,23 +763,18 @@ router.post('/:id/bundle/purchase', authenticateToken, async (req, res) => {
       ? bundle.feesIncluded
       : service.feesIncluded === true;
 
-    let clientCharges, totalPlatformFee, freelancerTotal, clientFeeAmt, freelancerFeeAmt;
-    if (feesIncluded) {
-      const feeResult  = await getFeeIncluded({ userId: String(req.user.userId), role: 'client', jobType: 'remote', listedPrice });
-      clientCharges    = feeResult.clientCharges;
-      totalPlatformFee = feeResult.totalPlatformFee;
-      freelancerTotal  = feeResult.freelancerPayout;
-      clientFeeAmt     = feeResult.clientFee;
-      freelancerFeeAmt = feeResult.freelancerFee;
-    } else {
-      const clientFeeResult     = await getFee({ userId: String(req.user.userId),           role: 'client',     jobType: 'remote', amount: listedPrice });
-      const freelancerFeeResult = await getFee({ userId: String(service.freelancer._id),    role: 'freelancer', jobType: 'remote', amount: listedPrice });
-      clientFeeAmt     = clientFeeResult.fee;
-      freelancerFeeAmt = freelancerFeeResult.fee;
-      clientCharges    = parseFloat((listedPrice + clientFeeAmt).toFixed(2));
-      freelancerTotal  = parseFloat((listedPrice - freelancerFeeAmt).toFixed(2));
-      totalPlatformFee = parseFloat((clientFeeAmt + freelancerFeeAmt).toFixed(2));
-    }
+    const feeBreakdown = await computeServiceFeeBreakdown({
+      clientUserId: req.user.userId,
+      freelancerUserId: service.freelancer._id,
+      listedPrice,
+      feesIncluded,
+    });
+
+    const clientCharges = feeBreakdown.clientCharges;
+    const totalPlatformFee = feeBreakdown.totalPlatformFee;
+    const freelancerTotal = feeBreakdown.freelancerPayout;
+    const clientFeeAmt = feeBreakdown.clientFeeAmt;
+    const freelancerFeeAmt = feeBreakdown.freelancerFeeAmt;
     const perSessionPayout = parseFloat((freelancerTotal / bundle.sessions).toFixed(2));
 
     // Create PaymentIntent — funds captured immediately, held in platform balance
@@ -990,21 +983,17 @@ router.post('/:id/subscribe', authenticateToken, async (req, res) => {
     const listedPrice  = selectedPackage.price;
     const feesIncluded = service.feesIncluded === true;
 
-    let clientCharges, freelancerPayout, totalPlatformFee, platformFeeRate;
-    if (feesIncluded) {
-      const feeResult  = await getFeeIncluded({ userId: String(req.user.userId), role: 'client', jobType: 'remote', listedPrice });
-      clientCharges    = feeResult.clientCharges;
-      freelancerPayout = feeResult.freelancerPayout;
-      totalPlatformFee = feeResult.totalPlatformFee;
-      platformFeeRate  = feeResult.freelancerFee / feeResult.base;
-    } else {
-      const clientFeeResult     = await getFee({ userId: String(req.user.userId),           role: 'client',     jobType: 'remote', amount: listedPrice });
-      const freelancerFeeResult = await getFee({ userId: String(service.freelancer._id),    role: 'freelancer', jobType: 'remote', amount: listedPrice });
-      clientCharges    = parseFloat((listedPrice + clientFeeResult.fee).toFixed(2));
-      freelancerPayout = parseFloat((listedPrice - freelancerFeeResult.fee).toFixed(2));
-      totalPlatformFee = parseFloat((clientFeeResult.fee + freelancerFeeResult.fee).toFixed(2));
-      platformFeeRate  = freelancerFeeResult.feeRate;
-    }
+    const feeBreakdown = await computeServiceFeeBreakdown({
+      clientUserId: req.user.userId,
+      freelancerUserId: service.freelancer._id,
+      listedPrice,
+      feesIncluded,
+    });
+
+    const clientCharges = feeBreakdown.clientCharges;
+    const freelancerPayout = feeBreakdown.freelancerPayout;
+    const totalPlatformFee = feeBreakdown.totalPlatformFee;
+    const platformFeeRate = feeBreakdown.freelancerFeeRate;
 
     // Ensure client has a Stripe Customer ID
     const clientUser = await User.findById(req.user.userId);
@@ -1080,7 +1069,7 @@ router.post('/:id/subscribe', authenticateToken, async (req, res) => {
       amountPerCycle:       clientCharges,
       billingCycle,
       platformFee:          totalPlatformFee,
-      feeDisplay:           getFeeDisplay({ fee: clientFeeResult.fee, feeRate: clientFeeResult.feeRate, jobType: 'remote', role: 'client' }),
+      feeDisplay:           getFeeDisplay({ fee: feeBreakdown.clientFeeAmt || 0, feeRate: feeBreakdown.clientFeeRate || 0, jobType: 'remote', role: 'client' }),
     });
   } catch (err) {
     console.error('Error creating service subscription:', err);
