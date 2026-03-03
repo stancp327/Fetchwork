@@ -273,6 +273,10 @@ router.post('/:id/invite', async (req, res) => {
     const invitee = await User.findOne({ email: email.toLowerCase().trim() }).select('_id firstName lastName email');
     if (!invitee) return res.status(404).json({ error: 'No user found with that email. They must have a Fetchwork account first.' });
 
+    if (String(invitee._id) === requesterId) {
+      return res.status(400).json({ error: 'You cannot invite yourself to your own team' });
+    }
+
     // Check if already a member
     const existing = team.members.find(m => m.user.toString() === invitee._id.toString());
     if (existing && existing.status === 'active') {
@@ -513,9 +517,9 @@ router.patch('/:id/members/:userId', async (req, res) => {
 // â”€â”€ GET /api/teams/invitations/pending â€” pending invitations for current user â”€â”€
 router.get('/invitations/pending', async (req, res) => {
   try {
+    const requesterId = String(req.user.userId || req.user._id || req.user.id);
     const teams = await Team.find({
-      'members.user': req.user.userId,
-      'members.status': 'invited',
+      members: { $elemMatch: { user: requesterId, status: 'invited' } },
       isActive: true,
     })
       .populate('owner', 'firstName lastName email profileImage')
