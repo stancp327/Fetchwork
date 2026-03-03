@@ -4,7 +4,7 @@ const Service = require('../models/Service');
 const User    = require('../models/User');
 const Payment = require('../models/Payment');
 const ServiceSubscription = require('../models/ServiceSubscription');
-const Notification = require('../models/Notification');
+const { notifyServiceEvent } = require('./services.notification.helpers');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { parsePagination, buildServiceFilters } = require('./services.helpers');
@@ -647,12 +647,11 @@ router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) =>
       });
     }
 
-    await Notification.create({
-      recipient:  order.client,
-      type:       'new_order',
-      title:      'Payment reminder',
-      message:    `Your order for "${service.title}" is awaiting payment.`,
-      link:       `/services/${service._id}`,
+    await notifyServiceEvent({
+      recipient: order.client,
+      title: 'Payment reminder',
+      message: `Your order for "${service.title}" is awaiting payment.`,
+      serviceId: service._id,
     });
 
     res.json({ message: 'Reminder sent' });
@@ -823,11 +822,11 @@ router.post('/:id/bundle/purchase', authenticateToken, async (req, res) => {
 
     // Notify freelancer
     const clientUser = await User.findById(req.user.userId).select('firstName lastName');
-    await Notification.create({
+    await notifyServiceEvent({
       recipient: service.freelancer._id,
-      title:     'Bundle purchased',
-      message:   `${clientUser?.firstName} ${clientUser?.lastName} purchased your "${bundle.name}" bundle for "${service.title}"`,
-      link:      `/services/${service._id}`,
+      title: 'Bundle purchased',
+      message: `${clientUser?.firstName} ${clientUser?.lastName} purchased your "${bundle.name}" bundle for "${service.title}"`,
+      serviceId: service._id,
     });
 
     res.status(201).json({
@@ -898,11 +897,11 @@ router.post('/bundles/:purchaseId/sessions/:sessionIndex/complete', authenticate
     await purchase.save();
 
     // Notify client
-    await Notification.create({
+    await notifyServiceEvent({
       recipient: purchase.client,
-      title:     'Session completed',
-      message:   `Your session ${idx + 1} of ${purchase.sessionsTotal} has been marked complete`,
-      link:      `/services/bundles/${purchase._id}`,
+      title: 'Session completed',
+      message: `Your session ${idx + 1} of ${purchase.sessionsTotal} has been marked complete`,
+      link: `/services/bundles/${purchase._id}`,
     });
 
     res.json({
@@ -1058,11 +1057,11 @@ router.post('/:id/subscribe', authenticateToken, async (req, res) => {
     });
 
     // Notify freelancer
-    await Notification.create({
+    await notifyServiceEvent({
       recipient: service.freelancer._id,
-      title:     'New recurring subscription',
-      message:   `${clientUser.firstName} ${clientUser.lastName} subscribed to your "${service.title}" service`,
-      link:      `/services/${service._id}`,
+      title: 'New recurring subscription',
+      message: `${clientUser.firstName} ${clientUser.lastName} subscribed to your "${service.title}" service`,
+      serviceId: service._id,
     });
 
     res.status(201).json({
@@ -1134,11 +1133,11 @@ router.delete('/subscriptions/:subId', authenticateToken, async (req, res) => {
     const cancellerName = isClient ? 'The client' : 'The freelancer';
     const notifyUserId  = isClient ? sub.freelancer : sub.client;
     const service = await Service.findById(sub.service).select('title');
-    await Notification.create({
+    await notifyServiceEvent({
       recipient: notifyUserId,
-      title:     'Subscription cancelled',
-      message:   `${cancellerName} cancelled the recurring subscription to "${service?.title || 'your service'}"`,
-      link:      `/services/${sub.service}`,
+      title: 'Subscription cancelled',
+      message: `${cancellerName} cancelled the recurring subscription to "${service?.title || 'your service'}"`,
+      link: `/services/${sub.service}`,
     });
 
     res.json({ message: 'Subscription cancelled', subscriptionId: sub._id });
