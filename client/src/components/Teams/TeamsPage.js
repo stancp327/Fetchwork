@@ -15,18 +15,33 @@ const TeamsPage = () => {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [deletingTeamId, setDeletingTeamId] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   const fetchTeams = useCallback(async () => {
     try {
       setLoading(true);
-      const [teamsData, invData] = await Promise.all([
+      setLoadError('');
+
+      const [teamsResult, invitesResult] = await Promise.allSettled([
         apiRequest('/api/teams'),
         apiRequest('/api/teams/invitations/pending'),
       ]);
-      setTeams(teamsData.teams || []);
-      setInvitations(invData.invitations || []);
+
+      if (teamsResult.status === 'fulfilled') {
+        setTeams(teamsResult.value?.teams || []);
+      } else {
+        setTeams([]);
+        setLoadError(teamsResult.reason?.message || 'Failed to load teams');
+      }
+
+      if (invitesResult.status === 'fulfilled') {
+        setInvitations(invitesResult.value?.invitations || []);
+      } else {
+        setInvitations([]);
+      }
     } catch (err) {
       console.error('Failed to load teams:', err);
+      setLoadError(err?.message || 'Failed to load teams');
     } finally {
       setLoading(false);
     }
@@ -162,6 +177,12 @@ const TeamsPage = () => {
       {/* Teams list */}
       {loading ? (
         <div className="teams-loading">Loading teams…</div>
+      ) : loadError ? (
+        <div className="teams-empty">
+          <h3>Couldn’t load teams</h3>
+          <p style={{ marginBottom: '0.75rem' }}>{loadError}</p>
+          <button className="btn btn-primary btn-sm" onClick={fetchTeams}>Retry</button>
+        </div>
       ) : teams.length === 0 ? (
         <div className="teams-empty">
           <h3>No teams yet</h3>
