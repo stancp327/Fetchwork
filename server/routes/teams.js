@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const Team = require('../models/Team');
@@ -116,7 +116,15 @@ async function logTeamAudit({ teamId, actorId, action, targetUser = null, before
   });
 }
 
-// ── GET /api/teams — list user's teams ──
+function buildLockVersionFilter(lockVersion) {
+  const v = Number(lockVersion || 0);
+  if (v === 0) {
+    return { $or: [{ lockVersion: 0 }, { lockVersion: { $exists: false } }] };
+  }
+  return { lockVersion: v };
+}
+
+// â”€â”€ GET /api/teams â€” list user's teams â”€â”€
 router.get('/', async (req, res) => {
   try {
     const userId = req.user.userId || req.user._id || req.user.id;
@@ -154,7 +162,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ── POST /api/teams — create a team ──
+// â”€â”€ POST /api/teams â€” create a team â”€â”€
 router.post('/', async (req, res) => {
   try {
     const { name, type = 'client_team', description } = req.body;
@@ -195,7 +203,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/:id — team detail ──
+// â”€â”€ GET /api/teams/:id â€” team detail â”€â”€
 router.get('/:id', async (req, res) => {
   try {
     const userId = req.user.userId || req.user._id || req.user.id;
@@ -220,7 +228,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ── PUT /api/teams/:id — update team settings ──
+// â”€â”€ PUT /api/teams/:id â€” update team settings â”€â”€
 router.put('/:id', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -242,7 +250,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// ── POST /api/teams/:id/invite — invite a member ──
+// â”€â”€ POST /api/teams/:id/invite â€” invite a member â”€â”€
 router.post('/:id/invite', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -326,7 +334,7 @@ router.post('/:id/invite', async (req, res) => {
   }
 });
 
-// ── POST /api/teams/:id/accept — accept invitation ──
+// â”€â”€ POST /api/teams/:id/accept â€” accept invitation â”€â”€
 router.post('/:id/accept', async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
@@ -347,7 +355,7 @@ router.post('/:id/accept', async (req, res) => {
   }
 });
 
-// ── POST /api/teams/:id/decline — decline invitation ──
+// â”€â”€ POST /api/teams/:id/decline â€” decline invitation â”€â”€
 router.post('/:id/decline', async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
@@ -365,7 +373,7 @@ router.post('/:id/decline', async (req, res) => {
   }
 });
 
-// ── DELETE /api/teams/:id/members/:userId — remove a member ──
+// â”€â”€ DELETE /api/teams/:id/members/:userId â€” remove a member â”€â”€
 router.delete('/:id/members/:userId', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -399,7 +407,7 @@ router.delete('/:id/members/:userId', async (req, res) => {
   }
 });
 
-// ── PATCH /api/teams/:id/members/:userId — update member role/permissions ──
+// â”€â”€ PATCH /api/teams/:id/members/:userId â€” update member role/permissions â”€â”€
 router.patch('/:id/members/:userId', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -451,7 +459,7 @@ router.patch('/:id/members/:userId', async (req, res) => {
         _id: team._id,
         isActive: true,
         transferState: 'idle',
-        lockVersion: currentLockVersion,
+        ...buildLockVersionFilter(currentLockVersion),
       },
       {
         $set: setOps,
@@ -498,7 +506,7 @@ router.patch('/:id/members/:userId', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/invitations/pending — pending invitations for current user ──
+// â”€â”€ GET /api/teams/invitations/pending â€” pending invitations for current user â”€â”€
 router.get('/invitations/pending', async (req, res) => {
   try {
     const teams = await Team.find({
@@ -516,7 +524,7 @@ router.get('/invitations/pending', async (req, res) => {
   }
 });
 
-// ── POST /api/teams/:id/transfer-ownership — transfer ownership (owner only) ──
+// â”€â”€ POST /api/teams/:id/transfer-ownership â€” transfer ownership (owner only) â”€â”€
 router.post('/:id/transfer-ownership', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -543,7 +551,7 @@ router.post('/:id/transfer-ownership', async (req, res) => {
         isActive: true,
         owner: requesterId,
         transferState: 'idle',
-        lockVersion: currentLockVersion,
+        ...buildLockVersionFilter(currentLockVersion),
       },
       {
         $set: { transferState: 'applying', transferTargetUserId: targetUserId },
@@ -627,7 +635,7 @@ router.post('/:id/transfer-ownership', async (req, res) => {
   }
 });
 
-// ── DELETE /api/teams/:id — delete team (owner only) ──
+// â”€â”€ DELETE /api/teams/:id â€” delete team (owner only) â”€â”€
 router.delete('/:id', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -649,7 +657,7 @@ router.delete('/:id', async (req, res) => {
         _id: team._id,
         isActive: true,
         transferState: 'idle',
-        lockVersion: currentLockVersion,
+        ...buildLockVersionFilter(currentLockVersion),
       },
       {
         $set: { isActive: false },
@@ -681,7 +689,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/agencies/public — public agency directory ──
+// â”€â”€ GET /api/teams/agencies/public â€” public agency directory â”€â”€
 router.get('/agencies/public', async (req, res) => {
   try {
     const { page = 1, limit = 20, specialty } = req.query;
@@ -706,11 +714,11 @@ router.get('/agencies/public', async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // PHASE 2: Agency Profile, Shared Billing, Work Assignment
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// ── GET /api/teams/agency/:slug — public agency profile ──
+// â”€â”€ GET /api/teams/agency/:slug â€” public agency profile â”€â”€
 router.get('/agency/:slug', async (req, res) => {
   try {
     const team = await Team.findOne({ slug: req.params.slug, type: 'agency', isPublic: true, isActive: true })
@@ -747,7 +755,7 @@ router.get('/agency/:slug', async (req, res) => {
   }
 });
 
-// ── POST /api/teams/:id/portfolio — add portfolio item (agency only) ──
+// â”€â”€ POST /api/teams/:id/portfolio â€” add portfolio item (agency only) â”€â”€
 router.post('/:id/portfolio', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -770,7 +778,7 @@ router.post('/:id/portfolio', async (req, res) => {
   }
 });
 
-// ── DELETE /api/teams/:id/portfolio/:itemId — remove portfolio item ──
+// â”€â”€ DELETE /api/teams/:id/portfolio/:itemId â€” remove portfolio item â”€â”€
 router.delete('/:id/portfolio/:itemId', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -788,7 +796,7 @@ router.delete('/:id/portfolio/:itemId', async (req, res) => {
   }
 });
 
-// ── Shared Billing: team wallet top-up ──
+// â”€â”€ Shared Billing: team wallet top-up â”€â”€
 router.post('/:id/billing/add-funds', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -799,7 +807,7 @@ router.post('/:id/billing/add-funds', async (req, res) => {
     if (!authz.ok) return res.status(403).json({ error: 'No billing permission' });
 
     const amount = parseFloat(req.body.amount);
-    if (!amount || amount < 5 || amount > 500) return res.status(400).json({ error: 'Amount must be $5–$500' });
+    if (!amount || amount < 5 || amount > 500) return res.status(400).json({ error: 'Amount must be $5â€“$500' });
 
     // Create Stripe Checkout for team
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -817,7 +825,7 @@ router.post('/:id/billing/add-funds', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       customer: team.stripeCustomerId,
       mode: 'payment',
-      line_items: [{ price_data: { currency: 'usd', unit_amount: Math.round(amount * 100), product_data: { name: `${team.name} — Wallet Top-Up` } }, quantity: 1 }],
+      line_items: [{ price_data: { currency: 'usd', unit_amount: Math.round(amount * 100), product_data: { name: `${team.name} â€” Wallet Top-Up` } }, quantity: 1 }],
       success_url: `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}?funded=true`,
       cancel_url: `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}`,
       metadata: { type: 'team_wallet', teamId: team._id.toString(), amount: String(amount) },
@@ -830,7 +838,7 @@ router.post('/:id/billing/add-funds', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/:id/billing — team wallet balance + history ──
+// â”€â”€ GET /api/teams/:id/billing â€” team wallet balance + history â”€â”€
 router.get('/:id/billing', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -856,7 +864,7 @@ router.get('/:id/billing', async (req, res) => {
   }
 });
 
-// ── Work Assignment: POST /api/teams/:id/assign ──
+// â”€â”€ Work Assignment: POST /api/teams/:id/assign â”€â”€
 router.post('/:id/assign', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -910,7 +918,7 @@ router.post('/:id/assign', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/:id/assignments — view team work assignments ──
+// â”€â”€ GET /api/teams/:id/assignments â€” view team work assignments â”€â”€
 router.get('/:id/assignments', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -940,7 +948,7 @@ router.get('/:id/assignments', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/:id/activity — combined team activity feed ──
+// â”€â”€ GET /api/teams/:id/activity â€” combined team activity feed â”€â”€
 router.get('/:id/activity', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -993,7 +1001,7 @@ router.get('/:id/activity', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/:id/audit-logs — team audit trail (owner/admin) ──
+// â”€â”€ GET /api/teams/:id/audit-logs â€” team audit trail (owner/admin) â”€â”€
 router.get('/:id/audit-logs', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -1037,9 +1045,9 @@ router.get('/:id/audit-logs', async (req, res) => {
   }
 });
 
-// ── Approval Workflow ────────────────────────────────────────────
+// â”€â”€ Approval Workflow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// GET /api/teams/:id/pending-approvals — list orders needing approval
+// GET /api/teams/:id/pending-approvals â€” list orders needing approval
 router.get('/:id/pending-approvals', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -1068,7 +1076,7 @@ router.get('/:id/pending-approvals', async (req, res) => {
   }
 });
 
-// POST /api/teams/:id/approve/:jobId — approve or reject a pending order
+// POST /api/teams/:id/approve/:jobId â€” approve or reject a pending order
 router.post('/:id/approve/:jobId', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
@@ -1130,3 +1138,4 @@ router.checkTeamApproval = async function(userId, teamId, amount) {
 };
 
 module.exports = router;
+
