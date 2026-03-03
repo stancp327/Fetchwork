@@ -194,6 +194,13 @@ jobs:
         run: |
           npx wait-on http://localhost:5000/health http://localhost:3000 --timeout 30000
 
+      # Basic API contract smoke checks before E2E
+      - name: API smoke checks
+        run: |
+          curl -f "http://localhost:5000/health"
+          curl -f "http://localhost:5000/api/search?q=test&limit=1"
+          curl -f "http://localhost:5000/api/freelancers?page=1&limit=1"
+
       # Run E2E
       - name: Run Playwright tests
         env:
