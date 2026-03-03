@@ -244,7 +244,7 @@ const TeamDetail = () => {
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+      <div className="team-detail-tabs" style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
         {['members', 'billing', 'assignments', 'activity', ...(isOwnerOrAdmin ? ['audit'] : [])].map(tab => (
           <button
             key={tab}
@@ -266,7 +266,7 @@ const TeamDetail = () => {
               <input
                 type="email" required placeholder="Email address"
                 value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                style={{ flex: 1, minWidth: '200px', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                style={{ flex: 1, minWidth: 0, width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px' }}
               />
               <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '8px' }}>
                 <option value="member">Member</option>
@@ -286,11 +286,11 @@ const TeamDetail = () => {
               <p style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '0.85rem', color: '#92400e' }}>
                 Transfer owner privileges to another active member.
               </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="team-detail-transfer-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <select
                   value={transferTargetUserId}
                   onChange={(e) => setTransferTargetUserId(e.target.value)}
-                  style={{ minWidth: '220px', padding: '0.4rem 0.5rem', border: '1px solid #f59e0b', borderRadius: 8 }}
+                  style={{ minWidth: 0, width: '100%', padding: '0.4rem 0.5rem', border: '1px solid #f59e0b', borderRadius: 8 }}
                 >
                   <option value="">Select new owner…</option>
                   {activeMembers
@@ -317,7 +317,7 @@ const TeamDetail = () => {
             {team.members.filter(m => m.status !== 'removed').map(m => {
               const u = m.user || {};
               return (
-                <div key={m._id} style={{
+                <div key={m._id} className="team-detail-member-row" style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0'
                 }}>
@@ -337,7 +337,7 @@ const TeamDetail = () => {
                     </div>
                   </div>
                   {canManageMembers && m.role !== 'owner' && m.status === 'active' && (
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div className="team-detail-member-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <select
                         value={m.role}
                         onChange={e => updateRole(u._id, e.target.value)}
@@ -582,6 +582,7 @@ const AuditSection = ({ logs, loading, error, onRefresh }) => {
 };
 
 export default TeamDetail;
+
 
 
 
