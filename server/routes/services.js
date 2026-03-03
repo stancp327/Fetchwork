@@ -19,6 +19,7 @@ const { loadServiceOrderContext } = require('./services.order.helpers');
 const { ensureOrderStatus, ensureRole } = require('./services.state.helpers');
 const { markPaymentCompletedByIntent, markPaymentRefundedByIntent } = require('./services.payment.helpers');
 const { findServiceConversation } = require('./services.conversation.helpers');
+const { markOrderDelivered, markOrderCompleted, markOrderRevisionRequested, markOrderCancelled } = require('./services.transitions.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -403,9 +404,7 @@ router.put('/:id/orders/:orderId/deliver', authenticateToken, async (req, res) =
       return res.status(400).json({ error: 'Order is not in progress' });
     }
 
-    order.status       = 'delivered';
-    order.deliveryDate = new Date();
-    if (deliveryNote) order.deliveryNote = deliveryNote;
+    markOrderDelivered(order, deliveryNote);
     await service.save();
 
     // Notify client via message
@@ -462,9 +461,7 @@ router.put('/:id/orders/:orderId/complete', authenticateToken, async (req, res) 
     );
 
     // Update order
-    order.status        = 'completed';
-    order.completedDate = new Date();
-    order.escrowAmount  = 0;
+    markOrderCompleted(order);
     await service.save();
 
     // Update payment record
@@ -525,8 +522,7 @@ router.put('/:id/orders/:orderId/revision', authenticateToken, async (req, res) 
     const statusCheck = ensureOrderStatus(order, ['delivered'], 'Can only request revision on delivered orders');
     if (!statusCheck.ok) return res.status(400).json({ error: statusCheck.error });
 
-    order.status        = 'revision_requested';
-    order.revisionCount = (order.revisionCount || 0) + 1;
+    markOrderRevisionRequested(order);
     await service.save();
 
     const conversation = await findServiceConversation({ serviceId: service._id, orderId: order._id });
@@ -581,8 +577,7 @@ router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) =>
       }
     }
 
-    order.status       = 'cancelled';
-    order.escrowAmount = 0;
+    markOrderCancelled(order);
     await service.save();
 
     // Update payment record
