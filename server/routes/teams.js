@@ -43,13 +43,25 @@ router.get('/', async (req, res) => {
     const userId = req.user.userId || req.user._id || req.user.id;
     const userObjectId = req.user._id;
 
-    const teams = await Team.find({
-      isActive: true,
-      $or: [
-        { owner: userObjectId },
-        { members: { $elemMatch: { user: userObjectId, status: 'active' } } },
-      ],
-    })
+    // Defensive query strategy:
+    // 1) load owner teams directly
+    // 2) load active-member teams directly
+    // 3) merge + dedupe
+    const [ownedTeams, memberTeams] = await Promise.all([
+      Team.find({ isActive: true, owner: userObjectId }).lean(),
+      Team.find({
+        isActive: true,
+        members: { $elemMatch: { user: userObjectId, status: 'active' } },
+      }).lean(),
+    ]);
+
+    const teamMap = new Map();
+    [...ownedTeams, ...memberTeams].forEach((team) => {
+      teamMap.set(String(team._id), team);
+    });
+
+    const teamIds = [...teamMap.keys()];
+    const teams = await Team.find({ _id: { $in: teamIds } })
       .populate('owner', 'firstName lastName email profileImage')
       .populate('members.user', 'firstName lastName email profileImage')
       .lean();
@@ -58,6 +70,7 @@ router.get('/', async (req, res) => {
 
     res.json({ teams: normalizedTeams });
   } catch (err) {
+    console.error('Fetch teams error:', err.message);
     res.status(500).json({ error: 'Failed to fetch teams' });
   }
 });
