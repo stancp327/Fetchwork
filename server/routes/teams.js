@@ -43,16 +43,20 @@ router.get('/', async (req, res) => {
     const userId = req.user.userId || req.user._id || req.user.id;
     const userObjectId = req.user._id;
 
-    // Defensive query strategy:
-    // 1) load owner teams directly
-    // 2) load active-member teams directly
-    // 3) merge + dedupe
+    // Query owner teams + active-member teams independently, with populate,
+    // then merge/dedupe in-memory. This avoids brittle mixed-id query behavior.
     const [ownedTeams, memberTeams] = await Promise.all([
-      Team.find({ isActive: true, owner: userObjectId }).lean(),
+      Team.find({ isActive: true, owner: userObjectId })
+        .populate('owner', 'firstName lastName email profileImage')
+        .populate('members.user', 'firstName lastName email profileImage')
+        .lean(),
       Team.find({
         isActive: true,
         members: { $elemMatch: { user: userObjectId, status: 'active' } },
-      }).lean(),
+      })
+        .populate('owner', 'firstName lastName email profileImage')
+        .populate('members.user', 'firstName lastName email profileImage')
+        .lean(),
     ]);
 
     const teamMap = new Map();
@@ -60,11 +64,7 @@ router.get('/', async (req, res) => {
       teamMap.set(String(team._id), team);
     });
 
-    const teamIds = [...teamMap.keys()];
-    const teams = await Team.find({ _id: { $in: teamIds } })
-      .populate('owner', 'firstName lastName email profileImage')
-      .populate('members.user', 'firstName lastName email profileImage')
-      .lean();
+    const teams = [...teamMap.values()];
 
     const normalizedTeams = teams.map((team) => normalizeTeamForUser(team, userId));
 
