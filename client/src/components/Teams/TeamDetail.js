@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -44,30 +44,6 @@ const TeamDetail = () => {
 
   useEffect(() => { fetchTeam(); }, [fetchTeam]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchTeam();
-      if (activeTab === 'audit' && isOwnerOrAdmin) fetchAuditLogs();
-    }, 15000);
-
-    const onFocus = () => {
-      fetchTeam();
-      if (activeTab === 'audit' && isOwnerOrAdmin) fetchAuditLogs();
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') onFocus();
-    };
-
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [fetchTeam, fetchAuditLogs, activeTab, isOwnerOrAdmin]);
 
   const currentUserId = String(user?._id || user?.id || '');
   const myMember = team?.members?.find((m) => String(m.user?._id || m.user?.id || m.user || '') === currentUserId);
@@ -184,6 +160,31 @@ const TeamDetail = () => {
 
   const roleIcons = { owner: '👑', admin: '★', manager: '📋', member: '👤' };
   const roleColors = { owner: '#f59e0b', admin: '#8b5cf6', manager: '#3b82f6', member: '#6b7280' };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchTeam();
+      if (activeTab === 'audit' && isOwnerOrAdmin) fetchAuditLogs();
+    }, 15000);
+
+    const onFocus = () => {
+      fetchTeam();
+      if (activeTab === 'audit' && isOwnerOrAdmin) fetchAuditLogs();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') onFocus();
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [fetchTeam, fetchAuditLogs, activeTab, isOwnerOrAdmin]);
 
   if (loading) return <div className="teams-page"><div className="teams-loading">Loading team…</div></div>;
   if (!team && notFound) return <div className="teams-page"><div className="teams-empty"><h3>Team not found</h3><p>This team may have been deleted or your access changed.</p><button className="btn btn-ghost btn-sm" onClick={() => navigate('/teams')}>Back to Teams</button></div></div>;
@@ -607,6 +608,7 @@ const AuditSection = ({ logs, loading, error, onRefresh }) => {
 };
 
 export default TeamDetail;
+
 
 
 
