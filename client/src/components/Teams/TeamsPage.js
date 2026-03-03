@@ -170,7 +170,11 @@ const TeamsPage = () => {
       ) : (
         <div className="teams-grid">
           {teams.map(team => {
-            const myMember = team.members?.find(m => m.user?._id === user?._id || m.user === user?._id);
+            const currentUserId = user?._id || user?.id;
+            const myMember = team.members?.find((m) => {
+              const memberUserId = m.user?._id || m.user?.id || m.user;
+              return String(memberUserId) === String(currentUserId);
+            });
             const activeMembers = team.members?.filter(m => m.status === 'active') || [];
             const isOwner = myMember?.role === 'owner';
             return (
