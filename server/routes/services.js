@@ -15,6 +15,7 @@ const { checkServiceLimit } = require('../middleware/entitlements');
 const { getFee, getFeeIncluded, getFeeDisplay } = require('../services/feeEngine');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { postServiceSystemMessage } = require('./services.messaging.helpers');
+const { loadServiceOrderContext } = require('./services.order.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -548,15 +549,17 @@ router.put('/:id/orders/:orderId/revision', authenticateToken, async (req, res) 
 // ── PUT /api/services/:id/orders/:orderId/cancel ───────────────
 router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id)
-      .populate('freelancer', 'firstName lastName email');
-    if (!service) return res.status(404).json({ error: 'Service not found' });
+    const ctx = await loadServiceOrderContext({
+      Service,
+      serviceId: req.params.id,
+      orderId: req.params.orderId,
+      userId: req.user._id,
+      populate: { path: 'freelancer', select: 'firstName lastName email' },
+    });
 
-    const order = service.orders.id(req.params.orderId);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
 
-    const isClient     = String(order.client) === String(req.user._id);
-    const isFreelancer = String(service.freelancer._id) === String(req.user._id);
+    const { service, order, isClient, isFreelancer } = ctx;
     if (!isClient && !isFreelancer) return res.status(403).json({ error: 'Unauthorized' });
 
     if (['completed', 'cancelled'].includes(order.status)) {
@@ -612,13 +615,19 @@ router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) =>
 // Freelancer sends a payment reminder to the client
 router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id);
-    if (!service) return res.status(404).json({ error: 'Service not found' });
-    if (String(service.freelancer) !== String(req.user._id)) {
+    const ctx = await loadServiceOrderContext({
+      Service,
+      serviceId: req.params.id,
+      orderId: req.params.orderId,
+      userId: req.user._id,
+    });
+
+    if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
+
+    const { service, order, isFreelancer } = ctx;
+    if (!isFreelancer) {
       return res.status(403).json({ error: 'Only the freelancer can send a reminder' });
     }
-    const order = service.orders.id(req.params.orderId);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.status !== 'pending') {
       return res.status(400).json({ error: 'Order is not awaiting payment' });
     }
@@ -656,14 +665,18 @@ router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) =>
 // ── GET /api/services/:id/orders/:orderId ──────────────────────
 router.get('/:id/orders/:orderId', authenticateToken, async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id)
-      .populate('freelancer', 'firstName lastName profilePicture stripeAccountId');
-    if (!service) return res.status(404).json({ error: 'Service not found' });
-    const order = service.orders.id(req.params.orderId);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    const isParty = String(order.client) === String(req.user._id) ||
-                    String(service.freelancer._id) === String(req.user._id);
-    if (!isParty) return res.status(403).json({ error: 'Unauthorized' });
+    const ctx = await loadServiceOrderContext({
+      Service,
+      serviceId: req.params.id,
+      orderId: req.params.orderId,
+      userId: req.user._id,
+      populate: { path: 'freelancer', select: 'firstName lastName profilePicture stripeAccountId' },
+    });
+
+    if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
+
+    const { service, order, isClient, isFreelancer } = ctx;
+    if (!isClient && !isFreelancer) return res.status(403).json({ error: 'Unauthorized' });
     // Convert subdocument to plain object so _id serialises as a string
     const orderPlain = { ...order.toObject(), _id: String(order._id) };
     res.json({ order: orderPlain, service: { _id: String(service._id), title: service.title, freelancer: service.freelancer } });
