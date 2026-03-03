@@ -6,6 +6,7 @@ import CategoryCombobox from '../common/CategoryCombobox';
 import UpgradePrompt from '../Billing/UpgradePrompt';
 import './PostJob.css';
 import SEO from '../common/SEO';
+import { validateFormData, buildJobPayload } from './postJobUtils';
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -147,44 +148,7 @@ const PostJob = () => {
   const [errors, setErrors] = useState({});
 
   const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = 'Job title is required';
-    } else if (formData.title.length > 100) {
-      newErrors.title = 'Title cannot exceed 100 characters';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Job description is required';
-    } else if (formData.description.length > 5000) {
-      newErrors.description = 'Description cannot exceed 5000 characters';
-    }
-
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
-    }
-
-    if (!formData.budgetAmount || parseFloat(formData.budgetAmount) < 1) {
-      newErrors.budgetAmount = 'Budget must be at least $1';
-    }
-
-    if (formData.budgetType === 'range') {
-      if (!formData.budgetMax || parseFloat(formData.budgetMax) < 1) {
-        newErrors.budgetMax = 'Max budget is required for range pricing';
-      } else if (parseFloat(formData.budgetMax) <= parseFloat(formData.budgetAmount)) {
-        newErrors.budgetMax = 'Max budget must be greater than min budget';
-      }
-    }
-
-    if (!formData.duration) {
-      newErrors.duration = 'Duration is required';
-    }
-
-    if (!formData.experienceLevel) {
-      newErrors.experienceLevel = 'Experience level is required';
-    }
-
+    const newErrors = validateFormData(formData);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -212,50 +176,7 @@ const PostJob = () => {
     setError(null);
 
     try {
-      const skillsArray = formData.skills
-        .split(',')
-        .map(skill => skill.trim())
-        .filter(skill => skill.length > 0);
-
-      const jobData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        category: formData.category,
-        subcategory: formData.subcategory.trim() || undefined,
-        skills: skillsArray,
-        budget: {
-          type: formData.budgetType,
-          amount: parseFloat(formData.budgetAmount),
-          maxAmount: formData.budgetType === 'range' && formData.budgetMax ? parseFloat(formData.budgetMax) : undefined,
-          currency: formData.currency
-        },
-        duration: formData.duration,
-        experienceLevel: formData.experienceLevel,
-        location: {
-          locationType: formData.locationType,
-          city: formData.city.trim(),
-          state: formData.state.trim(),
-          zipCode: formData.zipCode.trim(),
-          address: formData.city && formData.state ? `${formData.city.trim()}, ${formData.state.trim()}` : '',
-          coordinates: { type: 'Point', coordinates: [0, 0] },
-          serviceRadius: 25
-        },
-        deadline: formData.deadline || null,
-        scheduledDate: formData.scheduledDate || null,
-        cancellationPolicy: formData.locationType !== 'remote' ? formData.cancellationPolicy : 'flexible',
-        isUrgent: formData.isUrgent,
-        recurring: formData.recurringEnabled ? {
-          enabled:  true,
-          interval: formData.recurringInterval,
-          endDate:  formData.recurringEndDate || null,
-          nextRunDate: null, // set server-side on job completion
-        } : { enabled: false },
-      };
-
-      if (selectedTeam) {
-        jobData.teamId = selectedTeam;
-      }
-
+      const jobData = buildJobPayload(formData, selectedTeam);
       await apiRequest('/api/jobs', { method: 'POST', body: JSON.stringify(jobData) });
       
       setSuccess(true);
