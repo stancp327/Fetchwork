@@ -144,33 +144,33 @@ module.exports = (io) => {
           conversation.lastMessage = newMessage._id;
           await conversation.updateLastActivity();
 
-          // ── Avg response time (EMA, fire-and-forget) ─────────────────
-          // Only calc on first reply — when sender responds for the first time
-          // to a conversation opened by someone else
-          try {
-            const senderMsgCount = await Message.countDocuments({
-              conversation: conversation._id,
-              sender: senderId,
-              messageType: 'text'    // ignore system messages (proposals, milestones, etc.)
-            });
-            if (senderMsgCount === 1) {
-              // This is sender's first message — find oldest message from the other person
+          // ── Avg response time (EMA, fully async fire-and-forget) ────
+          // Runs off the hot path so message:send isn't blocked by extra DB queries
+          setImmediate(async () => {
+            try {
+              const senderMsgCount = await Message.countDocuments({
+                conversation: conversation._id,
+                sender: senderId,
+                messageType: 'text'
+              });
+              if (senderMsgCount !== 1) return; // only on first reply
+
               const opener = await Message.findOne({
                 conversation: conversation._id,
                 sender: { $ne: senderId },
                 messageType: 'text'
-              }).sort({ createdAt: 1 });
-              if (opener) {
-                const deltaMin = (Date.now() - new Date(opener.createdAt).getTime()) / 60000;
-                const sender = await User.findById(senderId).select('avgResponseTime');
-                if (sender) {
-                  const prev = sender.avgResponseTime;
-                  const newAvg = prev == null ? Math.round(deltaMin) : Math.round(prev * 0.8 + deltaMin * 0.2);
-                  User.updateOne({ _id: senderId }, { avgResponseTime: newAvg }).exec().catch(() => {});
-                }
-              }
-            }
-          } catch (_) {}
+              }).sort({ createdAt: 1 }).select('createdAt').lean();
+              if (!opener) return;
+
+              const deltaMin = (Date.now() - new Date(opener.createdAt).getTime()) / 60000;
+              const senderDoc = await User.findById(senderId).select('avgResponseTime').lean();
+              if (!senderDoc) return;
+
+              const prev = senderDoc.avgResponseTime;
+              const newAvg = prev == null ? Math.round(deltaMin) : Math.round(prev * 0.8 + deltaMin * 0.2);
+              User.updateOne({ _id: senderId }, { avgResponseTime: newAvg }).exec().catch(() => {});
+            } catch (_) {}
+          });
           // ─────────────────────────────────────────────────────────────
 
           await newMessage.populate('sender', 'firstName lastName profilePicture');
@@ -247,12 +247,11 @@ module.exports = (io) => {
             return;
           }
 
-          for (const messageId of messageIds) {
-            const message = await Message.findById(messageId);
-            if (message && message.roomId.toString() === roomId) {
-              await message.markAsReadByUser(readerId);
-            }
-          }
+          // Batch update instead of N+1 individual reads
+          await Message.updateMany(
+            { _id: { $in: messageIds }, roomId: roomId },
+            { $addToSet: { readBy: readerId } }
+          );
 
           console.log(`✅ Marked ${messageIds.length} group messages as read`);
 
