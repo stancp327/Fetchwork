@@ -16,6 +16,7 @@ const { getFee, getFeeIncluded, getFeeDisplay } = require('../services/feeEngine
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { postServiceSystemMessage } = require('./services.messaging.helpers');
 const { loadServiceOrderContext } = require('./services.order.helpers');
+const { ensureOrderStatus, ensureRole } = require('./services.state.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -515,12 +516,15 @@ router.put('/:id/orders/:orderId/revision', authenticateToken, async (req, res) 
 
     const order = service.orders.id(req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
-    if (String(order.client) !== String(req.user._id)) {
-      return res.status(403).json({ error: 'Only the client can request a revision' });
-    }
-    if (order.status !== 'delivered') {
-      return res.status(400).json({ error: 'Can only request revision on delivered orders' });
-    }
+
+    const roleCheck = ensureRole({
+      isClient: String(order.client) === String(req.user._id),
+      isFreelancer: String(service.freelancer) === String(req.user._id),
+    }, 'client');
+    if (!roleCheck.ok) return res.status(403).json({ error: roleCheck.error });
+
+    const statusCheck = ensureOrderStatus(order, ['delivered'], 'Can only request revision on delivered orders');
+    if (!statusCheck.ok) return res.status(400).json({ error: statusCheck.error });
 
     order.status        = 'revision_requested';
     order.revisionCount = (order.revisionCount || 0) + 1;
@@ -625,12 +629,12 @@ router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) =>
     if (ctx.error) return res.status(ctx.error.status).json({ error: ctx.error.message });
 
     const { service, order, isFreelancer } = ctx;
-    if (!isFreelancer) {
-      return res.status(403).json({ error: 'Only the freelancer can send a reminder' });
-    }
-    if (order.status !== 'pending') {
-      return res.status(400).json({ error: 'Order is not awaiting payment' });
-    }
+
+    const roleCheck = ensureRole({ isClient: false, isFreelancer }, 'freelancer');
+    if (!roleCheck.ok) return res.status(403).json({ error: roleCheck.error });
+
+    const statusCheck = ensureOrderStatus(order, ['pending'], 'Order is not awaiting payment');
+    if (!statusCheck.ok) return res.status(400).json({ error: statusCheck.error });
 
     const conv = await Conversation.findOne({ service: service._id }) ||
                  await Conversation.findOne({ participants: { $all: [service.freelancer, order.client] } });
