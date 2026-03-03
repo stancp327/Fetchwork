@@ -26,6 +26,7 @@ const BillingCredit           = require('../models/BillingCredit');
 const Team                    = require('../models/Team');
 const CheckoutSession         = require('../models/CheckoutSession');
 const ProcessedWebhookEvent   = require('../models/ProcessedWebhookEvent');
+const { parsePositiveAmount, createWalletCredit } = require('./billing.helpers');
 const { getPlanLimits }       = require('../middleware/entitlements');
 
 const BILLING_WEBHOOK_SECRET = process.env.STRIPE_BILLING_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
@@ -622,15 +623,13 @@ async function handleWalletTopup(session) {
   try {
     const { userId, amount } = session.metadata;
     if (!userId || !amount) return;
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parsePositiveAmount(amount);
     if (!parsedAmount) return;
 
-    await BillingCredit.create({
-      user:      userId,
-      amount:    parsedAmount,
-      remaining: parsedAmount,
-      reason:    `Wallet top-up via Stripe (session ${session.id})`,
-      status:    'active',
+    await createWalletCredit({
+      userId,
+      amount: parsedAmount,
+      reason: `Wallet top-up via Stripe (session ${session.id})`,
     });
 
     await logBillingAction({
@@ -649,19 +648,17 @@ async function handleTeamWalletTopup(session) {
     const { teamId, amount } = session.metadata || {};
     if (!teamId || !amount) return;
 
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parsePositiveAmount(amount);
     if (!parsedAmount) return;
 
     const team = await Team.findById(teamId).select('_id owner');
     if (!team) return;
 
-    await BillingCredit.create({
-      user: team.owner,
-      team: team._id,
+    await createWalletCredit({
+      userId: team.owner,
+      teamId: team._id,
       amount: parsedAmount,
-      remaining: parsedAmount,
       reason: `Team wallet top-up via Stripe (session ${session.id})`,
-      status: 'active',
     });
 
     await logBillingAction({
