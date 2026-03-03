@@ -44,8 +44,11 @@ const TeamDetail = () => {
   const currentUserId = String(user?._id || user?.id || '');
   const myMember = team?.members?.find((m) => String(m.user?._id || m.user?.id || m.user || '') === currentUserId);
   const ownerId = String(team?.owner?._id || team?.owner?.id || team?.owner || '');
-  const derivedRole = team?.currentUserRole || myMember?.role || (ownerId === currentUserId ? 'owner' : null);
-  const isOwner = Boolean(team?.currentUserIsOwner || derivedRole === 'owner' || ownerId === currentUserId);
+  const ownerEmail = String(team?.owner?.email || '').toLowerCase();
+  const currentUserEmail = String(user?.email || '').toLowerCase();
+  const emailOwnerMatch = Boolean(ownerEmail && currentUserEmail && ownerEmail === currentUserEmail);
+  const derivedRole = team?.currentUserRole || myMember?.role || ((ownerId === currentUserId || emailOwnerMatch) ? 'owner' : null);
+  const isOwner = Boolean(team?.currentUserIsOwner || derivedRole === 'owner' || ownerId === currentUserId || emailOwnerMatch);
   const isOwnerOrAdmin = Boolean(isOwner || derivedRole === 'admin');
   const canDeleteTeam = Boolean(team?.currentUserCanDelete || isOwner);
   const canManageMembers = Boolean(team?.currentUserCanManageMembers || isOwnerOrAdmin);
