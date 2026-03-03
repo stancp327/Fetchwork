@@ -170,13 +170,14 @@ const TeamsPage = () => {
       ) : (
         <div className="teams-grid">
           {teams.map(team => {
-            const currentUserId = user?._id || user?.id;
+            const currentUserId = String(user?._id || user?.id || '');
             const myMember = team.members?.find((m) => {
               const memberUserId = m.user?._id || m.user?.id || m.user;
-              return String(memberUserId) === String(currentUserId);
+              return String(memberUserId) === currentUserId;
             });
             const activeMembers = team.members?.filter(m => m.status === 'active') || [];
-            const isOwner = Boolean(team.currentUserIsOwner || team.currentUserRole === 'owner' || myMember?.role === 'owner');
+            const myRole = team.currentUserRole || myMember?.role;
+            const isOwner = Boolean(team.currentUserIsOwner || myRole === 'owner');
             return (
               <Link to={`/teams/${team._id}`} key={team._id} className="team-card">
                 <div className="team-card-header">
@@ -193,7 +194,7 @@ const TeamsPage = () => {
                 {team.description && <p className="team-description">{team.description}</p>}
                 <div className="team-card-footer">
                   <span className="team-members-count">{activeMembers.length} member{activeMembers.length !== 1 ? 's' : ''}</span>
-                  {myMember && <span className="team-my-role">{roleIcons[myMember.role]} {myMember.role}</span>}
+                  {myRole && <span className="team-my-role">{roleIcons[myRole]} {myRole}</span>}
                 </div>
                 {isOwner && (
                   <div style={{ marginTop: '0.5rem' }}>

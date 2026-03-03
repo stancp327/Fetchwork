@@ -9,10 +9,15 @@ const emailService = require('../services/emailService');
 // All routes require auth
 router.use(authenticateToken);
 
+const VALID_ROLES = ['owner', 'admin', 'manager', 'member'];
+
+function getId(value) {
+  return String(value?._id || value?.id || value || '');
+}
+
 function normalizeTeamForUser(team, userId) {
   const normalized = team.toObject ? team.toObject() : team;
   const uid = String(userId);
-  const getId = (value) => String(value?._id || value?.id || value || '');
 
   const myMember = (normalized.members || []).find((m) =>
     getId(m.user) === uid && m.status === 'active'
@@ -21,12 +26,14 @@ function normalizeTeamForUser(team, userId) {
   const ownerId = getId(normalized.owner);
   const currentUserRole = myMember?.role || (ownerId === uid ? 'owner' : null);
   const currentUserIsOwner = currentUserRole === 'owner';
+  const currentUserCanManageMembers = ['owner', 'admin'].includes(currentUserRole);
 
   return {
     ...normalized,
     currentUserRole,
     currentUserIsOwner,
     currentUserCanDelete: currentUserIsOwner,
+    currentUserCanManageMembers,
   };
 }
 
@@ -80,9 +87,10 @@ router.post('/', async (req, res) => {
 
     const populated = await Team.findById(team._id)
       .populate('owner', 'firstName lastName email profileImage')
-      .populate('members.user', 'firstName lastName email profileImage');
+      .populate('members.user', 'firstName lastName email profileImage')
+      .lean();
 
-    res.status(201).json({ team: populated });
+    res.status(201).json({ team: normalizeTeamForUser(populated, req.user.userId) });
   } catch (err) {
     console.error('Create team error:', err.message);
     res.status(500).json({ error: 'Failed to create team' });
@@ -168,16 +176,26 @@ router.post('/:id/invite', async (req, res) => {
       return res.status(400).json({ error: 'Maximum 50 members per team' });
     }
 
+    const safeRole = VALID_ROLES.includes(role) && role !== 'owner' ? role : 'member';
     const defaultPerms = team.settings?.defaultMemberPermissions || ['view_analytics', 'message_clients'];
 
-    team.members.push({
-      user: invitee._id,
-      role: role === 'owner' ? 'member' : role, // can't invite as owner
-      permissions: permissions || defaultPerms,
-      title: title || '',
-      invitedBy: req.user.userId,
-      status: 'invited',
-    });
+    if (existing && existing.status === 'removed') {
+      existing.status = 'invited';
+      existing.role = safeRole;
+      existing.permissions = permissions || defaultPerms;
+      existing.title = title || '';
+      existing.invitedBy = req.user.userId;
+      existing.invitedAt = new Date();
+    } else {
+      team.members.push({
+        user: invitee._id,
+        role: safeRole,
+        permissions: permissions || defaultPerms,
+        title: title || '',
+        invitedBy: req.user.userId,
+        status: 'invited',
+      });
+    }
 
     await team.save();
 
@@ -186,7 +204,7 @@ router.post('/:id/invite', async (req, res) => {
       invitee.email,
       `You're invited to join ${team.name} on FetchWork`,
       `<p>Hi ${invitee.firstName || 'there'},</p>
-       <p>${req.user.email || 'A team admin'} invited you to join <strong>${team.name}</strong> as <strong>${role}</strong>.</p>
+       <p>${req.user.email || 'A team admin'} invited you to join <strong>${team.name}</strong> as <strong>${safeRole}</strong>.</p>
        <p>Open your Teams page to accept or decline this invite.</p>
        <div style="text-align:center; margin:24px 0;">
          <a href="${inviteLink}" style="background:#4285f4;color:white;padding:10px 18px;border-radius:6px;text-decoration:none;display:inline-block;">View Team Invitation</a>
@@ -289,8 +307,20 @@ router.patch('/:id/members/:userId', async (req, res) => {
       if (requester.role !== 'owner') return res.status(403).json({ error: 'Only owner can promote to admin' });
     }
 
-    if (req.body.role) member.role = req.body.role;
-    if (req.body.permissions) member.permissions = req.body.permissions;
+    if (req.body.role !== undefined) {
+      if (!VALID_ROLES.includes(req.body.role) || req.body.role === 'owner') {
+        return res.status(400).json({ error: 'Invalid role' });
+      }
+      member.role = req.body.role;
+    }
+
+    if (req.body.permissions !== undefined) {
+      if (!Array.isArray(req.body.permissions)) {
+        return res.status(400).json({ error: 'Permissions must be an array' });
+      }
+      member.permissions = req.body.permissions;
+    }
+
     if (req.body.title !== undefined) member.title = req.body.title;
 
     await team.save();
@@ -324,8 +354,12 @@ router.delete('/:id', async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
-    const member = team.getMember(req.user.userId);
-    if (!member || member.role !== 'owner') {
+    const ownerId = getId(team.owner);
+    const requesterId = String(req.user.userId || req.user._id || req.user.id);
+    const member = team.getMember(requesterId);
+    const isOwner = ownerId === requesterId || member?.role === 'owner';
+
+    if (!isOwner) {
       return res.status(403).json({ error: 'Only the team owner can delete the team' });
     }
 

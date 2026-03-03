@@ -41,8 +41,13 @@ const TeamDetail = () => {
 
   useEffect(() => { fetchTeam(); }, [fetchTeam]);
 
-  const myMember = team?.members?.find(m => (m.user?._id || m.user) === user?._id);
-  const isOwnerOrAdmin = myMember && (myMember.role === 'owner' || myMember.role === 'admin');
+  const currentUserId = String(user?._id || user?.id || '');
+  const myMember = team?.members?.find((m) => String(m.user?._id || m.user?.id || m.user || '') === currentUserId);
+  const derivedRole = team?.currentUserRole || myMember?.role || null;
+  const isOwner = Boolean(team?.currentUserIsOwner || derivedRole === 'owner');
+  const isOwnerOrAdmin = Boolean(isOwner || derivedRole === 'admin');
+  const canDeleteTeam = Boolean(team?.currentUserCanDelete || isOwner);
+  const canManageMembers = Boolean(team?.currentUserCanManageMembers || isOwnerOrAdmin);
   const activeMembers = team?.members?.filter(m => m.status === 'active') || [];
 
   const inviteMember = async (e) => {
@@ -148,9 +153,14 @@ const TeamDetail = () => {
           </div>
         </div>
         {isOwnerOrAdmin && (
-          <button className="btn btn-ghost btn-sm" onClick={() => setEditing(!editing)}>
-            {editing ? 'Cancel' : '⚙️ Settings'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setEditing(!editing)}>
+              {editing ? 'Cancel' : '⚙️ Settings'}
+            </button>
+            {canDeleteTeam && (
+              <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
+            )}
+          </div>
         )}
       </div>
 
@@ -174,7 +184,7 @@ const TeamDetail = () => {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-primary btn-sm" onClick={saveSettings}>Save</button>
-            {myMember?.role === 'owner' && (
+            {canDeleteTeam && (
               <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
             )}
           </div>
@@ -199,7 +209,7 @@ const TeamDetail = () => {
       {activeTab === 'members' && (
         <div style={{ marginTop: '1rem' }}>
           {/* Invite form */}
-          {isOwnerOrAdmin && (
+          {canManageMembers && (
             <form onSubmit={inviteMember} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
               <input
                 type="email" required placeholder="Email address"
@@ -209,7 +219,7 @@ const TeamDetail = () => {
               <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '8px' }}>
                 <option value="member">Member</option>
                 <option value="manager">Manager</option>
-                {myMember?.role === 'owner' && <option value="admin">Admin</option>}
+                {isOwner && <option value="admin">Admin</option>}
               </select>
               <button type="submit" className="btn btn-primary btn-sm" disabled={inviting}>
                 {inviting ? 'Inviting…' : 'Invite'}
@@ -241,7 +251,7 @@ const TeamDetail = () => {
                       </div>
                     </div>
                   </div>
-                  {isOwnerOrAdmin && m.role !== 'owner' && m.status === 'active' && (
+                  {canManageMembers && m.role !== 'owner' && m.status === 'active' && (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <select
                         value={m.role}
@@ -250,7 +260,7 @@ const TeamDetail = () => {
                       >
                         <option value="member">Member</option>
                         <option value="manager">Manager</option>
-                        {myMember?.role === 'owner' && <option value="admin">Admin</option>}
+                        {isOwner && <option value="admin">Admin</option>}
                       </select>
                       <button onClick={() => removeMember(u._id)} className="btn btn-danger btn-sm" style={{ fontSize: '0.75rem' }}>Remove</button>
                     </div>
@@ -265,14 +275,21 @@ const TeamDetail = () => {
       {/* Billing tab */}
       {activeTab === 'billing' && (
         <div style={{ marginTop: '1rem' }}>
-          <BillingSection teamId={id} canManage={team.hasPermission?.(user?._id, 'manage_billing') || isOwnerOrAdmin} />
+          <BillingSection
+            teamId={id}
+            canManage={Boolean(isOwnerOrAdmin || myMember?.permissions?.includes('manage_billing'))}
+          />
         </div>
       )}
 
       {/* Assignments tab */}
       {activeTab === 'assignments' && (
         <div style={{ marginTop: '1rem' }}>
-          <AssignmentsSection teamId={id} members={activeMembers} canAssign={team.hasPermission?.(user?._id, 'assign_work') || isOwnerOrAdmin} />
+          <AssignmentsSection
+            teamId={id}
+            members={activeMembers}
+            canAssign={Boolean(isOwnerOrAdmin || myMember?.permissions?.includes('assign_work'))}
+          />
         </div>
       )}
 
