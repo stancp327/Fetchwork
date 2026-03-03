@@ -13,6 +13,7 @@ const TeamsPage = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [newTeam, setNewTeam] = useState({ name: '', type: 'client_team', description: '' });
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const fetchTeams = useCallback(async () => {
     try {
@@ -35,15 +36,22 @@ const TeamsPage = () => {
   const createTeam = async (e) => {
     e.preventDefault();
     if (!newTeam.name.trim()) return;
+    setCreateError('');
     setCreating(true);
     try {
       const data = await apiRequest('/api/teams', {
         method: 'POST',
         body: JSON.stringify(newTeam),
       });
-      navigate(`/teams/${data.team._id}`);
+
+      const teamId = data?.team?._id;
+      if (!teamId) {
+        throw new Error('Team created, but no team ID was returned. Please refresh and open from your Teams list.');
+      }
+
+      navigate(`/teams/${teamId}`);
     } catch (err) {
-      alert(err.message || 'Failed to create team');
+      setCreateError(err.message || 'Failed to create team');
     } finally {
       setCreating(false);
     }
@@ -110,6 +118,7 @@ const TeamsPage = () => {
               placeholder="What does your team do?"
             />
           </div>
+          {createError && <p style={{ color: '#dc2626', marginTop: '0.25rem' }}>{createError}</p>}
           <button type="submit" className="btn btn-primary" disabled={creating}>
             {creating ? 'Creating…' : 'Create Team'}
           </button>

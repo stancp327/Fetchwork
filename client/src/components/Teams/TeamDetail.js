@@ -10,6 +10,8 @@ const TeamDetail = () => {
   const navigate = useNavigate();
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState('members');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
@@ -22,11 +24,16 @@ const TeamDetail = () => {
   const fetchTeam = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError('');
+      setNotFound(false);
       const data = await apiRequest(`/api/teams/${id}`);
       setTeam(data.team);
       setEditForm({ name: data.team.name, description: data.team.description, approvalThreshold: data.team.approvalThreshold });
     } catch (err) {
       console.error('Failed to load team:', err);
+      setTeam(null);
+      setNotFound(err?.status === 404);
+      setLoadError(err?.message || 'Failed to load team details');
     } finally {
       setLoading(false);
     }
@@ -105,7 +112,21 @@ const TeamDetail = () => {
   const roleColors = { owner: '#f59e0b', admin: '#8b5cf6', manager: '#3b82f6', member: '#6b7280' };
 
   if (loading) return <div className="teams-page"><div className="teams-loading">Loading team…</div></div>;
-  if (!team) return <div className="teams-page"><div className="teams-empty"><h3>Team not found</h3></div></div>;
+  if (!team && notFound) return <div className="teams-page"><div className="teams-empty"><h3>Team not found</h3><p>This team may have been deleted or your access changed.</p><button className="btn btn-ghost btn-sm" onClick={() => navigate('/teams')}>Back to Teams</button></div></div>;
+  if (!team && loadError) {
+    return (
+      <div className="teams-page">
+        <div className="teams-empty">
+          <h3>Couldn’t load team</h3>
+          <p style={{ marginBottom: '0.75rem' }}>{loadError}</p>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+            <button className="btn btn-primary btn-sm" onClick={fetchTeam}>Retry</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/teams')}>Back to Teams</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="teams-page">
