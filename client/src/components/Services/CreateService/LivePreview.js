@@ -1,5 +1,6 @@
 import React from 'react';
-import { BILLING_CYCLES, SESSION_DURATIONS } from './constants';
+import { getCategoryLabel } from '../../../utils/categories';
+import { BILLING_CYCLES, LOCATION_TYPES, SESSION_DURATIONS } from './constants';
 
 const LivePreview = ({ data }) => {
   const isRecurring = data.serviceType === 'recurring';

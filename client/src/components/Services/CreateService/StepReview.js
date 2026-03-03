@@ -1,6 +1,6 @@
 import React from 'react';
 import { getCategoryLabel } from '../../../utils/categories';
-import { SESSION_DURATIONS, BILLING_CYCLES } from './constants';
+import { SESSION_DURATIONS, BILLING_CYCLES, LOCATION_TYPES } from './constants';
 
 const StepReview = ({ data }) => {
   const isRecurring = data.serviceType === 'recurring';
