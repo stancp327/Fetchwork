@@ -220,7 +220,51 @@ jobs:
           path: e2e/test-results/
           retention-days: 7
 
-  # ── 5. Coverage gate ───────────────────────────────────────────────────────
+  # ── 5. Dependency security audit (non-blocking report) ────────────────────
+  security-audit:
+    name: Security — Dependency Audit
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install server deps
+        run: npm ci
+        working-directory: server
+
+      - name: Install client deps
+        run: npm ci
+        working-directory: client
+
+      - name: Run npm audit (server)
+        run: npm audit --omit=dev --json > ../server-audit.json || true
+        working-directory: server
+
+      - name: Run npm audit (client)
+        run: npm audit --omit=dev --json > ../client-audit.json || true
+        working-directory: client
+
+      - name: Publish audit summary
+        run: |
+          echo "## Dependency Audit" >> $GITHUB_STEP_SUMMARY
+          node -e "const fs=require('fs'); const files=['server-audit.json','client-audit.json']; for(const f of files){ if(!fs.existsSync(f)){continue;} const j=JSON.parse(fs.readFileSync(f,'utf8')); const m=j.metadata?.vulnerabilities||{}; const total=(m.info||0)+(m.low||0)+(m.moderate||0)+(m.high||0)+(m.critical||0); console.log(`### ${f.replace('-audit.json','')}\n- Critical: ${m.critical||0}\n- High: ${m.high||0}\n- Moderate: ${m.moderate||0}\n- Low: ${m.low||0}\n- Total: ${total}\n`);} " >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: |
+            server-audit.json
+            client-audit.json
+          retention-days: 14
+
+  # ── 6. Coverage gate ───────────────────────────────────────────────────────
   coverage-gate:
     name: Coverage Gate
     runs-on: ubuntu-latest
