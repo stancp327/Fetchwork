@@ -44,7 +44,10 @@ router.get('/', async (req, res) => {
 
     const teams = await Team.find({
       isActive: true,
-      members: { $elemMatch: { user: userId, status: 'active' } },
+      $or: [
+        { owner: userId },
+        { members: { $elemMatch: { user: userId, status: 'active' } } },
+      ],
     })
       .populate('owner', 'firstName lastName email profileImage')
       .populate('members.user', 'firstName lastName email profileImage')
@@ -108,10 +111,13 @@ router.get('/:id', async (req, res) => {
 
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
 
+    const ownerId = getId(team.owner);
     const isMember = (team.members || []).some((m) =>
       String(m.user?._id || m.user?.id || m.user) === String(userId) && m.status === 'active'
     );
-    if (!isMember) return res.status(403).json({ error: 'Not a team member' });
+    const isOwner = ownerId === String(userId);
+
+    if (!isMember && !isOwner) return res.status(403).json({ error: 'Not a team member' });
 
     res.json({ team: normalizeTeamForUser(team, userId) });
   } catch (err) {
