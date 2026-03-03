@@ -352,7 +352,7 @@ router.patch('/:id/members/:userId', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/:id/invitations — pending invitations for current user ──
+// ── GET /api/teams/invitations/pending — pending invitations for current user ──
 router.get('/invitations/pending', async (req, res) => {
   try {
     const teams = await Team.find({
@@ -509,9 +509,6 @@ router.post('/:id/billing/add-funds', async (req, res) => {
     const amount = parseFloat(req.body.amount);
     if (!amount || amount < 5 || amount > 500) return res.status(400).json({ error: 'Amount must be $5–$500' });
 
-    const BillingCredit = require('../models/BillingCredit');
-    const stripeService = require('../services/stripeService');
-
     // Create Stripe Checkout for team
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
@@ -550,7 +547,6 @@ router.get('/:id/billing', async (req, res) => {
       return res.status(403).json({ error: 'No permission' });
     }
 
-    const BillingCredit = require('../models/BillingCredit');
     const credits = await BillingCredit.find({
       team: team._id, status: 'active', remaining: { $gt: 0 },
       $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],

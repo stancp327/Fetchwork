@@ -91,6 +91,7 @@ const TeamsPage = () => {
   };
 
   const roleIcons = { owner: '👑', admin: '⭐', manager: '📋', member: '👤' };
+  const currentUserId = String(user?._id || user?.id || '');
 
   return (
     <div className="teams-page">
@@ -174,7 +175,6 @@ const TeamsPage = () => {
       ) : (
         <div className="teams-grid">
           {teams.map(team => {
-            const currentUserId = String(user?._id || user?.id || '');
             const myMember = team.members?.find((m) => {
               const memberUserId = m.user?._id || m.user?.id || m.user;
               return String(memberUserId) === currentUserId;

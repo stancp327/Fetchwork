@@ -18,8 +18,6 @@ const TeamDetail = () => {
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
-  const [billing, setBilling] = useState(null);
-  const [assignments, setAssignments] = useState([]);
 
   const fetchTeam = useCallback(async () => {
     try {
@@ -56,7 +54,6 @@ const TeamDetail = () => {
   const isOwner = Boolean(isOwnerById || isOwnerByEmail || isOwnerByMemberRole || isOwnerByServerFlag);
   const isAdmin = myMember?.role === 'admin' || team?.currentUserRole === 'admin';
   const isOwnerOrAdmin = Boolean(isOwner || isAdmin);
-  const canDeleteTeam = isOwner;
   const canManageMembers = Boolean(isOwnerOrAdmin || team?.currentUserCanManageMembers);
   const activeMembers = team?.members?.filter(m => m.status === 'active') || [];
 
@@ -166,7 +163,7 @@ const TeamDetail = () => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {(isOwnerOrAdmin || canManageMembers) && (
+          {canManageMembers && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(!editing)}>
               {editing ? 'Cancel' : '⚙️ Settings'}
             </button>
@@ -202,7 +199,7 @@ const TeamDetail = () => {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-primary btn-sm" onClick={saveSettings}>Save</button>
-            {canDeleteTeam && (
+            {isOwner && (
               <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
             )}
           </div>
@@ -305,7 +302,6 @@ const TeamDetail = () => {
         <div style={{ marginTop: '1rem' }}>
           <AssignmentsSection
             teamId={id}
-            members={activeMembers}
             canAssign={Boolean(isOwnerOrAdmin || myMember?.permissions?.includes('assign_work'))}
           />
         </div>
@@ -394,7 +390,7 @@ const BillingSection = ({ teamId, canManage }) => {
 };
 
 // ── Assignments sub-component ──
-const AssignmentsSection = ({ teamId, members, canAssign }) => {
+const AssignmentsSection = ({ teamId, canAssign }) => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
 
