@@ -1,0 +1,81 @@
+diff --git a/client/src/components/Teams/TeamDetail.js b/client/src/components/Teams/TeamDetail.js
+index 4b0169e..0000000 100644
+--- a/client/src/components/Teams/TeamDetail.js
++++ b/client/src/components/Teams/TeamDetail.js
+@@ -18,8 +18,6 @@ const TeamDetail = () => {
+   const [inviting, setInviting] = useState(false);
+   const [editing, setEditing] = useState(false);
+   const [editForm, setEditForm] = useState({});
+-  const [billing, setBilling] = useState(null);
+-  const [assignments, setAssignments] = useState([]);
+@@ -56,7 +54,6 @@ const TeamDetail = () => {
+   const isOwner = Boolean(isOwnerById || isOwnerByEmail || isOwnerByMemberRole || isOwnerByServerFlag);
+   const isAdmin = myMember?.role === 'admin' || team?.currentUserRole === 'admin';
+   const isOwnerOrAdmin = Boolean(isOwner || isAdmin);
+-  const canDeleteTeam = isOwner;
+   const canManageMembers = Boolean(isOwnerOrAdmin || team?.currentUserCanManageMembers);
+   const activeMembers = team?.members?.filter(m => m.status === 'active') || [];
+@@ -166,7 +163,7 @@ const TeamDetail = () => {
+         </div>
+         <div style={{ display: 'flex', gap: '0.5rem' }}>
+-          {(isOwnerOrAdmin || canManageMembers) && (
++          {canManageMembers && (
+             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(!editing)}>
+               {editing ? 'Cancel' : '⚙️ Settings'}
+             </button>
+@@ -200,7 +197,7 @@ const TeamDetail = () => {
+           <div style={{ display: 'flex', gap: '0.5rem' }}>
+             <button className="btn btn-primary btn-sm" onClick={saveSettings}>Save</button>
+-            {canDeleteTeam && (
++            {isOwner && (
+               <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
+             )}
+           </div>
+@@ -305,7 +302,6 @@ const TeamDetail = () => {
+         <div style={{ marginTop: '1rem' }}>
+           <AssignmentsSection
+             teamId={id}
+-            members={activeMembers}
+             canAssign={Boolean(isOwnerOrAdmin || myMember?.permissions?.includes('assign_work'))}
+           />
+         </div>
+@@ -394,7 +390,7 @@ const BillingSection = ({ teamId, canManage }) => {
+ };
+ 
+ // ── Assignments sub-component ──
+-const AssignmentsSection = ({ teamId, members, canAssign }) => {
++const AssignmentsSection = ({ teamId, canAssign }) => {
+   const [assignments, setAssignments] = useState([]);
+   const [loading, setLoading] = useState(true);
+
+diff --git a/server/routes/teams.js b/server/routes/teams.js
+index 5b8f559..0000000 100644
+--- a/server/routes/teams.js
++++ b/server/routes/teams.js
+@@ -352,7 +352,7 @@ router.patch('/:id/members/:userId', async (req, res) => {
+   }
+ });
+ 
+-// ── GET /api/teams/:id/invitations — pending invitations for current user ──
++// ── GET /api/teams/invitations/pending — pending invitations for current user ──
+ router.get('/invitations/pending', async (req, res) => {
+   try {
+     const teams = await Team.find({
+@@ -509,9 +509,6 @@ router.post('/:id/billing/add-funds', async (req, res) => {
+     const amount = parseFloat(req.body.amount);
+     if (!amount || amount < 5 || amount > 500) return res.status(400).json({ error: 'Amount must be $5–$500' });
+ 
+-    const BillingCredit = require('../models/BillingCredit');
+-    const stripeService = require('../services/stripeService');
+-
+     // Create Stripe Checkout for team
+     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+ 
+@@ -550,7 +547,6 @@ router.get('/:id/billing', async (req, res) => {
+       return res.status(403).json({ error: 'No permission' });
+     }
+ 
+-    const BillingCredit = require('../models/BillingCredit');
+     const credits = await BillingCredit.find({
+       team: team._id, status: 'active', remaining: { $gt: 0 },
+       $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],

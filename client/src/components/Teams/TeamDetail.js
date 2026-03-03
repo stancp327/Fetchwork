@@ -24,6 +24,21 @@ const TeamDetail = () => {
   const [transferTargetUserId, setTransferTargetUserId] = useState('');
   const [transferringOwner, setTransferringOwner] = useState(false);
 
+  // Phase 2 state
+  const [approvals, setApprovals] = useState([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
+  const [approvalFilter, setApprovalFilter] = useState('');
+  const [showApprovalForm, setShowApprovalForm] = useState(false);
+  const [approvalForm, setApprovalForm] = useState({ action: 'payout', amount: '', metadata: '' });
+  const [controls, setControls] = useState(null);
+  const [controlsLoading, setControlsLoading] = useState(false);
+  const [controlsForm, setControlsForm] = useState({
+    monthlyCapEnabled: false, monthlyCap: 0, alertThreshold: 80,
+    payoutRequiresApproval: false, payoutThresholdAmount: 0, requireDualControl: false,
+  });
+  const [savingControls, setSavingControls] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
+
   const fetchTeam = useCallback(async () => {
     try {
       setLoading(true);
@@ -138,6 +153,125 @@ const TeamDetail = () => {
       setAuditLoading(false);
     }
   }, [id]);
+
+  const fetchApprovals = useCallback(async (statusFilter) => {
+    try {
+      setApprovalsLoading(true);
+      const qs = statusFilter ? `?status=${statusFilter}` : '';
+      const data = await apiRequest(`/api/teams/${id}/approvals${qs}`);
+      setApprovals(data.approvals || []);
+    } catch (err) {
+      console.error('Failed to load approvals:', err);
+    } finally {
+      setApprovalsLoading(false);
+    }
+  }, [id]);
+
+  const fetchControls = useCallback(async () => {
+    try {
+      setControlsLoading(true);
+      const data = await apiRequest(`/api/teams/${id}/spend-controls`);
+      setControls(data);
+      setControlsForm({
+        monthlyCapEnabled: data.spendControls?.monthlyCapEnabled || false,
+        monthlyCap: data.spendControls?.monthlyCap || 0,
+        alertThreshold: Math.round((data.spendControls?.alertThreshold || 0.8) * 100),
+        payoutRequiresApproval: data.approvalThresholds?.payoutRequiresApproval || false,
+        payoutThresholdAmount: data.approvalThresholds?.payoutThresholdAmount || 0,
+        requireDualControl: data.approvalThresholds?.requireDualControl || false,
+      });
+    } catch (err) {
+      console.error('Failed to load controls:', err);
+    } finally {
+      setControlsLoading(false);
+    }
+  }, [id]);
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      const data = await apiRequest(`/api/teams/${id}/analytics`);
+      setAnalytics(data);
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+    }
+  }, [id]);
+
+  const createApproval = async (e) => {
+    e.preventDefault();
+    try {
+      const body = { action: approvalForm.action };
+      if (['payout', 'spend'].includes(approvalForm.action) && approvalForm.amount) {
+        body.amount = Number(approvalForm.amount);
+      }
+      if (approvalForm.metadata) body.metadata = { note: approvalForm.metadata };
+      await apiRequest(`/api/teams/${id}/approvals`, {
+        method: 'POST', body: JSON.stringify(body),
+      });
+      setShowApprovalForm(false);
+      setApprovalForm({ action: 'payout', amount: '', metadata: '' });
+      fetchApprovals(approvalFilter);
+    } catch (err) {
+      alert(err.message || 'Failed to create approval request');
+    }
+  };
+
+  const handleApprove = async (approvalId) => {
+    try {
+      await apiRequest(`/api/teams/${id}/approvals/${approvalId}/approve`, { method: 'POST', body: JSON.stringify({}) });
+      fetchApprovals(approvalFilter);
+    } catch (err) {
+      alert(err.message || 'Failed to approve');
+    }
+  };
+
+  const handleReject = async (approvalId) => {
+    const reason = window.prompt('Reason for rejection (optional):');
+    if (reason === null) return;
+    try {
+      await apiRequest(`/api/teams/${id}/approvals/${approvalId}/reject`, {
+        method: 'POST', body: JSON.stringify({ reason }),
+      });
+      fetchApprovals(approvalFilter);
+    } catch (err) {
+      alert(err.message || 'Failed to reject');
+    }
+  };
+
+  const handleCancelApproval = async (approvalId) => {
+    if (!window.confirm('Cancel this approval request?')) return;
+    try {
+      await apiRequest(`/api/teams/${id}/approvals/${approvalId}`, { method: 'DELETE' });
+      fetchApprovals(approvalFilter);
+    } catch (err) {
+      alert(err.message || 'Failed to cancel');
+    }
+  };
+
+  const saveControls = async () => {
+    setSavingControls(true);
+    try {
+      await apiRequest(`/api/teams/${id}/spend-controls`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          spendControls: {
+            monthlyCapEnabled: controlsForm.monthlyCapEnabled,
+            monthlyCap: Number(controlsForm.monthlyCap),
+            alertThreshold: Number(controlsForm.alertThreshold) / 100,
+          },
+          approvalThresholds: {
+            payoutRequiresApproval: controlsForm.payoutRequiresApproval,
+            payoutThresholdAmount: Number(controlsForm.payoutThresholdAmount),
+            requireDualControl: controlsForm.requireDualControl,
+          },
+        }),
+      });
+      fetchControls();
+    } catch (err) {
+      alert(err.message || 'Failed to save controls');
+    } finally {
+      setSavingControls(false);
+    }
+  };
 
   const transferOwnership = async () => {
     if (!transferTargetUserId) return;
@@ -271,14 +405,28 @@ const TeamDetail = () => {
 
       {/* Tabs */}
       <div className="team-detail-tabs" style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
-        {['members', 'billing', 'assignments', 'activity', ...(isOwnerOrAdmin ? ['audit'] : [])].map(tab => (
+        {['members', 'billing', 'assignments', 'activity', ...(isOwnerOrAdmin ? ['approvals'] : []), ...(isOwner ? ['controls'] : []), ...(isOwnerOrAdmin ? ['audit'] : [])].map(tab => (
           <button
             key={tab}
             className={`btn btn-ghost btn-sm ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => { setActiveTab(tab); if (tab === 'audit') fetchAuditLogs(); }}
+            onClick={() => {
+              setActiveTab(tab);
+              if (tab === 'audit') fetchAuditLogs();
+              if (tab === 'approvals') fetchApprovals(approvalFilter);
+              if (tab === 'controls') fetchControls();
+              if (tab === 'billing') fetchAnalytics();
+            }}
             style={{ fontWeight: activeTab === tab ? 700 : 400, borderBottom: activeTab === tab ? '2px solid #3b82f6' : 'none' }}
           >
-            {tab === 'members' ? `Members (${activeMembers.length})` : tab === 'billing' ? '💰 Billing' : tab === 'assignments' ? '📋 Assignments' : tab === 'activity' ? 'Activity' : '🧾 Audit'}
+            {{
+              members: `Members (${activeMembers.length})`,
+              billing: '💰 Billing',
+              assignments: '📋 Assignments',
+              activity: 'Activity',
+              approvals: '✅ Approvals',
+              controls: '⚙️ Controls',
+              audit: '🧾 Audit',
+            }[tab]}
           </button>
         ))}
       </div>
@@ -386,6 +534,31 @@ const TeamDetail = () => {
       {/* Billing tab */}
       {activeTab === 'billing' && (
         <div style={{ marginTop: '1rem' }}>
+          {isOwnerOrAdmin && analytics && (
+            <div className="team-analytics-summary">
+              <div className="team-analytics-card">
+                <div className="team-analytics-label">Members</div>
+                <div className="team-analytics-value">{analytics.memberCount}</div>
+              </div>
+              <div className="team-analytics-card">
+                <div className="team-analytics-label">This Month Spend</div>
+                <div className="team-analytics-value">${(analytics.totalSpend || 0).toFixed(2)}</div>
+                {analytics.spendCapUtilization !== null && (
+                  <div className="team-spend-bar">
+                    <div
+                      className="team-spend-bar-fill"
+                      style={{ width: `${Math.min(analytics.spendCapUtilization * 100, 100)}%` }}
+                      data-level={analytics.spendCapUtilization >= 0.9 ? 'red' : analytics.spendCapUtilization >= 0.7 ? 'amber' : 'green'}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="team-analytics-card">
+                <div className="team-analytics-label">Pending Approvals</div>
+                <div className="team-analytics-value">{analytics.approvalStats?.pending || 0}</div>
+              </div>
+            </div>
+          )}
           <BillingSection
             teamId={id}
             canManage={Boolean(isOwnerOrAdmin || myMember?.permissions?.includes('manage_billing'))}
@@ -407,6 +580,163 @@ const TeamDetail = () => {
       {activeTab === 'activity' && (
         <div style={{ marginTop: '1rem' }}>
           <ActivitySection teamId={id} />
+        </div>
+      )}
+
+      {/* Approvals tab */}
+      {activeTab === 'approvals' && isOwnerOrAdmin && (
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3 style={{ margin: 0 }}>Approval Requests</h3>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowApprovalForm(!showApprovalForm)}>
+              {showApprovalForm ? 'Cancel' : '+ Request Approval'}
+            </button>
+          </div>
+
+          {showApprovalForm && (
+            <form onSubmit={createApproval} className="team-controls-form" style={{ marginBottom: '1rem' }}>
+              <div className="team-controls-row">
+                <label>Action</label>
+                <select value={approvalForm.action} onChange={e => setApprovalForm({ ...approvalForm, action: e.target.value })}>
+                  <option value="payout">Payout</option>
+                  <option value="spend">Spend</option>
+                  <option value="role_change">Role Change</option>
+                  <option value="member_remove">Member Remove</option>
+                </select>
+              </div>
+              {['payout', 'spend'].includes(approvalForm.action) && (
+                <div className="team-controls-row">
+                  <label>Amount ($)</label>
+                  <input type="number" min="0" step="0.01" value={approvalForm.amount} onChange={e => setApprovalForm({ ...approvalForm, amount: e.target.value })} placeholder="0.00" />
+                </div>
+              )}
+              <div className="team-controls-row">
+                <label>Note (optional)</label>
+                <input value={approvalForm.metadata} onChange={e => setApprovalForm({ ...approvalForm, metadata: e.target.value })} placeholder="Details about this request" />
+              </div>
+              <button type="submit" className="btn btn-primary btn-sm">Submit Request</button>
+            </form>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            {['', 'pending', 'approved', 'rejected'].map(s => (
+              <button
+                key={s}
+                className={`btn btn-ghost btn-sm ${approvalFilter === s ? 'active' : ''}`}
+                style={{ fontWeight: approvalFilter === s ? 700 : 400, borderBottom: approvalFilter === s ? '2px solid #3b82f6' : 'none' }}
+                onClick={() => { setApprovalFilter(s); fetchApprovals(s); }}
+              >
+                {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {approvalsLoading ? <p>Loading approvals...</p> : (
+            <div className="team-approvals-list">
+              {approvals.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>No approval requests found.</div>
+              ) : approvals.map(a => {
+                const requesterId = String(a.requestedBy?._id || a.requestedBy);
+                const isMyRequest = requesterId === currentUserId;
+                const statusColors = { pending: '#f59e0b', approved: '#16a34a', rejected: '#dc2626', expired: '#6b7280', cancelled: '#9ca3af' };
+                return (
+                  <div key={a._id} className="team-approval-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, textTransform: 'capitalize' }}>{(a.action || '').replace('_', ' ')}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                          By {a.requestedBy?.firstName || 'User'} {a.requestedBy?.lastName || ''}
+                          {a.amount ? ` · $${Number(a.amount).toFixed(2)}` : ''}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: `${statusColors[a.status]}20`, color: statusColors[a.status] }}>
+                        {a.status}
+                      </span>
+                    </div>
+                    {a.status === 'pending' && a.expiresAt && (
+                      <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                        Expires: {new Date(a.expiresAt).toLocaleString()}
+                      </div>
+                    )}
+                    {a.status === 'pending' && (
+                      <div className="team-approval-actions">
+                        {!isMyRequest && (
+                          <>
+                            <button className="btn btn-primary btn-sm" onClick={() => handleApprove(a._id)}>Approve</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleReject(a._id)}>Reject</button>
+                          </>
+                        )}
+                        {(isMyRequest || isOwner) && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => handleCancelApproval(a._id)}>Cancel</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Controls tab */}
+      {activeTab === 'controls' && isOwner && (
+        <div style={{ marginTop: '1rem' }}>
+          {controlsLoading ? <p>Loading controls...</p> : (
+            <div>
+              <div className="team-controls-section">
+                <h3>Spend Controls</h3>
+                <div className="team-controls-form">
+                  <div className="team-controls-row">
+                    <label>
+                      <input type="checkbox" checked={controlsForm.monthlyCapEnabled} onChange={e => setControlsForm({ ...controlsForm, monthlyCapEnabled: e.target.checked })} />
+                      {' '}Enable Monthly Spend Cap
+                    </label>
+                  </div>
+                  {controlsForm.monthlyCapEnabled && (
+                    <>
+                      <div className="team-controls-row">
+                        <label>Monthly Cap ($)</label>
+                        <input type="number" min="0" value={controlsForm.monthlyCap} onChange={e => setControlsForm({ ...controlsForm, monthlyCap: e.target.value })} />
+                      </div>
+                      <div className="team-controls-row">
+                        <label>Alert Threshold (%)</label>
+                        <input type="number" min="0" max="100" value={controlsForm.alertThreshold} onChange={e => setControlsForm({ ...controlsForm, alertThreshold: e.target.value })} />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="team-controls-section" style={{ marginTop: '1.5rem' }}>
+                <h3>Approval Thresholds</h3>
+                <div className="team-controls-form">
+                  <div className="team-controls-row">
+                    <label>
+                      <input type="checkbox" checked={controlsForm.payoutRequiresApproval} onChange={e => setControlsForm({ ...controlsForm, payoutRequiresApproval: e.target.checked })} />
+                      {' '}Require Approval for Payouts
+                    </label>
+                  </div>
+                  {controlsForm.payoutRequiresApproval && (
+                    <div className="team-controls-row">
+                      <label>Payout Threshold ($)</label>
+                      <input type="number" min="0" value={controlsForm.payoutThresholdAmount} onChange={e => setControlsForm({ ...controlsForm, payoutThresholdAmount: e.target.value })} />
+                    </div>
+                  )}
+                  <div className="team-controls-row">
+                    <label>
+                      <input type="checkbox" checked={controlsForm.requireDualControl} onChange={e => setControlsForm({ ...controlsForm, requireDualControl: e.target.checked })} />
+                      {' '}Require Dual Control (2 approvers)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <button className="btn btn-primary" onClick={saveControls} disabled={savingControls} style={{ marginTop: '1rem' }}>
+                {savingControls ? 'Saving...' : 'Save Controls'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

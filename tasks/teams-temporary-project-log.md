@@ -170,3 +170,5 @@ Delete this temporary file when:
 1. Teams Phase 1/2 are shipped and stable,
 2. key learnings are migrated to long-term docs (`memory/fetchwork.md`, strategy docs, and permanent architecture docs),
 3. open risk list is empty or moved to canonical backlog.
+
+- Added legacy guard-field migration script: server/scripts/backfill-team-guards.js (backfills lockVersion, 	ransferState, 	ransferTargetUserId for pre-guard team docs).

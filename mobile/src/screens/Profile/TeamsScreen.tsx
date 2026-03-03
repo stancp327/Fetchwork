@@ -1,55 +1,235 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, RefreshControl } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
 import { teamsApi } from '../../api/endpoints/teamsApi';
-import { colors, spacing, typography, radius } from '../../theme';
+import { ProfileStackParamList } from '../../types/navigation';
+import { colors, radius, spacing, typography } from '../../theme';
 
-export default function TeamsScreen() {
-  const { data, refetch, isRefetching, isLoading } = useQuery({
+type Props = NativeStackScreenProps<ProfileStackParamList, 'Teams'>;
+
+export default function TeamsScreen({ navigation }: Props) {
+  const queryClient = useQueryClient();
+  const [name, setName] = useState('');
+  const [type, setType] = useState<'client_team' | 'agency'>('client_team');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const teamsQuery = useQuery({
     queryKey: ['mobile-teams'],
     queryFn: () => teamsApi.getMyTeams(),
   });
 
-  const teams = data?.teams || [];
+  const invitesQuery = useQuery({
+    queryKey: ['mobile-team-invitations'],
+    queryFn: () => teamsApi.getPendingInvitations(),
+  });
+
+  const queryError = (teamsQuery.error as any)?.response?.data?.error
+    || (invitesQuery.error as any)?.response?.data?.error;
+
+
+  const createMutation = useMutation({
+    mutationFn: () => teamsApi.createTeam({ name: name.trim(), type }),
+    onSuccess: () => {
+      setMessage('Team created');
+      setError('');
+      setName('');
+      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to create team');
+      setMessage('');
+    },
+  });
+
+  const invitationMutation = useMutation({
+    mutationFn: ({ teamId, action }: { teamId: string; action: 'accept' | 'decline' }) =>
+      action === 'accept' ? teamsApi.acceptInvitation(teamId) : teamsApi.declineInvitation(teamId),
+    onSuccess: () => {
+      setMessage('Invitation updated');
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['mobile-team-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to update invitation');
+      setMessage('');
+    },
+  });
+
+  const isRefreshing = teamsQuery.isRefetching || invitesQuery.isRefetching;
+  const isLoading = teamsQuery.isLoading || invitesQuery.isLoading;
+
+  const onRefresh = () => {
+    setError('');
+    setMessage('');
+    teamsQuery.refetch();
+    invitesQuery.refetch();
+  };
+
+  const onCreateTeam = () => {
+    if (!name.trim()) {
+      setError('Team name is required');
+      setMessage('');
+      return;
+    }
+    setError('');
+    setMessage('');
+    createMutation.mutate();
+  };
+
+  const teams = teamsQuery.data?.teams || [];
+  const invitations = invitesQuery.data?.invitations || [];
 
   return (
     <SafeAreaView style={styles.safe}>
-      <FlatList
-        data={teams}
-        keyExtractor={(item) => item._id}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
-        contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, flexGrow: 1 }}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyTitle}>{isLoading ? 'Loading teams…' : 'No teams yet'}</Text>
-            <Text style={styles.emptySub}>Create or join a team on web and they’ll appear here.</Text>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Create Team</Text>
+          <Input
+            label="Team Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="My Team"
+          />
+
+          <View style={styles.optionRow}>
+            <Button
+              label="Client Team"
+              size="sm"
+              variant={type === 'client_team' ? 'primary' : 'secondary'}
+              onPress={() => setType('client_team')}
+              style={{ flex: 1 }}
+            />
+            <Button
+              label="Agency"
+              size="sm"
+              variant={type === 'agency' ? 'primary' : 'secondary'}
+              onPress={() => setType('agency')}
+              style={{ flex: 1 }}
+            />
           </View>
-        }
-        renderItem={({ item }) => (
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {!error && queryError ? <Text style={styles.error}>{queryError}</Text> : null}
+          {message ? <Text style={styles.success}>{message}</Text> : null}
+
+          <Button
+            label="Create Team"
+            onPress={onCreateTeam}
+            loading={createMutation.isPending}
+            disabled={createMutation.isPending}
+            fullWidth
+          />
+        </View>
+
+        {invitations.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.meta}>{item.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
-            <Text style={styles.meta}>{(item.members || []).filter(m => m.status === 'active').length} active members</Text>
+            <Text style={styles.sectionTitle}>Pending Invitations</Text>
+            {invitations.map((invite) => (
+              <View key={invite._id} style={styles.teamRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.teamName}>{invite.name}</Text>
+                  <Text style={styles.teamMeta}>{invite.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
+                </View>
+                <View style={styles.actionsRow}>
+                  <Button
+                    label="Accept"
+                    size="sm"
+                    variant="success"
+                    onPress={() => {
+                      setError('');
+                      setMessage('');
+                      invitationMutation.mutate({ teamId: invite._id, action: 'accept' });
+                    }}
+                    disabled={invitationMutation.isPending}
+                  />
+                  <Button
+                    label="Decline"
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => {
+                      setError('');
+                      setMessage('');
+                      invitationMutation.mutate({ teamId: invite._id, action: 'decline' });
+                    }}
+                    disabled={invitationMutation.isPending}
+                  />
+                </View>
+              </View>
+            ))}
           </View>
         )}
-      />
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>My Teams</Text>
+          {!teams.length ? (
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyTitle}>{isLoading ? 'Loading teams…' : 'No teams yet'}</Text>
+              <Text style={styles.emptySub}>Create one above or accept an invite.</Text>
+            </View>
+          ) : (
+            teams.map((team) => {
+              const activeCount = (team.members || []).filter((m) => m.status === 'active').length;
+              return (
+                <View key={team._id} style={styles.teamRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.teamName}>{team.name}</Text>
+                    <Text style={styles.teamMeta}>{team.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
+                    <Text style={styles.teamMeta}>{activeCount} active members</Text>
+                  </View>
+                  <Button
+                    label="Open"
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => navigation.navigate('TeamDetail', { teamId: team._id })}
+                  />
+                </View>
+              );
+            })
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bgSubtle },
+  scroll: { padding: spacing.md, gap: spacing.sm },
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    gap: 4,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  name: { ...typography.body, fontWeight: '700', color: colors.textDark },
-  meta: { ...typography.caption, color: colors.textSecondary },
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xl * 2 },
+  sectionTitle: { ...typography.label, color: colors.textSecondary },
+  optionRow: { flexDirection: 'row', gap: spacing.xs },
+  error: { ...typography.caption, color: colors.danger },
+  success: { ...typography.caption, color: colors.success },
+  teamRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+    marginTop: spacing.xs,
+    gap: spacing.sm,
+  },
+  actionsRow: { flexDirection: 'row', gap: spacing.xs },
+  teamName: { ...typography.body, fontWeight: '700', color: colors.textDark },
+  teamMeta: { ...typography.caption, color: colors.textSecondary },
+  emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl },
   emptyTitle: { ...typography.h4, marginBottom: spacing.xs },
   emptySub: { ...typography.bodySmall, color: colors.textMuted },
 });

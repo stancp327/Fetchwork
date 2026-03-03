@@ -36,6 +36,7 @@ export type ProfileStackParamList = {
   DiscoverySettings: undefined;
   Notifications:     undefined;
   Teams:             undefined;
+  TeamDetail:        { teamId: string };
   Wallet:            undefined;
   Payments:          undefined;
   Contracts:         undefined;

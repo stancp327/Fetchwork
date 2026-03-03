@@ -9,6 +9,7 @@ import SettingsScreen from '../screens/Profile/SettingsScreen';
 import DiscoverySettingsScreen from '../screens/Profile/DiscoverySettingsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import TeamsScreen from '../screens/Profile/TeamsScreen';
+import TeamDetailScreen from '../screens/Profile/TeamDetailScreen';
 import WalletScreen from '../screens/Profile/WalletScreen';
 import PaymentsScreen from '../screens/Profile/PaymentsScreen';
 import ContractsScreen from '../screens/Profile/ContractsScreen';
@@ -32,6 +33,7 @@ export default function ProfileStackNavigator() {
       <Stack.Screen name="DiscoverySettings" component={DiscoverySettingsScreen} options={{ title: 'Discovery' }} />
       <Stack.Screen name="Notifications"     component={NotificationsScreen}     options={{ title: 'Notifications' }} />
       <Stack.Screen name="Teams"             component={TeamsScreen}             options={{ title: 'Teams' }} />
+      <Stack.Screen name="TeamDetail"        component={TeamDetailScreen}        options={{ title: 'Team Details' }} />
       <Stack.Screen name="Wallet"            component={WalletScreen}            options={{ title: 'Wallet' }} />
       <Stack.Screen name="Payments"          component={PaymentsScreen}          options={{ title: 'Payments' }} />
       <Stack.Screen name="Contracts"         component={ContractsScreen}         options={{ title: 'Contracts' }} />

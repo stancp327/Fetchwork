@@ -43,6 +43,22 @@ const teamSchema = new mongoose.Schema({
   stripeCustomerId: { type: String, default: '' },
   approvalThreshold: { type: Number, default: 0 }, // orders above this need manager approval ($0 = no approval needed)
 
+  // Approval thresholds (Phase 2)
+  approvalThresholds: {
+    payoutRequiresApproval: { type: Boolean, default: false },
+    payoutThresholdAmount: { type: Number, default: 0 },
+    requireDualControl: { type: Boolean, default: false },
+  },
+
+  // Spend controls (Phase 2)
+  spendControls: {
+    monthlyCapEnabled: { type: Boolean, default: false },
+    monthlyCap: { type: Number, default: 0 },
+    alertThreshold: { type: Number, default: 0.8 },
+    currentMonthSpend: { type: Number, default: 0 },
+    capResetAt: { type: Date },
+  },
+
   // Settings
   settings: {
     allowMemberJobPosting:  { type: Boolean, default: false },

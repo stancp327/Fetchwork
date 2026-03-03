@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const BillingCredit = require('../models/BillingCredit');
 const TeamAuditLog = require('../models/TeamAuditLog');
+const TeamApproval = require('../models/TeamApproval');
 const emailService = require('../services/emailService');
 
 // All routes require auth
@@ -1154,6 +1155,378 @@ router.post('/:id/approve/:jobId', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to process approval' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 2: Approval Engine, Spend Controls, Analytics
+// ═══════════════════════════════════════════════════════════════
+
+async function expireStaleApprovals(teamId) {
+  return TeamApproval.updateMany(
+    { team: teamId, status: 'pending', expiresAt: { $lt: new Date() } },
+    { $set: { status: 'expired' } }
+  );
+}
+
+function checkSpendCap(team, amount) {
+  const sc = team.spendControls;
+  if (!sc || !sc.monthlyCapEnabled || !sc.monthlyCap) {
+    return { blocked: false, alert: false };
+  }
+  const projected = (sc.currentMonthSpend || 0) + amount;
+  if (projected > sc.monthlyCap) {
+    return { blocked: true, reason: `Exceeds monthly spend cap ($${sc.monthlyCap})`, alert: true };
+  }
+  const utilization = projected / sc.monthlyCap;
+  if (utilization >= (sc.alertThreshold || 0.8)) {
+    return { blocked: false, alert: true, reason: `Approaching spend cap (${Math.round(utilization * 100)}%)` };
+  }
+  return { blocked: false, alert: false };
+}
+
+// ── GET /api/teams/:id/approvals ── list approvals (owner/admin)
+router.get('/:id/approvals', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    await expireStaleApprovals(team._id);
+
+    const query = { team: team._id };
+    if (req.query.status) query.status = req.query.status;
+
+    const approvals = await TeamApproval.find(query)
+      .populate('requestedBy', 'firstName lastName email')
+      .populate('approvals.userId', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ approvals });
+  } catch (err) {
+    console.error('List approvals error:', err.message);
+    res.status(500).json({ error: 'Failed to load approvals' });
+  }
+});
+
+// ── POST /api/teams/:id/approvals ── create approval request
+router.post('/:id/approvals', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const ctx = getTeamAccessContext(team, requesterId);
+    if (!ctx.isMember || (!ctx.isOwner && !ctx.isAdmin && ctx.role !== 'manager')) {
+      return res.status(403).json({ error: 'Owner, admin, or manager access required' });
+    }
+
+    const { action, amount, metadata } = req.body;
+    if (!action || !['payout', 'spend', 'role_change', 'member_remove'].includes(action)) {
+      return res.status(400).json({ error: 'Valid action required (payout, spend, role_change, member_remove)' });
+    }
+
+    const requiredApprovals = team.approvalThresholds?.requireDualControl ? 2 : 1;
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+    const approval = await TeamApproval.create({
+      team: team._id,
+      requestedBy: requesterId,
+      action,
+      amount: amount || undefined,
+      metadata: metadata || undefined,
+      requiredApprovals,
+      expiresAt,
+    });
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: requesterId,
+      action: 'approval_requested',
+      metadata: { approvalId: approval._id, approvalAction: action, amount },
+      req,
+    });
+
+    res.status(201).json({ approval });
+  } catch (err) {
+    console.error('Create approval error:', err.message);
+    res.status(500).json({ error: 'Failed to create approval request' });
+  }
+});
+
+// ── POST /api/teams/:id/approvals/:approvalId/approve ── approve
+router.post('/:id/approvals/:approvalId/approve', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const approval = await TeamApproval.findOne({ _id: req.params.approvalId, team: team._id });
+    if (!approval) return res.status(404).json({ error: 'Approval not found' });
+    if (approval.status !== 'pending') return res.status(400).json({ error: `Approval is already ${approval.status}` });
+    if (String(approval.requestedBy) === requesterId) {
+      return res.status(403).json({ error: 'Cannot approve your own request' });
+    }
+
+    const alreadyApproved = approval.approvals.some(a => String(a.userId) === requesterId);
+    if (alreadyApproved) return res.status(400).json({ error: 'Already approved by you' });
+
+    approval.approvals.push({
+      userId: requesterId,
+      approvedAt: new Date(),
+      note: req.body.note || '',
+    });
+
+    if (approval.isQuorumMet()) {
+      approval.status = 'approved';
+      approval.executedAt = new Date();
+    }
+
+    await approval.save();
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: requesterId,
+      action: 'approval_approved',
+      metadata: { approvalId: approval._id, approvalAction: approval.action, quorumMet: approval.isQuorumMet() },
+      req,
+    });
+
+    res.json({ approval });
+  } catch (err) {
+    console.error('Approve error:', err.message);
+    res.status(500).json({ error: 'Failed to approve' });
+  }
+});
+
+// ── POST /api/teams/:id/approvals/:approvalId/reject ── reject
+router.post('/:id/approvals/:approvalId/reject', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const approval = await TeamApproval.findOne({ _id: req.params.approvalId, team: team._id });
+    if (!approval) return res.status(404).json({ error: 'Approval not found' });
+    if (approval.status !== 'pending') return res.status(400).json({ error: `Approval is already ${approval.status}` });
+
+    approval.rejections.push({
+      userId: requesterId,
+      rejectedAt: new Date(),
+      reason: req.body.reason || '',
+    });
+    approval.status = 'rejected';
+    await approval.save();
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: requesterId,
+      action: 'approval_rejected',
+      metadata: { approvalId: approval._id, approvalAction: approval.action, reason: req.body.reason },
+      req,
+    });
+
+    res.json({ approval });
+  } catch (err) {
+    console.error('Reject error:', err.message);
+    res.status(500).json({ error: 'Failed to reject' });
+  }
+});
+
+// ── DELETE /api/teams/:id/approvals/:approvalId ── cancel (requestedBy or owner)
+router.delete('/:id/approvals/:approvalId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const approval = await TeamApproval.findOne({ _id: req.params.approvalId, team: team._id });
+    if (!approval) return res.status(404).json({ error: 'Approval not found' });
+    if (approval.status !== 'pending') return res.status(400).json({ error: `Approval is already ${approval.status}` });
+
+    const isRequester = String(approval.requestedBy) === requesterId;
+    const ctx = getTeamAccessContext(team, requesterId);
+    if (!isRequester && !ctx.isOwner) {
+      return res.status(403).json({ error: 'Only the requester or team owner can cancel' });
+    }
+
+    approval.status = 'cancelled';
+    await approval.save();
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: requesterId,
+      action: 'approval_cancelled',
+      metadata: { approvalId: approval._id, approvalAction: approval.action },
+      req,
+    });
+
+    res.json({ message: 'Approval cancelled' });
+  } catch (err) {
+    console.error('Cancel approval error:', err.message);
+    res.status(500).json({ error: 'Failed to cancel approval' });
+  }
+});
+
+// ── PATCH /api/teams/:id/spend-controls ── update spend controls (owner only)
+router.patch('/:id/spend-controls', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const ctx = getTeamAccessContext(team, requesterId);
+    if (!ctx.isOwner) return res.status(403).json({ error: 'Only the team owner can manage spend controls' });
+
+    const { spendControls, approvalThresholds } = req.body;
+
+    if (spendControls) {
+      if (spendControls.monthlyCap !== undefined && spendControls.monthlyCap < 0) {
+        return res.status(400).json({ error: 'Monthly cap must be >= 0' });
+      }
+      if (spendControls.alertThreshold !== undefined && (spendControls.alertThreshold < 0 || spendControls.alertThreshold > 1)) {
+        return res.status(400).json({ error: 'Alert threshold must be between 0 and 1' });
+      }
+
+      const before = team.spendControls ? team.spendControls.toObject() : {};
+
+      if (spendControls.monthlyCapEnabled !== undefined) team.spendControls.monthlyCapEnabled = spendControls.monthlyCapEnabled;
+      if (spendControls.monthlyCap !== undefined) {
+        const capChanged = team.spendControls.monthlyCap !== spendControls.monthlyCap;
+        team.spendControls.monthlyCap = spendControls.monthlyCap;
+        if (capChanged) {
+          team.spendControls.currentMonthSpend = 0;
+          const now = new Date();
+          team.spendControls.capResetAt = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        }
+      }
+      if (spendControls.alertThreshold !== undefined) team.spendControls.alertThreshold = spendControls.alertThreshold;
+    }
+
+    if (approvalThresholds) {
+      if (approvalThresholds.payoutThresholdAmount !== undefined && approvalThresholds.payoutThresholdAmount < 0) {
+        return res.status(400).json({ error: 'Payout threshold must be >= 0' });
+      }
+      if (approvalThresholds.payoutRequiresApproval !== undefined) team.approvalThresholds.payoutRequiresApproval = approvalThresholds.payoutRequiresApproval;
+      if (approvalThresholds.payoutThresholdAmount !== undefined) team.approvalThresholds.payoutThresholdAmount = approvalThresholds.payoutThresholdAmount;
+      if (approvalThresholds.requireDualControl !== undefined) team.approvalThresholds.requireDualControl = approvalThresholds.requireDualControl;
+    }
+
+    await team.save();
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: requesterId,
+      action: 'spend_controls_updated',
+      after: { spendControls: team.spendControls, approvalThresholds: team.approvalThresholds },
+      req,
+    });
+
+    res.json({ spendControls: team.spendControls, approvalThresholds: team.approvalThresholds });
+  } catch (err) {
+    console.error('Update spend controls error:', err.message);
+    res.status(500).json({ error: 'Failed to update spend controls' });
+  }
+});
+
+// ── GET /api/teams/:id/spend-controls ── read spend controls (owner/admin)
+router.get('/:id/spend-controls', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    res.json({ spendControls: team.spendControls, approvalThresholds: team.approvalThresholds });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load spend controls' });
+  }
+});
+
+// ── GET /api/teams/:id/analytics ── team analytics (owner/admin)
+router.get('/:id/analytics', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id)
+      .populate('members.user', 'firstName lastName')
+      .lean();
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const activeMembers = (team.members || []).filter(m => m.status === 'active');
+    const pendingInvites = (team.members || []).filter(m => m.status === 'invited');
+    const memberIds = activeMembers.map(m => m.user?._id || m.user);
+
+    const Job = require('../models/Job');
+
+    const [assignmentCount, approvalStats, recentActivity, jobsByMember] = await Promise.all([
+      Job.countDocuments({ team: team._id, assignedTo: { $in: memberIds } }),
+      TeamApproval.aggregate([
+        { $match: { team: team._id } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      TeamAuditLog.find({ team: team._id })
+        .populate('actor', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+      Job.aggregate([
+        { $match: { team: team._id, assignedTo: { $in: memberIds.map(id => new mongoose.Types.ObjectId(String(id))) } } },
+        { $group: { _id: '$assignedTo', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const approvalStatsObj = { pending: 0, approved: 0, rejected: 0, expired: 0 };
+    approvalStats.forEach(s => { if (approvalStatsObj.hasOwnProperty(s._id)) approvalStatsObj[s._id] = s.count; });
+
+    const sc = team.spendControls || {};
+    const spendCapUtilization = sc.monthlyCapEnabled && sc.monthlyCap > 0
+      ? Math.round(((sc.currentMonthSpend || 0) / sc.monthlyCap) * 100) / 100
+      : null;
+
+    const memberActivity = activeMembers.map(m => {
+      const uid = String(m.user?._id || m.user);
+      const match = jobsByMember.find(j => String(j._id) === uid);
+      return {
+        userId: uid,
+        name: `${m.user?.firstName || ''} ${m.user?.lastName || ''}`.trim(),
+        role: m.role,
+        assignmentCount: match ? match.count : 0,
+      };
+    });
+
+    res.json({
+      memberCount: activeMembers.length,
+      activeMembers: activeMembers.length,
+      pendingInvites: pendingInvites.length,
+      assignmentCount,
+      totalSpend: sc.currentMonthSpend || 0,
+      spendCapUtilization,
+      approvalStats: approvalStatsObj,
+      recentActivity: recentActivity.map(a => ({
+        actor: `${a.actor?.firstName || ''} ${a.actor?.lastName || ''}`.trim(),
+        action: a.action,
+        createdAt: a.createdAt,
+      })),
+      memberActivity,
+    });
+  } catch (err) {
+    console.error('Analytics error:', err.message);
+    res.status(500).json({ error: 'Failed to load analytics' });
   }
 });
 
