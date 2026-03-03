@@ -51,6 +51,11 @@ const teamSchema = new mongoose.Schema({
     defaultMemberPermissions: { type: [String], default: ['view_analytics', 'message_clients'] },
   },
 
+  // Ownership transfer + race-safety guards
+  transferState: { type: String, enum: ['idle', 'pending', 'applying'], default: 'idle' },
+  transferTargetUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  lockVersion: { type: Number, default: 0 },
+
   isActive:    { type: Boolean, default: true },
 }, { timestamps: true });
 

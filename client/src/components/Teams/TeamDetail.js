@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -18,6 +18,11 @@ const TeamDetail = () => {
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState('');
+  const [transferTargetUserId, setTransferTargetUserId] = useState('');
+  const [transferringOwner, setTransferringOwner] = useState(false);
 
   const fetchTeam = useCallback(async () => {
     try {
@@ -120,7 +125,39 @@ const TeamDetail = () => {
     }
   };
 
-  const roleIcons = { owner: '👑', admin: '⭐', manager: '📋', member: '👤' };
+  const fetchAuditLogs = useCallback(async () => {
+    try {
+      setAuditLoading(true);
+      setAuditError('');
+      const data = await apiRequest(`/api/teams/${id}/audit-logs?limit=50`);
+      setAuditLogs(data.logs || []);
+    } catch (err) {
+      setAuditError(err?.message || 'Failed to load audit logs');
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [id]);
+
+  const transferOwnership = async () => {
+    if (!transferTargetUserId) return;
+    if (!window.confirm('Transfer ownership? This will remove your owner privileges.')) return;
+
+    try {
+      setTransferringOwner(true);
+      await apiRequest(`/api/teams/${id}/transfer-ownership`, {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId: transferTargetUserId }),
+      });
+      setTransferTargetUserId('');
+      await Promise.all([fetchTeam(), fetchAuditLogs()]);
+    } catch (err) {
+      alert(err?.message || 'Failed to transfer ownership');
+    } finally {
+      setTransferringOwner(false);
+    }
+  };
+
+  const roleIcons = { owner: '👑', admin: '★', manager: '📋', member: '👤' };
   const roleColors = { owner: '#f59e0b', admin: '#8b5cf6', manager: '#3b82f6', member: '#6b7280' };
 
   if (loading) return <div className="teams-page"><div className="teams-loading">Loading team…</div></div>;
@@ -208,14 +245,14 @@ const TeamDetail = () => {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
-        {['members', 'billing', 'assignments', 'activity'].map(tab => (
+        {['members', 'billing', 'assignments', 'activity', ...(isOwnerOrAdmin ? ['audit'] : [])].map(tab => (
           <button
             key={tab}
             className={`btn btn-ghost btn-sm ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => { setActiveTab(tab); if (tab === 'audit') fetchAuditLogs(); }}
             style={{ fontWeight: activeTab === tab ? 700 : 400, borderBottom: activeTab === tab ? '2px solid #3b82f6' : 'none' }}
           >
-            {tab === 'members' ? `Members (${activeMembers.length})` : tab === 'billing' ? '💰 Billing' : tab === 'assignments' ? '📋 Assignments' : 'Activity'}
+            {tab === 'members' ? `Members (${activeMembers.length})` : tab === 'billing' ? '💰 Billing' : tab === 'assignments' ? '📋 Assignments' : tab === 'activity' ? 'Activity' : '🧾 Audit'}
           </button>
         ))}
       </div>
@@ -240,6 +277,39 @@ const TeamDetail = () => {
                 {inviting ? 'Inviting…' : 'Invite'}
               </button>
             </form>
+          )}
+
+          {/* Ownership transfer */}
+          {isOwner && activeMembers.filter(m => m.role !== 'owner').length > 0 && (
+            <div style={{ marginBottom: '1rem', padding: '0.75rem', border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 10 }}>
+              <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Transfer Ownership</div>
+              <p style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '0.85rem', color: '#92400e' }}>
+                Transfer owner privileges to another active member.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <select
+                  value={transferTargetUserId}
+                  onChange={(e) => setTransferTargetUserId(e.target.value)}
+                  style={{ minWidth: '220px', padding: '0.4rem 0.5rem', border: '1px solid #f59e0b', borderRadius: 8 }}
+                >
+                  <option value="">Select new owner…</option>
+                  {activeMembers
+                    .filter((m) => m.role !== 'owner')
+                    .map((m) => {
+                      const uid = String(m.user?._id || m.user?.id || m.user || '');
+                      const name = `${m.user?.firstName || ''} ${m.user?.lastName || ''}`.trim() || m.user?.email || uid;
+                      return <option key={uid} value={uid}>{name} ({m.role})</option>;
+                    })}
+                </select>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={transferOwnership}
+                  disabled={!transferTargetUserId || transferringOwner}
+                >
+                  {transferringOwner ? 'Transferring…' : 'Transfer Ownership'}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Member list */}
@@ -314,6 +384,18 @@ const TeamDetail = () => {
         </div>
       )}
 
+      {/* Audit tab */}
+      {activeTab === 'audit' && isOwnerOrAdmin && (
+        <div style={{ marginTop: '1rem' }}>
+          <AuditSection
+            logs={auditLogs}
+            loading={auditLoading}
+            error={auditError}
+            onRefresh={fetchAuditLogs}
+          />
+        </div>
+      )}
+
       <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #fee2e2' }}>
         <h4 style={{ marginBottom: '0.5rem', color: '#b91c1c' }}>Danger Zone</h4>
         <p style={{ marginTop: 0, marginBottom: '0.75rem', color: '#7f1d1d', fontSize: '0.9rem' }}>
@@ -332,7 +414,7 @@ const TeamDetail = () => {
   );
 };
 
-// ── Billing sub-component ──
+// Billing sub-component
 const BillingSection = ({ teamId, canManage }) => {
   const [billing, setBilling] = useState(null);
   const [addAmount, setAddAmount] = useState('');
@@ -389,7 +471,7 @@ const BillingSection = ({ teamId, canManage }) => {
   );
 };
 
-// ── Assignments sub-component ──
+// Assignments sub-component
 const AssignmentsSection = ({ teamId, canAssign }) => {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -466,4 +548,41 @@ const ActivitySection = ({ teamId }) => {
   );
 };
 
+const AuditSection = ({ logs, loading, error, onRefresh }) => {
+  if (loading) return <p>Loading audit logs…</p>;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+        <h4 style={{ margin: 0 }}>Audit Trail</h4>
+        <button className="btn btn-ghost btn-sm" onClick={onRefresh}>Refresh</button>
+      </div>
+      {error && <p style={{ color: '#b91c1c', marginTop: 0 }}>{error}</p>}
+      {!logs?.length ? (
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: '#9ca3af' }}>No audit events yet.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {logs.map((log) => (
+            <div key={log._id} style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <div style={{ fontWeight: 600 }}>{(log.action || '').replaceAll('_', ' ')}</div>
+              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>
+                By {log.actor?.firstName || 'User'} {log.actor?.lastName || ''} • {new Date(log.createdAt).toLocaleString()}
+              </div>
+              {log.targetUser && (
+                <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.2rem' }}>
+                  Target: {log.targetUser?.firstName || ''} {log.targetUser?.lastName || ''}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default TeamDetail;
+
+
+
+

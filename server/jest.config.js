@@ -11,16 +11,13 @@ module.exports = {
   projects: [
     {
       displayName: 'unit',
-      // Includes both new unit/ subfolder AND legacy root-level test files
-      testMatch:   [
-        '<rootDir>/__tests__/unit/**/*.test.js',
-        '<rootDir>/__tests__/*.test.js',  // existing auth.test.js, jobs.test.js etc.
-      ],
+      // Regex avoids Windows path-escape issues from absolute rootDir strings
+      testRegex: ['/__tests__/(?!integration/).*\\.test\\.js$'],
       testEnvironment: 'node',
     },
     {
       displayName:  'integration',
-      testMatch:    ['<rootDir>/__tests__/integration/**/*.test.js'],
+      testRegex:    ['/__tests__/integration/.*\\.test\\.js$'],
       testEnvironment: 'node',
       globalSetup:    '<rootDir>/__tests__/setup/globalSetup.js',
       globalTeardown: '<rootDir>/__tests__/setup/globalTeardown.js',
@@ -39,7 +36,7 @@ module.exports = {
     '!config/**',
     '!crons/**',   // covered indirectly
   ],
-  coverageThresholds: {
+  coverageThreshold: {
     global:                      { branches: 55, functions: 65, lines: 65, statements: 65 },
     '<rootDir>/routes/payments.js': { lines: 85 },
     '<rootDir>/routes/jobs.js':     { lines: 75 },

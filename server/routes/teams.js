@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/auth');
 const Team = require('../models/Team');
 const User = require('../models/User');
 const BillingCredit = require('../models/BillingCredit');
+const TeamAuditLog = require('../models/TeamAuditLog');
 const emailService = require('../services/emailService');
 
 // All routes require auth
@@ -35,6 +36,84 @@ function normalizeTeamForUser(team, userId) {
     currentUserCanDelete: currentUserIsOwner,
     currentUserCanManageMembers,
   };
+}
+
+function resolveRequester(req) {
+  const id = String(req.user?.userId || req.user?._id || req.user?.id || '');
+  return { id };
+}
+
+function getTeamAccessContext(team, requesterId) {
+  const ownerId = getId(team.owner);
+  const activeMember = (team.members || []).find((m) =>
+    getId(m.user) === requesterId && m.status === 'active'
+  );
+
+  const role = ownerId === requesterId ? 'owner' : (activeMember?.role || null);
+  const permissions = new Set(activeMember?.permissions || []);
+  const isOwner = role === 'owner';
+  const isAdmin = role === 'admin';
+
+  return {
+    isOwner,
+    isAdmin,
+    isMember: Boolean(activeMember || isOwner),
+    role,
+    permissions,
+    canManageMembers: isOwner || isAdmin || permissions.has('manage_members'),
+    canManageBilling: isOwner || isAdmin || permissions.has('manage_billing'),
+    canApproveOrders: isOwner || isAdmin || permissions.has('approve_orders'),
+    canAssignWork: isOwner || isAdmin || permissions.has('assign_work'),
+    canManagePortfolio: isOwner || isAdmin || permissions.has('manage_services'),
+    canReadBilling: isOwner || isAdmin || permissions.has('manage_billing') || permissions.has('view_analytics'),
+  };
+}
+
+function authorizeTeamAction({ team, requesterId, action }) {
+  const ctx = getTeamAccessContext(team, requesterId);
+
+  const allowed = {
+    read_team: ctx.isMember,
+    manage_team: ctx.isOwner || ctx.isAdmin,
+    invite_member: ctx.canManageMembers,
+    remove_member: ctx.canManageMembers,
+    update_member_role: ctx.canManageMembers,
+    promote_admin: ctx.isOwner,
+    transfer_ownership: ctx.isOwner,
+    delete_team: ctx.isOwner,
+    manage_billing: ctx.canManageBilling,
+    read_billing: ctx.canReadBilling,
+    assign_work: ctx.canAssignWork,
+    read_assignments: ctx.isMember,
+    read_activity: ctx.isMember,
+    read_approvals: ctx.canApproveOrders,
+    decide_approvals: ctx.canApproveOrders,
+    manage_portfolio: ctx.canManagePortfolio,
+    read_audit_logs: ctx.isOwner || ctx.isAdmin,
+  };
+
+  return { ok: Boolean(allowed[action]), ctx };
+}
+
+function getRequestContext(req) {
+  return {
+    ipAddress: String(req.ip || req.headers['x-forwarded-for'] || ''),
+    userAgent: String(req.get('user-agent') || ''),
+  };
+}
+
+async function logTeamAudit({ teamId, actorId, action, targetUser = null, before = null, after = null, reason = '', metadata = null, req }) {
+  return TeamAuditLog.logSafe({
+    team: teamId,
+    actor: actorId,
+    action,
+    targetUser,
+    before,
+    after,
+    reason,
+    metadata,
+    ...(req ? getRequestContext(req) : {}),
+  });
 }
 
 // ── GET /api/teams — list user's teams ──
@@ -144,9 +223,12 @@ router.get('/:id', async (req, res) => {
 // ── PUT /api/teams/:id — update team settings ──
 router.put('/:id', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.isOwnerOrAdmin(req.user.userId)) return res.status(403).json({ error: 'Admin access required' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_team' });
+    if (!authz.ok) return res.status(403).json({ error: 'Admin access required' });
 
     const allowed = ['name', 'description', 'logo', 'website', 'specialties', 'isPublic', 'billingEmail', 'approvalThreshold', 'settings'];
     allowed.forEach(field => {
@@ -163,12 +245,15 @@ router.put('/:id', async (req, res) => {
 // ── POST /api/teams/:id/invite — invite a member ──
 router.post('/:id/invite', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const { email, role = 'member', permissions, title } = req.body;
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.hasPermission(req.user.userId, 'manage_members')) {
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) {
       return res.status(403).json({ error: 'No permission to manage members' });
     }
 
@@ -187,8 +272,8 @@ router.post('/:id/invite', async (req, res) => {
 
     // Prevent non-owners from inviting admins
     if (role === 'admin' || role === 'owner') {
-      const inviter = team.getMember(req.user.userId);
-      if (inviter.role !== 'owner') {
+      const promoteAuthz = authorizeTeamAction({ team, requesterId, action: 'promote_admin' });
+      if (!promoteAuthz.ok) {
         return res.status(403).json({ error: 'Only the team owner can invite admins' });
       }
     }
@@ -283,11 +368,12 @@ router.post('/:id/decline', async (req, res) => {
 // ── DELETE /api/teams/:id/members/:userId — remove a member ──
 router.delete('/:id/members/:userId', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
 
     const targetUserId = req.params.userId;
-    const isSelf = targetUserId === req.user.userId;
+    const isSelf = targetUserId === requesterId;
 
     // Can't remove the owner
     const target = team.members.find(m => m.user.toString() === targetUserId);
@@ -295,8 +381,11 @@ router.delete('/:id/members/:userId', async (req, res) => {
     if (target.role === 'owner') return res.status(400).json({ error: "Can't remove the team owner" });
 
     // Must be self (leaving) or have manage_members permission
-    if (!isSelf && !team.hasPermission(req.user.userId, 'manage_members')) {
-      return res.status(403).json({ error: 'No permission to remove members' });
+    if (!isSelf) {
+      const authz = authorizeTeamAction({ team, requesterId, action: 'remove_member' });
+      if (!authz.ok) {
+        return res.status(403).json({ error: 'No permission to remove members' });
+      }
     }
 
     target.status = 'removed';
@@ -313,9 +402,12 @@ router.delete('/:id/members/:userId', async (req, res) => {
 // ── PATCH /api/teams/:id/members/:userId — update member role/permissions ──
 router.patch('/:id/members/:userId', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.hasPermission(req.user.userId, 'manage_members')) {
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'update_member_role' });
+    if (!authz.ok) {
       return res.status(403).json({ error: 'No permission to manage members' });
     }
 
@@ -325,28 +417,82 @@ router.patch('/:id/members/:userId', async (req, res) => {
 
     // Only owner can promote to admin
     if (req.body.role === 'admin') {
-      const requester = team.getMember(req.user.userId);
-      if (requester.role !== 'owner') return res.status(403).json({ error: 'Only owner can promote to admin' });
+      const promoteAuthz = authorizeTeamAction({ team, requesterId, action: 'promote_admin' });
+      if (!promoteAuthz.ok) return res.status(403).json({ error: 'Only owner can promote to admin' });
     }
+
+    const setOps = {};
 
     if (req.body.role !== undefined) {
       if (!VALID_ROLES.includes(req.body.role) || req.body.role === 'owner') {
         return res.status(400).json({ error: 'Invalid role' });
       }
-      member.role = req.body.role;
+      setOps['members.$[target].role'] = req.body.role;
     }
 
     if (req.body.permissions !== undefined) {
       if (!Array.isArray(req.body.permissions)) {
         return res.status(400).json({ error: 'Permissions must be an array' });
       }
-      member.permissions = req.body.permissions;
+      setOps['members.$[target].permissions'] = req.body.permissions;
     }
 
-    if (req.body.title !== undefined) member.title = req.body.title;
+    if (req.body.title !== undefined) {
+      setOps['members.$[target].title'] = req.body.title;
+    }
 
-    await team.save();
-    res.json({ message: 'Member updated', member });
+    if (Object.keys(setOps).length === 0) {
+      return res.status(400).json({ error: 'No valid member fields to update' });
+    }
+
+    const currentLockVersion = Number(team.lockVersion || 0);
+    const updateResult = await Team.updateOne(
+      {
+        _id: team._id,
+        isActive: true,
+        transferState: 'idle',
+        lockVersion: currentLockVersion,
+      },
+      {
+        $set: setOps,
+        $inc: { lockVersion: 1 },
+      },
+      {
+        arrayFilters: [{ 'target._id': member._id, 'target.status': 'active' }],
+      }
+    );
+
+    if (!updateResult.modifiedCount) {
+      return res.status(409).json({ error: 'Team changed while updating member. Please retry.' });
+    }
+
+    const updatedTeam = await Team.findById(team._id);
+    const updatedMember = updatedTeam?.getMember(req.params.userId);
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: req.user._id,
+      action: req.body.role !== undefined
+        ? 'member_role_updated'
+        : req.body.permissions !== undefined
+          ? 'member_permissions_updated'
+          : 'member_title_updated',
+      targetUser: member.user,
+      before: {
+        role: member.role,
+        permissions: member.permissions,
+        title: member.title,
+      },
+      after: {
+        role: updatedMember?.role,
+        permissions: updatedMember?.permissions,
+        title: updatedMember?.title,
+      },
+      metadata: { teamLockVersionFrom: currentLockVersion, teamLockVersionTo: currentLockVersion + 1 },
+      req,
+    });
+
+    res.json({ message: 'Member updated', member: updatedMember });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update member' });
   }
@@ -370,27 +516,164 @@ router.get('/invitations/pending', async (req, res) => {
   }
 });
 
+// ── POST /api/teams/:id/transfer-ownership — transfer ownership (owner only) ──
+router.post('/:id/transfer-ownership', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const { targetUserId } = req.body;
+    if (!targetUserId) return res.status(400).json({ error: 'targetUserId is required' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'transfer_ownership' });
+    if (!authz.ok) return res.status(403).json({ error: 'Only the team owner can transfer ownership' });
+    if (String(targetUserId) === requesterId) return res.status(400).json({ error: 'Target is already the owner' });
+
+    const targetMember = team.getMember(targetUserId);
+    if (!targetMember) return res.status(404).json({ error: 'Target user must be an active team member' });
+    if (team.transferState && team.transferState !== 'idle') {
+      return res.status(409).json({ error: 'Ownership transfer already in progress' });
+    }
+
+    const currentLockVersion = Number(team.lockVersion || 0);
+    const beginTransfer = await Team.updateOne(
+      {
+        _id: team._id,
+        isActive: true,
+        owner: requesterId,
+        transferState: 'idle',
+        lockVersion: currentLockVersion,
+      },
+      {
+        $set: { transferState: 'applying', transferTargetUserId: targetUserId },
+        $inc: { lockVersion: 1 },
+      }
+    );
+
+    if (!beginTransfer.modifiedCount) {
+      return res.status(409).json({ error: 'Team changed while starting ownership transfer. Please retry.' });
+    }
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: req.user._id,
+      action: 'ownership_transfer_started',
+      targetUser: targetMember.user,
+      before: { owner: team.owner },
+      after: { transferState: 'applying', transferTargetUserId: targetUserId },
+      metadata: { teamLockVersionFrom: currentLockVersion, teamLockVersionTo: currentLockVersion + 1 },
+      req,
+    });
+
+    const applyTransfer = await Team.updateOne(
+      {
+        _id: team._id,
+        isActive: true,
+        owner: requesterId,
+        transferState: 'applying',
+        transferTargetUserId: targetUserId,
+        lockVersion: currentLockVersion + 1,
+      },
+      {
+        $set: {
+          owner: targetUserId,
+          transferState: 'idle',
+          transferTargetUserId: null,
+          'members.$[oldOwner].role': 'admin',
+          'members.$[newOwner].role': 'owner',
+          'members.$[newOwner].status': 'active',
+        },
+        $inc: { lockVersion: 1 },
+      },
+      {
+        arrayFilters: [
+          { 'oldOwner.user': req.user._id, 'oldOwner.status': 'active' },
+          { 'newOwner.user': targetMember.user, 'newOwner.status': 'active' },
+        ],
+      }
+    );
+
+    if (!applyTransfer.modifiedCount) {
+      await Team.updateOne(
+        { _id: team._id, transferState: 'applying', transferTargetUserId: targetUserId },
+        { $set: { transferState: 'idle', transferTargetUserId: null } }
+      );
+      return res.status(409).json({ error: 'Ownership transfer conflicted with another update. Please retry.' });
+    }
+
+    const updatedTeam = await Team.findById(team._id)
+      .populate('owner', 'firstName lastName email profileImage')
+      .populate('members.user', 'firstName lastName email profileImage')
+      .lean();
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: req.user._id,
+      action: 'ownership_transferred',
+      targetUser: targetMember.user,
+      before: { owner: team.owner },
+      after: { owner: targetMember.user, transferState: 'idle' },
+      metadata: { teamLockVersionFrom: currentLockVersion + 1, teamLockVersionTo: currentLockVersion + 2 },
+      req,
+    });
+
+    return res.json({
+      message: 'Ownership transferred',
+      team: normalizeTeamForUser(updatedTeam, requesterId),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to transfer ownership' });
+  }
+});
+
 // ── DELETE /api/teams/:id — delete team (owner only) ──
 router.delete('/:id', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
-    const ownerId = getId(team.owner);
-    const requesterId = String(req.user.userId || req.user._id || req.user.id);
-    const member = team.getMember(requesterId);
-    const isOwner = ownerId === requesterId || member?.role === 'owner';
-
-    if (!isOwner) {
+    const authz = authorizeTeamAction({ team, requesterId, action: 'delete_team' });
+    if (!authz.ok) {
       return res.status(403).json({ error: 'Only the team owner can delete the team' });
     }
 
-    team.isActive = false;
-    await team.save();
+    if (team.transferState && team.transferState !== 'idle') {
+      return res.status(409).json({ error: 'Cannot delete team while ownership transfer is in progress' });
+    }
+
+    const currentLockVersion = Number(team.lockVersion || 0);
+    const deleteResult = await Team.updateOne(
+      {
+        _id: team._id,
+        isActive: true,
+        transferState: 'idle',
+        lockVersion: currentLockVersion,
+      },
+      {
+        $set: { isActive: false },
+        $inc: { lockVersion: 1 },
+      }
+    );
+
+    if (!deleteResult.modifiedCount) {
+      return res.status(409).json({ error: 'Team changed while deleting. Please retry.' });
+    }
 
     // Remove team ref from all members
     const memberIds = team.members.map(m => m.user);
     await User.updateMany({ _id: { $in: memberIds } }, { $pull: { teams: team._id } });
+
+    await logTeamAudit({
+      teamId: team._id,
+      actorId: req.user._id,
+      action: 'team_deleted',
+      before: { isActive: true, owner: team.owner },
+      after: { isActive: false },
+      metadata: { teamLockVersionFrom: currentLockVersion, teamLockVersionTo: currentLockVersion + 1 },
+      req,
+    });
 
     res.json({ message: 'Team deleted' });
   } catch (err) {
@@ -467,10 +750,13 @@ router.get('/agency/:slug', async (req, res) => {
 // ── POST /api/teams/:id/portfolio — add portfolio item (agency only) ──
 router.post('/:id/portfolio', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
     if (team.type !== 'agency') return res.status(400).json({ error: 'Only agencies have portfolios' });
-    if (!team.hasPermission(req.user.userId, 'manage_services')) return res.status(403).json({ error: 'No permission' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_portfolio' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission' });
 
     const { title, description, image, url } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
@@ -487,9 +773,12 @@ router.post('/:id/portfolio', async (req, res) => {
 // ── DELETE /api/teams/:id/portfolio/:itemId — remove portfolio item ──
 router.delete('/:id/portfolio/:itemId', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.hasPermission(req.user.userId, 'manage_services')) return res.status(403).json({ error: 'No permission' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_portfolio' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission' });
 
     team.portfolio = team.portfolio.filter(p => p._id.toString() !== req.params.itemId);
     await team.save();
@@ -502,9 +791,12 @@ router.delete('/:id/portfolio/:itemId', async (req, res) => {
 // ── Shared Billing: team wallet top-up ──
 router.post('/:id/billing/add-funds', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.hasPermission(req.user.userId, 'manage_billing')) return res.status(403).json({ error: 'No billing permission' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_billing' });
+    if (!authz.ok) return res.status(403).json({ error: 'No billing permission' });
 
     const amount = parseFloat(req.body.amount);
     if (!amount || amount < 5 || amount > 500) return res.status(400).json({ error: 'Amount must be $5–$500' });
@@ -541,9 +833,12 @@ router.post('/:id/billing/add-funds', async (req, res) => {
 // ── GET /api/teams/:id/billing — team wallet balance + history ──
 router.get('/:id/billing', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.hasPermission(req.user.userId, 'manage_billing') && !team.hasPermission(req.user.userId, 'view_analytics')) {
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_billing' });
+    if (!authz.ok) {
       return res.status(403).json({ error: 'No permission' });
     }
 
@@ -564,9 +859,12 @@ router.get('/:id/billing', async (req, res) => {
 // ── Work Assignment: POST /api/teams/:id/assign ──
 router.post('/:id/assign', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.hasPermission(req.user.userId, 'assign_work')) return res.status(403).json({ error: 'No permission to assign work' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'assign_work' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to assign work' });
 
     const { memberId, jobId, serviceOrderId, note } = req.body;
     if (!memberId) return res.status(400).json({ error: 'memberId required' });
@@ -578,8 +876,8 @@ router.post('/:id/assign', async (req, res) => {
     // Assign job
     if (jobId) {
       const Job = require('../models/Job');
-      const job = await Job.findById(jobId);
-      if (!job) return res.status(404).json({ error: 'Job not found' });
+      const job = await Job.findOne({ _id: jobId, team: team._id });
+      if (!job) return res.status(404).json({ error: 'Job not found in this team' });
 
       job.assignedTo = memberId;
       job.assignedBy = req.user.userId;
@@ -615,14 +913,18 @@ router.post('/:id/assign', async (req, res) => {
 // ── GET /api/teams/:id/assignments — view team work assignments ──
 router.get('/:id/assignments', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_assignments' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not a team member' });
 
     const memberIds = team.members.filter(m => m.status === 'active').map(m => m.user);
     const Job = require('../models/Job');
 
     const jobs = await Job.find({
+      team: team._id,
       assignedTo: { $in: memberIds },
       status: { $in: ['open', 'in_progress', 'assigned'] },
     })
@@ -641,13 +943,15 @@ router.get('/:id/assignments', async (req, res) => {
 // ── GET /api/teams/:id/activity — combined team activity feed ──
 router.get('/:id/activity', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id)
       .populate('members.user', 'firstName lastName')
       .lean();
 
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    const isMember = (team.members || []).some(m => String(m.user?._id || m.user) === String(req.user.userId) && m.status === 'active');
-    if (!isMember) return res.status(403).json({ error: 'Not a team member' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_activity' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not a team member' });
 
     const memberEvents = (team.members || [])
       .filter(m => m.status !== 'removed')
@@ -689,17 +993,61 @@ router.get('/:id/activity', async (req, res) => {
   }
 });
 
+// ── GET /api/teams/:id/audit-logs — team audit trail (owner/admin) ──
+router.get('/:id/audit-logs', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const { action, actor, targetUser, page = 1, limit = 50 } = req.query;
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+    const safePage = Math.max(Number(page) || 1, 1);
+
+    const query = { team: team._id };
+    if (action) query.action = action;
+    if (actor) query.actor = actor;
+    if (targetUser) query.targetUser = targetUser;
+
+    const [logs, total] = await Promise.all([
+      TeamAuditLog.find(query)
+        .populate('actor', 'firstName lastName email profileImage')
+        .populate('targetUser', 'firstName lastName email profileImage')
+        .sort({ createdAt: -1 })
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
+        .lean(),
+      TeamAuditLog.countDocuments(query),
+    ]);
+
+    res.json({
+      logs,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        pages: Math.ceil(total / safeLimit) || 1,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch audit logs' });
+  }
+});
+
 // ── Approval Workflow ────────────────────────────────────────────
 
 // GET /api/teams/:id/pending-approvals — list orders needing approval
 router.get('/:id/pending-approvals', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
 
-    const member = team.getMember(req.user.userId);
-    if (!member) return res.status(403).json({ error: 'Not a team member' });
-    if (!member.permissions.includes('approve_orders') && member.role !== 'owner' && member.role !== 'admin') {
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_approvals' });
+    if (!authz.ok) {
       return res.status(403).json({ error: 'No approval permission' });
     }
 
@@ -723,6 +1071,7 @@ router.get('/:id/pending-approvals', async (req, res) => {
 // POST /api/teams/:id/approve/:jobId — approve or reject a pending order
 router.post('/:id/approve/:jobId', async (req, res) => {
   try {
+    const { id: requesterId } = resolveRequester(req);
     const { action, note } = req.body; // action: 'approve' | 'reject'
     if (!['approve', 'reject'].includes(action)) {
       return res.status(400).json({ error: 'Action must be approve or reject' });
@@ -731,9 +1080,8 @@ router.post('/:id/approve/:jobId', async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
 
-    const member = team.getMember(req.user.userId);
-    if (!member) return res.status(403).json({ error: 'Not a team member' });
-    if (!member.permissions.includes('approve_orders') && member.role !== 'owner' && member.role !== 'admin') {
+    const authz = authorizeTeamAction({ team, requesterId, action: 'decide_approvals' });
+    if (!authz.ok) {
       return res.status(403).json({ error: 'No approval permission' });
     }
 
