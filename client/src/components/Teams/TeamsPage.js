@@ -176,8 +176,9 @@ const TeamsPage = () => {
               return String(memberUserId) === currentUserId;
             });
             const activeMembers = team.members?.filter(m => m.status === 'active') || [];
-            const myRole = team.currentUserRole || myMember?.role;
-            const isOwner = Boolean(team.currentUserIsOwner || myRole === 'owner');
+            const ownerId = String(team.owner?._id || team.owner?.id || team.owner || '');
+            const myRole = team.currentUserRole || myMember?.role || (ownerId === currentUserId ? 'owner' : null);
+            const isOwner = Boolean(team.currentUserIsOwner || myRole === 'owner' || ownerId === currentUserId);
             return (
               <Link to={`/teams/${team._id}`} key={team._id} className="team-card">
                 <div className="team-card-header">

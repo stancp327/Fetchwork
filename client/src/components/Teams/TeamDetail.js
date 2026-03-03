@@ -43,8 +43,9 @@ const TeamDetail = () => {
 
   const currentUserId = String(user?._id || user?.id || '');
   const myMember = team?.members?.find((m) => String(m.user?._id || m.user?.id || m.user || '') === currentUserId);
-  const derivedRole = team?.currentUserRole || myMember?.role || null;
-  const isOwner = Boolean(team?.currentUserIsOwner || derivedRole === 'owner');
+  const ownerId = String(team?.owner?._id || team?.owner?.id || team?.owner || '');
+  const derivedRole = team?.currentUserRole || myMember?.role || (ownerId === currentUserId ? 'owner' : null);
+  const isOwner = Boolean(team?.currentUserIsOwner || derivedRole === 'owner' || ownerId === currentUserId);
   const isOwnerOrAdmin = Boolean(isOwner || derivedRole === 'admin');
   const canDeleteTeam = Boolean(team?.currentUserCanDelete || isOwner);
   const canManageMembers = Boolean(team?.currentUserCanManageMembers || isOwnerOrAdmin);
@@ -152,7 +153,7 @@ const TeamDetail = () => {
             </span>
           </div>
         </div>
-        {isOwnerOrAdmin && (
+        {(isOwnerOrAdmin || canDeleteTeam) && (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(!editing)}>
               {editing ? 'Cancel' : '⚙️ Settings'}
@@ -297,6 +298,16 @@ const TeamDetail = () => {
       {activeTab === 'activity' && (
         <div style={{ marginTop: '1rem' }}>
           <ActivitySection teamId={id} />
+        </div>
+      )}
+
+      {canDeleteTeam && (
+        <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #fee2e2' }}>
+          <h4 style={{ marginBottom: '0.5rem', color: '#b91c1c' }}>Danger Zone</h4>
+          <p style={{ marginTop: 0, marginBottom: '0.75rem', color: '#7f1d1d', fontSize: '0.9rem' }}>
+            Deleting a team is permanent and cannot be undone.
+          </p>
+          <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
         </div>
       )}
     </div>
