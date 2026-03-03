@@ -98,13 +98,36 @@ router.get('/', validateQueryParams, async (req, res) => {
       }
     }
     
-    const freelancers = await User.find(filters)
-      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
-    
-    const total = await User.countDocuments(filters);
+    let queryFilters = { ...filters };
+    let freelancers;
+    let total;
+
+    try {
+      freelancers = await User.find(queryFilters)
+        .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit);
+
+      total = await User.countDocuments(queryFilters);
+    } catch (geoErr) {
+      // Fallback: if geospatial query fails in production (e.g., index drift),
+      // degrade gracefully instead of returning 500 for freelancer browse.
+      if (queryFilters['location.coordinates']) {
+        console.warn('Freelancer geo query failed, retrying without geo filter:', geoErr.message);
+        delete queryFilters['location.coordinates'];
+
+        freelancers = await User.find(queryFilters)
+          .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limit);
+
+        total = await User.countDocuments(queryFilters);
+      } else {
+        throw geoErr;
+      }
+    }
     
     const withStatus = freelancers.map(f => {
       const obj = f.toObject();
