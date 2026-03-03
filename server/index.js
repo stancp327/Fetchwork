@@ -267,12 +267,10 @@ app.use('/api/offers', require('./routes/offers'));
 app.use('/api/saved', require('./routes/saved'));
 app.use('/api/stats',        require('./routes/stats'));
 app.use('/api/availability', require('./routes/availability'));
-app.use('/api/bookings',     require('./routes/bookings'));
 app.use('/api/calendar',     require('./routes/calendar'));
 app.use('/api/billing',      require('./routes/billing'));
 app.use('/api/job-alerts',   require('./routes/jobAlerts'));
 app.use('/api/referrals',    require('./routes/referrals'));
-app.use('/api/errors',             require('./routes/errors'));
 app.use('/api/contracts',          require('./routes/contracts'));
 app.use('/api/background-checks', require('./routes/backgroundChecks'));
 
@@ -281,10 +279,28 @@ io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error('No token provided'));
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
     if (err) return next(new Error('Invalid token'));
-    socket.user = user;
-    next();
+
+    try {
+      const User = require('./models/User');
+      const userId = decoded?.userId;
+      if (!userId) return next(new Error('Invalid token payload'));
+
+      const dbUser = await User.findById(userId).select('tokenVersion');
+      if (!dbUser) return next(new Error('User not found'));
+
+      const tokenVersion = decoded?.tokenVersion ?? 0;
+      const currentVersion = dbUser?.tokenVersion ?? 0;
+      if (tokenVersion !== currentVersion) {
+        return next(new Error('Token revoked'));
+      }
+
+      socket.user = decoded;
+      next();
+    } catch (e) {
+      return next(new Error('Socket auth failed'));
+    }
   });
 });
 
