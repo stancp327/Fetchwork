@@ -25,14 +25,12 @@ module.exports = (io) => {
     };
     
     socket.join(senderId);
-    console.log(`🏠 User ${senderId} joined room: ${senderId}`);
     
     socketToUser.set(socket.id, senderId);
     
     if (!activeUsers.has(senderId)) {
       activeUsers.set(senderId, new Set());
       socket.broadcast.emit('user:online', { userId: senderId });
-      console.log(`👁️ User ${senderId} is now online`);
     }
     activeUsers.get(senderId).add(socket.id);
     
@@ -63,7 +61,6 @@ module.exports = (io) => {
             return;
           }
 
-          console.log(`📝 Creating group message in room ${roomId}`);
           const newMessage = await Message.create({
             roomId,
             sender: senderId,
@@ -91,7 +88,6 @@ module.exports = (io) => {
             roomId: newMessage.roomId.toString()
           };
 
-          console.log(`📤 Broadcasting group message to room ${roomId}`);
           socket.to(roomId).emit('message:receive', { message: messageWithId });
 
           if (onlineMembers.length > 0) {
@@ -102,7 +98,6 @@ module.exports = (io) => {
             });
           }
 
-          console.log(`📨 Group message sent in room ${roomId} to ${onlineMembers.length} online members`);
 
         } else {
           if (!recipientId || !content) {
@@ -115,21 +110,16 @@ module.exports = (io) => {
             return;
           }
 
-          console.log(`🔍 Looking for conversation between ${senderId} and ${recipientId}`);
           let conversation = await Conversation.findByParticipants(senderId, recipientId);
-          console.log(`🔍 Found existing conversation:`, conversation?._id);
           
           if (!conversation) {
-            console.log(`🆕 Creating new conversation between ${senderId} and ${recipientId}`);
             conversation = new Conversation({
               participants: [senderId, recipientId],
               job: jobId || null
             });
             await conversation.save();
-            console.log(`✅ Created conversation:`, conversation._id);
           }
 
-          console.log(`📝 Creating message with conversation ID: ${conversation._id}`);
           const newMessage = await Message.create({
             conversation: conversation._id,
             sender: senderId,
@@ -139,7 +129,6 @@ module.exports = (io) => {
             attachments,
             isRead: false
           });
-          console.log(`✅ Created message:`, newMessage._id);
 
           conversation.lastMessage = newMessage._id;
           await conversation.updateLastActivity();
@@ -194,7 +183,6 @@ module.exports = (io) => {
               deliveredAt: newMessage.deliveredAt
             });
             
-            console.log(`📦 Message ${newMessage._id} delivered to online recipient`);
           }
 
           const messageWithId = {
@@ -203,18 +191,13 @@ module.exports = (io) => {
             conversation: newMessage.conversation.toString()
           };
 
-          console.log(`📤 Emitting message:receive to sender ${senderId}`);
           socket.emit('message:receive', { message: messageWithId });
 
-          console.log(`📤 Emitting message:receive to recipient room ${recipientId}`);
           io.to(recipientId).emit('message:receive', { message: messageWithId });
 
-          console.log(`📤 Emitting conversation:update to sender ${senderId}`);
           io.to(senderId).emit('conversation:update', { conversation });
-          console.log(`📤 Emitting conversation:update to recipient ${recipientId}`);
           io.to(recipientId).emit('conversation:update', { conversation });
 
-          console.log(`📨 Message sent from ${senderId} to ${recipientId} in conversation ${conversation._id}`);
         }
 
       } catch (err) {
@@ -238,7 +221,6 @@ module.exports = (io) => {
           return;
         }
 
-        console.log(`👁️ User ${readerId} marking messages as read:`, messageIds);
 
         if (roomId) {
           const room = await ChatRoom.findById(roomId);
@@ -253,7 +235,6 @@ module.exports = (io) => {
             { $addToSet: { readBy: readerId } }
           );
 
-          console.log(`✅ Marked ${messageIds.length} group messages as read`);
 
           socket.to(roomId).emit('message:read', {
             roomId,
@@ -268,7 +249,6 @@ module.exports = (io) => {
             { $set: { isRead: true, readAt: new Date() } }
           );
 
-          console.log(`✅ Marked ${result.modifiedCount} messages as read`);
 
           const conversation = await Conversation.findById(conversationId);
           if (!conversation) {
@@ -278,7 +258,6 @@ module.exports = (io) => {
 
           const senderIdString = conversation.participants.find(p => p.toString() !== readerId);
           if (senderIdString) {
-            console.log(`📤 Emitting message:read to sender ${senderIdString.toString()}`);
             
             io.to(senderIdString.toString()).emit('message:read', {
               conversationId,
@@ -287,8 +266,6 @@ module.exports = (io) => {
               readerId
             });
           } else {
-            console.log(`❌ No sender found in conversation participants for read receipt`);
-            console.log(`❌ Available participants:`, conversation.participants.map(p => p.toString()));
           }
         }
 
@@ -313,7 +290,6 @@ module.exports = (io) => {
         const targetId = roomId || conversationId;
         const targetType = roomId ? 'room' : 'conversation';
         
-        console.log(`⌨️ User ${userId} started typing in ${targetType} ${targetId}`);
         
         socket.to(targetId).emit('typing:start', { 
           conversationId, 
@@ -341,7 +317,6 @@ module.exports = (io) => {
         const targetId = roomId || conversationId;
         const targetType = roomId ? 'room' : 'conversation';
         
-        console.log(`⌨️ User ${userId} stopped typing in ${targetType} ${targetId}`);
         
         socket.to(targetId).emit('typing:stop', { 
           conversationId, 
@@ -363,7 +338,6 @@ module.exports = (io) => {
       });
       
       socket.emit('user:online_status', onlineStatus);
-      console.log(`👁️ Sent online status for users:`, onlineStatus);
     });
 
     socket.on('user:sync_missed_messages', async () => {
@@ -388,7 +362,6 @@ module.exports = (io) => {
           }
         }
 
-        console.log(`🔄 Marked ${messageIds.length} messages as delivered for user ${senderId}`);
       } catch (error) {
         console.error('🔄 Error syncing missed messages:', error);
       }
@@ -411,7 +384,6 @@ module.exports = (io) => {
         }
 
         socket.join(roomId);
-        console.log(`🏠 User ${userId} joined room: ${roomId} (${room.name})`);
         
         socket.emit('room:joined', { roomId, roomName: room.name });
         socket.to(roomId).emit('user:joined_room', { userId, roomId });
@@ -433,7 +405,6 @@ module.exports = (io) => {
         }
 
         socket.leave(roomId);
-        console.log(`🚪 User ${userId} left room: ${roomId}`);
         
         socket.emit('room:left', { roomId });
         socket.to(roomId).emit('user:left_room', { userId, roomId });
@@ -549,7 +520,6 @@ module.exports = (io) => {
         if (userSockets.size === 0) {
           activeUsers.delete(userId);
           socket.broadcast.emit('user:offline', { userId: userId.toString(), lastSeen: new Date() });
-          console.log(`👁️ User ${userId} is now offline`);
           // Persist lastSeen — fire and forget
           User.updateOne({ _id: userId }, { lastSeen: new Date() }).exec().catch(() => {});
         }
@@ -566,7 +536,6 @@ module.exports = (io) => {
 
       conversations.forEach(conversation => {
         socket.join(conversation._id.toString());
-        console.log(`🔄 User ${userId} rejoined conversation room: ${conversation._id}`);
       });
 
       const chatrooms = await ChatRoom.find({
@@ -576,7 +545,6 @@ module.exports = (io) => {
 
       chatrooms.forEach(room => {
         socket.join(room._id.toString());
-        console.log(`🔄 User ${userId} rejoined chatroom: ${room._id} (${room.name})`);
       });
 
       socket.emit('user:sync_missed_messages');

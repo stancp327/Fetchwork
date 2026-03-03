@@ -41,7 +41,7 @@ const FreelancerCard = ({ freelancer, onInvite }) => {
             overflow: 'hidden'
           }}>
             {freelancer.profilePicture
-              ? <img src={freelancer.profilePicture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ? <img src={freelancer.profilePicture} alt={`${freelancer.firstName || ''} ${freelancer.lastName || ''}`.trim() || 'Freelancer'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : `${freelancer.firstName?.[0] || ''}${freelancer.lastName?.[0] || ''}`
             }
           </div>
