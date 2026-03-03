@@ -20,6 +20,7 @@ const { ensureOrderStatus, ensureRole } = require('./services.state.helpers');
 const { markPaymentCompletedByIntent, markPaymentRefundedByIntent } = require('./services.payment.helpers');
 const { findServiceConversation } = require('./services.conversation.helpers');
 const { markOrderDelivered, markOrderCompleted, markOrderRevisionRequested, markOrderCancelled } = require('./services.transitions.helpers');
+const { loadActiveService, ensureNotSelfService } = require('./services.lookup.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -241,13 +242,16 @@ router.post('/:id/order', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Valid package selection is required' });
     }
 
-    const service = await Service.findById(req.params.id).populate('freelancer', 'firstName lastName email stripeAccountId');
-    if (!service || !service.isActive || service.status !== 'active') {
-      return res.status(404).json({ error: 'Service not found or not available' });
-    }
-    if (String(service.freelancer._id) === String(req.user._id)) {
-      return res.status(400).json({ error: 'Cannot order your own service' });
-    }
+    const lookup = await loadActiveService({
+      Service,
+      serviceId: req.params.id,
+      populate: { path: 'freelancer', select: 'firstName lastName email stripeAccountId' },
+    });
+    if (lookup.error) return res.status(lookup.error.status).json({ error: lookup.error.message });
+    const { service } = lookup;
+
+    const selfCheck = ensureNotSelfService(service.freelancer._id, req.user._id);
+    if (!selfCheck.ok) return res.status(400).json({ error: selfCheck.error });
 
     const selectedPackage = service.pricing[pkg];
     if (!selectedPackage) {
@@ -737,12 +741,16 @@ router.post('/:id/bundle/purchase', authenticateToken, async (req, res) => {
     const { bundleId } = req.body;
     if (!bundleId) return res.status(400).json({ error: 'bundleId is required' });
 
-    const service = await Service.findById(req.params.id)
-      .populate('freelancer', 'firstName lastName email stripeAccountId');
-    if (!service || !service.isActive || service.status !== 'active') {
-      return res.status(404).json({ error: 'Service not found or unavailable' });
-    }
-    if (String(service.freelancer._id) === String(req.user.userId)) {
+    const lookup = await loadActiveService({
+      Service,
+      serviceId: req.params.id,
+      populate: { path: 'freelancer', select: 'firstName lastName email stripeAccountId' },
+    });
+    if (lookup.error) return res.status(lookup.error.status).json({ error: lookup.error.message });
+    const { service } = lookup;
+
+    const selfCheck = ensureNotSelfService(service.freelancer._id, req.user.userId);
+    if (!selfCheck.ok) {
       return res.status(400).json({ error: 'Cannot purchase your own bundle' });
     }
 
@@ -948,15 +956,20 @@ router.post('/:id/subscribe', authenticateToken, async (req, res) => {
   try {
     const { tier = 'basic' } = req.body;
 
-    const service = await Service.findById(req.params.id)
-      .populate('freelancer', 'firstName lastName email stripeAccountId');
-    if (!service || !service.isActive || service.status !== 'active') {
-      return res.status(404).json({ error: 'Service not found or unavailable' });
-    }
+    const lookup = await loadActiveService({
+      Service,
+      serviceId: req.params.id,
+      populate: { path: 'freelancer', select: 'firstName lastName email stripeAccountId' },
+    });
+    if (lookup.error) return res.status(lookup.error.status).json({ error: lookup.error.message });
+    const { service } = lookup;
+
     if (service.serviceType !== 'recurring') {
       return res.status(400).json({ error: 'This service is not a recurring service. Use /order instead.' });
     }
-    if (String(service.freelancer._id) === String(req.user.userId)) {
+
+    const selfCheck = ensureNotSelfService(service.freelancer._id, req.user.userId);
+    if (!selfCheck.ok) {
       return res.status(400).json({ error: 'Cannot subscribe to your own service' });
     }
 
