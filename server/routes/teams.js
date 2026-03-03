@@ -41,12 +41,13 @@ function normalizeTeamForUser(team, userId) {
 router.get('/', async (req, res) => {
   try {
     const userId = req.user.userId || req.user._id || req.user.id;
+    const userObjectId = req.user._id;
 
     const teams = await Team.find({
       isActive: true,
       $or: [
-        { owner: userId },
-        { members: { $elemMatch: { user: userId, status: 'active' } } },
+        { owner: userObjectId },
+        { members: { $elemMatch: { user: userObjectId, status: 'active' } } },
       ],
     })
       .populate('owner', 'firstName lastName email profileImage')
@@ -67,17 +68,19 @@ router.post('/', async (req, res) => {
     const { name, type = 'client_team', description } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: 'Team name is required' });
 
+    const userObjectId = req.user._id;
+
     // Check user doesn't already own too many teams
-    const existing = await Team.countDocuments({ owner: req.user.userId, isActive: true });
+    const existing = await Team.countDocuments({ owner: userObjectId, isActive: true });
     if (existing >= 5) return res.status(400).json({ error: 'Maximum 5 teams per user' });
 
     const team = await Team.create({
       name: name.trim(),
       type,
       description: description?.trim() || '',
-      owner: req.user.userId,
+      owner: userObjectId,
       members: [{
-        user: req.user.userId,
+        user: userObjectId,
         role: 'owner',
         permissions: ['manage_members', 'manage_billing', 'approve_orders', 'create_jobs', 'manage_services', 'view_analytics', 'message_clients', 'assign_work'],
         status: 'active',
@@ -86,7 +89,7 @@ router.post('/', async (req, res) => {
     });
 
     // Add team ref to user
-    await User.findByIdAndUpdate(req.user.userId, { $addToSet: { teams: team._id } });
+    await User.findByIdAndUpdate(userObjectId, { $addToSet: { teams: team._id } });
 
     const populated = await Team.findById(team._id)
       .populate('owner', 'firstName lastName email profileImage')
