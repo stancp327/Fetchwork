@@ -37,6 +37,8 @@ const notificationSchema = new mongoose.Schema({
       'escrow_funded',
       // Messages
       'new_message',
+      // Teams
+      'team_invitation',
       // System
       'system',
       'system_announcement',

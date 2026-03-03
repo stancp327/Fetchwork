@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const Team = require('../models/Team');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const BillingCredit = require('../models/BillingCredit');
 const TeamAuditLog = require('../models/TeamAuditLog');
 const emailService = require('../services/emailService');
@@ -334,6 +335,14 @@ router.post('/:id/invite', async (req, res) => {
        </div>`,
       'Team Invitation'
     );
+
+    await Notification.notify({
+      recipient: invitee._id,
+      type: 'team_invitation',
+      title: 'Team invitation',
+      message: `${req.user.firstName || req.user.email || 'A team admin'} invited you to join ${team.name} as ${safeRole}.`,
+      link: '/teams',
+    });
 
     res.json({ message: `Invitation sent to ${invitee.firstName} ${invitee.lastName}`, team });
   } catch (err) {
