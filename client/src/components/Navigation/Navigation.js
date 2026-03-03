@@ -116,6 +116,12 @@ const Navigation = () => {
                 <NavLink to="/messages" badge={notifications.unreadMessages}>
                   Messages
                 </NavLink>
+                <NavLink to="/projects">Projects</NavLink>
+                <NavLink to="/payments">Payments</NavLink>
+                <NavLink to="/bookings">Bookings</NavLink>
+                <NavLink to="/reviews">Reviews</NavLink>
+                <NavLink to="/saved">Saved</NavLink>
+                <NavLink to="/offers">Offers</NavLink>
                 <NavLink to="/teams">Teams</NavLink>
 
                 <div className="notif-bell-wrapper" ref={notifRef} style={{ position: 'relative' }}>
@@ -172,6 +178,9 @@ const Navigation = () => {
                 <NavLink to="/billing">Billing</NavLink>
                 <NavLink to="/wallet">Wallet</NavLink>
                 <NavLink to="/analytics">Analytics</NavLink>
+                <NavLink to="/spend">Spend</NavLink>
+                <NavLink to="/contracts">Contracts</NavLink>
+                <NavLink to="/security">Security</NavLink>
                 <NavLink to="/job-alerts">Job Alerts 🔔</NavLink>
                 <NavLink to="/discovery-settings">Discovery 🔍</NavLink>
                 <NavLink to="/referrals">Referrals 🎁</NavLink>

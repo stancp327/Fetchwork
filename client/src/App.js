@@ -71,6 +71,7 @@ const AgencyProfile        = React.lazy(() => import('./components/Teams/AgencyP
 const UserAnalytics        = React.lazy(() => import('./components/Analytics/UserAnalytics'));
 const SpendDashboard       = React.lazy(() => import('./components/Analytics/SpendDashboard'));
 const BoostCheckout        = React.lazy(() => import('./components/Boosts/BoostCheckout'));
+const BoostSuccess         = React.lazy(() => import('./components/Boosts/BoostSuccess'));
 const ContractsList        = React.lazy(() => import('./components/Contracts/ContractsList'));
 const ContractDetail       = React.lazy(() => import('./components/Contracts/ContractDetail'));
 const CreateContract       = React.lazy(() => import('./components/Contracts/CreateContract'));
@@ -352,7 +353,7 @@ function AppContent() {
           <Route path="/analytics"             element={<ProtectedRoute><UserAnalytics /></ProtectedRoute>} />
           <Route path="/spend"                element={<ProtectedRoute><SpendDashboard /></ProtectedRoute>} />
               <Route path="/boost-checkout"       element={<ProtectedRoute><BoostCheckout /></ProtectedRoute>} />
-              <Route path="/boost-success"        element={<ProtectedRoute><BoostCheckout /></ProtectedRoute>} />
+              <Route path="/boost-success"        element={<ProtectedRoute><BoostSuccess /></ProtectedRoute>} />
               <Route path="/contracts"            element={<ProtectedRoute><ContractsList /></ProtectedRoute>} />
               <Route path="/contracts/new"        element={<ProtectedRoute><CreateContract /></ProtectedRoute>} />
               <Route path="/contracts/:id"        element={<ProtectedRoute><ContractDetail /></ProtectedRoute>} />

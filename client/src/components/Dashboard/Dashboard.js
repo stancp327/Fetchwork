@@ -320,6 +320,11 @@ const Dashboard = () => {
                   <QuickAction icon="🛒" label="Browse Services" to="/browse-services" />
                   <QuickAction icon="📋" label="Offers" to="/offers" />
                   <QuickAction icon="❤️" label="Saved" to="/saved" />
+                  <QuickAction icon="📄" label="Contracts" to="/contracts" />
+                  <QuickAction icon="💳" label="Payments" to="/payments" />
+                  <QuickAction icon="📅" label="Bookings" to="/bookings" />
+                  <QuickAction icon="⚖️" label="Disputes" to="/disputes" />
+                  <QuickAction icon="🔎" label="Search" to="/search" />
                   <QuickAction icon="💬" label="Messages" to="/messages" />
                 </>
               ) : (
@@ -328,6 +333,13 @@ const Dashboard = () => {
                   <QuickAction icon="💼" label="My Jobs" to="/projects?view=freelancer" />
                   <QuickAction icon="📋" label="Offers" to="/offers" />
                   <QuickAction icon="❤️" label="Saved" to="/saved" />
+                  <QuickAction icon="📄" label="Contracts" to="/contracts" />
+                  <QuickAction icon="🛡️" label="Background Check" to="/background-check" />
+                  <QuickAction icon="📆" label="Calendar" to="/calendar-connect" />
+                  <QuickAction icon="💳" label="Payments" to="/payments" />
+                  <QuickAction icon="📅" label="Bookings" to="/bookings" />
+                  <QuickAction icon="⚖️" label="Disputes" to="/disputes" />
+                  <QuickAction icon="🔎" label="Search" to="/search" />
                   <QuickAction icon="➕" label="Create Service" to="/create-service" />
                   <QuickAction icon="👤" label="Edit Profile" to="/profile" />
                   <QuickAction icon="💬" label="Messages" to="/messages" />
@@ -381,6 +393,22 @@ const Dashboard = () => {
                   <div className="rec-desc">Earnings, win rate, spend & more</div>
                 </div>
               </Link>
+              {isClientMode && (
+                <Link to="/spend" className="recommendation-item">
+                  <span className="rec-icon">💸</span>
+                  <div>
+                    <div className="rec-title">Track spend insights</div>
+                    <div className="rec-desc">See where budget is going across jobs</div>
+                  </div>
+                </Link>
+              )}
+              <Link to="/security" className="recommendation-item">
+                <span className="rec-icon">🔐</span>
+                <div>
+                  <div className="rec-title">Review account security</div>
+                  <div className="rec-desc">Update password and security settings</div>
+                </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -389,10 +417,10 @@ const Dashboard = () => {
       {/* ── Footer Help ────────────────────────────────────────── */}
       <div className="dash-footer">
         <div className="dash-footer-item">
-          <span>📚</span> <a href="/help">Support & Help</a>
+          <span>📚</span> <a href="/support">Support & Help</a>
         </div>
         <div className="dash-footer-item">
-          <span>🎓</span> <a href="/tutorials">Tutorials</a>
+          <span>🎓</span> <a href="/contact">Contact Team</a>
         </div>
         <div className="dash-footer-item">
           <span>📊</span> <span>Platform Status: <span className="status-ok">All systems operational</span></span>
