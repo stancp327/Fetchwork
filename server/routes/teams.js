@@ -9,19 +9,43 @@ const emailService = require('../services/emailService');
 // All routes require auth
 router.use(authenticateToken);
 
+function normalizeTeamForUser(team, userId) {
+  const normalized = team.toObject ? team.toObject() : team;
+  const uid = String(userId);
+  const getId = (value) => String(value?._id || value?.id || value || '');
+
+  const myMember = (normalized.members || []).find((m) =>
+    getId(m.user) === uid && m.status === 'active'
+  );
+
+  const ownerId = getId(normalized.owner);
+  const currentUserRole = myMember?.role || (ownerId === uid ? 'owner' : null);
+  const currentUserIsOwner = currentUserRole === 'owner';
+
+  return {
+    ...normalized,
+    currentUserRole,
+    currentUserIsOwner,
+    currentUserCanDelete: currentUserIsOwner,
+  };
+}
+
 // ── GET /api/teams — list user's teams ──
 router.get('/', async (req, res) => {
   try {
+    const userId = req.user.userId || req.user._id || req.user.id;
+
     const teams = await Team.find({
-      'members.user': req.user.userId,
-      'members.status': 'active',
       isActive: true,
+      members: { $elemMatch: { user: userId, status: 'active' } },
     })
       .populate('owner', 'firstName lastName email profileImage')
       .populate('members.user', 'firstName lastName email profileImage')
       .lean();
 
-    res.json({ teams });
+    const normalizedTeams = teams.map((team) => normalizeTeamForUser(team, userId));
+
+    res.json({ teams: normalizedTeams });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch teams' });
   }
@@ -68,14 +92,20 @@ router.post('/', async (req, res) => {
 // ── GET /api/teams/:id — team detail ──
 router.get('/:id', async (req, res) => {
   try {
+    const userId = req.user.userId || req.user._id || req.user.id;
     const team = await Team.findById(req.params.id)
       .populate('owner', 'firstName lastName email profileImage')
-      .populate('members.user', 'firstName lastName email profileImage');
+      .populate('members.user', 'firstName lastName email profileImage')
+      .lean();
 
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
 
-    res.json({ team });
+    const isMember = (team.members || []).some((m) =>
+      String(m.user?._id || m.user?.id || m.user) === String(userId) && m.status === 'active'
+    );
+    if (!isMember) return res.status(403).json({ error: 'Not a team member' });
+
+    res.json({ team: normalizeTeamForUser(team, userId) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch team' });
   }
