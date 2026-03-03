@@ -14,7 +14,6 @@ const TeamsPage = () => {
   const [newTeam, setNewTeam] = useState({ name: '', type: 'client_team', description: '' });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [deletingTeamId, setDeletingTeamId] = useState('');
   const [loadError, setLoadError] = useState('');
 
   const fetchTeams = useCallback(async () => {
@@ -91,19 +90,6 @@ const TeamsPage = () => {
     }
   };
 
-  const deleteTeamFromList = async (teamId) => {
-    if (!window.confirm('Delete this team? This cannot be undone.')) return;
-    setDeletingTeamId(teamId);
-    try {
-      await apiRequest(`/api/teams/${teamId}`, { method: 'DELETE' });
-      await fetchTeams();
-    } catch (err) {
-      alert(err.message || 'Failed to delete team');
-    } finally {
-      setDeletingTeamId('');
-    }
-  };
-
   const roleIcons = { owner: '👑', admin: '⭐', manager: '📋', member: '👤' };
 
   return (
@@ -118,7 +104,6 @@ const TeamsPage = () => {
         </button>
       </div>
 
-      {/* Create form */}
       {showCreate && (
         <form className="teams-create-form" onSubmit={createTeam}>
           <h3>Create a New Team</h3>
@@ -154,7 +139,6 @@ const TeamsPage = () => {
         </form>
       )}
 
-      {/* Pending invitations */}
       {invitations.length > 0 && (
         <div className="teams-invitations">
           <h2>Pending Invitations</h2>
@@ -174,7 +158,6 @@ const TeamsPage = () => {
         </div>
       )}
 
-      {/* Teams list */}
       {loading ? (
         <div className="teams-loading">Loading teams…</div>
       ) : loadError ? (
@@ -199,7 +182,7 @@ const TeamsPage = () => {
             const activeMembers = team.members?.filter(m => m.status === 'active') || [];
             const ownerId = String(team.owner?._id || team.owner?.id || team.owner || '');
             const myRole = team.currentUserRole || myMember?.role || (ownerId === currentUserId ? 'owner' : null);
-            const isOwner = Boolean(team.currentUserIsOwner || myRole === 'owner' || ownerId === currentUserId);
+
             return (
               <Link to={`/teams/${team._id}`} key={team._id} className="team-card">
                 <div className="team-card-header">
@@ -218,21 +201,6 @@ const TeamsPage = () => {
                   <span className="team-members-count">{activeMembers.length} member{activeMembers.length !== 1 ? 's' : ''}</span>
                   {myRole && <span className="team-my-role">{roleIcons[myRole]} {myRole}</span>}
                 </div>
-                {isOwner && (
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      disabled={deletingTeamId === team._id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        deleteTeamFromList(team._id);
-                      }}
-                    >
-                      {deletingTeamId === team._id ? 'Deleting…' : 'Delete Team'}
-                    </button>
-                  </div>
-                )}
               </Link>
             );
           })}

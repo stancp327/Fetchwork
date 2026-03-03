@@ -46,12 +46,18 @@ const TeamDetail = () => {
   const ownerId = String(team?.owner?._id || team?.owner?.id || team?.owner || '');
   const ownerEmail = String(team?.owner?.email || '').toLowerCase();
   const currentUserEmail = String(user?.email || '').toLowerCase();
-  const emailOwnerMatch = Boolean(ownerEmail && currentUserEmail && ownerEmail === currentUserEmail);
-  const derivedRole = team?.currentUserRole || myMember?.role || ((ownerId === currentUserId || emailOwnerMatch) ? 'owner' : null);
-  const isOwner = Boolean(team?.currentUserIsOwner || derivedRole === 'owner' || ownerId === currentUserId || emailOwnerMatch);
-  const isOwnerOrAdmin = Boolean(isOwner || derivedRole === 'admin');
-  const canDeleteTeam = Boolean(team?.currentUserCanDelete || isOwner);
-  const canManageMembers = Boolean(team?.currentUserCanManageMembers || isOwnerOrAdmin);
+
+  // Owner-first gating (explicit + deterministic for UI)
+  const isOwnerById = Boolean(ownerId && currentUserId && ownerId === currentUserId);
+  const isOwnerByEmail = Boolean(ownerEmail && currentUserEmail && ownerEmail === currentUserEmail);
+  const isOwnerByMemberRole = myMember?.role === 'owner';
+  const isOwnerByServerFlag = Boolean(team?.currentUserIsOwner || team?.currentUserCanDelete || team?.currentUserRole === 'owner');
+
+  const isOwner = Boolean(isOwnerById || isOwnerByEmail || isOwnerByMemberRole || isOwnerByServerFlag);
+  const isAdmin = myMember?.role === 'admin' || team?.currentUserRole === 'admin';
+  const isOwnerOrAdmin = Boolean(isOwner || isAdmin);
+  const canDeleteTeam = isOwner;
+  const canManageMembers = Boolean(isOwnerOrAdmin || team?.currentUserCanManageMembers);
   const activeMembers = team?.members?.filter(m => m.status === 'active') || [];
 
   const inviteMember = async (e) => {
@@ -154,6 +160,9 @@ const TeamDetail = () => {
             <span className="team-type-badge" style={{ marginTop: '0.25rem', display: 'inline-block' }}>
               {team.type === 'agency' ? '🏢 Agency' : '👥 Client Team'} · {activeMembers.length} members
             </span>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem' }}>
+              Access: {isOwner ? 'Owner' : isAdmin ? 'Admin' : 'Member'}
+            </div>
           </div>
         </div>
         {(isOwnerOrAdmin || canDeleteTeam) && (
