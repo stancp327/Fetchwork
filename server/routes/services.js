@@ -23,6 +23,7 @@ const { markOrderDelivered, markOrderCompleted, markOrderRevisionRequested, mark
 const { loadActiveService, ensureNotSelfService } = require('./services.lookup.helpers');
 const { computeServiceFeeBreakdown } = require('./services.fees.helpers');
 const { buildServiceOrderMetadata, buildBundlePurchaseMetadata, buildSubscriptionMetadata } = require('./services.metadata.helpers');
+const { serializeOrder, serviceRef } = require('./services.response.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -677,9 +678,7 @@ router.get('/:id/orders/:orderId', authenticateToken, async (req, res) => {
 
     const { service, order, isClient, isFreelancer } = ctx;
     if (!isClient && !isFreelancer) return res.status(403).json({ error: 'Unauthorized' });
-    // Convert subdocument to plain object so _id serialises as a string
-    const orderPlain = { ...order.toObject(), _id: String(order._id) };
-    res.json({ order: orderPlain, service: { _id: String(service._id), title: service.title, freelancer: service.freelancer } });
+    res.json({ order: serializeOrder(order), service: serviceRef(service) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch order' });
   }
@@ -692,12 +691,7 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
     const userId = req.user._id;
     const { role = 'client' } = req.query;
 
-    // Helper: flatten subdocument to plain object with _id as string
-    const flatOrder = (o) => ({
-      ...o.toObject(),
-      _id:    String(o._id),
-      client: String(o.client),
-    });
+    // shared serializer in helpers
 
     let orders = [];
     if (role === 'client') {
@@ -707,7 +701,7 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
         s.orders.filter(o => String(o.client) === String(userId)).forEach(o => {
           orders.push({
             service: { _id: String(s._id), title: s.title, freelancer: s.freelancer },
-            order:   flatOrder(o),
+            order:   serializeOrder(o),
           });
         });
       });
@@ -718,7 +712,7 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
         s.orders.forEach(o => {
           orders.push({
             service: { _id: String(s._id), title: s.title },
-            order:   flatOrder(o),
+            order:   serializeOrder(o),
           });
         });
       });
