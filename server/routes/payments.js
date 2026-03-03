@@ -13,6 +13,7 @@ const Notification           = require('../models/Notification');
 const ProcessedWebhookEvent  = require('../models/ProcessedWebhookEvent');
 
 const { getFee } = require('../services/feeEngine');
+const { deriveAuthoritativeEscrowAmount, validateRequestedEscrowAmount } = require('./payments.helpers');
 
 // ── Helper: calculate platform fee (plan-aware) ─────────────────
 // role: 'client' | 'freelancer'
@@ -247,26 +248,19 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Secure Payment already active for this job' });
     }
 
-    // Server-authoritative escrow amount:
-    // prefer accepted proposal budget when available, otherwise fall back to job budget.amount.
-    const acceptedProposal = (job.proposals || []).find(p => p.status === 'accepted');
-    const authoritativeAmount = Number(acceptedProposal?.proposedBudget || job?.budget?.amount || 0);
-    if (!Number.isFinite(authoritativeAmount) || authoritativeAmount <= 0) {
+    // Server-authoritative escrow amount
+    const amountDerivation = deriveAuthoritativeEscrowAmount(job);
+    if (!amountDerivation.ok) {
       return res.status(400).json({ error: 'Unable to determine escrow amount for this job' });
     }
 
-    // If client sent an amount, it must match authoritative server amount.
-    if (requestedAmount !== undefined && requestedAmount !== null) {
-      const reqAmt = Number(requestedAmount);
-      if (!Number.isFinite(reqAmt) || Math.abs(reqAmt - authoritativeAmount) > 0.01) {
-        return res.status(400).json({
-          error: 'Escrow amount mismatch',
-          expectedAmount: authoritativeAmount,
-        });
-      }
-    }
+    const amount = amountDerivation.amount;
 
-    const amount = authoritativeAmount;
+    // If client sent an amount, it must match authoritative server amount.
+    const amountValidation = validateRequestedEscrowAmount(requestedAmount, amount);
+    if (!amountValidation.ok) {
+      return res.status(400).json(amountValidation);
+    }
     const platformFee = await calcPlatformFee(req.user.userId, 'client', job, amount);
     const metadata = {
       jobId:        String(jobId),
