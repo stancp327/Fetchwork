@@ -233,9 +233,9 @@ router.delete('/methods/:pmId', authenticateToken, async (req, res) => {
 // Creates a manual-capture PaymentIntent — money is held but not charged yet.
 router.post('/fund-escrow', authenticateToken, async (req, res) => {
   try {
-    const { jobId, amount, paymentMethodId } = req.body;
-    if (!jobId || !amount) {
-      return res.status(400).json({ error: 'jobId and amount are required' });
+    const { jobId, amount: requestedAmount, paymentMethodId } = req.body;
+    if (!jobId) {
+      return res.status(400).json({ error: 'jobId is required' });
     }
 
     const job = await Job.findById(jobId).populate('freelancer');
@@ -247,6 +247,26 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Secure Payment already active for this job' });
     }
 
+    // Server-authoritative escrow amount:
+    // prefer accepted proposal budget when available, otherwise fall back to job budget.amount.
+    const acceptedProposal = (job.proposals || []).find(p => p.status === 'accepted');
+    const authoritativeAmount = Number(acceptedProposal?.proposedBudget || job?.budget?.amount || 0);
+    if (!Number.isFinite(authoritativeAmount) || authoritativeAmount <= 0) {
+      return res.status(400).json({ error: 'Unable to determine escrow amount for this job' });
+    }
+
+    // If client sent an amount, it must match authoritative server amount.
+    if (requestedAmount !== undefined && requestedAmount !== null) {
+      const reqAmt = Number(requestedAmount);
+      if (!Number.isFinite(reqAmt) || Math.abs(reqAmt - authoritativeAmount) > 0.01) {
+        return res.status(400).json({
+          error: 'Escrow amount mismatch',
+          expectedAmount: authoritativeAmount,
+        });
+      }
+    }
+
+    const amount = authoritativeAmount;
     const platformFee = await calcPlatformFee(req.user.userId, 'client', job, amount);
     const metadata = {
       jobId:        String(jobId),

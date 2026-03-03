@@ -123,7 +123,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ── logout ───────────────────────────────────────────────────────────────
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiFetch('POST', '/api/auth/logout');
+    } catch (_) {
+      // best-effort; continue local logout
+    }
+
     localStorage.removeItem('token');
     sessionStorage.clear();
     setToken(null);

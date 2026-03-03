@@ -14,10 +14,7 @@ router.get('/', validateQueryParams, async (req, res) => {
     const filters = {
       isActive: true,
       isSuspended: false,
-      $or: [
-        { accountType: 'freelancer' },
-        { accountType: 'both' }
-      ]
+      accountType: { $in: ['freelancer', 'both'] }
     };
     
     if (req.query.skills) {
@@ -27,13 +24,15 @@ router.get('/', validateQueryParams, async (req, res) => {
     
     if (req.query.location) {
       const locQuery = escapeRegex(req.query.location);
-      filters.$or = filters.$or || [];
-      filters.$or.push(
-        { 'location.address': { $regex: locQuery, $options: 'i' } },
-        { 'location.city': { $regex: locQuery, $options: 'i' } },
-        { 'location.state': { $regex: locQuery, $options: 'i' } },
-        { 'location.zipCode': { $regex: locQuery, $options: 'i' } }
-      );
+      filters.$and = filters.$and || [];
+      filters.$and.push({
+        $or: [
+          { 'location.address': { $regex: locQuery, $options: 'i' } },
+          { 'location.city': { $regex: locQuery, $options: 'i' } },
+          { 'location.state': { $regex: locQuery, $options: 'i' } },
+          { 'location.zipCode': { $regex: locQuery, $options: 'i' } }
+        ]
+      });
     }
 
     // Distance-based search: ?near=94520&radius=25
