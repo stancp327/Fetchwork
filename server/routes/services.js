@@ -17,6 +17,7 @@ const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { postServiceSystemMessage } = require('./services.messaging.helpers');
 const { loadServiceOrderContext } = require('./services.order.helpers');
 const { ensureOrderStatus, ensureRole } = require('./services.state.helpers');
+const { markPaymentCompletedByIntent, markPaymentRefundedByIntent } = require('./services.payment.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -466,10 +467,7 @@ router.put('/:id/orders/:orderId/complete', authenticateToken, async (req, res) 
     await service.save();
 
     // Update payment record
-    await Payment.findOneAndUpdate(
-      { stripePaymentIntentId: order.stripePaymentIntentId },
-      { status: 'completed' }
-    );
+    await markPaymentCompletedByIntent(order.stripePaymentIntentId);
 
     // Create release payment record
     await Payment.create({
@@ -587,12 +585,7 @@ router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) =>
     await service.save();
 
     // Update payment record
-    if (order.stripePaymentIntentId) {
-      await Payment.findOneAndUpdate(
-        { stripePaymentIntentId: order.stripePaymentIntentId },
-        { status: 'refunded' }
-      );
-    }
+    await markPaymentRefundedByIntent(order.stripePaymentIntentId);
 
     // Post cancellation message
     const conv = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
