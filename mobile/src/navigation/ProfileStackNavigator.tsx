@@ -10,6 +10,8 @@ import DiscoverySettingsScreen from '../screens/Profile/DiscoverySettingsScreen'
 import NotificationsScreen from '../screens/NotificationsScreen';
 import TeamsScreen from '../screens/Profile/TeamsScreen';
 import WalletScreen from '../screens/Profile/WalletScreen';
+import PaymentsScreen from '../screens/Profile/PaymentsScreen';
+import ContractsScreen from '../screens/Profile/ContractsScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -31,6 +33,8 @@ export default function ProfileStackNavigator() {
       <Stack.Screen name="Notifications"     component={NotificationsScreen}     options={{ title: 'Notifications' }} />
       <Stack.Screen name="Teams"             component={TeamsScreen}             options={{ title: 'Teams' }} />
       <Stack.Screen name="Wallet"            component={WalletScreen}            options={{ title: 'Wallet' }} />
+      <Stack.Screen name="Payments"          component={PaymentsScreen}          options={{ title: 'Payments' }} />
+      <Stack.Screen name="Contracts"         component={ContractsScreen}         options={{ title: 'Contracts' }} />
     </Stack.Navigator>
   );
 }

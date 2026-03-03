@@ -37,6 +37,8 @@ export type ProfileStackParamList = {
   Notifications:     undefined;
   Teams:             undefined;
   Wallet:            undefined;
+  Payments:          undefined;
+  Contracts:         undefined;
 };
 
 export type MoreStackParamList = {
