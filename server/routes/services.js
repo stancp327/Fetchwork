@@ -18,6 +18,7 @@ const { postServiceSystemMessage } = require('./services.messaging.helpers');
 const { loadServiceOrderContext } = require('./services.order.helpers');
 const { ensureOrderStatus, ensureRole } = require('./services.state.helpers');
 const { markPaymentCompletedByIntent, markPaymentRefundedByIntent } = require('./services.payment.helpers');
+const { findServiceConversation } = require('./services.conversation.helpers');
 
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
@@ -408,7 +409,7 @@ router.put('/:id/orders/:orderId/deliver', authenticateToken, async (req, res) =
     await service.save();
 
     // Notify client via message
-    const conversation = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
+    const conversation = await findServiceConversation({ serviceId: service._id, orderId: order._id });
     if (conversation) {
       await postServiceSystemMessage({
         conversation,
@@ -482,7 +483,7 @@ router.put('/:id/orders/:orderId/complete', authenticateToken, async (req, res) 
     });
 
     // Notify via message
-    const conversation = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
+    const conversation = await findServiceConversation({ serviceId: service._id, orderId: order._id });
     if (conversation) {
       const msg = new Message({
         conversation: conversation._id,
@@ -528,7 +529,7 @@ router.put('/:id/orders/:orderId/revision', authenticateToken, async (req, res) 
     order.revisionCount = (order.revisionCount || 0) + 1;
     await service.save();
 
-    const conversation = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
+    const conversation = await findServiceConversation({ serviceId: service._id, orderId: order._id });
     if (conversation) {
       await postServiceSystemMessage({
         conversation,
@@ -588,7 +589,7 @@ router.put('/:id/orders/:orderId/cancel', authenticateToken, async (req, res) =>
     await markPaymentRefundedByIntent(order.stripePaymentIntentId);
 
     // Post cancellation message
-    const conv = await Conversation.findOne({ service: service._id, serviceOrderId: order._id });
+    const conv = await findServiceConversation({ serviceId: service._id, orderId: order._id });
     if (conv) {
       await postServiceSystemMessage({
         conversation: conv,
@@ -629,8 +630,10 @@ router.put('/:id/orders/:orderId/remind', authenticateToken, async (req, res) =>
     const statusCheck = ensureOrderStatus(order, ['pending'], 'Order is not awaiting payment');
     if (!statusCheck.ok) return res.status(400).json({ error: statusCheck.error });
 
-    const conv = await Conversation.findOne({ service: service._id }) ||
-                 await Conversation.findOne({ participants: { $all: [service.freelancer, order.client] } });
+    const conv = await findServiceConversation({
+      serviceId: service._id,
+      participants: [service.freelancer, order.client],
+    });
     if (conv) {
       const note = req.body.message?.trim();
       await postServiceSystemMessage({
