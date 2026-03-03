@@ -39,6 +39,8 @@ const notificationSchema = new mongoose.Schema({
       'new_message',
       // Teams
       'team_invitation',
+      'team_invitation_accepted',
+      'team_invitation_declined',
       // System
       'system',
       'system_announcement',

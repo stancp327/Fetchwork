@@ -360,11 +360,21 @@ router.post('/:id/accept', async (req, res) => {
     const member = team.members.find(m => m.user.toString() === req.user.userId && m.status === 'invited');
     if (!member) return res.status(404).json({ error: 'No pending invitation found' });
 
+    const inviterId = member.invitedBy || team.owner;
+
     member.status = 'active';
     member.joinedAt = new Date();
     await team.save();
 
     await User.findByIdAndUpdate(req.user.userId, { $addToSet: { teams: team._id } });
+
+    await Notification.notify({
+      recipient: inviterId,
+      type: 'team_invitation_accepted',
+      title: 'Team invite accepted',
+      message: `${req.user.firstName || req.user.email || 'A user'} accepted your invitation to join ${team.name}.`,
+      link: `/teams/${team._id}`,
+    });
 
     res.json({ message: 'Joined the team!', team });
   } catch (err) {
@@ -381,8 +391,18 @@ router.post('/:id/decline', async (req, res) => {
     const idx = team.members.findIndex(m => m.user.toString() === req.user.userId && m.status === 'invited');
     if (idx === -1) return res.status(404).json({ error: 'No pending invitation found' });
 
+    const inviterId = team.members[idx]?.invitedBy || team.owner;
+
     team.members.splice(idx, 1);
     await team.save();
+
+    await Notification.notify({
+      recipient: inviterId,
+      type: 'team_invitation_declined',
+      title: 'Team invite declined',
+      message: `${req.user.firstName || req.user.email || 'A user'} declined your invitation to join ${team.name}.`,
+      link: `/teams/${team._id}`,
+    });
 
     res.json({ message: 'Invitation declined' });
   } catch (err) {
