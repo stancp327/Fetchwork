@@ -108,6 +108,8 @@ export default function MyProfileScreen({ navigation }: Props) {
             { label: '🔔 Notifications',            onPress: () => navigation.navigate('Notifications') },
             { label: '🔍 Discovery Settings',      onPress: () => navigation.navigate('DiscoverySettings') },
             { label: '📦 Subscriptions & Bundles', onPress: () => (navigation as any).navigate('Services', { screen: 'MyBundles' }) },
+            { label: '👥 Teams',                   onPress: () => navigation.navigate('Teams') },
+            { label: '💼 Wallet',                  onPress: () => navigation.navigate('Wallet') },
             { label: '🔒 Verification & Badges',  onPress: () => navigation.navigate('Verification') },
             { label: '⚙️ Account Settings',        onPress: () => navigation.navigate('Settings') },
           ].map(item => (

@@ -35,6 +35,8 @@ export type ProfileStackParamList = {
   Settings:          undefined;
   DiscoverySettings: undefined;
   Notifications:     undefined;
+  Teams:             undefined;
+  Wallet:            undefined;
 };
 
 export type MoreStackParamList = {
