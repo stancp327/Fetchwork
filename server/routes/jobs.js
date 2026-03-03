@@ -326,6 +326,26 @@ router.post('/', authenticateToken, validateJobPost, checkJobLimit, async (req, 
       };
     }
     
+    // Team-scoped job posting
+    const teamId = req.body.teamId || null;
+    let needsApproval = false;
+
+    if (teamId) {
+      const Team = require('../models/Team');
+      const team = await Team.findById(teamId);
+      if (!team || !team.isActive) return res.status(400).json({ error: 'Team not found' });
+      if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+      if (!team.hasPermission(req.user.userId, 'create_jobs')) {
+        return res.status(403).json({ error: 'No permission to post jobs for this team' });
+      }
+
+      // Check approval threshold
+      const amount = budget?.amount || 0;
+      if (team.settings?.requireApproval && team.approvalThreshold > 0 && amount >= team.approvalThreshold) {
+        needsApproval = true;
+      }
+    }
+
     const job = new Job({
       title,
       description,
@@ -340,7 +360,9 @@ router.post('/', authenticateToken, validateJobPost, checkJobLimit, async (req, 
       isUrgent: isUrgent || false,
       jobType: jobType || 'freelance',
       client: req.user._id,
-      status: 'open',
+      team: teamId || undefined,
+      status: needsApproval ? 'draft' : 'open',
+      approvalStatus: needsApproval ? 'pending' : 'none',
       recurring: recurring?.enabled ? {
         enabled:  true,
         interval: recurring.interval || 'monthly',

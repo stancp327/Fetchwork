@@ -14,6 +14,8 @@ const PostJob = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [userTeams, setUserTeams] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState('');
   const [upgradeLimit, setUpgradeLimit] = useState(null); // { reason, limit }
   const [templates, setTemplates] = useState([]);
   const [templateLoading, setTemplateLoading] = useState(false);
@@ -30,6 +32,21 @@ const PostJob = () => {
   }, [canTemplates]);
 
   useEffect(() => { loadTemplates(); }, [loadTemplates]);
+
+  // Load user's teams for team-scoped posting
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiRequest('/api/teams');
+        const teams = (data.teams || []).filter(t =>
+          t.members?.some(m =>
+            m.status === 'active' && m.permissions?.includes('create_jobs')
+          )
+        );
+        setUserTeams(teams);
+      } catch { /* no teams */ }
+    })();
+  }, []);
 
   const applyTemplate = async (templateId) => {
     setTemplateLoading(true);
@@ -235,6 +252,10 @@ const PostJob = () => {
         } : { enabled: false },
       };
 
+      if (selectedTeam) {
+        jobData.teamId = selectedTeam;
+      }
+
       await apiRequest('/api/jobs', { method: 'POST', body: JSON.stringify(jobData) });
       
       setSuccess(true);
@@ -295,6 +316,31 @@ const PostJob = () => {
         {templateMsg && <div className="pj-template-msg">{templateMsg}</div>}
 
         <form onSubmit={handleSubmit}>
+          {userTeams.length > 0 && (
+            <div className="form-section">
+              <div className="form-section-title">Post on behalf of a team (optional)</div>
+              <div className="form-group">
+                <label htmlFor="teamId">Team</label>
+                <select
+                  id="teamId"
+                  value={selectedTeam}
+                  onChange={(e) => setSelectedTeam(e.target.value)}
+                  style={{ padding: '0.5rem', borderRadius: 8, border: '1px solid #d1d5db' }}
+                >
+                  <option value="">Personal (no team)</option>
+                  {userTeams.map(t => (
+                    <option key={t._id} value={t._id}>{t.name}</option>
+                  ))}
+                </select>
+                {selectedTeam && (
+                  <p style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    This job will be linked to your team. It may require approval if team settings are enabled.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="form-section">
             <div className="form-section-title">Job Details</div>
 

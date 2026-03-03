@@ -229,6 +229,15 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // Team approval workflow
+  approvalStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'rejected'],
+    default: 'none',
+  },
+  approvalNote:  { type: String, default: '' },
+  approvedBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  approvedAt:    { type: Date, default: null },
   rating: {
     client: {
       rating: {

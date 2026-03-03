@@ -607,4 +607,96 @@ router.get('/:id/activity', async (req, res) => {
   }
 });
 
+// ── Approval Workflow ────────────────────────────────────────────
+
+// GET /api/teams/:id/pending-approvals — list orders needing approval
+router.get('/:id/pending-approvals', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const member = team.getMember(req.user.userId);
+    if (!member) return res.status(403).json({ error: 'Not a team member' });
+    if (!member.permissions.includes('approve_orders') && member.role !== 'owner' && member.role !== 'admin') {
+      return res.status(403).json({ error: 'No approval permission' });
+    }
+
+    const Job = require('../models/Job');
+    const pendingJobs = await Job.find({
+      team: team._id,
+      approvalStatus: 'pending',
+    })
+      .populate('client', 'firstName lastName')
+      .populate('freelancer', 'firstName lastName')
+      .select('title budget status client freelancer createdAt approvalStatus approvalNote')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ pendingApprovals: pendingJobs });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load pending approvals' });
+  }
+});
+
+// POST /api/teams/:id/approve/:jobId — approve or reject a pending order
+router.post('/:id/approve/:jobId', async (req, res) => {
+  try {
+    const { action, note } = req.body; // action: 'approve' | 'reject'
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'Action must be approve or reject' });
+    }
+
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const member = team.getMember(req.user.userId);
+    if (!member) return res.status(403).json({ error: 'Not a team member' });
+    if (!member.permissions.includes('approve_orders') && member.role !== 'owner' && member.role !== 'admin') {
+      return res.status(403).json({ error: 'No approval permission' });
+    }
+
+    const Job = require('../models/Job');
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+    if (job.approvalStatus !== 'pending') {
+      return res.status(400).json({ error: `Job is already ${job.approvalStatus}` });
+    }
+
+    job.approvalStatus = action === 'approve' ? 'approved' : 'rejected';
+    job.approvalNote = note || '';
+    job.approvedBy = req.user.userId;
+    job.approvedAt = new Date();
+
+    if (action === 'approve' && job.status === 'draft') {
+      job.status = 'open'; // auto-publish on approval
+    }
+
+    await job.save();
+
+    res.json({
+      message: `Job ${action === 'approve' ? 'approved' : 'rejected'}`,
+      job: { _id: job._id, title: job.title, approvalStatus: job.approvalStatus, status: job.status },
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to process approval' });
+  }
+});
+
+// Middleware helper: check team approval threshold before order/job proceeds
+// Export for use in other routes
+router.checkTeamApproval = async function(userId, teamId, amount) {
+  if (!teamId) return { needsApproval: false };
+
+  const team = await Team.findById(teamId);
+  if (!team || !team.isActive) return { needsApproval: false };
+  if (!team.settings?.requireApproval) return { needsApproval: false };
+  if (!team.approvalThreshold || amount < team.approvalThreshold) return { needsApproval: false };
+
+  return {
+    needsApproval: true,
+    team,
+    threshold: team.approvalThreshold,
+  };
+};
+
 module.exports = router;
