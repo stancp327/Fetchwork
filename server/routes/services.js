@@ -7,8 +7,7 @@ const ServiceSubscription = require('../models/ServiceSubscription');
 const Notification = require('../models/Notification');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
-const { geocode, nearSphereQuery } = require('../config/geocoding');
-const { escapeRegex } = require('../utils/sanitize');
+const { parsePagination, buildServiceFilters } = require('./services.helpers');
 const stripeService = require('../services/stripeService');
 const emailWorkflowService = require('../services/emailWorkflowService');
 const emailService  = require('../services/emailService');
@@ -31,61 +30,9 @@ router.get('/me', authenticateToken, async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-    
-    const filters = {
-      isActive:   true,
-      isArchived: { $ne: true },
-      status:     'active'
-    };
-    
-    if (req.query.category && req.query.category !== 'all') {
-      filters.category = req.query.category;
-    }
-    
-    if (req.query.skills) {
-      const skills = req.query.skills.split(',').map(skill => skill.trim());
-      filters.skills = { $in: skills };
-    }
-    
-    if (req.query.minPrice || req.query.maxPrice) {
-      filters['pricing.basic.price'] = {};
-      if (req.query.minPrice) {
-        filters['pricing.basic.price'].$gte = parseFloat(req.query.minPrice);
-      }
-      if (req.query.maxPrice) {
-        filters['pricing.basic.price'].$lte = parseFloat(req.query.maxPrice);
-      }
-    }
+    const { page, limit, skip } = parsePagination(req.query);
+    const filters = await buildServiceFilters(req.query);
 
-    // Location type filter: remote / local / all
-    if (req.query.locationType && req.query.locationType !== 'all') {
-      filters['location.locationType'] = req.query.locationType;
-    }
-
-    // Distance-based search: ?near=94520&radius=25
-    if (req.query.near && req.query.near.trim() !== '') {
-      const radius = parseInt(req.query.radius) || 25;
-      const coords = await geocode(req.query.near.trim());
-      if (coords) {
-        filters['location.coordinates'] = nearSphereQuery(coords, radius);
-        if (!filters['location.locationType']) {
-          filters['location.locationType'] = { $in: ['local', 'hybrid'] };
-        }
-      }
-    }
-    
-    if (req.query.search) {
-      const safeSearch = escapeRegex(req.query.search);
-      filters.$or = [
-        { title: { $regex: safeSearch, $options: 'i' } },
-        { description: { $regex: safeSearch, $options: 'i' } },
-        { skills: { $in: [new RegExp(safeSearch, 'i')] } }
-      ];
-    }
-    
     const services = await Service.find(filters)
       .populate('freelancer', 'firstName lastName profilePicture rating totalJobs')
       .sort({ isBoosted: -1, createdAt: -1, rating: -1 })
