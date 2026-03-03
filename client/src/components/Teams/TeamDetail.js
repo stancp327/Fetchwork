@@ -165,16 +165,21 @@ const TeamDetail = () => {
             </div>
           </div>
         </div>
-        {(isOwnerOrAdmin || canDeleteTeam) && (
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {(isOwnerOrAdmin || canManageMembers) && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(!editing)}>
               {editing ? 'Cancel' : '⚙️ Settings'}
             </button>
-            {canDeleteTeam && (
-              <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
-            )}
-          </div>
-        )}
+          )}
+          <button
+            className="btn btn-danger btn-sm"
+            onClick={deleteTeam}
+            disabled={!isOwner}
+            title={isOwner ? 'Delete this team' : 'Only the team owner can delete'}
+          >
+            Delete Team
+          </button>
+        </div>
       </div>
 
       {team.description && !editing && <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>{team.description}</p>}
@@ -313,15 +318,20 @@ const TeamDetail = () => {
         </div>
       )}
 
-      {canDeleteTeam && (
-        <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #fee2e2' }}>
-          <h4 style={{ marginBottom: '0.5rem', color: '#b91c1c' }}>Danger Zone</h4>
-          <p style={{ marginTop: 0, marginBottom: '0.75rem', color: '#7f1d1d', fontSize: '0.9rem' }}>
-            Deleting a team is permanent and cannot be undone.
-          </p>
-          <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
-        </div>
-      )}
+      <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #fee2e2' }}>
+        <h4 style={{ marginBottom: '0.5rem', color: '#b91c1c' }}>Danger Zone</h4>
+        <p style={{ marginTop: 0, marginBottom: '0.75rem', color: '#7f1d1d', fontSize: '0.9rem' }}>
+          Deleting a team is permanent and cannot be undone.
+        </p>
+        <button
+          className="btn btn-danger btn-sm"
+          onClick={deleteTeam}
+          disabled={!isOwner}
+          title={isOwner ? 'Delete this team' : 'Only the team owner can delete'}
+        >
+          Delete Team
+        </button>
+      </div>
     </div>
   );
 };
