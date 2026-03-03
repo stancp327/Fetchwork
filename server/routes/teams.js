@@ -124,6 +124,10 @@ function buildLockVersionFilter(lockVersion) {
   return { lockVersion: v };
 }
 
+function buildIdleTransferStateFilter() {
+  return { $or: [{ transferState: 'idle' }, { transferState: { $exists: false } }] };
+}
+
 // â”€â”€ GET /api/teams â€” list user's teams â”€â”€
 router.get('/', async (req, res) => {
   try {
@@ -458,7 +462,7 @@ router.patch('/:id/members/:userId', async (req, res) => {
       {
         _id: team._id,
         isActive: true,
-        transferState: 'idle',
+        ...buildIdleTransferStateFilter(),
         ...buildLockVersionFilter(currentLockVersion),
       },
       {
@@ -550,7 +554,7 @@ router.post('/:id/transfer-ownership', async (req, res) => {
         _id: team._id,
         isActive: true,
         owner: requesterId,
-        transferState: 'idle',
+        ...buildIdleTransferStateFilter(),
         ...buildLockVersionFilter(currentLockVersion),
       },
       {
@@ -656,7 +660,7 @@ router.delete('/:id', async (req, res) => {
       {
         _id: team._id,
         isActive: true,
-        transferState: 'idle',
+        ...buildIdleTransferStateFilter(),
         ...buildLockVersionFilter(currentLockVersion),
       },
       {
@@ -1138,4 +1142,5 @@ router.checkTeamApproval = async function(userId, teamId, amount) {
 };
 
 module.exports = router;
+
 
