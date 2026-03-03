@@ -14,6 +14,7 @@ const TeamsPage = () => {
   const [newTeam, setNewTeam] = useState({ name: '', type: 'client_team', description: '' });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [deletingTeamId, setDeletingTeamId] = useState('');
 
   const fetchTeams = useCallback(async () => {
     try {
@@ -72,6 +73,19 @@ const TeamsPage = () => {
       fetchTeams();
     } catch (err) {
       alert(err.message || 'Failed to decline');
+    }
+  };
+
+  const deleteTeamFromList = async (teamId) => {
+    if (!window.confirm('Delete this team? This cannot be undone.')) return;
+    setDeletingTeamId(teamId);
+    try {
+      await apiRequest(`/api/teams/${teamId}`, { method: 'DELETE' });
+      await fetchTeams();
+    } catch (err) {
+      alert(err.message || 'Failed to delete team');
+    } finally {
+      setDeletingTeamId('');
     }
   };
 
@@ -158,6 +172,7 @@ const TeamsPage = () => {
           {teams.map(team => {
             const myMember = team.members?.find(m => m.user?._id === user?._id || m.user === user?._id);
             const activeMembers = team.members?.filter(m => m.status === 'active') || [];
+            const isOwner = myMember?.role === 'owner';
             return (
               <Link to={`/teams/${team._id}`} key={team._id} className="team-card">
                 <div className="team-card-header">
@@ -176,6 +191,21 @@ const TeamsPage = () => {
                   <span className="team-members-count">{activeMembers.length} member{activeMembers.length !== 1 ? 's' : ''}</span>
                   {myMember && <span className="team-my-role">{roleIcons[myMember.role]} {myMember.role}</span>}
                 </div>
+                {isOwner && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      disabled={deletingTeamId === team._id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteTeamFromList(team._id);
+                      }}
+                    >
+                      {deletingTeamId === team._id ? 'Deleting…' : 'Delete Team'}
+                    </button>
+                  </div>
+                )}
               </Link>
             );
           })}
