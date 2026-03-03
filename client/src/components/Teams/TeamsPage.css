@@ -433,4 +433,116 @@
   .team-controls-row select {
     max-width: 280px;
   }
+
+  .teams-grid .org-card {
+    /* 2-col at 640px for org cards */
+  }
+}
+
+/* ══════════════════════════════════════════
+   Phase 3a: Organizations
+   ══════════════════════════════════════════ */
+
+/* Org section wrapper */
+.orgs-section {
+  margin-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+}
+
+/* Org card */
+.org-card {
+  display: block;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.org-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #8b5cf6;
+}
+
+.org-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.org-slug {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Org detail panel */
+.org-detail-panel {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.org-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* Departments list */
+.org-departments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.org-department-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+/* Org settings section */
+.org-settings-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1.25rem;
+}
+
+/* Create org form */
+.create-org-form {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.create-org-form h3 {
+  margin: 0 0 1rem;
+}
+
+/* Responsive: org cards 2-col at 640px */
+@media (min-width: 640px) {
+  .org-detail-panel {
+    padding: 1.5rem;
+  }
+
+  .create-org-form {
+    padding: 1.5rem;
+  }
 }

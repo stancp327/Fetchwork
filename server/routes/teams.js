@@ -1449,7 +1449,15 @@ router.get('/:id/spend-controls', async (req, res) => {
     const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
     if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
 
-    res.json({ spendControls: team.spendControls, approvalThresholds: team.approvalThresholds });
+    const { resolveTeamSettings } = require('../utils/teamSettings');
+    const Organization = require('../models/Organization');
+    let org = null;
+    if (team.organization) {
+      org = await Organization.findById(team.organization);
+    }
+    const effective = resolveTeamSettings(team, org);
+
+    res.json(effective);
   } catch (err) {
     res.status(500).json({ error: 'Failed to load spend controls' });
   }

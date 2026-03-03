@@ -251,6 +251,7 @@ app.use('/api/disputes', require('./routes/disputes'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/calls', require('./routes/calls'));
 app.use('/api/teams', require('./routes/teams'));
+app.use('/api/organizations', require('./routes/organizations'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/users', require('./routes/users'));

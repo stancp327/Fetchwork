@@ -33,6 +33,11 @@ const teamSchema = new mongoose.Schema({
   logo:        { type: String, default: '' },
   website:     { type: String, default: '' },
 
+  // Organization hierarchy
+  organization:       { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', default: null, index: true },
+  department:         { type: String, default: '' },
+  inheritOrgSettings: { type: Boolean, default: true },
+
   // Agency-specific
   portfolio:   [{ title: String, description: String, image: String, url: String }],
   specialties: [String],
