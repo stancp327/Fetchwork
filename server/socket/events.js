@@ -14,6 +14,14 @@ module.exports = (io) => {
     // Lightweight per-socket rate limiter (anti-spam / abuse control)
     const rateBuckets = new Map();
     const getCid = (payload) => payload?.correlationId || payload?.requestId || `sock-${Date.now()}`;
+    const ackOk = (ack, payload, data = {}) => {
+      if (typeof ack !== 'function') return;
+      ack({ ok: true, serverTs: Date.now(), requestId: payload?.requestId || null, correlationId: getCid(payload), data });
+    };
+    const ackErr = (ack, payload, code, message, retryable = false) => {
+      if (typeof ack !== 'function') return;
+      ack({ ok: false, code, message, retryable, serverTs: Date.now(), requestId: payload?.requestId || null, correlationId: getCid(payload) });
+    };
     const logSocketError = (scope, payload, err) => {
       const cid = getCid(payload);
       console.error(`[socket:${scope}] cid=${cid} user=${senderId} err=${err.message}`);
@@ -304,7 +312,7 @@ module.exports = (io) => {
         });
 
       } catch (err) {
-        console.error('Error handling typing:start:', err);
+        logSocketError('typing:start', data, err);
       }
     });
 
@@ -331,7 +339,7 @@ module.exports = (io) => {
         });
 
       } catch (err) {
-        console.error('Error handling typing:stop:', err);
+        logSocketError('typing:stop', data, err);
       }
     });
 
@@ -373,51 +381,103 @@ module.exports = (io) => {
       }
     });
 
-    socket.on('room:join', async (data) => {
-      const { roomId } = data;
+    socket.on('conv:join', async (data, ack) => {
+      const { conversationId } = data || {};
+      const userId = senderId;
+
+      try {
+        if (!conversationId) {
+          ackErr(ack, data, 'ERR_VALIDATION', 'conversationId is required');
+          socket.emit('error', { message: 'Conversation ID is required', correlationId: getCid(data) });
+          return;
+        }
+
+        const conversation = await Conversation.findById(conversationId).select('participants').lean();
+        const allowed = !!conversation?.participants?.some((p) => p.toString() === userId);
+        if (!allowed) {
+          ackErr(ack, data, 'ERR_AUTHZ', 'Conversation not found or access denied');
+          socket.emit('error', { message: 'Conversation not found or access denied', correlationId: getCid(data) });
+          return;
+        }
+
+        socket.join(conversationId);
+        ackOk(ack, data, { conversationId });
+        socket.emit('conv:joined', { conversationId, correlationId: getCid(data) });
+      } catch (err) {
+        logSocketError('conv:join', data, err);
+        ackErr(ack, data, 'ERR_INTERNAL', 'Failed to join conversation', true);
+        socket.emit('error', { message: 'Failed to join conversation', correlationId: getCid(data) });
+      }
+    });
+
+    socket.on('conv:leave', async (data, ack) => {
+      const { conversationId } = data || {};
+      try {
+        if (!conversationId) {
+          ackErr(ack, data, 'ERR_VALIDATION', 'conversationId is required');
+          socket.emit('error', { message: 'Conversation ID is required', correlationId: getCid(data) });
+          return;
+        }
+        socket.leave(conversationId);
+        ackOk(ack, data, { conversationId });
+        socket.emit('conv:left', { conversationId, correlationId: getCid(data) });
+      } catch (err) {
+        logSocketError('conv:leave', data, err);
+        ackErr(ack, data, 'ERR_INTERNAL', 'Failed to leave conversation', true);
+        socket.emit('error', { message: 'Failed to leave conversation', correlationId: getCid(data) });
+      }
+    });
+
+    socket.on('room:join', async (data, ack) => {
+      const { roomId } = data || {};
       const userId = senderId;
 
       try {
         if (!roomId) {
-          socket.emit('error', { message: 'Room ID is required' });
+          ackErr(ack, data, 'ERR_VALIDATION', 'roomId is required');
+          socket.emit('error', { message: 'Room ID is required', correlationId: getCid(data) });
           return;
         }
 
         const room = await ChatRoom.findById(roomId);
         if (!room || !room.isMember(userId)) {
-          socket.emit('error', { message: 'Room not found or access denied' });
+          ackErr(ack, data, 'ERR_AUTHZ', 'Room not found or access denied');
+          socket.emit('error', { message: 'Room not found or access denied', correlationId: getCid(data) });
           return;
         }
 
         socket.join(roomId);
-        
-        socket.emit('room:joined', { roomId, roomName: room.name });
+        ackOk(ack, data, { roomId, roomName: room.name });
+        socket.emit('room:joined', { roomId, roomName: room.name, correlationId: getCid(data) });
         socket.to(roomId).emit('user:joined_room', { userId, roomId });
 
       } catch (err) {
-        console.error('Error handling room:join:', err);
-        socket.emit('error', { message: 'Failed to join room' });
+        logSocketError('room:join', data, err);
+        ackErr(ack, data, 'ERR_INTERNAL', 'Failed to join room', true);
+        socket.emit('error', { message: 'Failed to join room', correlationId: getCid(data) });
       }
     });
 
-    socket.on('room:leave', async (data) => {
-      const { roomId } = data;
+    socket.on('room:leave', async (data, ack) => {
+      const { roomId } = data || {};
       const userId = senderId;
 
       try {
         if (!roomId) {
-          socket.emit('error', { message: 'Room ID is required' });
+          ackErr(ack, data, 'ERR_VALIDATION', 'roomId is required');
+          socket.emit('error', { message: 'Room ID is required', correlationId: getCid(data) });
           return;
         }
 
         socket.leave(roomId);
-        
-        socket.emit('room:left', { roomId });
+        ackOk(ack, data, { roomId });
+        socket.emit('room:left', { roomId, correlationId: getCid(data) });
         socket.to(roomId).emit('user:left_room', { userId, roomId });
 
       } catch (err) {
-        console.error('Error handling room:leave:', err);
-        socket.emit('error', { message: 'Failed to leave room' });
+        logSocketError('room:leave', data, err);
+        ackErr(ack, data, 'ERR_INTERNAL', 'Failed to leave room', true);
+        socket.emit('error', { message: 'Failed to leave room', correlationId: getCid(data) });
       }
     });
 

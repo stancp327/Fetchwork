@@ -67,8 +67,19 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
 - Added baseline correlation ID propagation/logging in messaging REST routes.
 - Added baseline socket error logs with correlation IDs in key messaging/call handlers.
 
-## Immediate Day 2 Follow-ups
+## Day 2 Progress (implemented)
 
-1. Define and implement v1 socket envelope helper and standardized ack errors.
-2. Add authoritative membership checks for all conversation/room join paths.
-3. Start seq + idempotent send design in data model migration notes.
+1. Added socket v1-style ack helpers in `server/socket/events.js`:
+   - `ackOk(ack, payload, data)`
+   - `ackErr(ack, payload, code, message, retryable)`
+2. Added authoritative conversation join/leave events with authz:
+   - `conv:join` (membership-validated)
+   - `conv:leave`
+3. Upgraded `room:join` / `room:leave` to support request/ack contract + structured error codes.
+4. Added correlation IDs into join/leave error paths and socket emits.
+
+## Immediate Day 3 Follow-ups
+
+1. Add conversation-level monotonic `seq` migration.
+2. Implement idempotent `msg:send` with `requestId` uniqueness per `(conversationId, senderId)`.
+3. Add deterministic `/sync?sinceSeq=` endpoint on messaging REST.
