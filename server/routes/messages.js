@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Message, Conversation, ChatRoom } = require('../models/Message');
+const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
 
@@ -15,7 +16,7 @@ router.get('/conversations', authenticateToken, validateQueryParams, async (req,
     .populate('job', '_id title status')
     .populate('service', '_id title pricing')
     .sort({ lastActivity: -1 });
-    
+
     res.json({ conversations });
   } catch (error) {
     console.error('Error fetching conversations:', error);
@@ -27,15 +28,15 @@ router.get('/conversations/:conversationId', authenticateToken, validateConversa
   try {
     const conversation = await Conversation.findById(req.params.conversationId)
       .populate('participants', 'firstName lastName profilePicture');
-    
+
     if (!conversation || !conversation.participants.some(p => p._id.toString() === req.user._id.toString())) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
-    
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
-    
+
     const messages = await Message.find({
       conversation: req.params.conversationId,
       isDeleted: false
@@ -44,12 +45,12 @@ router.get('/conversations/:conversationId', authenticateToken, validateConversa
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
-    
+
     const total = await Message.countDocuments({
       conversation: req.params.conversationId,
       isDeleted: false
     });
-    
+
     await Message.updateMany(
       {
         conversation: req.params.conversationId,
@@ -61,7 +62,7 @@ router.get('/conversations/:conversationId', authenticateToken, validateConversa
         readAt: new Date()
       }
     );
-    
+
     res.json({
       conversation,
       messages: messages.reverse(),
@@ -79,7 +80,7 @@ router.get('/conversations/:conversationId', authenticateToken, validateConversa
 });
 
 // Find or create a conversation without sending a message.
-// Use this when opening a chat from a profile/card — let the user type their own first message.
+// Use this when opening a chat from a profile/card - let the user type their own first message.
 router.post('/conversations/find-or-create', authenticateToken, async (req, res) => {
   try {
     const { recipientId, jobId } = req.body;
@@ -87,6 +88,11 @@ router.post('/conversations/find-or-create', authenticateToken, async (req, res)
     if (recipientId === req.user._id.toString()) {
       return res.status(400).json({ error: 'Cannot start a conversation with yourself' });
     }
+
+    const recipient = await User.findOne({ _id: recipientId, isActive: true, isSuspended: { $ne: true } })
+      .select('_id')
+      .lean();
+    if (!recipient) return res.status(404).json({ error: 'Recipient not found' });
 
     let conversation = await Conversation.findByParticipants(req.user._id, recipientId);
     if (!conversation) {
@@ -107,13 +113,18 @@ router.post('/conversations/find-or-create', authenticateToken, async (req, res)
 router.post('/conversations', authenticateToken, validateMessage, async (req, res) => {
   try {
     const { recipientId, jobId, content } = req.body;
-    
+
     if (recipientId === req.user._id.toString()) {
       return res.status(400).json({ error: 'Cannot send message to yourself' });
     }
-    
+
+    const recipient = await User.findOne({ _id: recipientId, isActive: true, isSuspended: { $ne: true } })
+      .select('_id')
+      .lean();
+    if (!recipient) return res.status(404).json({ error: 'Recipient not found' });
+
     let conversation = await Conversation.findByParticipants(req.user._id, recipientId);
-    
+
     if (!conversation) {
       conversation = new Conversation({
         participants: [req.user._id, recipientId],
@@ -121,22 +132,22 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
       });
       await conversation.save();
     }
-    
+
     const message = new Message({
       conversation: conversation._id,
       sender: req.user._id,
       recipient: recipientId,
       content
     });
-    
+
     await message.save();
-    
+
     conversation.lastMessage = message._id;
     await conversation.updateLastActivity();
-    
+
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'firstName lastName profilePicture');
-    
+
     res.status(201).json({
       message: 'Message sent successfully',
       data: populatedMessage,
@@ -151,13 +162,13 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
 router.post('/conversations/:conversationId/messages', authenticateToken, validateConversationIdParam, validateMessage, async (req, res) => {
   try {
     const { content } = req.body;
-    
+
     const conversation = await Conversation.findById(req.params.conversationId);
-    
+
     if (!conversation || !conversation.participants.some(p => p.toString() === req.user._id.toString())) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
-    
+
     const recipientId = conversation.participants.find(
       p => p.toString() !== req.user._id.toString()
     );
@@ -169,7 +180,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
       size: file.size,
       mimeType: file.mimetype
     })) : [];
-    
+
     const message = new Message({
       conversation: conversation._id,
       sender: req.user._id,
@@ -177,15 +188,15 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
       content: content || (attachments.length > 0 ? `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : ''),
       ...(attachments.length > 0 ? { attachments } : {})
     });
-    
+
     await message.save();
-    
+
     conversation.lastMessage = message._id;
     await conversation.updateLastActivity();
-    
+
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'firstName lastName profilePicture');
-    
+
     res.status(201).json({
       message: 'Message sent successfully',
       data: populatedMessage
@@ -196,7 +207,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
   }
 });
 
-// POST /conversations/:conversationId/messages/upload — send message with file attachments
+// POST /conversations/:conversationId/messages/upload - send message with file attachments
 const { uploadMessageAttachments } = require('../middleware/upload');
 const { watermarkAttachments } = require('../services/watermarkService');
 
@@ -214,7 +225,7 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
       return res.status(400).json({ error: 'Message or attachment required' });
     }
 
-    // Watermark images — originals stored separately, watermarked versions served
+    // Watermark images - originals stored separately, watermarked versions served
     // Watermarks are removed when the associated job is completed
     const attachments = req.files?.length > 0
       ? await watermarkAttachments(req.files, req.files.map(f => f.filename))
@@ -249,7 +260,7 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
       isRead: false,
       isDeleted: false
     });
-    
+
     res.json({ unreadCount });
   } catch (error) {
     console.error('Error fetching unread count:', error);

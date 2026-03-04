@@ -228,8 +228,9 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const rx = new RegExp(escaped, 'i');
+    const parts = q.split(/\s+/).filter(Boolean).slice(0, 4);
 
-    const or = [
+    const baseOr = [
       { firstName: rx },
       { lastName: rx },
       { username: rx },
@@ -239,13 +240,29 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     // Allow exact email lookup (for support/debug flows) without broad email discovery.
     if (q.includes('@')) {
-      or.push({ email: q.toLowerCase() });
+      baseOr.push({ email: q.toLowerCase() });
     }
+
+    const tokenizedAnd = parts.map((token) => {
+      const tokenRx = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      return {
+        $or: [
+          { firstName: tokenRx },
+          { lastName: tokenRx },
+          { username: tokenRx },
+          { headline: tokenRx },
+          { tagline: tokenRx },
+        ],
+      };
+    });
 
     const filter = {
       isActive: true,
       isSuspended: { $ne: true },
-      $or: or,
+      $or: [
+        ...baseOr,
+        ...(tokenizedAnd.length > 1 ? [{ $and: tokenizedAnd }] : []),
+      ],
     };
 
     if (!includeSelf) {
