@@ -93,8 +93,20 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
 4. Added deterministic sync route:
    - `GET /api/messages/conversations/:conversationId/sync?sinceSeq=&limit=`
 
-## Immediate Day 4 Follow-ups
+## Day 4 Progress (implemented)
 
-1. Client optimistic send should include `requestId` and merge on server ack.
-2. Add v1 ack contract to `message:send` and `message:read` events.
-3. Extend seq/idempotent logic to group room messages (or document phased defer).
+1. Added v1-style ack support for:
+   - `message:send`
+   - `message:read`
+2. Added client requestId send/ack merge path in `Messages.js`:
+   - optimistic messages carry `requestId`
+   - socket `message:send` includes `{ v, requestId, correlationId, clientTs }`
+   - ack failure removes optimistic bubble and surfaces error
+   - own echo merges by `requestId` first (content-match fallback kept)
+3. Kept group room sequencing as phased follow-up to avoid destabilizing room message path in same slice.
+
+## Immediate Day 5 Follow-ups
+
+1. Extend deterministic sync usage in client reconnect flow (`/sync?sinceSeq=`).
+2. Implement receipt cursor model skeleton (`lastDeliveredSeq/lastReadSeq`).
+3. Plan/execute room-message seq parity migration.

@@ -51,15 +51,17 @@ module.exports = (io) => {
     
     rejoinUserRooms(socket, senderId);
 
-    socket.on('message:send', async (data) => {
+    socket.on('message:send', async (data, ack) => {
       if (!consumeRate('message:send', 30, 10_000)) {
-        socket.emit('error', { message: 'Rate limit exceeded for sending messages' });
+        ackErr(ack, data, 'ERR_RATE_LIMIT', 'Rate limit exceeded for sending messages', true);
+        socket.emit('error', { message: 'Rate limit exceeded for sending messages', correlationId: getCid(data) });
         return;
       }
 
       const { recipientId, roomId, content, messageType = 'text', attachments = [], jobId, mentions = [], requestId = null } = data || {};
       if (typeof content !== 'string' || !content.trim()) {
-        socket.emit('error', { message: 'Message content is required' });
+        ackErr(ack, data, 'ERR_VALIDATION', 'Message content is required');
+        socket.emit('error', { message: 'Message content is required', correlationId: getCid(data) });
         return;
       }
 
@@ -104,6 +106,7 @@ module.exports = (io) => {
           };
 
           socket.to(roomId).emit('message:receive', { message: messageWithId });
+          ackOk(ack, data, { messageId: newMessage._id.toString(), roomId: roomId.toString() });
 
           if (onlineMembers.length > 0) {
             socket.emit('message:delivered', {
@@ -258,18 +261,25 @@ module.exports = (io) => {
 
           io.to(senderId).emit('conversation:update', { conversation });
           io.to(recipientId).emit('conversation:update', { conversation });
+          ackOk(ack, data, {
+            messageId: newMessage._id.toString(),
+            conversationId: conversation._id.toString(),
+            seq: newMessage.seq || null,
+          });
 
         }
 
       } catch (err) {
         logSocketError('message:send', data, err);
+        ackErr(ack, data, 'ERR_INTERNAL', 'Failed to send message', true);
         socket.emit('error', { message: 'Failed to send message', correlationId: getCid(data) });
       }
     });
 
-    socket.on('message:read', async (data) => {
+    socket.on('message:read', async (data, ack) => {
       if (!consumeRate('message:read', 50, 10_000)) {
-        socket.emit('error', { message: 'Rate limit exceeded for read receipts' });
+        ackErr(ack, data, 'ERR_RATE_LIMIT', 'Rate limit exceeded for read receipts', true);
+        socket.emit('error', { message: 'Rate limit exceeded for read receipts', correlationId: getCid(data) });
         return;
       }
 
@@ -278,7 +288,8 @@ module.exports = (io) => {
 
       try {
         if ((!conversationId && !roomId) || !messageIds || !Array.isArray(messageIds)) {
-          socket.emit('error', { message: 'Conversation/Room ID and message IDs array are required' });
+          ackErr(ack, data, 'ERR_VALIDATION', 'Conversation/Room ID and message IDs array are required');
+          socket.emit('error', { message: 'Conversation/Room ID and message IDs array are required', correlationId: getCid(data) });
           return;
         }
 
@@ -330,8 +341,14 @@ module.exports = (io) => {
           }
         }
 
+        ackOk(ack, data, {
+          conversationId: conversationId || null,
+          roomId: roomId || null,
+          messageIds,
+        });
       } catch (err) {
         logSocketError('message:read', data, err);
+        ackErr(ack, data, 'ERR_INTERNAL', 'Failed to mark messages as read', true);
         socket.emit('error', { message: 'Failed to mark messages as read', correlationId: getCid(data) });
       }
     });

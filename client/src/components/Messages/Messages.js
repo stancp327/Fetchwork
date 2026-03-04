@@ -85,9 +85,16 @@ const Messages = () => {
             const senderId = msg.sender?._id?.toString() || msg.sender?.toString();
             const me = userIdRef.current?.toString();
 
-            // If this is our own echo-back, replace the optimistic temp message
-            // (server echoes message:receive to sender after socket send)
+            // If this is our own echo-back, replace optimistic message by requestId first.
             if (senderId === me) {
+              if (msg.requestId) {
+                const byReq = prev.findIndex((m) => m.requestId && m.requestId === msg.requestId);
+                if (byReq !== -1) {
+                  return prev.map((m, i) => i === byReq ? msg : m);
+                }
+              }
+
+              // Legacy fallback: match temp by content
               const tempIdx = prev.findIndex(
                 m => String(m._id).startsWith('temp-') && m.content === msg.content
               );
@@ -202,8 +209,10 @@ const Messages = () => {
     setSending(true);
     const content = newMessage.trim();
     const hasFiles = attachFiles.length > 0;
+    const requestId = (window.crypto?.randomUUID?.() || `req-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     const optimistic = {
       _id: `temp-${Date.now()}`,
+      requestId,
       content: content || (hasFiles ? `📎 Sent ${attachFiles.length} file${attachFiles.length > 1 ? 's' : ''}` : ''),
       sender: { _id: userId, firstName: user?.firstName, lastName: user?.lastName },
       createdAt: new Date().toISOString(),
@@ -236,9 +245,18 @@ const Messages = () => {
         fetchConversations();
       } else if (socketRef.current) {
         socketRef.current.emit('message:send', {
+          v: 1,
+          requestId,
+          correlationId: requestId,
+          clientTs: Date.now(),
           recipientId: other?._id,
           content,
           messageType: 'text'
+        }, (ack) => {
+          if (!ack?.ok) {
+            setMessages(prev => prev.filter(m => m._id !== optimistic._id));
+            setError(ack?.message || 'Failed to send message');
+          }
         });
       } else {
         const res = await apiRequest(
