@@ -376,7 +376,7 @@ const Messages = () => {
           {mobileView === 'chat' && (
             <button className="mobile-back-btn" onClick={() => setMobileView('inbox')}>← Back</button>
           )}
-          <h1>Messages</h1>
+          <h1>Messages <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', marginLeft: 8 }}>v2 canary</span></h1>
         </div>
         <div className="messages-header-right">
           <input
