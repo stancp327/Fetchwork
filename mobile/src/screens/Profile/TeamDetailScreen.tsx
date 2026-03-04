@@ -43,6 +43,11 @@ export default function TeamDetailScreen({ route }: Props) {
   const [clientUserId, setClientUserId] = useState('');
   const [clientProjectLabel, setClientProjectLabel] = useState('');
   const [clientAccessLevel, setClientAccessLevel] = useState<'view_assigned' | 'view_all' | 'collaborate'>('view_assigned');
+  const [editingRoleId, setEditingRoleId] = useState('');
+  const [editingRoleName, setEditingRoleName] = useState('');
+  const [editingRolePermissions, setEditingRolePermissions] = useState<TeamPermissionKey[]>([]);
+  const [editingClientId, setEditingClientId] = useState('');
+  const [editingClientLabel, setEditingClientLabel] = useState('');
 
   const { data, refetch, isRefetching, isLoading } = useQuery({
     queryKey: ['mobile-team-detail', teamId],
@@ -127,6 +132,12 @@ export default function TeamDetailScreen({ route }: Props) {
     enabled: isOwner || isAdmin,
   });
 
+  const { data: spendControlsData, refetch: refetchSpendControls } = useQuery({
+    queryKey: ['mobile-team-spend-controls', teamId],
+    queryFn: () => teamsApi.getSpendControls(teamId),
+    enabled: isOwner || isAdmin,
+  });
+
   const createCustomRoleMutation = useMutation({
     mutationFn: (payload: { name: string; permissions: TeamPermissionKey[] }) => teamsApi.createCustomRole(teamId, payload),
     onSuccess: () => {
@@ -139,6 +150,24 @@ export default function TeamDetailScreen({ route }: Props) {
     },
     onError: (err: any) => {
       setError(err?.response?.data?.error || 'Failed to create custom role');
+      setMessage('');
+    },
+  });
+
+  const updateCustomRoleMutation = useMutation({
+    mutationFn: (payload: { roleId: string; name: string; permissions: TeamPermissionKey[] }) =>
+      teamsApi.updateCustomRole(teamId, payload.roleId, { name: payload.name, permissions: payload.permissions }),
+    onSuccess: () => {
+      setEditingRoleId('');
+      setEditingRoleName('');
+      setEditingRolePermissions([]);
+      refetchCustomRoles();
+      refetch();
+      setMessage('Custom role updated');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to update custom role');
       setMessage('');
     },
   });
@@ -214,6 +243,19 @@ export default function TeamDetailScreen({ route }: Props) {
     },
   });
 
+  const updateSpendControlsMutation = useMutation({
+    mutationFn: (payload: { spendControls: any; approvalThresholds: any }) => teamsApi.updateSpendControls(teamId, payload),
+    onSuccess: () => {
+      refetchSpendControls();
+      setMessage('Team controls updated');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to update team controls');
+      setMessage('');
+    },
+  });
+
   const onInvite = () => {
     if (!inviteEmail.trim()) {
       setError('Email is required');
@@ -278,6 +320,37 @@ export default function TeamDetailScreen({ route }: Props) {
     });
   };
 
+  const startEditRole = (role: TeamCustomRole) => {
+    setEditingRoleId(role._id);
+    setEditingRoleName(role.name);
+    setEditingRolePermissions(role.permissions || []);
+  };
+
+  const toggleEditingRolePermission = (permissionKey: TeamPermissionKey) => {
+    setEditingRolePermissions((prev) => (
+      prev.includes(permissionKey) ? prev.filter((p) => p !== permissionKey) : [...prev, permissionKey]
+    ));
+  };
+
+  const saveEditedRole = () => {
+    if (!editingRoleId || !editingRoleName.trim()) return;
+    if (!editingRolePermissions.length) {
+      setError('Pick at least one permission for edited role');
+      return;
+    }
+    updateCustomRoleMutation.mutate({
+      roleId: editingRoleId,
+      name: editingRoleName.trim(),
+      permissions: editingRolePermissions,
+    });
+  };
+
+  const saveClientLabel = (clientId: string, accessLevel: 'view_assigned' | 'view_all' | 'collaborate') => {
+    updateLinkedClientMutation.mutate({ clientId, accessLevel, projectLabel: editingClientLabel.trim() });
+    setEditingClientId('');
+    setEditingClientLabel('');
+  };
+
   const onTransferOwnership = () => {
     if (!transferTargetUserId) {
       setError('Pick a member to transfer ownership to');
@@ -304,6 +377,7 @@ export default function TeamDetailScreen({ route }: Props) {
       refetchAudit();
       refetchCustomRoles();
       refetchClients();
+      refetchSpendControls();
     }
   };
 
@@ -450,14 +524,63 @@ export default function TeamDetailScreen({ route }: Props) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.memberName}>{role.name}</Text>
                   <Text style={styles.memberMeta}>{(role.permissions || []).join(', ') || 'No permissions'}</Text>
+
+                  {editingRoleId === role._id && (
+                    <View style={{ marginTop: spacing.xs }}>
+                      <Input
+                        label="Edit role name"
+                        value={editingRoleName}
+                        onChangeText={setEditingRoleName}
+                        placeholder="Role name"
+                      />
+                      <View style={styles.optionRow}>
+                        {PERMISSION_OPTIONS.map((perm) => (
+                          <Button
+                            key={`${role._id}-${perm.key}`}
+                            label={perm.label}
+                            size="sm"
+                            variant={editingRolePermissions.includes(perm.key) ? 'primary' : 'secondary'}
+                            onPress={() => toggleEditingRolePermission(perm.key)}
+                          />
+                        ))}
+                      </View>
+                      <View style={styles.optionRow}>
+                        <Button
+                          label="Save"
+                          size="sm"
+                          onPress={saveEditedRole}
+                          loading={updateCustomRoleMutation.isPending}
+                          disabled={updateCustomRoleMutation.isPending}
+                        />
+                        <Button
+                          label="Cancel"
+                          size="sm"
+                          variant="secondary"
+                          onPress={() => {
+                            setEditingRoleId('');
+                            setEditingRoleName('');
+                            setEditingRolePermissions([]);
+                          }}
+                        />
+                      </View>
+                    </View>
+                  )}
                 </View>
-                <Button
-                  label="Delete"
-                  variant="danger"
-                  size="sm"
-                  onPress={() => deleteCustomRoleMutation.mutate(role._id)}
-                  loading={deleteCustomRoleMutation.isPending}
-                />
+                <View style={styles.optionRow}>
+                  <Button
+                    label="Edit"
+                    variant="secondary"
+                    size="sm"
+                    onPress={() => startEditRole(role)}
+                  />
+                  <Button
+                    label="Delete"
+                    variant="danger"
+                    size="sm"
+                    onPress={() => deleteCustomRoleMutation.mutate(role._id)}
+                    loading={deleteCustomRoleMutation.isPending}
+                  />
+                </View>
               </View>
             ))}
             {!customRoles.length && <Text style={styles.empty}>No custom roles yet.</Text>}
@@ -526,6 +649,30 @@ export default function TeamDetailScreen({ route }: Props) {
                         disabled={updateLinkedClientMutation.isPending}
                       />
                     </View>
+                    {editingClientId === relClientId ? (
+                      <View style={{ marginTop: spacing.xs }}>
+                        <Input
+                          label="Edit project label"
+                          value={editingClientLabel}
+                          onChangeText={setEditingClientLabel}
+                          placeholder="Project label"
+                        />
+                        <View style={styles.optionRow}>
+                          <Button label="Save Label" size="sm" onPress={() => saveClientLabel(relClientId, rel.accessLevel)} />
+                          <Button label="Cancel" size="sm" variant="secondary" onPress={() => { setEditingClientId(''); setEditingClientLabel(''); }} />
+                        </View>
+                      </View>
+                    ) : (
+                      <Button
+                        label="Edit Label"
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => {
+                          setEditingClientId(relClientId);
+                          setEditingClientLabel(rel.projectLabel || '');
+                        }}
+                      />
+                    )}
                   </View>
                   <Button
                     label="Unlink"
@@ -540,6 +687,49 @@ export default function TeamDetailScreen({ route }: Props) {
             {!linkedClients.length && <Text style={styles.empty}>No linked clients.</Text>}
           </View>
         )}
+
+        {(isOwner || isAdmin) && spendControlsData ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Team Controls</Text>
+            <Text style={styles.memberMeta}>Settings source: {spendControlsData.effectiveSource || 'team'}</Text>
+            <Text style={styles.memberMeta}>
+              Monthly cap: {spendControlsData.spendControls.monthlyCapEnabled ? `$${Number(spendControlsData.spendControls.monthlyCap || 0).toFixed(2)}` : 'disabled'}
+            </Text>
+            <Text style={styles.memberMeta}>
+              Payout approval: {spendControlsData.approvalThresholds.payoutRequiresApproval ? `on (threshold $${Number(spendControlsData.approvalThresholds.payoutThresholdAmount || 0).toFixed(2)})` : 'off'}
+            </Text>
+            {isOwner ? (
+              <View style={styles.optionRow}>
+                <Button
+                  label={spendControlsData.spendControls.monthlyCapEnabled ? 'Disable cap' : 'Enable cap'}
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => updateSpendControlsMutation.mutate({
+                    spendControls: {
+                      ...spendControlsData.spendControls,
+                      monthlyCapEnabled: !spendControlsData.spendControls.monthlyCapEnabled,
+                    },
+                    approvalThresholds: spendControlsData.approvalThresholds,
+                  })}
+                  loading={updateSpendControlsMutation.isPending}
+                />
+                <Button
+                  label={spendControlsData.approvalThresholds.payoutRequiresApproval ? 'Disable payout approvals' : 'Enable payout approvals'}
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => updateSpendControlsMutation.mutate({
+                    spendControls: spendControlsData.spendControls,
+                    approvalThresholds: {
+                      ...spendControlsData.approvalThresholds,
+                      payoutRequiresApproval: !spendControlsData.approvalThresholds.payoutRequiresApproval,
+                    },
+                  })}
+                  loading={updateSpendControlsMutation.isPending}
+                />
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Members ({activeMembers.length})</Text>

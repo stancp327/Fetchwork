@@ -45,7 +45,9 @@ export default function TeamsScreen({ navigation }: Props) {
   });
 
   const queryError = (teamsQuery.error as any)?.response?.data?.error
-    || (invitesQuery.error as any)?.response?.data?.error;
+    || (invitesQuery.error as any)?.response?.data?.error
+    || (orgsQuery.error as any)?.response?.data?.error
+    || (orgDetailQuery.error as any)?.response?.data?.error;
 
 
   const createMutation = useMutation({

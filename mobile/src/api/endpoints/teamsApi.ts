@@ -120,6 +120,18 @@ export type OrganizationDepartment = {
 export type OrganizationDetail = OrganizationSummary & {
   owner?: string | TeamUser;
   departments?: OrganizationDepartment[];
+  settings?: {
+    spendControls?: {
+      monthlyCapEnabled?: boolean;
+      monthlyCap?: number;
+      alertThreshold?: number;
+    };
+    approvalThresholds?: {
+      payoutRequiresApproval?: boolean;
+      payoutThresholdAmount?: number;
+      requireDualControl?: boolean;
+    };
+  };
 };
 
 export const teamsApi = {
@@ -162,6 +174,12 @@ export const teamsApi = {
   // Phase 2+ team controls
   getSpendControls: (teamId: string): Promise<TeamSpendControlsResponse> =>
     client.get(`/api/teams/${teamId}/spend-controls`).then((r) => r.data),
+
+  updateSpendControls: (
+    teamId: string,
+    payload: { spendControls: TeamSpendControls; approvalThresholds: TeamApprovalThresholds }
+  ): Promise<TeamSpendControlsResponse> =>
+    client.patch(`/api/teams/${teamId}/spend-controls`, payload).then((r) => r.data),
 
   // Phase 3b custom roles
   getCustomRoles: (teamId: string): Promise<{ customRoles: TeamCustomRole[] }> =>
@@ -240,4 +258,13 @@ export const teamsApi = {
 
   removeTeamFromOrganization: (orgId: string, teamId: string): Promise<{ success: boolean }> =>
     client.delete(`/api/organizations/${orgId}/teams/${teamId}`).then((r) => r.data),
+
+  updateOrganizationSettings: (
+    orgId: string,
+    payload: {
+      spendControls?: { monthlyCapEnabled?: boolean; monthlyCap?: number; alertThreshold?: number };
+      approvalThresholds?: { payoutRequiresApproval?: boolean; payoutThresholdAmount?: number; requireDualControl?: boolean };
+    }
+  ): Promise<{ settings: OrganizationDetail['settings'] }> =>
+    client.patch(`/api/organizations/${orgId}/settings`, payload).then((r) => r.data),
 };
