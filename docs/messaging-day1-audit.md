@@ -194,8 +194,16 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
    - custom rule enforces `content || assetRefs`
 3. Ran targeted Day 12 test suite successfully (4/4 passing).
 
-## Immediate Day 13 Follow-ups
+## Day 13 Progress (implemented)
 
-1. Run canary verification checklist (send/read/sync/receipts/safety nudge) on production accounts.
-2. Expand tests for Cloudinary-signed branch (with env-mocked signature path).
-3. Add rcpt:update UI behavior assertions for unreadSeqCount refresh.
+1. Added explicit canary/rollback runbook:
+   - `docs/messaging-day14-rollout.md`
+   - includes verification checklist, rollout gates, thresholds, and rollback triggers.
+2. Finalized deprecated-code delete-later targets with safety gates (2-week/95% traffic/no P1 incidents).
+3. Kept execution conservative: no high-risk deletions performed pre-canary.
+
+## Immediate Day 14 Follow-ups
+
+1. Execute live canary checklist with two real accounts (web + mobile).
+2. Record pass/fail per checklist step and gate rollout expansion.
+3. If all pass, move internal -> 1% rollout with active metric watch.
