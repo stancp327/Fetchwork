@@ -242,20 +242,8 @@ export default function TeamsScreen({ navigation }: Props) {
   };
 
   const onSaveOrgSettings = () => {
-    const monthlyCap = Number(orgMonthlyCap || 0);
-    const alertPct = Number(orgAlertThresholdPct || 0);
-    const payoutThreshold = Number(orgPayoutThresholdAmount || 0);
-
-    if (!Number.isFinite(monthlyCap) || monthlyCap < 0) {
-      setError('Monthly cap must be a non-negative number');
-      return;
-    }
-    if (!Number.isFinite(alertPct) || alertPct < 0 || alertPct > 100) {
-      setError('Alert threshold must be between 0 and 100');
-      return;
-    }
-    if (!Number.isFinite(payoutThreshold) || payoutThreshold < 0) {
-      setError('Payout threshold must be a non-negative number');
+    if (!orgSettingsValid) {
+      setError(orgSettingsValidationError || 'Invalid organization settings values');
       return;
     }
 
@@ -287,6 +275,20 @@ export default function TeamsScreen({ navigation }: Props) {
     const inOrg = new Set(selectedOrgTeams.map((t) => t._id));
     return teams.filter((t) => !inOrg.has(t._id));
   }, [selectedOrg, selectedOrgTeams, teams]);
+
+  const orgMonthlyCapNum = Number(orgMonthlyCap || 0);
+  const orgAlertThresholdPctNum = Number(orgAlertThresholdPct || 0);
+  const orgPayoutThresholdNum = Number(orgPayoutThresholdAmount || 0);
+
+  const orgSettingsValidationError = !Number.isFinite(orgMonthlyCapNum) || orgMonthlyCapNum < 0
+    ? 'Monthly cap must be a non-negative number'
+    : !Number.isFinite(orgAlertThresholdPctNum) || orgAlertThresholdPctNum < 0 || orgAlertThresholdPctNum > 100
+      ? 'Alert threshold must be between 0 and 100'
+      : !Number.isFinite(orgPayoutThresholdNum) || orgPayoutThresholdNum < 0
+        ? 'Payout threshold must be a non-negative number'
+        : '';
+
+  const orgSettingsValid = !orgSettingsValidationError;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -534,13 +536,16 @@ export default function TeamsScreen({ navigation }: Props) {
                   placeholder="0"
                   keyboardType="numeric"
                 />
+                {!!orgSettingsValidationError && (
+                  <Text style={styles.error}>{orgSettingsValidationError}</Text>
+                )}
                 <Button
                   testID="teams-org-save-settings-btn"
                   label="Save Organization Settings"
                   size="sm"
                   onPress={onSaveOrgSettings}
                   loading={updateOrgSettingsMutation.isPending}
-                  disabled={updateOrgSettingsMutation.isPending}
+                  disabled={updateOrgSettingsMutation.isPending || !orgSettingsValid}
                 />
               </>
             )}

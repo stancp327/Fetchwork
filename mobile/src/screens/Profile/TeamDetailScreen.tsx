@@ -370,23 +370,25 @@ export default function TeamDetailScreen({ route }: Props) {
     setEditingClientLabel('');
   };
 
+  const capAmountNum = Number(capAmountInput || 0);
+  const alertThresholdPctNum = Number(alertThresholdPctInput || 0);
+  const payoutThresholdNum = Number(payoutThresholdInput || 0);
+
+  const numericControlsValidationError = !Number.isFinite(capAmountNum) || capAmountNum < 0
+    ? 'Monthly cap must be a non-negative number'
+    : !Number.isFinite(alertThresholdPctNum) || alertThresholdPctNum < 0 || alertThresholdPctNum > 100
+      ? 'Alert threshold must be between 0 and 100'
+      : !Number.isFinite(payoutThresholdNum) || payoutThresholdNum < 0
+        ? 'Payout threshold must be a non-negative number'
+        : '';
+
+  const numericControlsValid = !numericControlsValidationError;
+
   const saveNumericTeamControls = () => {
     if (!spendControlsData) return;
 
-    const capAmount = Number(capAmountInput || 0);
-    const alertPct = Number(alertThresholdPctInput || 0);
-    const payoutThreshold = Number(payoutThresholdInput || 0);
-
-    if (!Number.isFinite(capAmount) || capAmount < 0) {
-      setError('Monthly cap must be a non-negative number');
-      return;
-    }
-    if (!Number.isFinite(alertPct) || alertPct < 0 || alertPct > 100) {
-      setError('Alert threshold must be between 0 and 100');
-      return;
-    }
-    if (!Number.isFinite(payoutThreshold) || payoutThreshold < 0) {
-      setError('Payout threshold must be a non-negative number');
+    if (!numericControlsValid) {
+      setError(numericControlsValidationError || 'Invalid team controls values');
       return;
     }
 
@@ -394,12 +396,12 @@ export default function TeamDetailScreen({ route }: Props) {
     updateSpendControlsMutation.mutate({
       spendControls: {
         ...spendControlsData.spendControls,
-        monthlyCap: capAmount,
-        alertThreshold: alertPct / 100,
+        monthlyCap: capAmountNum,
+        alertThreshold: alertThresholdPctNum / 100,
       },
       approvalThresholds: {
         ...spendControlsData.approvalThresholds,
-        payoutThresholdAmount: payoutThreshold,
+        payoutThresholdAmount: payoutThresholdNum,
       },
     });
   };
@@ -695,7 +697,7 @@ export default function TeamDetailScreen({ route }: Props) {
               label="Link Client"
               onPress={onLinkClient}
               loading={linkClientMutation.isPending}
-              disabled={linkClientMutation.isPending}
+              disabled={linkClientMutation.isPending || !clientUserId.trim()}
               fullWidth
             />
 
@@ -848,13 +850,16 @@ export default function TeamDetailScreen({ route }: Props) {
                   keyboardType="numeric"
                   placeholder="0"
                 />
+                {!!numericControlsValidationError && (
+                  <Text style={styles.error}>{numericControlsValidationError}</Text>
+                )}
                 <Button
                   testID="teamdetail-save-numeric-controls-btn"
                   label="Save Numeric Controls"
                   size="sm"
                   onPress={saveNumericTeamControls}
                   loading={updateSpendControlsMutation.isPending}
-                  disabled={updateSpendControlsMutation.isPending}
+                  disabled={updateSpendControlsMutation.isPending || !numericControlsValid}
                 />
               </>
             ) : null}

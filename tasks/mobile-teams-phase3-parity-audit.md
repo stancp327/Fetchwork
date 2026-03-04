@@ -43,7 +43,7 @@ _Last updated: 2026-03-03_
 
 ## What remains (next pass)
 1. Execute Maestro flows on a connected device/simulator and capture any remaining flaky selectors (core controls now have testIDs).
-2. Add UX polish around inline helper text / disabled states for invalid numeric entries.
+2. Optional UX refinement: convert validation text to per-field hints for numeric inputs.
 
 ## Files touched in this pass
 - `mobile/src/api/endpoints/teamsApi.ts`
