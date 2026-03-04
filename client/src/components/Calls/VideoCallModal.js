@@ -1,14 +1,48 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { apiRequest } from '../../utils/api';
 import './VideoCallModal.css';
 
-const ICE_SERVERS = [
+const STUN_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
 ];
 
+const TURN_URLS = (process.env.REACT_APP_TURN_URLS || '')
+  .split(',')
+  .map(v => v.trim())
+  .filter(Boolean);
+
+const ICE_SERVERS = TURN_URLS.length
+  ? [
+      ...STUN_SERVERS,
+      {
+        urls: TURN_URLS,
+        username: process.env.REACT_APP_TURN_USERNAME || '',
+        credential: process.env.REACT_APP_TURN_CREDENTIAL || '',
+      },
+    ]
+  : STUN_SERVERS;
+
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const hasWebRTC = !!(navigator.mediaDevices?.getUserMedia && window.RTCPeerConnection);
+
+const toUiStatus = (state, fallback = 'connecting') => {
+  switch (state) {
+    case 'ringing': return 'ringing';
+    case 'accepted':
+    case 'connecting': return 'connecting';
+    case 'connected':
+    case 'active': return 'active';
+    case 'declined':
+    case 'missed':
+    case 'ended':
+    case 'canceled':
+    case 'failed':
+    case 'timed_out': return 'ended';
+    default: return fallback;
+  }
+};
 
 const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false, onClose }) => {
   const socket = window.__fetchworkSocket;
@@ -28,6 +62,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   const localStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
   const durationIntervalRef = useRef(null);
+  const iceServersRef = useRef(null);
 
   const cleanup = useCallback(() => {
     if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
@@ -45,9 +80,104 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     }
   }, []);
 
+  const collectQualityStats = useCallback(async () => {
+    const pc = pcRef.current;
+    if (!pc?.getStats) return null;
+
+    const stats = await pc.getStats();
+    let selectedPair = null;
+    let localCandidate = null;
+    const inboundVideo = [];
+
+    stats.forEach((report) => {
+      if (report.type === 'transport' && report.selectedCandidatePairId) {
+        selectedPair = stats.get(report.selectedCandidatePairId) || selectedPair;
+      }
+      if (!selectedPair && report.type === 'candidate-pair' && report.state === 'succeeded' && report.nominated) {
+        selectedPair = report;
+      }
+      if (report.type === 'inbound-rtp' && report.kind === 'video') {
+        inboundVideo.push(report);
+      }
+    });
+
+    if (selectedPair?.localCandidateId) {
+      localCandidate = stats.get(selectedPair.localCandidateId);
+    }
+
+    const avg = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : undefined);
+
+    const jitters = inboundVideo
+      .map((r) => (typeof r.jitter === 'number' ? r.jitter * 1000 : undefined))
+      .filter((v) => typeof v === 'number');
+
+    const losses = inboundVideo
+      .map((r) => {
+        const lost = Number(r.packetsLost || 0);
+        const recv = Number(r.packetsReceived || 0);
+        const total = lost + recv;
+        return total > 0 ? (lost / total) * 100 : undefined;
+      })
+      .filter((v) => typeof v === 'number');
+
+    const freezeMax = inboundVideo
+      .map((r) => Number(r.totalFreezesDuration || 0) * 1000)
+      .filter((v) => Number.isFinite(v));
+
+    return {
+      avgRttMs: typeof selectedPair?.currentRoundTripTime === 'number'
+        ? selectedPair.currentRoundTripTime * 1000
+        : undefined,
+      avgJitterMs: avg(jitters),
+      avgPacketLossPct: avg(losses),
+      maxFreezeMs: freezeMax.length ? Math.max(...freezeMax) : undefined,
+      iceSelectedCandidateType: localCandidate?.candidateType,
+      audioFallbackUsed: type === 'audio',
+    };
+  }, [type]);
+
+  const uploadQualitySummary = useCallback(async () => {
+    try {
+      const summary = await collectQualityStats();
+      if (!summary) return;
+      await apiRequest(`/api/calls/${callId}/quality`, {
+        method: 'POST',
+        body: JSON.stringify(summary),
+      });
+    } catch (err) {
+      console.warn('Quality summary upload failed:', err?.message || err);
+    }
+  }, [callId, collectQualityStats]);
+
+  const finalizeAndClose = useCallback(async (nextStatus = 'ended') => {
+    setCallStatus(nextStatus);
+    await uploadQualitySummary();
+    cleanup();
+    setTimeout(() => onClose?.(), 1500);
+  }, [cleanup, onClose, uploadQualitySummary]);
+
+  const getIceServers = useCallback(async () => {
+    if (iceServersRef.current) return iceServersRef.current;
+
+    try {
+      const data = await apiRequest(`/api/calls/${callId}/relay-credentials`, { method: 'POST' });
+      if (Array.isArray(data?.iceServers) && data.iceServers.length > 0) {
+        iceServersRef.current = data.iceServers;
+        return data.iceServers;
+      }
+    } catch (err) {
+      // TURN may be unavailable in some environments; safely fall back to static config.
+      console.warn('Using fallback ICE servers:', err?.message || err);
+    }
+
+    iceServersRef.current = ICE_SERVERS;
+    return ICE_SERVERS;
+  }, [callId]);
+
   // Create peer connection
-  const createPeerConnection = useCallback(() => {
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  const createPeerConnection = useCallback(async () => {
+    const dynamicIceServers = await getIceServers();
+    const pc = new RTCPeerConnection({ iceServers: dynamicIceServers });
 
     pc.onicecandidate = (e) => {
       if (e.candidate && socket) {
@@ -73,7 +203,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
 
     pcRef.current = pc;
     return pc;
-  }, [callId, remoteUser._id, socket]);
+  }, [callId, remoteUser._id, socket, getIceServers]);
 
   // Get local media
   const getLocalMedia = useCallback(async () => {
@@ -102,7 +232,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     const stream = await getLocalMedia();
     if (!stream) return;
 
-    const pc = createPeerConnection();
+    const pc = await createPeerConnection();
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
     const offer = await pc.createOffer();
@@ -123,7 +253,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     const stream = await getLocalMedia();
     if (!stream) return;
 
-    const pc = createPeerConnection();
+    const pc = await createPeerConnection();
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
   }, [callId, createPeerConnection, getLocalMedia, socket]);
 
@@ -161,14 +291,21 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       }
     };
 
-    const handleCallEnded = ({ reason }) => {
-      setCallStatus('ended');
-      cleanup();
-      setTimeout(() => onClose?.(), 1500);
+    const handleCallEnded = async () => {
+      await finalizeAndClose('ended');
     };
 
     const handleMediaToggle = ({ kind, enabled }) => {
       setRemoteMediaState(prev => ({ ...prev, [kind]: enabled }));
+    };
+
+    const handleCallState = ({ state } = {}) => {
+      const next = toUiStatus(state, 'connecting');
+      if (next === 'ended') {
+        finalizeAndClose('ended').catch(() => {});
+        return;
+      }
+      setCallStatus(next);
     };
 
     const wrapOffer = (e) => handleOffer(e.detail);
@@ -176,12 +313,14 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     const wrapIce = (e) => handleIceCandidate(e.detail);
     const wrapEnded = (e) => handleCallEnded(e.detail);
     const wrapMedia = (e) => handleMediaToggle(e.detail);
+    const wrapState = (e) => handleCallState(e.detail);
 
     window.addEventListener('socket:call:offer', wrapOffer);
     window.addEventListener('socket:call:answer', wrapAnswer);
     window.addEventListener('socket:call:ice-candidate', wrapIce);
     window.addEventListener('socket:call:ended', wrapEnded);
     window.addEventListener('socket:call:media-toggle', wrapMedia);
+    window.addEventListener('socket:call:state', wrapState);
 
     return () => {
       window.removeEventListener('socket:call:offer', wrapOffer);
@@ -189,8 +328,9 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       window.removeEventListener('socket:call:ice-candidate', wrapIce);
       window.removeEventListener('socket:call:ended', wrapEnded);
       window.removeEventListener('socket:call:media-toggle', wrapMedia);
+      window.removeEventListener('socket:call:state', wrapState);
     };
-  }, [socket, callId, cleanup, onClose]);
+  }, [socket, callId, finalizeAndClose]);
 
   // Auto-start for caller
   useEffect(() => {
@@ -199,11 +339,10 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     }
   }, [isIncoming, callStatus, startCall]);
 
-  const handleEndCall = useCallback(() => {
+  const handleEndCall = useCallback(async () => {
     socket?.emit('call:end', { callId });
-    cleanup();
-    onClose?.();
-  }, [socket, callId, cleanup, onClose]);
+    await finalizeAndClose('ended');
+  }, [socket, callId, finalizeAndClose]);
 
   const handleReject = useCallback(() => {
     socket?.emit('call:reject', { callId });

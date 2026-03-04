@@ -24,10 +24,12 @@ const SOCKET_EVENTS = [
   'call:incoming',
   'call:accepted',
   'call:ended',
+  'call:state',
   'call:offer',
   'call:answer',
   'call:ice-candidate',
   'call:media-toggle',
+  'call:rate-limit',
   'call:error',
 ];
 
