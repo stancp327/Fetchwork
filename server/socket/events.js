@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Message, Conversation, ChatRoom } = require('../models/Message');
+const { Message, Conversation, ChatRoom, ReceiptCursor } = require('../models/Message');
 const User = require('../models/User');
 const Call = require('../models/Call');
 const { transitionCall } = require('../services/callStateMachine');
@@ -321,6 +321,17 @@ module.exports = (io) => {
             { $set: { isRead: true, readAt: new Date() } }
           );
 
+          const readMax = await Message.findOne({ _id: { $in: messageIds }, conversation: conversationId })
+            .sort({ seq: -1 })
+            .select('seq')
+            .lean();
+          if (readMax?.seq) {
+            await ReceiptCursor.updateOne(
+              { conversationId, userId: readerId },
+              { $max: { lastReadSeq: readMax.seq, lastDeliveredSeq: readMax.seq } },
+              { upsert: true }
+            );
+          }
 
           const conversation = await Conversation.findById(conversationId);
           if (!conversation) {

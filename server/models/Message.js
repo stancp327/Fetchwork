@@ -167,6 +167,29 @@ const messageSchema = new mongoose.Schema({
   timestamps: true
 });
 
+const receiptCursorSchema = new mongoose.Schema({
+  conversationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation',
+    required: true,
+    index: true,
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  },
+  lastDeliveredSeq: {
+    type: Number,
+    default: 0,
+  },
+  lastReadSeq: {
+    type: Number,
+    default: 0,
+  },
+}, { timestamps: true });
+
 const conversationSchema = new mongoose.Schema({
   participants: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -240,6 +263,8 @@ messageSchema.index({ mentions: 1 });
 conversationSchema.index({ participants: 1 });
 conversationSchema.index({ lastActivity: -1 });
 conversationSchema.index({ job: 1 });
+
+receiptCursorSchema.index({ conversationId: 1, userId: 1 }, { unique: true });
 
 messageSchema.methods.markAsRead = function() {
   this.isRead = true;
@@ -318,5 +343,6 @@ messageSchema.methods.markAsReadByUser = function(userId) {
 const Message = mongoose.model('Message', messageSchema);
 const Conversation = mongoose.model('Conversation', conversationSchema);
 const ChatRoom = mongoose.model('ChatRoom', chatRoomSchema);
+const ReceiptCursor = mongoose.models.ReceiptCursor || mongoose.model('ReceiptCursor', receiptCursorSchema);
 
-module.exports = { Message, Conversation, ChatRoom };
+module.exports = { Message, Conversation, ChatRoom, ReceiptCursor };

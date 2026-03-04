@@ -105,8 +105,20 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
    - own echo merges by `requestId` first (content-match fallback kept)
 3. Kept group room sequencing as phased follow-up to avoid destabilizing room message path in same slice.
 
-## Immediate Day 5 Follow-ups
+## Day 5 Progress (implemented)
 
-1. Extend deterministic sync usage in client reconnect flow (`/sync?sinceSeq=`).
-2. Implement receipt cursor model skeleton (`lastDeliveredSeq/lastReadSeq`).
-3. Plan/execute room-message seq parity migration.
+1. Added client reconnect sync trigger:
+   - socket connect emits `socket:connect` via `useSocket`
+   - `Messages.js` runs `/sync?sinceSeq=` for active conversation on reconnect
+2. Added receipt cursor skeleton:
+   - new `ReceiptCursor` model in `server/models/Message.js`
+   - unique index `(conversationId, userId)`
+   - REST endpoint `POST /api/messages/conversations/:conversationId/receipts`
+   - socket `message:read` now upserts cursor using max read seq
+3. Kept room-message seq parity as next slice (intentional phased change).
+
+## Immediate Day 6 Follow-ups
+
+1. Wire client to call receipts endpoint with `lastReadSeq/lastDeliveredSeq`.
+2. Add `seq` assignment path for room messages.
+3. Expose receipt cursor state in sync response for unread/read consistency.

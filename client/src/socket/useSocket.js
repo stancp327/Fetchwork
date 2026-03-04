@@ -64,6 +64,9 @@ export const useSocket = (options) => {
       socketRef.current = socket;
       window.__fetchworkSocket = socket;
 
+      socket.on('connect', () => {
+        if (typeof onEventRef.current === 'function') onEventRef.current('socket:connect', { at: Date.now() });
+      });
       socket.on('disconnect', (reason) => {
         console.warn('[SOCKET] Disconnected:', reason);
       });

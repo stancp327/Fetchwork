@@ -33,6 +33,7 @@ const Messages = () => {
   const [onlineUsers, setOnlineUsers] = useState({}); // userId → { isOnline, lastSeen }
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const lastSeqByConvoRef = useRef({});
 
   const token = localStorage.getItem('token');
 
@@ -69,12 +70,34 @@ const Messages = () => {
   const userIdRef = useRef(userId);
   useEffect(() => { userIdRef.current = userId; }, [userId]);
 
+  const syncConversationSinceLastSeq = useCallback(async (conversationId) => {
+    const sinceSeq = Number(lastSeqByConvoRef.current[conversationId] || 0);
+    const data = await apiRequest(`/api/messages/conversations/${conversationId}/sync?sinceSeq=${sinceSeq}&limit=200`);
+    const syncedMessages = data.messages || [];
+    if (syncedMessages.length > 0) {
+      const maxSeq = Math.max(...syncedMessages.map((m) => Number(m.seq || 0)));
+      lastSeqByConvoRef.current[conversationId] = Math.max(sinceSeq, maxSeq);
+      if (selectedConvoRef.current?._id === conversationId) {
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m._id));
+          const merged = [...prev];
+          syncedMessages.forEach((m) => { if (!seen.has(m._id)) merged.push(m); });
+          return merged.sort((a, b) => Number(a.seq || 0) - Number(b.seq || 0));
+        });
+      }
+    }
+  }, []);
+
   const handleSocketEvent = useCallback((event, data) => {
     const convo = selectedConvoRef.current;
     switch (event) {
       case 'message:receive': {
         const msg = data?.message;
         if (!msg) break;
+        if (msg?.conversation && Number.isFinite(Number(msg.seq))) {
+          const cid = msg.conversation?.toString?.() || msg.conversation;
+          lastSeqByConvoRef.current[cid] = Math.max(Number(lastSeqByConvoRef.current[cid] || 0), Number(msg.seq));
+        }
         const msgConvoId = msg.conversation?.toString() || msg.conversation;
         const currentConvoId = convo?._id?.toString();
         if (msgConvoId && currentConvoId && msgConvoId === currentConvoId) {
@@ -147,12 +170,15 @@ const Messages = () => {
           }));
         }
         break;
+      case 'socket:connect':
+        if (convo?._id) syncConversationSinceLastSeq(convo._id).catch(() => {});
+        break;
       default:
         break;
     }
   // selectedConvoRef is a ref (never a dep); fetchConversations is stable
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchConversations]);
+  }, [fetchConversations, syncConversationSinceLastSeq]);
 
   const socketRef = useSocket({ token, onEvent: handleSocketEvent });
 
@@ -189,6 +215,8 @@ const Messages = () => {
       setMessages(data.messages || []);
       setSelectedConvo(data.conversation || convo);
       setMobileView('chat');
+      const seqs = (data.messages || []).map((m) => Number(m.seq || 0)).filter((n) => Number.isFinite(n));
+      lastSeqByConvoRef.current[convo._id] = seqs.length ? Math.max(...seqs) : Number(lastSeqByConvoRef.current[convo._id] || 0);
 
       const unread = (data.messages || []).filter(m => !m.isRead && m.recipient === userId);
       if (unread.length > 0 && socketRef.current) {

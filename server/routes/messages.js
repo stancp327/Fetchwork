@@ -1,7 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
-const { Message, Conversation, ChatRoom } = require('../models/Message');
+const { Message, Conversation, ChatRoom, ReceiptCursor } = require('../models/Message');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
@@ -312,6 +312,38 @@ router.get('/conversations/:conversationId/sync', authenticateToken, validateCon
   } catch (error) {
     logRouteError(req, 'sync_conversation', error);
     res.status(500).json({ error: 'Failed to sync conversation', correlationId: req.correlationId });
+  }
+});
+
+// POST /conversations/:conversationId/receipts
+router.post('/conversations/:conversationId/receipts', authenticateToken, validateConversationIdParam, async (req, res) => {
+  try {
+    const conversationId = req.params.conversationId;
+    const { lastDeliveredSeq, lastReadSeq } = req.body || {};
+
+    const conversation = await Conversation.findById(conversationId).select('participants').lean();
+    if (!conversation || !conversation.participants.some((p) => p.toString() === req.user._id.toString())) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const delivered = Number.isFinite(Number(lastDeliveredSeq)) ? Number(lastDeliveredSeq) : undefined;
+    const read = Number.isFinite(Number(lastReadSeq)) ? Number(lastReadSeq) : undefined;
+
+    await ReceiptCursor.updateOne(
+      { conversationId, userId: req.user._id },
+      {
+        $max: {
+          ...(delivered !== undefined ? { lastDeliveredSeq: delivered } : {}),
+          ...(read !== undefined ? { lastReadSeq: read } : {}),
+        },
+      },
+      { upsert: true }
+    );
+
+    res.json({ ok: true, correlationId: req.correlationId });
+  } catch (error) {
+    logRouteError(req, 'update_receipts', error);
+    res.status(500).json({ error: 'Failed to update receipts', correlationId: req.correlationId });
   }
 });
 
