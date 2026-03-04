@@ -12,10 +12,12 @@ import { formatTime, ConvoItem, ProposalActionCard, MilestoneRequestCard, MsgBub
 import SafetyNudge from './parts/SafetyNudge';
 
 // ── Main Messages ───────────────────────────────────────────────
+const getEntityId = (v) => (v && typeof v === 'object' ? (v._id || v.id || v.userId || v.toString?.()) : v);
+
 const Messages = () => {
   const { user } = useAuth();
   const { search: locationSearch } = useLocation();
-  const userId = user?._id || user?.id || user?.userId;
+  const userId = getEntityId(user?._id || user?.id || user?.userId);
   const [conversations, setConversations] = useState([]);
   const [selectedConvo, setSelectedConvo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -57,8 +59,8 @@ const Messages = () => {
   useEffect(() => {
     if (conversations.length === 0) return;
     const ids = [...new Set(
-      conversations.flatMap(c => (c.participants || []).map(p => p._id).filter(Boolean))
-    )].filter(id => id !== userId);
+      conversations.flatMap(c => (c.participants || []).map(p => getEntityId(p?._id || p)).filter(Boolean))
+    )].filter(id => String(id) !== String(userId));
     if (ids.length === 0) return;
     apiRequest(`/api/users/online-status?ids=${ids.join(',')}`)
       .then(data => setOnlineUsers(data.statuses || {}))
@@ -241,7 +243,7 @@ const Messages = () => {
       const maxSeq = seqs.length ? Math.max(...seqs) : Number(lastSeqByConvoRef.current[convo._id] || 0);
       lastSeqByConvoRef.current[convo._id] = maxSeq;
 
-      const unread = (data.messages || []).filter(m => !m.isRead && m.recipient === userId);
+      const unread = (data.messages || []).filter(m => !m.isRead && String(getEntityId(m.recipient)) === String(userId));
       if (unread.length > 0 && socketRef.current) {
         socketRef.current.emit('message:read', {
           conversationId: convo._id,
@@ -280,7 +282,7 @@ const Messages = () => {
     setAttachFiles([]);
 
     try {
-      const other = selectedConvo.participants?.find(p => p._id !== userId);
+      const other = selectedConvo.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
 
       if (hasFiles) {
         // Use upload endpoint for files
@@ -304,7 +306,7 @@ const Messages = () => {
           requestId,
           correlationId: requestId,
           clientTs: Date.now(),
-          recipientId: other?._id,
+          recipientId: getEntityId(other?._id || other),
           content,
           messageType: 'text'
         }, (ack) => {
@@ -353,13 +355,13 @@ const Messages = () => {
     }
   }, [locationSearch, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const otherParticipant = selectedConvo?.participants?.find(p => p._id !== userId);
+  const otherParticipant = selectedConvo?.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
 
   // Filter conversations
   const filtered = conversations.filter(c => {
     if (filter === 'unread' && !c.unreadCount) return false;
     if (search) {
-      const other = c.participants?.find(p => p._id !== userId);
+      const other = c.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
       const name = `${other?.firstName} ${other?.lastName}`.toLowerCase();
       const jobTitle = c.job?.title?.toLowerCase() || '';
       return name.includes(search.toLowerCase()) || jobTitle.includes(search.toLowerCase());
