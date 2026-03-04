@@ -372,15 +372,34 @@ export default function TeamDetailScreen({ route }: Props) {
 
   const saveNumericTeamControls = () => {
     if (!spendControlsData) return;
+
+    const capAmount = Number(capAmountInput || 0);
+    const alertPct = Number(alertThresholdPctInput || 0);
+    const payoutThreshold = Number(payoutThresholdInput || 0);
+
+    if (!Number.isFinite(capAmount) || capAmount < 0) {
+      setError('Monthly cap must be a non-negative number');
+      return;
+    }
+    if (!Number.isFinite(alertPct) || alertPct < 0 || alertPct > 100) {
+      setError('Alert threshold must be between 0 and 100');
+      return;
+    }
+    if (!Number.isFinite(payoutThreshold) || payoutThreshold < 0) {
+      setError('Payout threshold must be a non-negative number');
+      return;
+    }
+
+    setError('');
     updateSpendControlsMutation.mutate({
       spendControls: {
         ...spendControlsData.spendControls,
-        monthlyCap: Number(capAmountInput || 0),
-        alertThreshold: Math.max(0, Math.min(1, Number(alertThresholdPctInput || 0) / 100)),
+        monthlyCap: capAmount,
+        alertThreshold: alertPct / 100,
       },
       approvalThresholds: {
         ...spendControlsData.approvalThresholds,
-        payoutThresholdAmount: Number(payoutThresholdInput || 0),
+        payoutThresholdAmount: payoutThreshold,
       },
     });
   };

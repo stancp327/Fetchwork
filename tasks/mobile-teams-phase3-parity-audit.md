@@ -30,7 +30,7 @@ _Last updated: 2026-03-03_
 - [x] Mobile UI: list/link/unlink linked clients in Team detail
 - [x] Mobile UI: update linked client access level (inline access buttons)
 - [x] Mobile UI: project-label edit for existing linked clients
-- [ ] Mobile UI: client search by email/lookup (currently user-id input)
+- [x] Mobile UI: client search by email/lookup
 
 ### Phase 2+ controls response parity
 - [x] API typing updated for spend controls including `effectiveSource`
@@ -43,7 +43,7 @@ _Last updated: 2026-03-03_
 
 ## What remains (next pass)
 1. Add dedicated e2e tests for mobile UI flows (API contract-level tests now include lookup coverage server-side).
-2. Add validation UX polish around numeric bounds (alert threshold 0-100, non-negative amounts).
+2. Add UX polish around inline helper text and disabled states when numeric values are invalid.
 
 ## Files touched in this pass
 - `mobile/src/api/endpoints/teamsApi.ts`

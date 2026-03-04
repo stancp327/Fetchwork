@@ -241,6 +241,29 @@ export default function TeamsScreen({ navigation }: Props) {
     addTeamToOrgMutation.mutate();
   };
 
+  const onSaveOrgSettings = () => {
+    const monthlyCap = Number(orgMonthlyCap || 0);
+    const alertPct = Number(orgAlertThresholdPct || 0);
+    const payoutThreshold = Number(orgPayoutThresholdAmount || 0);
+
+    if (!Number.isFinite(monthlyCap) || monthlyCap < 0) {
+      setError('Monthly cap must be a non-negative number');
+      return;
+    }
+    if (!Number.isFinite(alertPct) || alertPct < 0 || alertPct > 100) {
+      setError('Alert threshold must be between 0 and 100');
+      return;
+    }
+    if (!Number.isFinite(payoutThreshold) || payoutThreshold < 0) {
+      setError('Payout threshold must be a non-negative number');
+      return;
+    }
+
+    setError('');
+    setMessage('');
+    updateOrgSettingsMutation.mutate();
+  };
+
   const teams = teamsQuery.data?.teams || [];
   const invitations = invitesQuery.data?.invitations || [];
   const organizations = orgsQuery.data?.organizations || [];
@@ -509,7 +532,7 @@ export default function TeamsScreen({ navigation }: Props) {
                 <Button
                   label="Save Organization Settings"
                   size="sm"
-                  onPress={() => updateOrgSettingsMutation.mutate()}
+                  onPress={onSaveOrgSettings}
                   loading={updateOrgSettingsMutation.isPending}
                   disabled={updateOrgSettingsMutation.isPending}
                 />
