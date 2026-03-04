@@ -1,5 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
+const cloudinary = require('cloudinary').v2;
 const router = express.Router();
 const { Message, Conversation, ChatRoom, ReceiptCursor } = require('../models/Message');
 const User = require('../models/User');
@@ -29,6 +30,14 @@ const recordModerationEvent = async ({ conversationId = null, roomId = null, mes
     source,
   });
 };
+
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+}
 
 router.use((req, res, next) => {
   req.correlationId = getCorrelationId(req);
@@ -409,7 +418,7 @@ router.post('/conversations/:conversationId/receipts', authenticateToken, valida
   }
 });
 
-// POST /assets/sign - scaffold for signed upload flow (Day 9)
+// POST /assets/sign - signed upload contract (Cloudinary when configured)
 router.post('/assets/sign', authenticateToken, async (req, res) => {
   try {
     const { filename, mime, size, sha256 } = req.body || {};
@@ -417,15 +426,46 @@ router.post('/assets/sign', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'filename, mime, size are required' });
     }
 
-    // Scaffold response: keeps contract stable while storage signing backend is finalized.
     const assetId = `asset_${crypto.randomUUID()}`;
+    const expiresAtUnix = Math.floor(Date.now() / 1000) + 10 * 60;
+
+    if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+      const folder = process.env.CLOUDINARY_MESSAGE_FOLDER || 'fetchwork/messages';
+      const paramsToSign = {
+        timestamp: expiresAtUnix,
+        folder,
+        public_id: assetId,
+      };
+      const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET);
+
+      return res.json({
+        assetId,
+        provider: 'cloudinary',
+        uploadUrl: `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`,
+        method: 'POST',
+        fields: {
+          api_key: process.env.CLOUDINARY_API_KEY,
+          timestamp: String(expiresAtUnix),
+          folder,
+          public_id: assetId,
+          signature,
+        },
+        metadata: { mime, size, sha256: sha256 || null },
+        expiresAt: new Date(expiresAtUnix * 1000).toISOString(),
+        correlationId: req.correlationId,
+      });
+    }
+
+    // Fallback scaffold if provider config missing
     return res.json({
       assetId,
+      provider: 'stub',
       uploadUrl: null,
       method: 'POST',
       headers: {},
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      note: 'Upload signing scaffold active; storage provider integration pending.',
+      metadata: { mime, size, sha256: sha256 || null },
+      expiresAt: new Date(expiresAtUnix * 1000).toISOString(),
+      note: 'Upload signing fallback active; storage provider config missing.',
       correlationId: req.correlationId,
     });
   } catch (error) {
@@ -453,6 +493,26 @@ router.post('/assets/:assetId/finalize', authenticateToken, async (req, res) => 
   } catch (error) {
     logRouteError(req, 'assets_finalize', error);
     res.status(500).json({ error: 'Failed to finalize asset', correlationId: req.correlationId });
+  }
+});
+
+// GET /moderation/events - basic triage endpoint for admins
+router.get('/moderation/events', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user?.isAdmin && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const events = await ModerationEvent.find({})
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    res.json({ events, correlationId: req.correlationId });
+  } catch (error) {
+    logRouteError(req, 'moderation_events', error);
+    res.status(500).json({ error: 'Failed to fetch moderation events', correlationId: req.correlationId });
   }
 });
 

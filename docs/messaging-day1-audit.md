@@ -161,8 +161,18 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
    - `POST /api/messages/assets/:assetId/finalize`
    (returns stub payloads while storage-signing integration is finalized)
 
-## Immediate Day 10 Follow-ups
+## Day 10 Progress (implemented)
 
-1. Back these asset scaffold endpoints with real signed URL provider integration.
-2. Persist moderation events for upload message path with attachment context.
-3. Add basic admin read endpoint for moderation event triage.
+1. Upgraded asset sign route toward real provider flow:
+   - `POST /api/messages/assets/sign` now returns Cloudinary signed upload contract when env config exists.
+   - fallback stub remains when provider config is missing.
+2. Added moderation triage read endpoint:
+   - `GET /api/messages/moderation/events` (admin-only basic view)
+3. Finalize contract retained and standardized:
+   - `POST /api/messages/assets/:assetId/finalize` returns normalized asset payload scaffold for client integration continuity.
+
+## Immediate Day 11 Follow-ups
+
+1. Wire finalized assets into message attachment refs end-to-end.
+2. Tighten admin authorization to permission middleware instead of role flag check.
+3. Add tests for signed upload contract validation + moderation endpoint authz.
