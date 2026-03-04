@@ -41,6 +41,7 @@ export default function TeamDetailScreen({ route }: Props) {
   const [newRoleName, setNewRoleName] = useState('');
   const [newRolePermissions, setNewRolePermissions] = useState<TeamPermissionKey[]>([]);
   const [clientUserId, setClientUserId] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
   const [clientProjectLabel, setClientProjectLabel] = useState('');
   const [clientAccessLevel, setClientAccessLevel] = useState<'view_assigned' | 'view_all' | 'collaborate'>('view_assigned');
   const [editingRoleId, setEditingRoleId] = useState('');
@@ -135,6 +136,12 @@ export default function TeamDetailScreen({ route }: Props) {
     enabled: isOwner || isAdmin,
   });
 
+  const { data: clientLookupData, isFetching: clientLookupLoading } = useQuery({
+    queryKey: ['mobile-team-client-lookup', teamId, clientSearch],
+    queryFn: () => teamsApi.lookupUsersForTeam(teamId, clientSearch),
+    enabled: (isOwner || isAdmin) && clientSearch.trim().length >= 2,
+  });
+
   const { data: spendControlsData, refetch: refetchSpendControls } = useQuery({
     queryKey: ['mobile-team-spend-controls', teamId],
     queryFn: () => teamsApi.getSpendControls(teamId),
@@ -207,6 +214,7 @@ export default function TeamDetailScreen({ route }: Props) {
     mutationFn: (payload: { clientUserId: string; projectLabel?: string; accessLevel?: 'view_assigned' | 'view_all' | 'collaborate' }) => teamsApi.createLinkedClient(teamId, payload),
     onSuccess: () => {
       setClientUserId('');
+      setClientSearch('');
       setClientProjectLabel('');
       setClientAccessLevel('view_assigned');
       refetchClients();
@@ -289,6 +297,7 @@ export default function TeamDetailScreen({ route }: Props) {
   const auditLogs: TeamAuditLog[] = auditData?.logs || [];
   const customRoles: TeamCustomRole[] = customRolesData?.customRoles || [];
   const linkedClients: TeamClientRelationship[] = clientsData?.clients || [];
+  const clientLookupUsers = clientLookupData?.users || [];
 
   useEffect(() => {
     if (!spendControlsData) return;
@@ -616,10 +625,34 @@ export default function TeamDetailScreen({ route }: Props) {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Linked Clients</Text>
             <Input
-              label="Client User ID"
+              label="Find Client (name or email)"
+              value={clientSearch}
+              onChangeText={setClientSearch}
+              placeholder="Search client"
+              autoCapitalize="none"
+            />
+            {clientLookupLoading ? <Text style={styles.memberMeta}>Searching…</Text> : null}
+            {clientSearch.trim().length >= 2 && clientLookupUsers.length > 0 ? (
+              <View style={styles.optionRow}>
+                {clientLookupUsers.map((u) => {
+                  const label = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || u._id;
+                  return (
+                    <Button
+                      key={u._id}
+                      label={label}
+                      size="sm"
+                      variant={clientUserId === u._id ? 'primary' : 'secondary'}
+                      onPress={() => setClientUserId(u._id)}
+                    />
+                  );
+                })}
+              </View>
+            ) : null}
+            <Input
+              label="Selected Client User ID"
               value={clientUserId}
               onChangeText={setClientUserId}
-              placeholder="Paste client user id"
+              placeholder="Select from search results"
               autoCapitalize="none"
             />
             <Input

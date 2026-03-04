@@ -42,9 +42,8 @@ _Last updated: 2026-03-03_
 - Kept existing flows intact; no destructive removals in this pass.
 
 ## What remains (next pass)
-1. Add dedicated integration/e2e tests for mobile-facing Phase 3 flows (API contract-level tests already exist server-side).
-2. Improve mobile linked-client UX with email/user lookup instead of raw user-id entry.
-3. Add validation UX polish around numeric bounds (alert threshold 0-100, non-negative amounts).
+1. Add dedicated e2e tests for mobile UI flows (API contract-level tests now include lookup coverage server-side).
+2. Add validation UX polish around numeric bounds (alert threshold 0-100, non-negative amounts).
 
 ## Files touched in this pass
 - `mobile/src/api/endpoints/teamsApi.ts`

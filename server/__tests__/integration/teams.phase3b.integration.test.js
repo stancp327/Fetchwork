@@ -186,4 +186,23 @@ describe('Teams integration — phase 3b custom roles + linked clients', () => {
     expect(okRes.body.accessLevel).toBe('view_assigned');
     expect(okRes.body.team.id).toBeDefined();
   });
+
+  it('supports owner/admin user lookup for linking clients and excludes active members', async () => {
+    const team = await createTeamDoc();
+
+    const ownerLookup = await request(app)
+      .get(`/api/teams/${team._id}/user-lookup?q=client3b`)
+      .set('Authorization', authHeader(owner._id));
+
+    expect(ownerLookup.status).toBe(200);
+    expect(Array.isArray(ownerLookup.body.users)).toBe(true);
+    expect(ownerLookup.body.users.some((u) => String(u._id) === String(clientUser._id))).toBe(true);
+    expect(ownerLookup.body.users.some((u) => String(u._id) === String(member._id))).toBe(false);
+
+    const memberLookup = await request(app)
+      .get(`/api/teams/${team._id}/user-lookup?q=client3b`)
+      .set('Authorization', authHeader(member._id));
+
+    expect(memberLookup.status).toBe(403);
+  });
 });

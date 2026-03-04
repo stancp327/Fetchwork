@@ -209,6 +209,9 @@ export const teamsApi = {
     client.patch(`/api/teams/${teamId}/members/${userId}/custom-role`, { customRoleName }).then((r) => r.data),
 
   // Phase 3b linked clients
+  lookupUsersForTeam: (teamId: string, q: string): Promise<{ users: TeamUser[] }> =>
+    client.get(`/api/teams/${teamId}/user-lookup`, { params: { q } }).then((r) => r.data),
+
   getLinkedClients: (teamId: string): Promise<{ clients: TeamClientRelationship[] }> =>
     client.get(`/api/teams/${teamId}/clients`).then((r) => r.data),
 

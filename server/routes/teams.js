@@ -1558,6 +1558,42 @@ router.get('/:id/analytics', async (req, res) => {
   }
 });
 
+// ── GET /api/teams/:id/user-lookup?q=term ── lookup users for linking clients
+router.get('/:id/user-lookup', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const q = String(req.query?.q || '').trim();
+    if (!q || q.length < 2) return res.json({ users: [] });
+
+    const memberIds = new Set((team.members || []).map((m) => String(getId(m.user))).filter(Boolean));
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    const users = await User.find({
+      isActive: true,
+      isSuspended: { $ne: true },
+      $or: [
+        { email: regex },
+        { firstName: regex },
+        { lastName: regex },
+      ],
+    })
+      .select('_id firstName lastName email profileImage')
+      .limit(10)
+      .lean();
+
+    const filtered = users.filter((u) => !memberIds.has(String(u._id)));
+    res.json({ users: filtered });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to lookup users' });
+  }
+});
+
 // ── GET /api/teams/:id/custom-roles ── list custom roles
 router.get('/:id/custom-roles', async (req, res) => {
   try {
