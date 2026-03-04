@@ -215,6 +215,55 @@ router.put('/me/username', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Failed to set username' });
   }
 });
+
+// GET /api/users/search?q=term&limit=10
+// Supports finding users by name/username and exact email lookup.
+router.get('/search', authenticateToken, async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 25);
+    const includeSelf = String(req.query.includeSelf || 'false') === 'true';
+
+    if (!q || q.length < 2) return res.json({ users: [] });
+
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = new RegExp(escaped, 'i');
+
+    const or = [
+      { firstName: rx },
+      { lastName: rx },
+      { username: rx },
+      { headline: rx },
+      { tagline: rx },
+    ];
+
+    // Allow exact email lookup (for support/debug flows) without broad email discovery.
+    if (q.includes('@')) {
+      or.push({ email: q.toLowerCase() });
+    }
+
+    const filter = {
+      isActive: true,
+      isSuspended: { $ne: true },
+      $or: or,
+    };
+
+    if (!includeSelf) {
+      filter._id = { $ne: req.user.userId };
+    }
+
+    const users = await User.find(filter)
+      .select('_id firstName lastName username profilePicture headline lastSeen isActive')
+      .sort({ lastSeen: -1, createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    res.json({ users });
+  } catch (error) {
+    console.error('User search failed:', error);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
 const maybeUploadProfilePicture = (req, res, next) => {
   try {
     const ct = req.headers['content-type'] || '';
