@@ -85,6 +85,10 @@ const Messages = () => {
           return merged.sort((a, b) => Number(a.seq || 0) - Number(b.seq || 0));
         });
       }
+      apiRequest(`/api/messages/conversations/${conversationId}/receipts`, {
+        method: 'POST',
+        body: JSON.stringify({ lastDeliveredSeq: maxSeq }),
+      }).catch(() => {});
     }
   }, []);
 
@@ -209,6 +213,15 @@ const Messages = () => {
     setTimeout(() => socketRef.current.off('call:error', errHandler), 5000);
   }, [socketRef, selectedConvo]);
 
+  const updateReceiptCursor = useCallback(async (conversationId, { lastReadSeq, lastDeliveredSeq }) => {
+    try {
+      await apiRequest(`/api/messages/conversations/${conversationId}/receipts`, {
+        method: 'POST',
+        body: JSON.stringify({ lastReadSeq, lastDeliveredSeq }),
+      });
+    } catch (_) {}
+  }, []);
+
   const fetchMessages = useCallback(async (convo) => {
     try {
       const data = await apiRequest(`/api/messages/conversations/${convo._id}`);
@@ -216,7 +229,8 @@ const Messages = () => {
       setSelectedConvo(data.conversation || convo);
       setMobileView('chat');
       const seqs = (data.messages || []).map((m) => Number(m.seq || 0)).filter((n) => Number.isFinite(n));
-      lastSeqByConvoRef.current[convo._id] = seqs.length ? Math.max(...seqs) : Number(lastSeqByConvoRef.current[convo._id] || 0);
+      const maxSeq = seqs.length ? Math.max(...seqs) : Number(lastSeqByConvoRef.current[convo._id] || 0);
+      lastSeqByConvoRef.current[convo._id] = maxSeq;
 
       const unread = (data.messages || []).filter(m => !m.isRead && m.recipient === userId);
       if (unread.length > 0 && socketRef.current) {
@@ -225,10 +239,14 @@ const Messages = () => {
           messageIds: unread.map(m => m._id)
         });
       }
+
+      if (maxSeq > 0) {
+        updateReceiptCursor(convo._id, { lastReadSeq: maxSeq, lastDeliveredSeq: maxSeq });
+      }
     } catch (err) {
       setError(err.data?.error || err.message || 'Failed to load messages');
     }
-  }, [userId]);
+  }, [userId, updateReceiptCursor]);
 
   const sendMessage = async (e) => {
     e.preventDefault();

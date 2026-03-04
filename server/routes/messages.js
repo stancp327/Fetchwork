@@ -293,6 +293,10 @@ router.get('/conversations/:conversationId/sync', authenticateToken, validateCon
 
     const lastSeq = messages.length ? messages[messages.length - 1].seq : sinceSeq;
 
+    const myCursor = await ReceiptCursor.findOne({ conversationId, userId: req.user._id })
+      .select('lastDeliveredSeq lastReadSeq')
+      .lean();
+
     res.json({
       conversation: {
         _id: conversation._id,
@@ -302,6 +306,12 @@ router.get('/conversations/:conversationId/sync', authenticateToken, validateCon
         lastActivity: conversation.lastActivity,
       },
       messages,
+      cursors: {
+        me: {
+          lastDeliveredSeq: myCursor?.lastDeliveredSeq || 0,
+          lastReadSeq: myCursor?.lastReadSeq || 0,
+        },
+      },
       sync: {
         sinceSeq,
         lastSeq,

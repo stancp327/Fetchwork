@@ -117,8 +117,19 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
    - socket `message:read` now upserts cursor using max read seq
 3. Kept room-message seq parity as next slice (intentional phased change).
 
-## Immediate Day 6 Follow-ups
+## Day 6 Progress (implemented)
 
-1. Wire client to call receipts endpoint with `lastReadSeq/lastDeliveredSeq`.
-2. Add `seq` assignment path for room messages.
-3. Expose receipt cursor state in sync response for unread/read consistency.
+1. Wired client receipt updates:
+   - `Messages.js` now posts receipt cursor updates when opening thread (`lastReadSeq/lastDeliveredSeq`) and on reconnect sync delivered updates.
+2. Added room-message seq parity baseline:
+   - `ChatRoom.seq` and `ChatRoom.lastMessageSeq`
+   - room socket send allocates seq and stores `Message.seq`.
+3. Sync response now includes cursor state:
+   - `cursors.me.lastDeliveredSeq`
+   - `cursors.me.lastReadSeq`
+
+## Immediate Day 7 Follow-ups
+
+1. Replace legacy read booleans with cursor-first UI derivation in thread lists.
+2. Add call timeline system message inserts on call state transitions.
+3. Add feature flags around room seq path before wider rollout.

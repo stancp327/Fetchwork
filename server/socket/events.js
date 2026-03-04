@@ -78,16 +78,21 @@ module.exports = (io) => {
             return;
           }
 
+          const roomAfterSeq = await ChatRoom.findByIdAndUpdate(
+            roomId,
+            { $inc: { seq: 1 }, $set: { lastActivity: new Date(), lastMessageSeq: (room.seq || 0) + 1 } },
+            { new: true }
+          );
+
           const newMessage = await Message.create({
             roomId,
+            seq: roomAfterSeq.seq,
             sender: senderId,
             content,
             messageType,
             attachments,
             mentions
           });
-
-          await room.updateLastActivity();
           await newMessage.populate('sender', 'firstName lastName profilePicture');
           await newMessage.populate('mentions', 'firstName lastName');
 

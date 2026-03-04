@@ -60,6 +60,14 @@ const chatRoomSchema = new mongoose.Schema({
   lastActivity: {
     type: Date,
     default: Date.now
+  },
+  seq: {
+    type: Number,
+    default: 0
+  },
+  lastMessageSeq: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
@@ -255,6 +263,8 @@ messageSchema.index({ conversation: 1, seq: -1 });
 messageSchema.index({ conversation: 1, seq: 1 }, { unique: true, partialFilterExpression: { conversation: { $exists: true }, seq: { $type: 'number' } } });
 messageSchema.index({ conversation: 1, sender: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $exists: true, $type: 'string' }, conversation: { $exists: true } } });
 messageSchema.index({ roomId: 1, createdAt: -1 });
+messageSchema.index({ roomId: 1, seq: -1 });
+messageSchema.index({ roomId: 1, seq: 1 }, { unique: true, partialFilterExpression: { roomId: { $exists: true }, seq: { $type: 'number' } } });
 messageSchema.index({ sender: 1 });
 messageSchema.index({ recipient: 1 });
 messageSchema.index({ isRead: 1 });
