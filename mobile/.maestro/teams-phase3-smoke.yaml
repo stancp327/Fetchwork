@@ -1,0 +1,46 @@
+appId: com.fetchwork.app
+---
+# Preconditions:
+# - User is already logged in
+# - At least one team exists and is visible in Profile > Teams
+# - Owner/admin account for full controls visibility
+
+- launchApp
+
+# Navigate to teams
+- tapOn: "Profile"
+- tapOn: "Teams"
+
+# Teams screen sanity
+- assertVisible: "Create Team"
+- assertVisible: "Organizations"
+- assertVisible: "My Teams"
+
+# Open first team (requires at least one)
+- tapOn:
+    text: "Open"
+    index: 0
+
+# Team detail sanity
+- assertVisible: "Members"
+
+# Phase 3 sections (owner/admin)
+- assertVisible: "Custom Roles"
+- assertVisible: "Linked Clients"
+- assertVisible: "Team Controls"
+
+# Basic linked-client lookup UX
+- tapOn: "Find Client (name or email)"
+- inputText: "test"
+
+# If lookup results exist, select first result (optional)
+- runFlow:
+    when:
+      visible: "Selected Client User ID"
+    commands:
+      - assertVisible: "Selected Client User ID"
+
+# Numeric controls fields visible
+- assertVisible: "Monthly cap amount"
+- assertVisible: "Alert threshold %"
+- assertVisible: "Payout threshold amount"

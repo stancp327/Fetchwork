@@ -7,7 +7,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "test": "jest --watchAll",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "e2e:maestro:teams:phase3": "maestro test .maestro/teams-phase3-smoke.yaml"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",
