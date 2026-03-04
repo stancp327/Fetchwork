@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import { TeamAuditLog, teamsApi, TeamMember, TeamMemberRole } from '../../api/endpoints/teamsApi';
+import { TeamAuditLog, TeamClientRelationship, TeamCustomRole, teamsApi, TeamMember, TeamMemberRole } from '../../api/endpoints/teamsApi';
 import { ProfileStackParamList } from '../../types/navigation';
 import { colors, radius, spacing, typography } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +27,10 @@ export default function TeamDetailScreen({ route }: Props) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [transferTargetUserId, setTransferTargetUserId] = useState('');
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRolePermissions, setNewRolePermissions] = useState<string>('');
+  const [clientUserId, setClientUserId] = useState('');
+  const [clientProjectLabel, setClientProjectLabel] = useState('');
 
   const { data, refetch, isRefetching, isLoading } = useQuery({
     queryKey: ['mobile-team-detail', teamId],
@@ -99,6 +103,90 @@ export default function TeamDetailScreen({ route }: Props) {
     enabled: isOwner || isAdmin,
   });
 
+  const { data: customRolesData, refetch: refetchCustomRoles } = useQuery({
+    queryKey: ['mobile-team-custom-roles', teamId],
+    queryFn: () => teamsApi.getCustomRoles(teamId),
+    enabled: isOwner || isAdmin,
+  });
+
+  const { data: clientsData, refetch: refetchClients } = useQuery({
+    queryKey: ['mobile-team-clients', teamId],
+    queryFn: () => teamsApi.getLinkedClients(teamId),
+    enabled: isOwner || isAdmin,
+  });
+
+  const createCustomRoleMutation = useMutation({
+    mutationFn: (payload: { name: string; permissions: string[] }) => teamsApi.createCustomRole(teamId, payload as any),
+    onSuccess: () => {
+      setNewRoleName('');
+      setNewRolePermissions('');
+      refetchCustomRoles();
+      refetch();
+      setMessage('Custom role created');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to create custom role');
+      setMessage('');
+    },
+  });
+
+  const deleteCustomRoleMutation = useMutation({
+    mutationFn: (roleId: string) => teamsApi.deleteCustomRole(teamId, roleId),
+    onSuccess: () => {
+      refetchCustomRoles();
+      refetch();
+      setMessage('Custom role deleted');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to delete custom role');
+      setMessage('');
+    },
+  });
+
+  const assignCustomRoleMutation = useMutation({
+    mutationFn: ({ userId, customRoleName }: { userId: string; customRoleName: string }) =>
+      teamsApi.assignMemberCustomRole(teamId, userId, customRoleName),
+    onSuccess: () => {
+      refetch();
+      setMessage('Member custom role updated');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to update member custom role');
+      setMessage('');
+    },
+  });
+
+  const linkClientMutation = useMutation({
+    mutationFn: (payload: { clientUserId: string; projectLabel?: string }) => teamsApi.createLinkedClient(teamId, payload),
+    onSuccess: () => {
+      setClientUserId('');
+      setClientProjectLabel('');
+      refetchClients();
+      setMessage('Client linked');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to link client');
+      setMessage('');
+    },
+  });
+
+  const unlinkClientMutation = useMutation({
+    mutationFn: (linkedClientId: string) => teamsApi.removeLinkedClient(teamId, linkedClientId),
+    onSuccess: () => {
+      refetchClients();
+      setMessage('Client unlinked');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to unlink client');
+      setMessage('');
+    },
+  });
+
   const onInvite = () => {
     if (!inviteEmail.trim()) {
       setError('Email is required');
@@ -127,6 +215,31 @@ export default function TeamDetailScreen({ route }: Props) {
   const activeMembers = (team?.members || []).filter((m) => m.status === 'active');
   const transferCandidates = activeMembers.filter((m) => m.role !== 'owner');
   const auditLogs: TeamAuditLog[] = auditData?.logs || [];
+  const customRoles: TeamCustomRole[] = customRolesData?.customRoles || [];
+  const linkedClients: TeamClientRelationship[] = clientsData?.clients || [];
+
+  const onCreateCustomRole = () => {
+    const name = newRoleName.trim();
+    if (!name) {
+      setError('Custom role name is required');
+      return;
+    }
+
+    const permissions = newRolePermissions
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    createCustomRoleMutation.mutate({ name, permissions });
+  };
+
+  const onLinkClient = () => {
+    if (!clientUserId.trim()) {
+      setError('Client user id is required');
+      return;
+    }
+    linkClientMutation.mutate({ clientUserId: clientUserId.trim(), projectLabel: clientProjectLabel.trim() });
+  };
 
   const onTransferOwnership = () => {
     if (!transferTargetUserId) {
@@ -150,7 +263,11 @@ export default function TeamDetailScreen({ route }: Props) {
 
   const onRefreshAll = () => {
     refetch();
-    if (isOwner || isAdmin) refetchAudit();
+    if (isOwner || isAdmin) {
+      refetchAudit();
+      refetchCustomRoles();
+      refetchClients();
+    }
   };
 
   return (
@@ -262,6 +379,96 @@ export default function TeamDetailScreen({ route }: Props) {
           </View>
         )}
 
+        {(isOwner || isAdmin) && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Custom Roles</Text>
+            <Input
+              label="Role Name"
+              value={newRoleName}
+              onChangeText={setNewRoleName}
+              placeholder="Finance Reviewer"
+            />
+            <Input
+              label="Permissions (comma separated)"
+              value={newRolePermissions}
+              onChangeText={setNewRolePermissions}
+              placeholder="manage_billing,approve_orders"
+            />
+            <Button
+              label="Create Custom Role"
+              onPress={onCreateCustomRole}
+              loading={createCustomRoleMutation.isPending}
+              disabled={createCustomRoleMutation.isPending}
+              fullWidth
+            />
+
+            {customRoles.map((role) => (
+              <View key={role._id} style={styles.memberRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.memberName}>{role.name}</Text>
+                  <Text style={styles.memberMeta}>{(role.permissions || []).join(', ') || 'No permissions'}</Text>
+                </View>
+                <Button
+                  label="Delete"
+                  variant="danger"
+                  size="sm"
+                  onPress={() => deleteCustomRoleMutation.mutate(role._id)}
+                  loading={deleteCustomRoleMutation.isPending}
+                />
+              </View>
+            ))}
+            {!customRoles.length && <Text style={styles.empty}>No custom roles yet.</Text>}
+          </View>
+        )}
+
+        {(isOwner || isAdmin) && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Linked Clients</Text>
+            <Input
+              label="Client User ID"
+              value={clientUserId}
+              onChangeText={setClientUserId}
+              placeholder="Paste client user id"
+              autoCapitalize="none"
+            />
+            <Input
+              label="Project Label (optional)"
+              value={clientProjectLabel}
+              onChangeText={setClientProjectLabel}
+              placeholder="Kitchen Remodel"
+            />
+            <Button
+              label="Link Client"
+              onPress={onLinkClient}
+              loading={linkClientMutation.isPending}
+              disabled={linkClientMutation.isPending}
+              fullWidth
+            />
+
+            {linkedClients.map((rel) => {
+              const userObj = typeof rel.client === 'string' ? null : rel.client;
+              const relClientId = typeof rel.client === 'string' ? rel.client : rel.client?._id || '';
+              const relLabel = `${userObj?.firstName || ''} ${userObj?.lastName || ''}`.trim() || userObj?.email || relClientId;
+              return (
+                <View key={rel._id} style={styles.memberRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.memberName}>{relLabel}</Text>
+                    <Text style={styles.memberMeta}>{rel.accessLevel}{rel.projectLabel ? ` • ${rel.projectLabel}` : ''}</Text>
+                  </View>
+                  <Button
+                    label="Unlink"
+                    variant="danger"
+                    size="sm"
+                    onPress={() => unlinkClientMutation.mutate(relClientId)}
+                    loading={unlinkClientMutation.isPending}
+                  />
+                </View>
+              );
+            })}
+            {!linkedClients.length && <Text style={styles.empty}>No linked clients.</Text>}
+          </View>
+        )}
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Members ({activeMembers.length})</Text>
           {activeMembers.map((member) => {
@@ -275,7 +482,26 @@ export default function TeamDetailScreen({ route }: Props) {
               <View key={`${memberId}-${member.role}`} style={styles.memberRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.memberName}>{fullName}</Text>
-                  <Text style={styles.memberMeta}>{member.role}</Text>
+                  <Text style={styles.memberMeta}>{member.role}{member.customRoleName ? ` • custom: ${member.customRoleName}` : ''}</Text>
+                  {(isOwner || isAdmin) && member.role !== 'owner' && customRoles.length > 0 && memberId ? (
+                    <View style={[styles.optionRow, { marginTop: spacing.xs }]}> 
+                      <Button
+                        label="Clear custom role"
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => assignCustomRoleMutation.mutate({ userId: memberId, customRoleName: '' })}
+                      />
+                      {customRoles.map((role) => (
+                        <Button
+                          key={`${memberId}-${role._id}`}
+                          label={role.name}
+                          size="sm"
+                          variant={member.customRoleName === role.name ? 'primary' : 'secondary'}
+                          onPress={() => assignCustomRoleMutation.mutate({ userId: memberId, customRoleName: role.name })}
+                        />
+                      ))}
+                    </View>
+                  ) : null}
                 </View>
                 {canRemove ? (
                   <Button

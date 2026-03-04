@@ -14,6 +14,8 @@ export default function TeamsScreen({ navigation }: Props) {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [type, setType] = useState<'client_team' | 'agency'>('client_team');
+  const [orgName, setOrgName] = useState('');
+  const [orgDescription, setOrgDescription] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -25,6 +27,11 @@ export default function TeamsScreen({ navigation }: Props) {
   const invitesQuery = useQuery({
     queryKey: ['mobile-team-invitations'],
     queryFn: () => teamsApi.getPendingInvitations(),
+  });
+
+  const orgsQuery = useQuery({
+    queryKey: ['mobile-organizations'],
+    queryFn: () => teamsApi.getMyOrganizations(),
   });
 
   const queryError = (teamsQuery.error as any)?.response?.data?.error
@@ -60,7 +67,22 @@ export default function TeamsScreen({ navigation }: Props) {
     },
   });
 
-  const isRefreshing = teamsQuery.isRefetching || invitesQuery.isRefetching;
+  const createOrgMutation = useMutation({
+    mutationFn: () => teamsApi.createOrganization({ name: orgName.trim(), description: orgDescription.trim() }),
+    onSuccess: () => {
+      setMessage('Organization created');
+      setError('');
+      setOrgName('');
+      setOrgDescription('');
+      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to create organization');
+      setMessage('');
+    },
+  });
+
+  const isRefreshing = teamsQuery.isRefetching || invitesQuery.isRefetching || orgsQuery.isRefetching;
   const isLoading = teamsQuery.isLoading || invitesQuery.isLoading;
 
   const onRefresh = () => {
@@ -68,6 +90,7 @@ export default function TeamsScreen({ navigation }: Props) {
     setMessage('');
     teamsQuery.refetch();
     invitesQuery.refetch();
+    orgsQuery.refetch();
   };
 
   const onCreateTeam = () => {
@@ -81,8 +104,20 @@ export default function TeamsScreen({ navigation }: Props) {
     createMutation.mutate();
   };
 
+  const onCreateOrganization = () => {
+    if (!orgName.trim()) {
+      setError('Organization name is required');
+      setMessage('');
+      return;
+    }
+    setError('');
+    setMessage('');
+    createOrgMutation.mutate();
+  };
+
   const teams = teamsQuery.data?.teams || [];
   const invitations = invitesQuery.data?.invitations || [];
+  const organizations = orgsQuery.data?.organizations || [];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -166,6 +201,43 @@ export default function TeamsScreen({ navigation }: Props) {
             ))}
           </View>
         )}
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Organizations</Text>
+          <Input
+            label="Organization Name"
+            value={orgName}
+            onChangeText={setOrgName}
+            placeholder="Acme Group"
+          />
+          <Input
+            label="Description (optional)"
+            value={orgDescription}
+            onChangeText={setOrgDescription}
+            placeholder="What this org does"
+          />
+          <Button
+            label="Create Organization"
+            onPress={onCreateOrganization}
+            loading={createOrgMutation.isPending}
+            disabled={createOrgMutation.isPending}
+            fullWidth
+          />
+
+          {!organizations.length ? (
+            <Text style={styles.teamMeta}>No organizations yet.</Text>
+          ) : (
+            organizations.map((org) => (
+              <View key={org._id} style={styles.teamRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.teamName}>{org.name}</Text>
+                  <Text style={styles.teamMeta}>@{org.slug}</Text>
+                  <Text style={styles.teamMeta}>{(org.teams || []).length} teams</Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>My Teams</Text>
