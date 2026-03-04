@@ -117,9 +117,22 @@ const validateJobPost = [
 
 const validateMessage = [
   body('content')
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('Message content must be a string')
+    .bail()
     .trim()
-    .isLength({ min: 1, max: 2000 })
-    .withMessage('Message content is required and cannot exceed 2000 characters'),
+    .isLength({ max: 2000 })
+    .withMessage('Message content cannot exceed 2000 characters'),
+  body('assetRefs')
+    .optional()
+    .isArray({ max: 10 })
+    .withMessage('assetRefs must be an array'),
+  body('assetRefs.*.assetId')
+    .optional()
+    .isString()
+    .isLength({ min: 1, max: 200 })
+    .withMessage('assetRefs.assetId must be a non-empty string'),
   body('recipientId')
     .optional()
     .isMongoId()
@@ -128,6 +141,14 @@ const validateMessage = [
     .optional()
     .isMongoId()
     .withMessage('Invalid job ID'),
+  body().custom((value) => {
+    const content = typeof value?.content === 'string' ? value.content.trim() : '';
+    const refs = Array.isArray(value?.assetRefs) ? value.assetRefs.filter((a) => a?.assetId) : [];
+    if (!content && refs.length === 0) {
+      throw new Error('Message content or assetRefs is required');
+    }
+    return true;
+  }),
   handleValidationErrors
 ];
 

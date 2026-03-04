@@ -181,8 +181,21 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
    - switched to `authenticateAdmin + requirePermission('content_moderation')` middleware.
 3. Kept tests as immediate follow-up while preserving deploy velocity.
 
-## Immediate Day 12 Follow-ups
+## Day 12 Progress (implemented)
 
-1. Add tests for asset signing contract + moderation triage authorization.
-2. Validate `validateMessage` middleware compatibility for attachment-only `assetRefs` sends.
-3. Run canary verification checklist for messaging send/read/sync/receipts after latest authz + asset ref changes.
+1. Added integration tests:
+   - `server/__tests__/integration/messages.day12.integration.test.js`
+   - covers asset sign contract fallback response
+   - moderation triage authz (non-admin denied, admin allowed)
+   - attachment-only `assetRefs` send compatibility
+2. Updated `validateMessage` middleware for attachment-first compatibility:
+   - content now optional
+   - `assetRefs[]` validated
+   - custom rule enforces `content || assetRefs`
+3. Ran targeted Day 12 test suite successfully (4/4 passing).
+
+## Immediate Day 13 Follow-ups
+
+1. Run canary verification checklist (send/read/sync/receipts/safety nudge) on production accounts.
+2. Expand tests for Cloudinary-signed branch (with env-mocked signature path).
+3. Add rcpt:update UI behavior assertions for unreadSeqCount refresh.
