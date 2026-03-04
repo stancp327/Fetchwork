@@ -266,6 +266,55 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
   }
 });
 
+// GET /conversations/:conversationId/sync?sinceSeq=123
+router.get('/conversations/:conversationId/sync', authenticateToken, validateConversationIdParam, async (req, res) => {
+  try {
+    const conversationId = req.params.conversationId;
+    const sinceSeq = Math.max(parseInt(req.query.sinceSeq, 10) || 0, 0);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 200, 1), 500);
+
+    const conversation = await Conversation.findById(conversationId)
+      .populate('participants', 'firstName lastName profilePicture')
+      .lean();
+
+    if (!conversation || !conversation.participants.some((p) => p._id.toString() === req.user._id.toString())) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    const messages = await Message.find({
+      conversation: conversationId,
+      isDeleted: false,
+      seq: { $gt: sinceSeq },
+    })
+      .populate('sender', 'firstName lastName profilePicture')
+      .sort({ seq: 1 })
+      .limit(limit)
+      .lean();
+
+    const lastSeq = messages.length ? messages[messages.length - 1].seq : sinceSeq;
+
+    res.json({
+      conversation: {
+        _id: conversation._id,
+        participants: conversation.participants,
+        seq: conversation.seq || 0,
+        lastMessageSeq: conversation.lastMessageSeq || 0,
+        lastActivity: conversation.lastActivity,
+      },
+      messages,
+      sync: {
+        sinceSeq,
+        lastSeq,
+        hasMore: messages.length === limit,
+      },
+      correlationId: req.correlationId,
+    });
+  } catch (error) {
+    logRouteError(req, 'sync_conversation', error);
+    res.status(500).json({ error: 'Failed to sync conversation', correlationId: req.correlationId });
+  }
+});
+
 router.get('/unread-count', authenticateToken, async (req, res) => {
   try {
     const unreadCount = await Message.countDocuments({

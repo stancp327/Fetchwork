@@ -78,8 +78,23 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
 3. Upgraded `room:join` / `room:leave` to support request/ack contract + structured error codes.
 4. Added correlation IDs into join/leave error paths and socket emits.
 
-## Immediate Day 3 Follow-ups
+## Day 3 Progress (implemented)
 
-1. Add conversation-level monotonic `seq` migration.
-2. Implement idempotent `msg:send` with `requestId` uniqueness per `(conversationId, senderId)`.
-3. Add deterministic `/sync?sinceSeq=` endpoint on messaging REST.
+1. Added conversation/message sequence scaffolding:
+   - `Conversation.seq`, `Conversation.lastMessageSeq`, `Conversation.lastMessageAt`
+   - `Message.seq`
+2. Added idempotency scaffolding:
+   - `Message.requestId`
+   - unique index `(conversation, sender, requestId)` (partial)
+3. Updated socket direct-message send path to:
+   - allocate monotonic seq via transaction
+   - set `Message.seq`
+   - dedupe repeated sends by `requestId`
+4. Added deterministic sync route:
+   - `GET /api/messages/conversations/:conversationId/sync?sinceSeq=&limit=`
+
+## Immediate Day 4 Follow-ups
+
+1. Client optimistic send should include `requestId` and merge on server ack.
+2. Add v1 ack contract to `message:send` and `message:read` events.
+3. Extend seq/idempotent logic to group room messages (or document phased defer).

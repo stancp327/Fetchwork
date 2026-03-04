@@ -71,6 +71,16 @@ const messageSchema = new mongoose.Schema({
     ref: 'Conversation',
     required: function() { return !this.roomId; }
   },
+  seq: {
+    type: Number,
+    default: null,
+    index: true
+  },
+  requestId: {
+    type: String,
+    default: null,
+    index: true
+  },
   roomId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ChatRoom',
@@ -186,6 +196,18 @@ const conversationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  seq: {
+    type: Number,
+    default: 0
+  },
+  lastMessageSeq: {
+    type: Number,
+    default: 0
+  },
+  lastMessageAt: {
+    type: Date,
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -206,6 +228,9 @@ chatRoomSchema.index({ lastActivity: -1 });
 chatRoomSchema.index({ createdBy: 1 });
 
 messageSchema.index({ conversation: 1, createdAt: -1 });
+messageSchema.index({ conversation: 1, seq: -1 });
+messageSchema.index({ conversation: 1, seq: 1 }, { unique: true, partialFilterExpression: { conversation: { $exists: true }, seq: { $type: 'number' } } });
+messageSchema.index({ conversation: 1, sender: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $exists: true, $type: 'string' }, conversation: { $exists: true } } });
 messageSchema.index({ roomId: 1, createdAt: -1 });
 messageSchema.index({ sender: 1 });
 messageSchema.index({ recipient: 1 });

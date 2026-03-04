@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { Message, Conversation, ChatRoom } = require('../models/Message');
 const User = require('../models/User');
 const Call = require('../models/Call');
@@ -56,7 +57,7 @@ module.exports = (io) => {
         return;
       }
 
-      const { recipientId, roomId, content, messageType = 'text', attachments = [], jobId, mentions = [] } = data || {};
+      const { recipientId, roomId, content, messageType = 'text', attachments = [], jobId, mentions = [], requestId = null } = data || {};
       if (typeof content !== 'string' || !content.trim()) {
         socket.emit('error', { message: 'Message content is required' });
         return;
@@ -125,27 +126,73 @@ module.exports = (io) => {
           }
 
           let conversation = await Conversation.findByParticipants(senderId, recipientId);
-          
+
           if (!conversation) {
             conversation = new Conversation({
               participants: [senderId, recipientId],
-              job: jobId || null
+              job: jobId || null,
+              seq: 0,
             });
             await conversation.save();
           }
 
-          const newMessage = await Message.create({
-            conversation: conversation._id,
-            sender: senderId,
-            recipient: recipientId,
-            content,
-            messageType,
-            attachments,
-            isRead: false
-          });
+          // Idempotency: if requestId already exists for this sender/conversation, return existing message.
+          let newMessage = null;
+          if (requestId) {
+            newMessage = await Message.findOne({
+              conversation: conversation._id,
+              sender: senderId,
+              requestId,
+            });
+          }
 
-          conversation.lastMessage = newMessage._id;
-          await conversation.updateLastActivity();
+          if (!newMessage) {
+            const session = await mongoose.startSession();
+            try {
+              await session.withTransaction(async () => {
+                const convo = await Conversation.findByIdAndUpdate(
+                  conversation._id,
+                  { $inc: { seq: 1 }, $set: { lastActivity: new Date() } },
+                  { new: true, session }
+                );
+
+                const [created] = await Message.create([
+                  {
+                    conversation: conversation._id,
+                    seq: convo.seq,
+                    requestId,
+                    sender: senderId,
+                    recipient: recipientId,
+                    content,
+                    messageType,
+                    attachments,
+                    isRead: false,
+                  },
+                ], { session });
+
+                newMessage = created;
+
+                await Conversation.updateOne(
+                  { _id: conversation._id },
+                  { $set: { lastMessage: newMessage._id, lastMessageSeq: convo.seq, lastMessageAt: new Date() } },
+                  { session }
+                );
+              });
+            } catch (txErr) {
+              if (txErr?.code === 11000 && requestId) {
+                newMessage = await Message.findOne({ conversation: conversation._id, sender: senderId, requestId });
+              } else {
+                throw txErr;
+              }
+            } finally {
+              await session.endSession();
+            }
+          } else {
+            await Conversation.updateOne(
+              { _id: conversation._id },
+              { $set: { lastMessage: newMessage._id, lastActivity: new Date(), lastMessageAt: new Date(), lastMessageSeq: newMessage.seq || 0 } }
+            );
+          }
 
           // ── Avg response time (EMA, fully async fire-and-forget) ────
           // Runs off the hot path so message:send isn't blocked by extra DB queries
