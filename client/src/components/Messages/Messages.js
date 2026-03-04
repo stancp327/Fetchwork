@@ -9,6 +9,7 @@ import './Messages.css';
 import SEO from '../common/SEO';
 
 import { formatTime, ConvoItem, ProposalActionCard, MilestoneRequestCard, MsgBubble, OrderStatusBar } from './parts/components';
+import SafetyNudge from './parts/SafetyNudge';
 
 // ── Main Messages ───────────────────────────────────────────────
 const Messages = () => {
@@ -24,6 +25,7 @@ const Messages = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [safetyNudge, setSafetyNudge] = useState(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [typingUsers, setTypingUsers] = useState(new Set());
@@ -163,7 +165,7 @@ const Messages = () => {
         fetchConversations();
         break;
       case 'safety:nudge':
-        if (data?.copy) setError(data.copy);
+        if (data?.copy) setSafetyNudge(data.copy);
         break;
       case 'user:online':
         if (data?.userId) {
@@ -384,6 +386,7 @@ const Messages = () => {
         </div>
       </div>
 
+      <SafetyNudge text={safetyNudge} onClose={() => setSafetyNudge(null)} />
       {error && <div className="messages-error">⚠️ {error} <button onClick={() => setError(null)}>×</button></div>}
 
       <div className="messages-layout">

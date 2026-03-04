@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Call = require('../models/Call');
 const { transitionCall } = require('../services/callStateMachine');
 const { detectOffPlatform } = require('../services/offPlatformDetector');
+const ModerationEvent = require('../models/ModerationEvent');
 
 const activeUsers = new Map(); // userId -> Set of socketIds
 const socketToUser = new Map(); // socketId -> userId
@@ -27,6 +28,23 @@ module.exports = (io) => {
     const logSocketError = (scope, payload, err) => {
       const cid = getCid(payload);
       console.error(`[socket:${scope}] cid=${cid} user=${senderId} err=${err.message}`);
+    };
+    const recordModerationEvent = async ({ conversationId = null, roomId = null, messageId = null, userId, safety, source = 'socket' }) => {
+      try {
+        if (!safety) return;
+        if ((safety.score || 0) <= 0 && (!safety.hits || safety.hits.length === 0)) return;
+        await ModerationEvent.create({
+          conversationId,
+          roomId,
+          messageId,
+          userId,
+          score: safety.score || 0,
+          confidence: safety.confidence || 'low',
+          action: safety.action || 'allow',
+          ruleIds: safety.hits || [],
+          source,
+        });
+      } catch (_) {}
     };
     const consumeRate = (key, limit, windowMs) => {
       const now = Date.now();
@@ -102,6 +120,7 @@ module.exports = (io) => {
             mentions,
             safety,
           });
+          await recordModerationEvent({ roomId, messageId: newMessage._id, userId: senderId, safety, source: 'socket' });
           await newMessage.populate('sender', 'firstName lastName profilePicture');
           await newMessage.populate('mentions', 'firstName lastName');
 
@@ -283,6 +302,7 @@ module.exports = (io) => {
 
           io.to(recipientId).emit('message:receive', { message: messageWithId });
 
+          await recordModerationEvent({ conversationId: conversation._id, messageId: newMessage._id, userId: senderId, safety: newMessage.safety, source: 'socket' });
           io.to(senderId).emit('conversation:update', { conversation });
           io.to(recipientId).emit('conversation:update', { conversation });
           if (newMessage.safety?.action === 'nudge' || newMessage.safety?.action === 'warn') {

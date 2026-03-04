@@ -6,11 +6,28 @@ const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
 const { detectOffPlatform } = require('../services/offPlatformDetector');
+const ModerationEvent = require('../models/ModerationEvent');
 
 const getCorrelationId = (req) => req.headers['x-correlation-id'] || req.headers['x-request-id'] || crypto.randomUUID();
 const logRouteError = (req, scope, error) => {
   const correlationId = req.correlationId || getCorrelationId(req);
   console.error(`[messages:${scope}] cid=${correlationId} user=${req.user?.userId || req.user?._id || 'anon'} err=${error.message}`);
+};
+
+const recordModerationEvent = async ({ conversationId = null, roomId = null, messageId = null, userId, safety, source = 'rest' }) => {
+  if (!safety || !userId) return;
+  if ((safety.score || 0) <= 0 && (!safety.hits || safety.hits.length === 0)) return;
+  await ModerationEvent.create({
+    conversationId,
+    roomId,
+    messageId,
+    userId,
+    score: safety.score || 0,
+    confidence: safety.confidence || 'low',
+    action: safety.action || 'allow',
+    ruleIds: safety.hits || [],
+    source,
+  });
 };
 
 router.use((req, res, next) => {
@@ -180,6 +197,7 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
     });
 
     await message.save();
+    await recordModerationEvent({ conversationId: conversation._id, messageId: message._id, userId: req.user._id, safety, source: 'rest' });
 
     conversation.lastMessage = message._id;
     await conversation.updateLastActivity();
@@ -232,6 +250,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
     });
 
     await message.save();
+    await recordModerationEvent({ conversationId: conversation._id, messageId: message._id, userId: req.user._id, safety, source: 'rest' });
 
     conversation.lastMessage = message._id;
     await conversation.updateLastActivity();
@@ -273,15 +292,19 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
       ? await watermarkAttachments(req.files, req.files.map(f => f.filename))
       : [];
 
+    const safeContent = content || `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}`;
+    const safety = detectOffPlatform(safeContent);
     const message = new Message({
       conversation: conversation._id,
       sender: req.user._id,
       recipient: recipientId,
-      content: content || `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}`,
-      attachments
+      content: safeContent,
+      attachments,
+      safety,
     });
 
     await message.save();
+    await recordModerationEvent({ conversationId: conversation._id, messageId: message._id, userId: req.user._id, safety, source: 'rest' });
     conversation.lastMessage = message._id;
     await conversation.updateLastActivity();
 
@@ -383,6 +406,53 @@ router.post('/conversations/:conversationId/receipts', authenticateToken, valida
   } catch (error) {
     logRouteError(req, 'update_receipts', error);
     res.status(500).json({ error: 'Failed to update receipts', correlationId: req.correlationId });
+  }
+});
+
+// POST /assets/sign - scaffold for signed upload flow (Day 9)
+router.post('/assets/sign', authenticateToken, async (req, res) => {
+  try {
+    const { filename, mime, size, sha256 } = req.body || {};
+    if (!filename || !mime || !size) {
+      return res.status(400).json({ error: 'filename, mime, size are required' });
+    }
+
+    // Scaffold response: keeps contract stable while storage signing backend is finalized.
+    const assetId = `asset_${crypto.randomUUID()}`;
+    return res.json({
+      assetId,
+      uploadUrl: null,
+      method: 'POST',
+      headers: {},
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      note: 'Upload signing scaffold active; storage provider integration pending.',
+      correlationId: req.correlationId,
+    });
+  } catch (error) {
+    logRouteError(req, 'assets_sign', error);
+    res.status(500).json({ error: 'Failed to sign asset upload', correlationId: req.correlationId });
+  }
+});
+
+// POST /assets/:assetId/finalize - scaffold for upload finalize contract
+router.post('/assets/:assetId/finalize', authenticateToken, async (req, res) => {
+  try {
+    const { assetId } = req.params;
+    const { uploadProof, url, thumbUrl } = req.body || {};
+
+    return res.json({
+      asset: {
+        assetId,
+        url: url || null,
+        thumbUrl: thumbUrl || null,
+        uploadProof: uploadProof || null,
+        status: 'finalized_stub',
+      },
+      correlationId: req.correlationId,
+    });
+  } catch (error) {
+    logRouteError(req, 'assets_finalize', error);
+    res.status(500).json({ error: 'Failed to finalize asset', correlationId: req.correlationId });
   }
 });
 

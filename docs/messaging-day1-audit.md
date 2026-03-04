@@ -148,8 +148,21 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
    - server emits `rcpt:update` on read cursor changes
    - client consumes `rcpt:update` and refreshes conversation list.
 
-## Immediate Day 9 Follow-ups
+## Day 9 Progress (implemented)
 
-1. Add moderation event persistence (rule IDs + action + score) separate from message payload.
-2. Add attachment sign/finalize API scaffold for safer upload pipeline.
-3. Improve safety UX from generic error banner to dedicated non-blocking nudge component.
+1. Added moderation event persistence model:
+   - `server/models/ModerationEvent.js`
+   - persisted from REST + socket messaging paths with score/confidence/action/ruleIds.
+2. Improved safety UX to non-blocking nudge:
+   - new `client/src/components/Messages/parts/SafetyNudge.js`
+   - wired `safety:nudge` socket event to this component.
+3. Added attachment API scaffold routes (contract-first):
+   - `POST /api/messages/assets/sign`
+   - `POST /api/messages/assets/:assetId/finalize`
+   (returns stub payloads while storage-signing integration is finalized)
+
+## Immediate Day 10 Follow-ups
+
+1. Back these asset scaffold endpoints with real signed URL provider integration.
+2. Persist moderation events for upload message path with attachment context.
+3. Add basic admin read endpoint for moderation event triage.
