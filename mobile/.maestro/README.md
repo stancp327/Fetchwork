@@ -34,6 +34,9 @@ cd mobile
 npm run e2e:maestro:teams:phase3:ps
 ```
 
+The PowerShell runner writes a timestamped report to:
+- `tasks/reports/mobile-teams-phase3-maestro-<timestamp>.md`
+
 
 ## Notes
 - This is a lightweight smoke flow, not full e2e coverage.
