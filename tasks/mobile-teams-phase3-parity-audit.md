@@ -42,7 +42,7 @@ _Last updated: 2026-03-03_
 - Kept existing flows intact; no destructive removals in this pass.
 
 ## What remains (next pass)
-1. Add dedicated e2e tests for mobile UI flows (API contract-level tests now include lookup coverage server-side).
+1. Automate mobile UI e2e (Detox/Maestro) using the manual checklist in `tasks/mobile-teams-phase3-e2e-checklist.md`.
 2. Add UX polish around inline helper text and disabled states when numeric values are invalid.
 
 ## Files touched in this pass

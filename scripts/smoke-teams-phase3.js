@@ -8,13 +8,14 @@
  *   BACKEND_URL=https://fetchwork-1.onrender.com node scripts/smoke-teams-phase3.js
  *
  * Optional authenticated checks:
- *   AUTH_TOKEN=<jwt> TEAM_ID=<teamId> CLIENT_ID=<clientUserId> node scripts/smoke-teams-phase3.js
+ *   AUTH_TOKEN=<jwt> TEAM_ID=<teamId> CLIENT_ID=<clientUserId> ORG_ID=<orgId> node scripts/smoke-teams-phase3.js
  */
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://fetchwork-1.onrender.com';
 const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
 const TEAM_ID = process.env.TEAM_ID || '';
 const CLIENT_ID = process.env.CLIENT_ID || '';
+const ORG_ID = process.env.ORG_ID || '';
 
 const color = {
   green: (s) => `\x1b[32m${s}\x1b[0m`,
@@ -70,14 +71,24 @@ async function main() {
   if (AUTH_TOKEN) {
     const authHeaders = { Authorization: `Bearer ${AUTH_TOKEN}` };
 
-    checks.push(await runCheck('Organizations mine (authed)', () => request('/api/organizations/mine', { headers: authHeaders }), [200, 404])) ;
+    checks.push(await runCheck('Organizations mine (authed)', () => request('/api/organizations/mine', { headers: authHeaders }), [200, 404]));
+
+    if (ORG_ID) {
+      checks.push(await runCheck('Organization detail (authed)', () => request(`/api/organizations/${ORG_ID}`, { headers: authHeaders }), [200, 403, 404]));
+    } else {
+      console.log(color.yellow('ℹ️ ORG_ID not set; skipped org detail authenticated check.'));
+    }
 
     if (TEAM_ID) {
       checks.push(await runCheck('Team custom roles (authed)', () => request(`/api/teams/${TEAM_ID}/custom-roles`, { headers: authHeaders }), [200, 403, 404]));
       checks.push(await runCheck('Team clients (authed)', () => request(`/api/teams/${TEAM_ID}/clients`, { headers: authHeaders }), [200, 403, 404]));
+      checks.push(await runCheck('Team controls (authed)', () => request(`/api/teams/${TEAM_ID}/spend-controls`, { headers: authHeaders }), [200, 403, 404]));
+      checks.push(await runCheck('Team user lookup (authed)', () => request(`/api/teams/${TEAM_ID}/user-lookup?q=test`, { headers: authHeaders }), [200, 403, 404]));
 
       if (CLIENT_ID) {
         checks.push(await runCheck('Team client access snapshot (authed)', () => request(`/api/teams/${TEAM_ID}/clients/${CLIENT_ID}/access`, { headers: authHeaders }), [200, 403, 404]));
+      } else {
+        console.log(color.yellow('ℹ️ CLIENT_ID not set; skipped client access snapshot check.'));
       }
     } else {
       console.log(color.yellow('ℹ️ AUTH_TOKEN set without TEAM_ID; skipped team-specific authenticated checks.'));
