@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import { TeamAuditLog, TeamClientRelationship, TeamCustomRole, teamsApi, TeamMember, TeamMemberRole } from '../../api/endpoints/teamsApi';
+import { TeamAuditLog, TeamClientRelationship, TeamCustomRole, TeamPermissionKey, teamsApi, TeamMember, TeamMemberRole } from '../../api/endpoints/teamsApi';
 import { ProfileStackParamList } from '../../types/navigation';
 import { colors, radius, spacing, typography } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +15,17 @@ const ROLE_OPTIONS: Array<{ label: string; value: 'member' | 'manager' | 'admin'
   { label: 'Member', value: 'member' },
   { label: 'Manager', value: 'manager' },
   { label: 'Admin', value: 'admin' },
+];
+
+const PERMISSION_OPTIONS: Array<{ key: TeamPermissionKey; label: string }> = [
+  { key: 'manage_members', label: 'Manage Members' },
+  { key: 'manage_billing', label: 'Manage Billing' },
+  { key: 'approve_orders', label: 'Approve Orders' },
+  { key: 'create_jobs', label: 'Post Jobs' },
+  { key: 'manage_services', label: 'Manage Services' },
+  { key: 'view_analytics', label: 'View Analytics' },
+  { key: 'message_clients', label: 'Message Clients' },
+  { key: 'assign_work', label: 'Assign Work' },
 ];
 
 export default function TeamDetailScreen({ route }: Props) {
@@ -28,9 +39,10 @@ export default function TeamDetailScreen({ route }: Props) {
   const [error, setError] = useState('');
   const [transferTargetUserId, setTransferTargetUserId] = useState('');
   const [newRoleName, setNewRoleName] = useState('');
-  const [newRolePermissions, setNewRolePermissions] = useState<string>('');
+  const [newRolePermissions, setNewRolePermissions] = useState<TeamPermissionKey[]>([]);
   const [clientUserId, setClientUserId] = useState('');
   const [clientProjectLabel, setClientProjectLabel] = useState('');
+  const [clientAccessLevel, setClientAccessLevel] = useState<'view_assigned' | 'view_all' | 'collaborate'>('view_assigned');
 
   const { data, refetch, isRefetching, isLoading } = useQuery({
     queryKey: ['mobile-team-detail', teamId],
@@ -116,10 +128,10 @@ export default function TeamDetailScreen({ route }: Props) {
   });
 
   const createCustomRoleMutation = useMutation({
-    mutationFn: (payload: { name: string; permissions: string[] }) => teamsApi.createCustomRole(teamId, payload as any),
+    mutationFn: (payload: { name: string; permissions: TeamPermissionKey[] }) => teamsApi.createCustomRole(teamId, payload),
     onSuccess: () => {
       setNewRoleName('');
-      setNewRolePermissions('');
+      setNewRolePermissions([]);
       refetchCustomRoles();
       refetch();
       setMessage('Custom role created');
@@ -160,16 +172,31 @@ export default function TeamDetailScreen({ route }: Props) {
   });
 
   const linkClientMutation = useMutation({
-    mutationFn: (payload: { clientUserId: string; projectLabel?: string }) => teamsApi.createLinkedClient(teamId, payload),
+    mutationFn: (payload: { clientUserId: string; projectLabel?: string; accessLevel?: 'view_assigned' | 'view_all' | 'collaborate' }) => teamsApi.createLinkedClient(teamId, payload),
     onSuccess: () => {
       setClientUserId('');
       setClientProjectLabel('');
+      setClientAccessLevel('view_assigned');
       refetchClients();
       setMessage('Client linked');
       setError('');
     },
     onError: (err: any) => {
       setError(err?.response?.data?.error || 'Failed to link client');
+      setMessage('');
+    },
+  });
+
+  const updateLinkedClientMutation = useMutation({
+    mutationFn: ({ clientId, accessLevel, projectLabel }: { clientId: string; accessLevel: 'view_assigned' | 'view_all' | 'collaborate'; projectLabel?: string }) =>
+      teamsApi.updateLinkedClient(teamId, clientId, { accessLevel, projectLabel }),
+    onSuccess: () => {
+      refetchClients();
+      setMessage('Linked client updated');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to update linked client');
       setMessage('');
     },
   });
@@ -218,6 +245,12 @@ export default function TeamDetailScreen({ route }: Props) {
   const customRoles: TeamCustomRole[] = customRolesData?.customRoles || [];
   const linkedClients: TeamClientRelationship[] = clientsData?.clients || [];
 
+  const toggleRolePermission = (permissionKey: TeamPermissionKey) => {
+    setNewRolePermissions((prev) => (
+      prev.includes(permissionKey) ? prev.filter((p) => p !== permissionKey) : [...prev, permissionKey]
+    ));
+  };
+
   const onCreateCustomRole = () => {
     const name = newRoleName.trim();
     if (!name) {
@@ -225,12 +258,12 @@ export default function TeamDetailScreen({ route }: Props) {
       return;
     }
 
-    const permissions = newRolePermissions
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean);
+    if (!newRolePermissions.length) {
+      setError('Pick at least one permission');
+      return;
+    }
 
-    createCustomRoleMutation.mutate({ name, permissions });
+    createCustomRoleMutation.mutate({ name, permissions: newRolePermissions });
   };
 
   const onLinkClient = () => {
@@ -238,7 +271,11 @@ export default function TeamDetailScreen({ route }: Props) {
       setError('Client user id is required');
       return;
     }
-    linkClientMutation.mutate({ clientUserId: clientUserId.trim(), projectLabel: clientProjectLabel.trim() });
+    linkClientMutation.mutate({
+      clientUserId: clientUserId.trim(),
+      accessLevel: clientAccessLevel,
+      projectLabel: clientProjectLabel.trim(),
+    });
   };
 
   const onTransferOwnership = () => {
@@ -388,12 +425,18 @@ export default function TeamDetailScreen({ route }: Props) {
               onChangeText={setNewRoleName}
               placeholder="Finance Reviewer"
             />
-            <Input
-              label="Permissions (comma separated)"
-              value={newRolePermissions}
-              onChangeText={setNewRolePermissions}
-              placeholder="manage_billing,approve_orders"
-            />
+            <Text style={styles.meta}>Permissions</Text>
+            <View style={styles.optionRow}>
+              {PERMISSION_OPTIONS.map((perm) => (
+                <Button
+                  key={perm.key}
+                  label={perm.label}
+                  size="sm"
+                  variant={newRolePermissions.includes(perm.key) ? 'primary' : 'secondary'}
+                  onPress={() => toggleRolePermission(perm.key)}
+                />
+              ))}
+            </View>
             <Button
               label="Create Custom Role"
               onPress={onCreateCustomRole}
@@ -437,6 +480,12 @@ export default function TeamDetailScreen({ route }: Props) {
               onChangeText={setClientProjectLabel}
               placeholder="Kitchen Remodel"
             />
+            <Text style={styles.meta}>Access Level</Text>
+            <View style={styles.optionRow}>
+              <Button label="View Assigned" size="sm" variant={clientAccessLevel === 'view_assigned' ? 'primary' : 'secondary'} onPress={() => setClientAccessLevel('view_assigned')} />
+              <Button label="View All" size="sm" variant={clientAccessLevel === 'view_all' ? 'primary' : 'secondary'} onPress={() => setClientAccessLevel('view_all')} />
+              <Button label="Collaborate" size="sm" variant={clientAccessLevel === 'collaborate' ? 'primary' : 'secondary'} onPress={() => setClientAccessLevel('collaborate')} />
+            </View>
             <Button
               label="Link Client"
               onPress={onLinkClient}
@@ -454,6 +503,29 @@ export default function TeamDetailScreen({ route }: Props) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.memberName}>{relLabel}</Text>
                     <Text style={styles.memberMeta}>{rel.accessLevel}{rel.projectLabel ? ` • ${rel.projectLabel}` : ''}</Text>
+                    <View style={[styles.optionRow, { marginTop: spacing.xs }]}> 
+                      <Button
+                        label="Assigned"
+                        size="sm"
+                        variant={rel.accessLevel === 'view_assigned' ? 'primary' : 'secondary'}
+                        onPress={() => updateLinkedClientMutation.mutate({ clientId: relClientId, accessLevel: 'view_assigned', projectLabel: rel.projectLabel || '' })}
+                        disabled={updateLinkedClientMutation.isPending}
+                      />
+                      <Button
+                        label="All"
+                        size="sm"
+                        variant={rel.accessLevel === 'view_all' ? 'primary' : 'secondary'}
+                        onPress={() => updateLinkedClientMutation.mutate({ clientId: relClientId, accessLevel: 'view_all', projectLabel: rel.projectLabel || '' })}
+                        disabled={updateLinkedClientMutation.isPending}
+                      />
+                      <Button
+                        label="Collaborate"
+                        size="sm"
+                        variant={rel.accessLevel === 'collaborate' ? 'primary' : 'secondary'}
+                        onPress={() => updateLinkedClientMutation.mutate({ clientId: relClientId, accessLevel: 'collaborate', projectLabel: rel.projectLabel || '' })}
+                        disabled={updateLinkedClientMutation.isPending}
+                      />
+                    </View>
                   </View>
                   <Button
                     label="Unlink"

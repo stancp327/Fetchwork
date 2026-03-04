@@ -11,22 +11,25 @@ _Last updated: 2026-03-03_
 ### Phase 3a (Organizations)
 - [x] API: list organizations (`GET /api/organizations/mine`)
 - [x] API: create organization (`POST /api/organizations`)
+- [x] API: organization detail + department/team assignment endpoints wired in mobile client
 - [x] Mobile UI: Organizations section in Teams screen (list + create)
-- [ ] Mobile UI: organization detail/edit/departments/team-assignment management
+- [x] Mobile UI: organization detail management (departments + add/remove teams)
+- [ ] Mobile UI: org settings editor (spend controls / approval thresholds)
 
 ### Phase 3b (Custom Roles)
 - [x] API: custom role CRUD endpoints
 - [x] API: assign member custom role
 - [x] Mobile UI: create/delete custom roles in Team detail
 - [x] Mobile UI: assign/clear custom role from members section
+- [x] Mobile UI: richer permission picker (tap-to-toggle permission chips)
 - [ ] Mobile UI: edit custom roles in place
-- [ ] Mobile UI: richer permission picker (currently comma-separated input)
 
 ### Phase 3b (Linked Clients)
 - [x] API: list/create/update/remove linked clients
 - [x] API: client access snapshot endpoint
 - [x] Mobile UI: list/link/unlink linked clients in Team detail
-- [ ] Mobile UI: update linked client access level/project label
+- [x] Mobile UI: update linked client access level (inline access buttons)
+- [ ] Mobile UI: project-label edit for existing linked clients
 - [ ] Mobile UI: client search by email/lookup (currently user-id input)
 
 ### Phase 2+ controls response parity
@@ -39,9 +42,9 @@ _Last updated: 2026-03-03_
 - Kept existing flows intact; no destructive removals in this pass.
 
 ## What remains (next pass)
-1. TeamDetailScreen: convert custom-role permission entry from comma-separated text to checkbox chips.
-2. TeamDetailScreen: add linked-client edit action (access level + project label).
-3. TeamsScreen: add organization detail drawer/screen for departments and team-org assignment.
+1. TeamDetailScreen: add custom-role edit in place (rename + permission changes).
+2. TeamDetailScreen: add linked-client project-label edit for existing client rows.
+3. TeamsScreen: add org settings editor (spend controls + approval thresholds).
 4. Team controls UI: show org inheritance status (`effectiveSource`) in mobile controls.
 5. Add dedicated integration/e2e tests for mobile-facing Phase 3 flows (API contract-level tests already exist server-side).
 

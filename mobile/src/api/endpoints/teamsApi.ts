@@ -111,6 +111,17 @@ export type OrganizationSummary = {
   teams?: Array<{ _id: string; name: string }>;
 };
 
+export type OrganizationDepartment = {
+  _id: string;
+  name: string;
+  description?: string;
+};
+
+export type OrganizationDetail = OrganizationSummary & {
+  owner?: string | TeamUser;
+  departments?: OrganizationDepartment[];
+};
+
 export const teamsApi = {
   getMyTeams: (): Promise<{ teams: MobileTeam[] }> =>
     client.get('/api/teams').then((r) => r.data),
@@ -211,4 +222,22 @@ export const teamsApi = {
 
   createOrganization: (payload: { name: string; description?: string; logo?: string; website?: string }) =>
     client.post('/api/organizations', payload).then((r) => r.data),
+
+  getOrganization: (orgId: string): Promise<{ organization: OrganizationDetail; teams: MobileTeam[] }> =>
+    client.get(`/api/organizations/${orgId}`).then((r) => r.data),
+
+  addOrganizationDepartment: (
+    orgId: string,
+    payload: { name: string; description?: string }
+  ): Promise<{ departments: OrganizationDepartment[] }> =>
+    client.post(`/api/organizations/${orgId}/departments`, payload).then((r) => r.data),
+
+  removeOrganizationDepartment: (orgId: string, deptId: string): Promise<{ departments: OrganizationDepartment[] }> =>
+    client.delete(`/api/organizations/${orgId}/departments/${deptId}`).then((r) => r.data),
+
+  addTeamToOrganization: (orgId: string, teamId: string): Promise<{ team: MobileTeam }> =>
+    client.post(`/api/organizations/${orgId}/teams`, { teamId }).then((r) => r.data),
+
+  removeTeamFromOrganization: (orgId: string, teamId: string): Promise<{ success: boolean }> =>
+    client.delete(`/api/organizations/${orgId}/teams/${teamId}`).then((r) => r.data),
 };

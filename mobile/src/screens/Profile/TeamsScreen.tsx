@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -16,6 +16,10 @@ export default function TeamsScreen({ navigation }: Props) {
   const [type, setType] = useState<'client_team' | 'agency'>('client_team');
   const [orgName, setOrgName] = useState('');
   const [orgDescription, setOrgDescription] = useState('');
+  const [selectedOrgId, setSelectedOrgId] = useState('');
+  const [deptName, setDeptName] = useState('');
+  const [deptDescription, setDeptDescription] = useState('');
+  const [teamToAddId, setTeamToAddId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -32,6 +36,12 @@ export default function TeamsScreen({ navigation }: Props) {
   const orgsQuery = useQuery({
     queryKey: ['mobile-organizations'],
     queryFn: () => teamsApi.getMyOrganizations(),
+  });
+
+  const orgDetailQuery = useQuery({
+    queryKey: ['mobile-organization-detail', selectedOrgId],
+    queryFn: () => teamsApi.getOrganization(selectedOrgId),
+    enabled: !!selectedOrgId,
   });
 
   const queryError = (teamsQuery.error as any)?.response?.data?.error
@@ -69,15 +79,77 @@ export default function TeamsScreen({ navigation }: Props) {
 
   const createOrgMutation = useMutation({
     mutationFn: () => teamsApi.createOrganization({ name: orgName.trim(), description: orgDescription.trim() }),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
+      const createdOrgId = res?.organization?._id || '';
       setMessage('Organization created');
       setError('');
       setOrgName('');
       setOrgDescription('');
+      if (createdOrgId) setSelectedOrgId(createdOrgId);
       queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
     },
     onError: (err: any) => {
       setError(err?.response?.data?.error || 'Failed to create organization');
+      setMessage('');
+    },
+  });
+
+  const addDepartmentMutation = useMutation({
+    mutationFn: () => teamsApi.addOrganizationDepartment(selectedOrgId, { name: deptName.trim(), description: deptDescription.trim() }),
+    onSuccess: () => {
+      setDeptName('');
+      setDeptDescription('');
+      setMessage('Department added');
+      setError('');
+      orgDetailQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to add department');
+      setMessage('');
+    },
+  });
+
+  const removeDepartmentMutation = useMutation({
+    mutationFn: (deptId: string) => teamsApi.removeOrganizationDepartment(selectedOrgId, deptId),
+    onSuccess: () => {
+      setMessage('Department removed');
+      setError('');
+      orgDetailQuery.refetch();
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to remove department');
+      setMessage('');
+    },
+  });
+
+  const addTeamToOrgMutation = useMutation({
+    mutationFn: () => teamsApi.addTeamToOrganization(selectedOrgId, teamToAddId),
+    onSuccess: () => {
+      setTeamToAddId('');
+      setMessage('Team added to organization');
+      setError('');
+      orgDetailQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
+      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to add team to organization');
+      setMessage('');
+    },
+  });
+
+  const removeTeamFromOrgMutation = useMutation({
+    mutationFn: (teamId: string) => teamsApi.removeTeamFromOrganization(selectedOrgId, teamId),
+    onSuccess: () => {
+      setMessage('Team removed from organization');
+      setError('');
+      orgDetailQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
+      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to remove team from organization');
       setMessage('');
     },
   });
@@ -115,9 +187,38 @@ export default function TeamsScreen({ navigation }: Props) {
     createOrgMutation.mutate();
   };
 
+  const onAddDepartment = () => {
+    if (!selectedOrgId) return;
+    if (!deptName.trim()) {
+      setError('Department name is required');
+      return;
+    }
+    setError('');
+    setMessage('');
+    addDepartmentMutation.mutate();
+  };
+
+  const onAddTeamToOrg = () => {
+    if (!selectedOrgId || !teamToAddId) {
+      setError('Select a team to add');
+      return;
+    }
+    setError('');
+    setMessage('');
+    addTeamToOrgMutation.mutate();
+  };
+
   const teams = teamsQuery.data?.teams || [];
   const invitations = invitesQuery.data?.invitations || [];
   const organizations = orgsQuery.data?.organizations || [];
+  const selectedOrg = orgDetailQuery.data?.organization;
+  const selectedOrgTeams = orgDetailQuery.data?.teams || [];
+
+  const availableTeamsForOrg = useMemo(() => {
+    if (!selectedOrg) return [];
+    const inOrg = new Set(selectedOrgTeams.map((t) => t._id));
+    return teams.filter((t) => !inOrg.has(t._id));
+  }, [selectedOrg, selectedOrgTeams, teams]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -234,10 +335,93 @@ export default function TeamsScreen({ navigation }: Props) {
                   <Text style={styles.teamMeta}>@{org.slug}</Text>
                   <Text style={styles.teamMeta}>{(org.teams || []).length} teams</Text>
                 </View>
+                <Button
+                  label={selectedOrgId === org._id ? 'Close' : 'Manage'}
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => setSelectedOrgId(selectedOrgId === org._id ? '' : org._id)}
+                />
               </View>
             ))
           )}
         </View>
+
+        {selectedOrgId ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Organization Detail</Text>
+            {orgDetailQuery.isLoading ? <Text style={styles.teamMeta}>Loading organization…</Text> : null}
+            {!!selectedOrg && (
+              <>
+                <Text style={styles.teamName}>{selectedOrg.name}</Text>
+                {!!selectedOrg.description && <Text style={styles.teamMeta}>{selectedOrg.description}</Text>}
+
+                <Text style={styles.sectionTitle}>Departments</Text>
+                <Input label="Department name" value={deptName} onChangeText={setDeptName} placeholder="Operations" />
+                <Input label="Description (optional)" value={deptDescription} onChangeText={setDeptDescription} placeholder="What this department handles" />
+                <Button
+                  label="Add Department"
+                  size="sm"
+                  onPress={onAddDepartment}
+                  loading={addDepartmentMutation.isPending}
+                  disabled={addDepartmentMutation.isPending}
+                />
+                {(selectedOrg.departments || []).map((dept) => (
+                  <View key={dept._id} style={styles.teamRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.teamName}>{dept.name}</Text>
+                      {!!dept.description && <Text style={styles.teamMeta}>{dept.description}</Text>}
+                    </View>
+                    <Button
+                      label="Remove"
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => removeDepartmentMutation.mutate(dept._id)}
+                      disabled={removeDepartmentMutation.isPending}
+                    />
+                  </View>
+                ))}
+
+                <Text style={styles.sectionTitle}>Teams in Organization</Text>
+                {!selectedOrgTeams.length ? <Text style={styles.teamMeta}>No teams linked yet.</Text> : null}
+                {selectedOrgTeams.map((team) => (
+                  <View key={team._id} style={styles.teamRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.teamName}>{team.name}</Text>
+                      <Text style={styles.teamMeta}>{team.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
+                    </View>
+                    <Button
+                      label="Remove"
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => removeTeamFromOrgMutation.mutate(team._id)}
+                      disabled={removeTeamFromOrgMutation.isPending}
+                    />
+                  </View>
+                ))}
+
+                <Text style={styles.sectionTitle}>Add Existing Team</Text>
+                <View style={styles.optionRow}>
+                  {availableTeamsForOrg.map((team) => (
+                    <Button
+                      key={team._id}
+                      label={team.name}
+                      size="sm"
+                      variant={teamToAddId === team._id ? 'primary' : 'secondary'}
+                      onPress={() => setTeamToAddId(team._id)}
+                    />
+                  ))}
+                </View>
+                <Button
+                  label="Add Team to Organization"
+                  size="sm"
+                  onPress={onAddTeamToOrg}
+                  loading={addTeamToOrgMutation.isPending}
+                  disabled={addTeamToOrgMutation.isPending || !teamToAddId}
+                />
+              </>
+            )}
+          </View>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>My Teams</Text>
