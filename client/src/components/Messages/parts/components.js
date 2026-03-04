@@ -267,6 +267,7 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
   const meta = msg.metadata;
   const isProposal          = meta?.type === 'job_proposal';
   const isMilestoneRequest  = meta?.type === 'milestone_change_request';
+  const isCallTimeline      = ['call_initiated', 'call_accepted', 'call_missed', 'call_ended'].includes(meta?.type);
 
   return (
     <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>
@@ -286,6 +287,13 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
             isMine={isMine}
             onAction={onProposalAction}
           />
+        ) : isCallTimeline ? (
+          <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>
+            {meta.type === 'call_initiated' && '📞 Call started'}
+            {meta.type === 'call_accepted' && '✅ Call accepted'}
+            {meta.type === 'call_missed' && '⏱️ Call missed/declined'}
+            {meta.type === 'call_ended' && `📴 Call ended${meta.duration ? ` • ${Math.max(0, Number(meta.duration || 0))}s` : ''}`}
+          </div>
         ) : (
           <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
         )}

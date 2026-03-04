@@ -137,8 +137,19 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
 3. Room seq rollout gate added:
    - `FF_ROOM_SEQ_V1=true` enables room sequence assignment.
 
-## Immediate Day 8 Follow-ups
+## Day 8 Progress (implemented)
 
-1. Render call timeline metadata in chat UI (system cards).
-2. Start off-platform detector v1 rule engine scaffold.
-3. Add rcpt:update event broadcast and client consumption.
+1. Call timeline rendering added in chat UI:
+   - `MsgBubble` now renders system call metadata for `call_initiated/call_accepted/call_missed/call_ended`.
+2. Off-platform detector v1 scaffold added:
+   - `server/services/offPlatformDetector.js`
+   - applied to REST and socket send paths; stores `message.safety` and emits `safety:nudge` events.
+3. Receipt update event flow added:
+   - server emits `rcpt:update` on read cursor changes
+   - client consumes `rcpt:update` and refreshes conversation list.
+
+## Immediate Day 9 Follow-ups
+
+1. Add moderation event persistence (rule IDs + action + score) separate from message payload.
+2. Add attachment sign/finalize API scaffold for safer upload pipeline.
+3. Improve safety UX from generic error banner to dedicated non-blocking nudge component.

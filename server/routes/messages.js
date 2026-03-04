@@ -5,6 +5,7 @@ const { Message, Conversation, ChatRoom, ReceiptCursor } = require('../models/Me
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
+const { detectOffPlatform } = require('../services/offPlatformDetector');
 
 const getCorrelationId = (req) => req.headers['x-correlation-id'] || req.headers['x-request-id'] || crypto.randomUUID();
 const logRouteError = (req, scope, error) => {
@@ -169,11 +170,13 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
       await conversation.save();
     }
 
+    const safety = detectOffPlatform(content);
     const message = new Message({
       conversation: conversation._id,
       sender: req.user._id,
       recipient: recipientId,
-      content
+      content,
+      safety,
     });
 
     await message.save();
@@ -217,11 +220,14 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
       mimeType: file.mimetype
     })) : [];
 
+    const safeContent = content || (attachments.length > 0 ? `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : '');
+    const safety = detectOffPlatform(safeContent);
     const message = new Message({
       conversation: conversation._id,
       sender: req.user._id,
       recipient: recipientId,
-      content: content || (attachments.length > 0 ? `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : ''),
+      content: safeContent,
+      safety,
       ...(attachments.length > 0 ? { attachments } : {})
     });
 

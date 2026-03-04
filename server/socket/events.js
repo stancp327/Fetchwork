@@ -3,6 +3,7 @@ const { Message, Conversation, ChatRoom, ReceiptCursor } = require('../models/Me
 const User = require('../models/User');
 const Call = require('../models/Call');
 const { transitionCall } = require('../services/callStateMachine');
+const { detectOffPlatform } = require('../services/offPlatformDetector');
 
 const activeUsers = new Map(); // userId -> Set of socketIds
 const socketToUser = new Map(); // socketId -> userId
@@ -90,6 +91,7 @@ module.exports = (io) => {
             await room.updateLastActivity();
           }
 
+          const safety = detectOffPlatform(content);
           const newMessage = await Message.create({
             roomId,
             ...(roomSeqEnabled ? { seq: roomAfterSeq.seq } : {}),
@@ -97,7 +99,8 @@ module.exports = (io) => {
             content,
             messageType,
             attachments,
-            mentions
+            mentions,
+            safety,
           });
           await newMessage.populate('sender', 'firstName lastName profilePicture');
           await newMessage.populate('mentions', 'firstName lastName');
@@ -117,7 +120,15 @@ module.exports = (io) => {
           };
 
           socket.to(roomId).emit('message:receive', { message: messageWithId });
-          ackOk(ack, data, { messageId: newMessage._id.toString(), roomId: roomId.toString() });
+          if (newMessage.safety?.action === 'nudge' || newMessage.safety?.action === 'warn') {
+            socket.emit('safety:nudge', {
+              conversationId: null,
+              roomId,
+              action: newMessage.safety.action,
+              copy: 'For your safety, we recommend staying on-platform. Scams are possible.',
+            });
+          }
+          ackOk(ack, data, { messageId: newMessage._id.toString(), roomId: roomId.toString(), safety: newMessage.safety || null });
 
           if (onlineMembers.length > 0) {
             socket.emit('message:delivered', {
@@ -170,6 +181,7 @@ module.exports = (io) => {
                   { new: true, session }
                 );
 
+                const safety = detectOffPlatform(content);
                 const [created] = await Message.create([
                   {
                     conversation: conversation._id,
@@ -180,6 +192,7 @@ module.exports = (io) => {
                     content,
                     messageType,
                     attachments,
+                    safety,
                     isRead: false,
                   },
                 ], { session });
@@ -272,10 +285,18 @@ module.exports = (io) => {
 
           io.to(senderId).emit('conversation:update', { conversation });
           io.to(recipientId).emit('conversation:update', { conversation });
+          if (newMessage.safety?.action === 'nudge' || newMessage.safety?.action === 'warn') {
+            socket.emit('safety:nudge', {
+              conversationId: conversation._id.toString(),
+              action: newMessage.safety.action,
+              copy: 'For your safety, we recommend staying on-platform. Scams are possible.',
+            });
+          }
           ackOk(ack, data, {
             messageId: newMessage._id.toString(),
             conversationId: conversation._id.toString(),
             seq: newMessage.seq || null,
+            safety: newMessage.safety || null,
           });
 
         }
@@ -352,12 +373,18 @@ module.exports = (io) => {
 
           const senderIdString = conversation.participants.find(p => p.toString() !== readerId);
           if (senderIdString) {
-            
+            const cursor = await ReceiptCursor.findOne({ conversationId, userId: readerId }).lean();
             io.to(senderIdString.toString()).emit('message:read', {
               conversationId,
               messageIds,
               readAt: new Date(),
               readerId
+            });
+            io.to(senderIdString.toString()).emit('rcpt:update', {
+              conversationId,
+              userId: readerId,
+              lastReadSeq: cursor?.lastReadSeq || 0,
+              lastDeliveredSeq: cursor?.lastDeliveredSeq || 0,
             });
           } else {
           }

@@ -31,6 +31,8 @@ const SOCKET_EVENTS = [
   'call:media-toggle',
   'call:rate-limit',
   'call:error',
+  'rcpt:update',
+  'safety:nudge',
 ];
 
 export const useSocket = (options) => {

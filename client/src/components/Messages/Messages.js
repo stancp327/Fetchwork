@@ -158,6 +158,13 @@ const Messages = () => {
       case 'message:delivered':
         setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
         break;
+      case 'rcpt:update':
+        // Minimal Day-8 handling: refresh list so unreadSeqCount reflects latest cursor state.
+        fetchConversations();
+        break;
+      case 'safety:nudge':
+        if (data?.copy) setError(data.copy);
+        break;
       case 'user:online':
         if (data?.userId) {
           setOnlineUsers(prev => ({

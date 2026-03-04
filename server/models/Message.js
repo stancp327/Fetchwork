@@ -120,6 +120,12 @@ const messageSchema = new mongoose.Schema({
     // e.g. { type: 'service_order', serviceId, serviceTitle }
     //      { type: 'job_proposal',  jobId, jobTitle }
   },
+  safety: {
+    score: { type: Number, default: 0 },
+    confidence: { type: String, enum: ['low', 'medium', 'high', null], default: null },
+    action: { type: String, enum: ['allow', 'nudge', 'warn', 'block', null], default: null },
+    hits: [{ type: String }],
+  },
   attachments: [{
     filename: String,
     url: String,
