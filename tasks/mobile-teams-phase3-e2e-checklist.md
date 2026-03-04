@@ -19,6 +19,16 @@ cd server
 npm run smoke:teams:phase3
 ```
 
+Consolidated Phase 3 QA runner (Windows PowerShell):
+
+```powershell
+cd <repo-root>
+powershell -ExecutionPolicy Bypass -File .\scripts\run-phase3-qa.ps1
+```
+
+This writes a report to:
+- `tasks/reports/phase3-qa-<timestamp>.md`
+
 Authenticated variant:
 
 ```bash

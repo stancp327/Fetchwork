@@ -1,0 +1,3 @@
+# Generated QA/E2E run artifacts
+*.md
+!.gitkeep
