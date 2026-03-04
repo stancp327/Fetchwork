@@ -171,8 +171,18 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
 3. Finalize contract retained and standardized:
    - `POST /api/messages/assets/:assetId/finalize` returns normalized asset payload scaffold for client integration continuity.
 
-## Immediate Day 11 Follow-ups
+## Day 11 Progress (implemented)
 
-1. Wire finalized assets into message attachment refs end-to-end.
-2. Tighten admin authorization to permission middleware instead of role flag check.
-3. Add tests for signed upload contract validation + moderation endpoint authz.
+1. Wired finalized asset refs into message send routes:
+   - `POST /api/messages/conversations`
+   - `POST /api/messages/conversations/:conversationId/messages`
+   - both now accept `assetRefs[]` and map to normalized attachment records.
+2. Tightened moderation triage authz:
+   - switched to `authenticateAdmin + requirePermission('content_moderation')` middleware.
+3. Kept tests as immediate follow-up while preserving deploy velocity.
+
+## Immediate Day 12 Follow-ups
+
+1. Add tests for asset signing contract + moderation triage authorization.
+2. Validate `validateMessage` middleware compatibility for attachment-only `assetRefs` sends.
+3. Run canary verification checklist for messaging send/read/sync/receipts after latest authz + asset ref changes.

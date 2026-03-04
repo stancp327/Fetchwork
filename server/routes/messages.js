@@ -4,7 +4,7 @@ const cloudinary = require('cloudinary').v2;
 const router = express.Router();
 const { Message, Conversation, ChatRoom, ReceiptCursor } = require('../models/Message');
 const User = require('../models/User');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authenticateAdmin, requirePermission } = require('../middleware/auth');
 const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
 const { detectOffPlatform } = require('../services/offPlatformDetector');
 const ModerationEvent = require('../models/ModerationEvent');
@@ -175,7 +175,7 @@ router.post('/conversations/find-or-create', authenticateToken, async (req, res)
 
 router.post('/conversations', authenticateToken, validateMessage, async (req, res) => {
   try {
-    const { recipientId, jobId, content } = req.body;
+    const { recipientId, jobId, content, assetRefs = [] } = req.body;
 
     if (recipientId === req.user._id.toString()) {
       return res.status(400).json({ error: 'Cannot send message to yourself' });
@@ -196,13 +196,26 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
       await conversation.save();
     }
 
-    const safety = detectOffPlatform(content);
+    const normalizedAssetRefs = Array.isArray(assetRefs)
+      ? assetRefs.map((a) => ({
+          assetId: a.assetId,
+          url: a.url || null,
+          thumbUrl: a.thumbUrl || null,
+          mimeType: a.mime || a.mimeType || null,
+          size: a.size || null,
+          filename: a.filename || a.assetId || 'attachment',
+        })).filter((a) => a.assetId)
+      : [];
+
+    const safeContent = content || (normalizedAssetRefs.length > 0 ? `📎 Sent ${normalizedAssetRefs.length} file${normalizedAssetRefs.length > 1 ? 's' : ''}` : '');
+    const safety = detectOffPlatform(safeContent);
     const message = new Message({
       conversation: conversation._id,
       sender: req.user._id,
       recipient: recipientId,
-      content,
+      content: safeContent,
       safety,
+      ...(normalizedAssetRefs.length > 0 ? { attachments: normalizedAssetRefs } : {}),
     });
 
     await message.save();
@@ -227,7 +240,7 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
 
 router.post('/conversations/:conversationId/messages', authenticateToken, validateConversationIdParam, validateMessage, async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, assetRefs = [] } = req.body;
 
     const conversation = await Conversation.findById(req.params.conversationId);
 
@@ -240,12 +253,25 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
     );
 
     // Handle file attachments if present
-    const attachments = req.files ? req.files.map(file => ({
+    const fileAttachments = req.files ? req.files.map(file => ({
       filename: file.originalname,
       url: file.path?.startsWith('http') ? file.path : `/uploads/${file.filename}`,
       size: file.size,
       mimeType: file.mimetype
     })) : [];
+
+    const refAttachments = Array.isArray(assetRefs)
+      ? assetRefs.map((a) => ({
+          assetId: a.assetId,
+          url: a.url || null,
+          thumbUrl: a.thumbUrl || null,
+          mimeType: a.mime || a.mimeType || null,
+          size: a.size || null,
+          filename: a.filename || a.assetId || 'attachment',
+        })).filter((a) => a.assetId)
+      : [];
+
+    const attachments = [...fileAttachments, ...refAttachments];
 
     const safeContent = content || (attachments.length > 0 ? `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : '');
     const safety = detectOffPlatform(safeContent);
@@ -497,12 +523,8 @@ router.post('/assets/:assetId/finalize', authenticateToken, async (req, res) => 
 });
 
 // GET /moderation/events - basic triage endpoint for admins
-router.get('/moderation/events', authenticateToken, async (req, res) => {
+router.get('/moderation/events', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
   try {
-    if (!req.user?.isAdmin && req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
     const events = await ModerationEvent.find({})
       .sort({ createdAt: -1 })
