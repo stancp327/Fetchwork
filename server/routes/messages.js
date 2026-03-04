@@ -1,9 +1,22 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const { Message, Conversation, ChatRoom } = require('../models/Message');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
+
+const getCorrelationId = (req) => req.headers['x-correlation-id'] || req.headers['x-request-id'] || crypto.randomUUID();
+const logRouteError = (req, scope, error) => {
+  const correlationId = req.correlationId || getCorrelationId(req);
+  console.error(`[messages:${scope}] cid=${correlationId} user=${req.user?.userId || req.user?._id || 'anon'} err=${error.message}`);
+};
+
+router.use((req, res, next) => {
+  req.correlationId = getCorrelationId(req);
+  res.setHeader('x-correlation-id', req.correlationId);
+  next();
+});
 
 router.get('/conversations', authenticateToken, validateQueryParams, async (req, res) => {
   try {
@@ -19,8 +32,8 @@ router.get('/conversations', authenticateToken, validateQueryParams, async (req,
 
     res.json({ conversations });
   } catch (error) {
-    console.error('Error fetching conversations:', error);
-    res.status(500).json({ error: 'Failed to fetch conversations' });
+    logRouteError(req, 'get_conversations', error);
+    res.status(500).json({ error: 'Failed to fetch conversations', correlationId: req.correlationId });
   }
 });
 
@@ -74,8 +87,8 @@ router.get('/conversations/:conversationId', authenticateToken, validateConversa
       }
     });
   } catch (error) {
-    console.error('Error fetching messages:', error);
-    res.status(500).json({ error: 'Failed to fetch messages' });
+    logRouteError(req, 'get_conversation_messages', error);
+    res.status(500).json({ error: 'Failed to fetch messages', correlationId: req.correlationId });
   }
 });
 
@@ -105,8 +118,8 @@ router.post('/conversations/find-or-create', authenticateToken, async (req, res)
 
     res.status(200).json({ conversationId: conversation._id });
   } catch (error) {
-    console.error('Error in find-or-create conversation:', error);
-    res.status(500).json({ error: 'Server error' });
+    logRouteError(req, 'find_or_create_conversation', error);
+    res.status(500).json({ error: 'Server error', correlationId: req.correlationId });
   }
 });
 
@@ -154,8 +167,8 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
       conversationId: conversation._id
     });
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+    logRouteError(req, 'create_conversation_and_send', error);
+    res.status(500).json({ error: 'Failed to send message', correlationId: req.correlationId });
   }
 });
 
@@ -202,8 +215,8 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
       data: populatedMessage
     });
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+    logRouteError(req, 'send_to_existing_conversation', error);
+    res.status(500).json({ error: 'Failed to send message', correlationId: req.correlationId });
   }
 });
 
@@ -248,8 +261,8 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
 
     res.status(201).json({ message: 'Message sent', data: populatedMessage });
   } catch (error) {
-    console.error('Error sending message with attachments:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+    logRouteError(req, 'send_upload_message', error);
+    res.status(500).json({ error: 'Failed to send message', correlationId: req.correlationId });
   }
 });
 
@@ -263,8 +276,8 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
 
     res.json({ unreadCount });
   } catch (error) {
-    console.error('Error fetching unread count:', error);
-    res.status(500).json({ error: 'Failed to fetch unread count' });
+    logRouteError(req, 'get_unread_count', error);
+    res.status(500).json({ error: 'Failed to fetch unread count', correlationId: req.correlationId });
   }
 });
 

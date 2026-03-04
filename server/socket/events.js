@@ -13,6 +13,11 @@ module.exports = (io) => {
 
     // Lightweight per-socket rate limiter (anti-spam / abuse control)
     const rateBuckets = new Map();
+    const getCid = (payload) => payload?.correlationId || payload?.requestId || `sock-${Date.now()}`;
+    const logSocketError = (scope, payload, err) => {
+      const cid = getCid(payload);
+      console.error(`[socket:${scope}] cid=${cid} user=${senderId} err=${err.message}`);
+    };
     const consumeRate = (key, limit, windowMs) => {
       const now = Date.now();
       const bucket = rateBuckets.get(key) || { count: 0, resetAt: now + windowMs };
@@ -202,8 +207,8 @@ module.exports = (io) => {
         }
 
       } catch (err) {
-        console.error('Error handling message:send:', err);
-        socket.emit('error', { message: 'Failed to send message' });
+        logSocketError('message:send', data, err);
+        socket.emit('error', { message: 'Failed to send message', correlationId: getCid(data) });
       }
     });
 
@@ -271,8 +276,8 @@ module.exports = (io) => {
         }
 
       } catch (err) {
-        console.error('Error handling message:read:', err);
-        socket.emit('error', { message: 'Failed to mark messages as read' });
+        logSocketError('message:read', data, err);
+        socket.emit('error', { message: 'Failed to mark messages as read', correlationId: getCid(data) });
       }
     });
 
@@ -471,7 +476,7 @@ module.exports = (io) => {
           }
         }, 30_000);
       } catch (err) {
-        console.error('call:initiate error:', err.message);
+        logSocketError('call:initiate', { correlationId: `call-init-${Date.now()}` }, err);
         socket.emit('call:error', { message: 'Failed to initiate call' });
       }
     });
@@ -488,7 +493,7 @@ module.exports = (io) => {
         io.to(call.caller.toString()).emit('call:accepted', { callId, recipient: { _id: senderId, ...recipient } });
         socket.emit('call:accepted', { callId });
       } catch (err) {
-        console.error('call:accept error:', err.message);
+        logSocketError('call:accept', { correlationId: `call-accept-${Date.now()}` }, err);
         socket.emit('call:error', { message: 'Failed to accept call' });
       }
     });
@@ -501,7 +506,7 @@ module.exports = (io) => {
         emitCallState(call, 'recipient_declined');
         io.to(call.caller.toString()).emit('call:ended', { callId, reason: 'declined' });
         socket.emit('call:ended', { callId, reason: 'declined' });
-      } catch (err) { console.error('call:reject error:', err.message); }
+      } catch (err) { logSocketError('call:reject', { correlationId: `call-reject-${Date.now()}` }, err); }
     });
 
     socket.on('call:end', async ({ callId }) => {
@@ -521,7 +526,7 @@ module.exports = (io) => {
         const otherUserId = isCaller ? call.recipient.toString() : call.caller.toString();
         io.to(otherUserId).emit('call:ended', { callId, reason: call.endReason, duration: call.duration });
         socket.emit('call:ended', { callId, reason: call.endReason, duration: call.duration });
-      } catch (err) { console.error('call:end error:', err.message); }
+      } catch (err) { logSocketError('call:end', { correlationId: `call-end-${Date.now()}` }, err); }
     });
 
     // WebRTC signaling passthrough (participant authorization + basic state checks)
@@ -558,7 +563,7 @@ module.exports = (io) => {
           emitCallState(postRelayCall);
         }
       } catch (err) {
-        console.error('call:answer error:', err.message);
+        logSocketError('call:answer', { correlationId: `call-answer-${Date.now()}` }, err);
       }
     });
     socket.on('call:ice-candidate', async ({ callId, targetUserId, candidate }) => {
