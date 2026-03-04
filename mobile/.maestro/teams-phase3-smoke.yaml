@@ -30,17 +30,18 @@ appId: com.fetchwork.app
 - assertVisible: "Team Controls"
 
 # Basic linked-client lookup UX
-- tapOn: "Find Client (name or email)"
+- tapOn:
+    id: "teamdetail-client-search-input"
 - inputText: "test"
 
-# If lookup results exist, select first result (optional)
-- runFlow:
-    when:
-      visible: "Selected Client User ID"
-    commands:
-      - assertVisible: "Selected Client User ID"
+# If lookup results exist, selected-id input should be visible
+- assertVisible:
+    id: "teamdetail-client-userid-input"
 
 # Numeric controls fields visible
-- assertVisible: "Monthly cap amount"
-- assertVisible: "Alert threshold %"
-- assertVisible: "Payout threshold amount"
+- assertVisible:
+    id: "teamdetail-cap-amount-input"
+- assertVisible:
+    id: "teamdetail-alert-threshold-input"
+- assertVisible:
+    id: "teamdetail-payout-threshold-input"

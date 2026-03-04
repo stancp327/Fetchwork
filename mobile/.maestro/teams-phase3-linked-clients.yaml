@@ -16,23 +16,22 @@ appId: com.fetchwork.app
 - assertVisible: "Linked Clients"
 
 # Lookup + select
-- tapOn: "Find Client (name or email)"
+- tapOn:
+    id: "teamdetail-client-search-input"
 - eraseText
 - inputText: "test"
 
-# If lookup list appears, select first result
-- runFlow:
-    when:
-      visible: "Selected Client User ID"
-    commands:
-      - assertVisible: "Selected Client User ID"
+# Selected-id input should always be available
+- assertVisible:
+    id: "teamdetail-client-userid-input"
 
 # Set access + label and link
 - tapOn: "Collaborate"
 - tapOn: "Project Label (optional)"
 - eraseText
 - inputText: "Maestro Client"
-- tapOn: "Link Client"
+- tapOn:
+    id: "teamdetail-link-client-btn"
 
 # Update linked client access and label (if row present)
 - runFlow:

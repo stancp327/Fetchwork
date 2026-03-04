@@ -21,19 +21,23 @@ appId: com.fetchwork.app
 - tapOn: "Payout approvals OFF"
 
 # Set numeric settings (example values)
-- tapOn: "Monthly cap amount"
+- tapOn:
+    id: "teams-org-monthly-cap-input"
 - eraseText
 - inputText: "500"
 
-- tapOn: "Alert threshold %"
+- tapOn:
+    id: "teams-org-alert-threshold-input"
 - eraseText
 - inputText: "85"
 
-- tapOn: "Payout threshold amount"
+- tapOn:
+    id: "teams-org-payout-threshold-input"
 - eraseText
 - inputText: "100"
 
-- tapOn: "Save Organization Settings"
+- tapOn:
+    id: "teams-org-save-settings-btn"
 
 # Basic persisted-state check by reopening manage panel
 - tapOn: "Close"

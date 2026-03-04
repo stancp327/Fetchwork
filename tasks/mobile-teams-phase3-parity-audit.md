@@ -42,7 +42,7 @@ _Last updated: 2026-03-03_
 - Kept existing flows intact; no destructive removals in this pass.
 
 ## What remains (next pass)
-1. Execute Maestro flows on a connected device/simulator and capture stable selectors where flaky.
+1. Execute Maestro flows on a connected device/simulator and capture any remaining flaky selectors (core controls now have testIDs).
 2. Add UX polish around inline helper text / disabled states for invalid numeric entries.
 
 ## Files touched in this pass

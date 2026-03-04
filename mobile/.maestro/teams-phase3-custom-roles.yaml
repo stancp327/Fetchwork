@@ -15,14 +15,16 @@ appId: com.fetchwork.app
 - assertVisible: "Custom Roles"
 
 # Create role
-- tapOn: "Role Name"
+- tapOn:
+    id: "teamdetail-custom-role-name-input"
 - eraseText
 - inputText: "QA Reviewer"
 
 - tapOn: "Manage Billing"
 - tapOn: "Approve Orders"
 
-- tapOn: "Create Custom Role"
+- tapOn:
+    id: "teamdetail-create-custom-role-btn"
 
 # Edit role
 - tapOn: "Edit"

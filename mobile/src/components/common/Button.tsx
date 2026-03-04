@@ -20,6 +20,8 @@ interface ButtonProps {
   style?: StyleProp<ViewStyle>;
   labelStyle?: TextStyle;
   leftIcon?: React.ComponentProps<typeof Ionicons>['name'];
+  testID?: string;
+  accessibilityLabel?: string;
 }
 
 const VARIANT_STYLES: Record<Variant, { container: ViewStyle; text: TextStyle }> = {
@@ -39,7 +41,7 @@ const SIZE_STYLES: Record<Size, { container: ViewStyle; text: TextStyle }> = {
 export default function Button({
   label, onPress, variant = 'primary', size = 'md',
   loading = false, disabled = false, fullWidth = false,
-  style, labelStyle, leftIcon,
+  style, labelStyle, leftIcon, testID, accessibilityLabel,
 }: ButtonProps) {
   const v = VARIANT_STYLES[variant];
   const s = SIZE_STYLES[size];
@@ -48,6 +50,8 @@ export default function Button({
 
   return (
     <Pressable
+      testID={testID}
+      accessibilityLabel={accessibilityLabel || label}
       onPress={onPress}
       disabled={isDisabled}
       style={({ pressed }) => [

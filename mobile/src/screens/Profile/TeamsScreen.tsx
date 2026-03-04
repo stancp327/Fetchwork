@@ -386,6 +386,7 @@ export default function TeamsScreen({ navigation }: Props) {
             placeholder="What this org does"
           />
           <Button
+            testID="teams-create-organization-btn"
             label="Create Organization"
             onPress={onCreateOrganization}
             loading={createOrgMutation.isPending}
@@ -404,6 +405,7 @@ export default function TeamsScreen({ navigation }: Props) {
                   <Text style={styles.teamMeta}>{(org.teams || []).length} teams</Text>
                 </View>
                 <Button
+                  testID={`teams-org-manage-${org._id}`}
                   label={selectedOrgId === org._id ? 'Close' : 'Manage'}
                   size="sm"
                   variant="secondary"
@@ -509,6 +511,7 @@ export default function TeamsScreen({ navigation }: Props) {
                   />
                 </View>
                 <Input
+                  testID="teams-org-monthly-cap-input"
                   label="Monthly cap amount"
                   value={orgMonthlyCap}
                   onChangeText={setOrgMonthlyCap}
@@ -516,6 +519,7 @@ export default function TeamsScreen({ navigation }: Props) {
                   keyboardType="numeric"
                 />
                 <Input
+                  testID="teams-org-alert-threshold-input"
                   label="Alert threshold %"
                   value={orgAlertThresholdPct}
                   onChangeText={setOrgAlertThresholdPct}
@@ -523,6 +527,7 @@ export default function TeamsScreen({ navigation }: Props) {
                   keyboardType="numeric"
                 />
                 <Input
+                  testID="teams-org-payout-threshold-input"
                   label="Payout threshold amount"
                   value={orgPayoutThresholdAmount}
                   onChangeText={setOrgPayoutThresholdAmount}
@@ -530,6 +535,7 @@ export default function TeamsScreen({ navigation }: Props) {
                   keyboardType="numeric"
                 />
                 <Button
+                  testID="teams-org-save-settings-btn"
                   label="Save Organization Settings"
                   size="sm"
                   onPress={onSaveOrgSettings}
@@ -559,6 +565,7 @@ export default function TeamsScreen({ navigation }: Props) {
                     <Text style={styles.teamMeta}>{activeCount} active members</Text>
                   </View>
                   <Button
+                    testID={`teams-open-team-${team._id}`}
                     label="Open"
                     size="sm"
                     variant="secondary"

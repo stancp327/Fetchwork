@@ -547,6 +547,7 @@ export default function TeamDetailScreen({ route }: Props) {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Custom Roles</Text>
             <Input
+              testID="teamdetail-custom-role-name-input"
               label="Role Name"
               value={newRoleName}
               onChangeText={setNewRoleName}
@@ -565,6 +566,7 @@ export default function TeamDetailScreen({ route }: Props) {
               ))}
             </View>
             <Button
+              testID="teamdetail-create-custom-role-btn"
               label="Create Custom Role"
               onPress={onCreateCustomRole}
               loading={createCustomRoleMutation.isPending}
@@ -644,6 +646,7 @@ export default function TeamDetailScreen({ route }: Props) {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Linked Clients</Text>
             <Input
+              testID="teamdetail-client-search-input"
               label="Find Client (name or email)"
               value={clientSearch}
               onChangeText={setClientSearch}
@@ -668,6 +671,7 @@ export default function TeamDetailScreen({ route }: Props) {
               </View>
             ) : null}
             <Input
+              testID="teamdetail-client-userid-input"
               label="Selected Client User ID"
               value={clientUserId}
               onChangeText={setClientUserId}
@@ -687,6 +691,7 @@ export default function TeamDetailScreen({ route }: Props) {
               <Button label="Collaborate" size="sm" variant={clientAccessLevel === 'collaborate' ? 'primary' : 'secondary'} onPress={() => setClientAccessLevel('collaborate')} />
             </View>
             <Button
+              testID="teamdetail-link-client-btn"
               label="Link Client"
               onPress={onLinkClient}
               loading={linkClientMutation.isPending}
@@ -820,6 +825,7 @@ export default function TeamDetailScreen({ route }: Props) {
                 </View>
 
                 <Input
+                  testID="teamdetail-cap-amount-input"
                   label="Monthly cap amount"
                   value={capAmountInput}
                   onChangeText={setCapAmountInput}
@@ -827,6 +833,7 @@ export default function TeamDetailScreen({ route }: Props) {
                   placeholder="0"
                 />
                 <Input
+                  testID="teamdetail-alert-threshold-input"
                   label="Alert threshold %"
                   value={alertThresholdPctInput}
                   onChangeText={setAlertThresholdPctInput}
@@ -834,6 +841,7 @@ export default function TeamDetailScreen({ route }: Props) {
                   placeholder="80"
                 />
                 <Input
+                  testID="teamdetail-payout-threshold-input"
                   label="Payout threshold amount"
                   value={payoutThresholdInput}
                   onChangeText={setPayoutThresholdInput}
@@ -841,6 +849,7 @@ export default function TeamDetailScreen({ route }: Props) {
                   placeholder="0"
                 />
                 <Button
+                  testID="teamdetail-save-numeric-controls-btn"
                   label="Save Numeric Controls"
                   size="sm"
                   onPress={saveNumericTeamControls}
