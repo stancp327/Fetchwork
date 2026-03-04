@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -20,6 +20,12 @@ export default function TeamsScreen({ navigation }: Props) {
   const [deptName, setDeptName] = useState('');
   const [deptDescription, setDeptDescription] = useState('');
   const [teamToAddId, setTeamToAddId] = useState('');
+  const [orgMonthlyCapEnabled, setOrgMonthlyCapEnabled] = useState(false);
+  const [orgMonthlyCap, setOrgMonthlyCap] = useState('0');
+  const [orgAlertThresholdPct, setOrgAlertThresholdPct] = useState('80');
+  const [orgPayoutRequiresApproval, setOrgPayoutRequiresApproval] = useState(false);
+  const [orgPayoutThresholdAmount, setOrgPayoutThresholdAmount] = useState('0');
+  const [orgRequireDualControl, setOrgRequireDualControl] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -156,6 +162,31 @@ export default function TeamsScreen({ navigation }: Props) {
     },
   });
 
+  const updateOrgSettingsMutation = useMutation({
+    mutationFn: () => teamsApi.updateOrganizationSettings(selectedOrgId, {
+      spendControls: {
+        monthlyCapEnabled: orgMonthlyCapEnabled,
+        monthlyCap: Number(orgMonthlyCap || 0),
+        alertThreshold: Math.max(0, Math.min(1, Number(orgAlertThresholdPct || 0) / 100)),
+      },
+      approvalThresholds: {
+        payoutRequiresApproval: orgPayoutRequiresApproval,
+        payoutThresholdAmount: Number(orgPayoutThresholdAmount || 0),
+        requireDualControl: orgRequireDualControl,
+      },
+    }),
+    onSuccess: () => {
+      setMessage('Organization settings updated');
+      setError('');
+      orgDetailQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to update organization settings');
+      setMessage('');
+    },
+  });
+
   const isRefreshing = teamsQuery.isRefetching || invitesQuery.isRefetching || orgsQuery.isRefetching;
   const isLoading = teamsQuery.isLoading || invitesQuery.isLoading;
 
@@ -215,6 +246,18 @@ export default function TeamsScreen({ navigation }: Props) {
   const organizations = orgsQuery.data?.organizations || [];
   const selectedOrg = orgDetailQuery.data?.organization;
   const selectedOrgTeams = orgDetailQuery.data?.teams || [];
+
+  useEffect(() => {
+    if (!selectedOrg) return;
+    const spend = selectedOrg.settings?.spendControls || {};
+    const approvals = selectedOrg.settings?.approvalThresholds || {};
+    setOrgMonthlyCapEnabled(Boolean(spend.monthlyCapEnabled));
+    setOrgMonthlyCap(String(spend.monthlyCap ?? 0));
+    setOrgAlertThresholdPct(String(Math.round(Number(spend.alertThreshold ?? 0.8) * 100)));
+    setOrgPayoutRequiresApproval(Boolean(approvals.payoutRequiresApproval));
+    setOrgPayoutThresholdAmount(String(approvals.payoutThresholdAmount ?? 0));
+    setOrgRequireDualControl(Boolean(approvals.requireDualControl));
+  }, [selectedOrg]);
 
   const availableTeamsForOrg = useMemo(() => {
     if (!selectedOrg) return [];
@@ -419,6 +462,56 @@ export default function TeamsScreen({ navigation }: Props) {
                   onPress={onAddTeamToOrg}
                   loading={addTeamToOrgMutation.isPending}
                   disabled={addTeamToOrgMutation.isPending || !teamToAddId}
+                />
+
+                <Text style={styles.sectionTitle}>Organization Settings</Text>
+                <View style={styles.optionRow}>
+                  <Button
+                    label={orgMonthlyCapEnabled ? 'Monthly cap ON' : 'Monthly cap OFF'}
+                    size="sm"
+                    variant={orgMonthlyCapEnabled ? 'primary' : 'secondary'}
+                    onPress={() => setOrgMonthlyCapEnabled((v) => !v)}
+                  />
+                  <Button
+                    label={orgPayoutRequiresApproval ? 'Payout approvals ON' : 'Payout approvals OFF'}
+                    size="sm"
+                    variant={orgPayoutRequiresApproval ? 'primary' : 'secondary'}
+                    onPress={() => setOrgPayoutRequiresApproval((v) => !v)}
+                  />
+                  <Button
+                    label={orgRequireDualControl ? 'Dual control ON' : 'Dual control OFF'}
+                    size="sm"
+                    variant={orgRequireDualControl ? 'primary' : 'secondary'}
+                    onPress={() => setOrgRequireDualControl((v) => !v)}
+                  />
+                </View>
+                <Input
+                  label="Monthly cap amount"
+                  value={orgMonthlyCap}
+                  onChangeText={setOrgMonthlyCap}
+                  placeholder="0"
+                  keyboardType="numeric"
+                />
+                <Input
+                  label="Alert threshold %"
+                  value={orgAlertThresholdPct}
+                  onChangeText={setOrgAlertThresholdPct}
+                  placeholder="80"
+                  keyboardType="numeric"
+                />
+                <Input
+                  label="Payout threshold amount"
+                  value={orgPayoutThresholdAmount}
+                  onChangeText={setOrgPayoutThresholdAmount}
+                  placeholder="0"
+                  keyboardType="numeric"
+                />
+                <Button
+                  label="Save Organization Settings"
+                  size="sm"
+                  onPress={() => updateOrgSettingsMutation.mutate()}
+                  loading={updateOrgSettingsMutation.isPending}
+                  disabled={updateOrgSettingsMutation.isPending}
                 />
               </>
             )}

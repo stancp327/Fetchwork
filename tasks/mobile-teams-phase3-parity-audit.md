@@ -14,7 +14,7 @@ _Last updated: 2026-03-03_
 - [x] API: organization detail + department/team assignment endpoints wired in mobile client
 - [x] Mobile UI: Organizations section in Teams screen (list + create)
 - [x] Mobile UI: organization detail management (departments + add/remove teams)
-- [ ] Mobile UI: org settings editor (spend controls / approval thresholds)
+- [x] Mobile UI: org settings editor (spend controls / approval thresholds)
 
 ### Phase 3b (Custom Roles)
 - [x] API: custom role CRUD endpoints
@@ -42,9 +42,9 @@ _Last updated: 2026-03-03_
 - Kept existing flows intact; no destructive removals in this pass.
 
 ## What remains (next pass)
-1. TeamsScreen: add org settings editor (spend controls + approval thresholds).
-2. Team controls UI: add full numeric controls editing (monthly cap, alert threshold, payout threshold), not just toggles.
-3. Add dedicated integration/e2e tests for mobile-facing Phase 3 flows (API contract-level tests already exist server-side).
+1. Add dedicated integration/e2e tests for mobile-facing Phase 3 flows (API contract-level tests already exist server-side).
+2. Improve mobile linked-client UX with email/user lookup instead of raw user-id entry.
+3. Add validation UX polish around numeric bounds (alert threshold 0-100, non-negative amounts).
 
 ## Files touched in this pass
 - `mobile/src/api/endpoints/teamsApi.ts`

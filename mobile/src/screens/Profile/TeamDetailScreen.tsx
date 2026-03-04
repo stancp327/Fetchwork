@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,6 +48,9 @@ export default function TeamDetailScreen({ route }: Props) {
   const [editingRolePermissions, setEditingRolePermissions] = useState<TeamPermissionKey[]>([]);
   const [editingClientId, setEditingClientId] = useState('');
   const [editingClientLabel, setEditingClientLabel] = useState('');
+  const [capAmountInput, setCapAmountInput] = useState('0');
+  const [alertThresholdPctInput, setAlertThresholdPctInput] = useState('80');
+  const [payoutThresholdInput, setPayoutThresholdInput] = useState('0');
 
   const { data, refetch, isRefetching, isLoading } = useQuery({
     queryKey: ['mobile-team-detail', teamId],
@@ -287,6 +290,13 @@ export default function TeamDetailScreen({ route }: Props) {
   const customRoles: TeamCustomRole[] = customRolesData?.customRoles || [];
   const linkedClients: TeamClientRelationship[] = clientsData?.clients || [];
 
+  useEffect(() => {
+    if (!spendControlsData) return;
+    setCapAmountInput(String(spendControlsData.spendControls.monthlyCap ?? 0));
+    setAlertThresholdPctInput(String(Math.round(Number(spendControlsData.spendControls.alertThreshold ?? 0.8) * 100)));
+    setPayoutThresholdInput(String(spendControlsData.approvalThresholds.payoutThresholdAmount ?? 0));
+  }, [spendControlsData]);
+
   const toggleRolePermission = (permissionKey: TeamPermissionKey) => {
     setNewRolePermissions((prev) => (
       prev.includes(permissionKey) ? prev.filter((p) => p !== permissionKey) : [...prev, permissionKey]
@@ -349,6 +359,21 @@ export default function TeamDetailScreen({ route }: Props) {
     updateLinkedClientMutation.mutate({ clientId, accessLevel, projectLabel: editingClientLabel.trim() });
     setEditingClientId('');
     setEditingClientLabel('');
+  };
+
+  const saveNumericTeamControls = () => {
+    if (!spendControlsData) return;
+    updateSpendControlsMutation.mutate({
+      spendControls: {
+        ...spendControlsData.spendControls,
+        monthlyCap: Number(capAmountInput || 0),
+        alertThreshold: Math.max(0, Math.min(1, Number(alertThresholdPctInput || 0) / 100)),
+      },
+      approvalThresholds: {
+        ...spendControlsData.approvalThresholds,
+        payoutThresholdAmount: Number(payoutThresholdInput || 0),
+      },
+    });
   };
 
   const onTransferOwnership = () => {
@@ -699,34 +724,78 @@ export default function TeamDetailScreen({ route }: Props) {
               Payout approval: {spendControlsData.approvalThresholds.payoutRequiresApproval ? `on (threshold $${Number(spendControlsData.approvalThresholds.payoutThresholdAmount || 0).toFixed(2)})` : 'off'}
             </Text>
             {isOwner ? (
-              <View style={styles.optionRow}>
-                <Button
-                  label={spendControlsData.spendControls.monthlyCapEnabled ? 'Disable cap' : 'Enable cap'}
-                  size="sm"
-                  variant="secondary"
-                  onPress={() => updateSpendControlsMutation.mutate({
-                    spendControls: {
-                      ...spendControlsData.spendControls,
-                      monthlyCapEnabled: !spendControlsData.spendControls.monthlyCapEnabled,
-                    },
-                    approvalThresholds: spendControlsData.approvalThresholds,
-                  })}
-                  loading={updateSpendControlsMutation.isPending}
+              <>
+                <View style={styles.optionRow}>
+                  <Button
+                    label={spendControlsData.spendControls.monthlyCapEnabled ? 'Disable cap' : 'Enable cap'}
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => updateSpendControlsMutation.mutate({
+                      spendControls: {
+                        ...spendControlsData.spendControls,
+                        monthlyCapEnabled: !spendControlsData.spendControls.monthlyCapEnabled,
+                      },
+                      approvalThresholds: spendControlsData.approvalThresholds,
+                    })}
+                    loading={updateSpendControlsMutation.isPending}
+                  />
+                  <Button
+                    label={spendControlsData.approvalThresholds.payoutRequiresApproval ? 'Disable payout approvals' : 'Enable payout approvals'}
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => updateSpendControlsMutation.mutate({
+                      spendControls: spendControlsData.spendControls,
+                      approvalThresholds: {
+                        ...spendControlsData.approvalThresholds,
+                        payoutRequiresApproval: !spendControlsData.approvalThresholds.payoutRequiresApproval,
+                      },
+                    })}
+                    loading={updateSpendControlsMutation.isPending}
+                  />
+                  <Button
+                    label={spendControlsData.approvalThresholds.requireDualControl ? 'Disable dual control' : 'Enable dual control'}
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => updateSpendControlsMutation.mutate({
+                      spendControls: spendControlsData.spendControls,
+                      approvalThresholds: {
+                        ...spendControlsData.approvalThresholds,
+                        requireDualControl: !spendControlsData.approvalThresholds.requireDualControl,
+                      },
+                    })}
+                    loading={updateSpendControlsMutation.isPending}
+                  />
+                </View>
+
+                <Input
+                  label="Monthly cap amount"
+                  value={capAmountInput}
+                  onChangeText={setCapAmountInput}
+                  keyboardType="numeric"
+                  placeholder="0"
+                />
+                <Input
+                  label="Alert threshold %"
+                  value={alertThresholdPctInput}
+                  onChangeText={setAlertThresholdPctInput}
+                  keyboardType="numeric"
+                  placeholder="80"
+                />
+                <Input
+                  label="Payout threshold amount"
+                  value={payoutThresholdInput}
+                  onChangeText={setPayoutThresholdInput}
+                  keyboardType="numeric"
+                  placeholder="0"
                 />
                 <Button
-                  label={spendControlsData.approvalThresholds.payoutRequiresApproval ? 'Disable payout approvals' : 'Enable payout approvals'}
+                  label="Save Numeric Controls"
                   size="sm"
-                  variant="secondary"
-                  onPress={() => updateSpendControlsMutation.mutate({
-                    spendControls: spendControlsData.spendControls,
-                    approvalThresholds: {
-                      ...spendControlsData.approvalThresholds,
-                      payoutRequiresApproval: !spendControlsData.approvalThresholds.payoutRequiresApproval,
-                    },
-                  })}
+                  onPress={saveNumericTeamControls}
                   loading={updateSpendControlsMutation.isPending}
+                  disabled={updateSpendControlsMutation.isPending}
                 />
-              </View>
+              </>
             ) : null}
           </View>
         ) : null}
