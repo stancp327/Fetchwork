@@ -2,6 +2,9 @@
 
 ## Flow files
 - `teams-phase3-smoke.yaml` — baseline owner/admin smoke path
+- `teams-phase3-org-settings.yaml` — org settings persistence scenario
+- `teams-phase3-custom-roles.yaml` — custom role lifecycle scenario
+- `teams-phase3-linked-clients.yaml` — linked client lifecycle scenario
 
 ## Preconditions
 - App installed on simulator/device (`com.fetchwork.app`)
@@ -13,6 +16,15 @@
 ```bash
 cd mobile
 maestro test .maestro/teams-phase3-smoke.yaml
+maestro test .maestro/teams-phase3-org-settings.yaml
+maestro test .maestro/teams-phase3-custom-roles.yaml
+maestro test .maestro/teams-phase3-linked-clients.yaml
+```
+
+Or run all phase-3 flows:
+```bash
+cd mobile
+npm run e2e:maestro:teams:phase3:all
 ```
 
 ## Notes

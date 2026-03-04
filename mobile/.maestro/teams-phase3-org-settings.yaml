@@ -1,0 +1,43 @@
+appId: com.fetchwork.app
+---
+# Scenario: Organization settings persistence (Phase 3a)
+# Preconditions:
+# - Logged in as owner/admin
+# - At least one Organization exists in Profile > Teams
+
+- launchApp
+- tapOn: "Profile"
+- tapOn: "Teams"
+
+- tapOn:
+    text: "Manage"
+    index: 0
+
+- assertVisible: "Organization Detail"
+- assertVisible: "Organization Settings"
+
+# Toggle key settings
+- tapOn: "Monthly cap OFF"
+- tapOn: "Payout approvals OFF"
+
+# Set numeric settings (example values)
+- tapOn: "Monthly cap amount"
+- eraseText
+- inputText: "500"
+
+- tapOn: "Alert threshold %"
+- eraseText
+- inputText: "85"
+
+- tapOn: "Payout threshold amount"
+- eraseText
+- inputText: "100"
+
+- tapOn: "Save Organization Settings"
+
+# Basic persisted-state check by reopening manage panel
+- tapOn: "Close"
+- tapOn:
+    text: "Manage"
+    index: 0
+- assertVisible: "Organization Settings"

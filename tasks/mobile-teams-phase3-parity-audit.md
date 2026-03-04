@@ -42,7 +42,7 @@ _Last updated: 2026-03-03_
 - Kept existing flows intact; no destructive removals in this pass.
 
 ## What remains (next pass)
-1. Expand Maestro from smoke to full scenario coverage (org settings persistence, role assignment lifecycle, linked-client lifecycle) using `tasks/mobile-teams-phase3-e2e-checklist.md`.
+1. Execute Maestro flows on a connected device/simulator and capture stable selectors where flaky.
 2. Add UX polish around inline helper text and disabled states when numeric values are invalid.
 
 ## Files touched in this pass

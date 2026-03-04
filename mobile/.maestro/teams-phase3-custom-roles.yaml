@@ -1,0 +1,42 @@
+appId: com.fetchwork.app
+---
+# Scenario: Custom role lifecycle (Phase 3b)
+# Preconditions:
+# - Logged in as owner/admin
+# - At least one team visible in Profile > Teams
+
+- launchApp
+- tapOn: "Profile"
+- tapOn: "Teams"
+- tapOn:
+    text: "Open"
+    index: 0
+
+- assertVisible: "Custom Roles"
+
+# Create role
+- tapOn: "Role Name"
+- eraseText
+- inputText: "QA Reviewer"
+
+- tapOn: "Manage Billing"
+- tapOn: "Approve Orders"
+
+- tapOn: "Create Custom Role"
+
+# Edit role
+- tapOn: "Edit"
+- tapOn: "Edit role name"
+- eraseText
+- inputText: "QA Reviewer 2"
+- tapOn: "Save"
+
+# Assign/clear role on first non-owner member if present
+- runFlow:
+    when:
+      visible: "Clear custom role"
+    commands:
+      - tapOn: "Clear custom role"
+
+# Delete role (if not currently assigned)
+- tapOn: "Delete"

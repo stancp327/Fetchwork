@@ -8,7 +8,11 @@
     "ios": "expo run:ios",
     "test": "jest --watchAll",
     "lint": "eslint src --ext .ts,.tsx",
-    "e2e:maestro:teams:phase3": "maestro test .maestro/teams-phase3-smoke.yaml"
+    "e2e:maestro:teams:phase3": "maestro test .maestro/teams-phase3-smoke.yaml",
+    "e2e:maestro:teams:phase3:org": "maestro test .maestro/teams-phase3-org-settings.yaml",
+    "e2e:maestro:teams:phase3:roles": "maestro test .maestro/teams-phase3-custom-roles.yaml",
+    "e2e:maestro:teams:phase3:clients": "maestro test .maestro/teams-phase3-linked-clients.yaml",
+    "e2e:maestro:teams:phase3:all": "npm run e2e:maestro:teams:phase3 && npm run e2e:maestro:teams:phase3:org && npm run e2e:maestro:teams:phase3:roles && npm run e2e:maestro:teams:phase3:clients"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",

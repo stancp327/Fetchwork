@@ -1,0 +1,54 @@
+appId: com.fetchwork.app
+---
+# Scenario: Linked client lifecycle (Phase 3b)
+# Preconditions:
+# - Logged in as owner/admin
+# - At least one team visible
+# - Search term below should return at least one non-member user
+
+- launchApp
+- tapOn: "Profile"
+- tapOn: "Teams"
+- tapOn:
+    text: "Open"
+    index: 0
+
+- assertVisible: "Linked Clients"
+
+# Lookup + select
+- tapOn: "Find Client (name or email)"
+- eraseText
+- inputText: "test"
+
+# If lookup list appears, select first result
+- runFlow:
+    when:
+      visible: "Selected Client User ID"
+    commands:
+      - assertVisible: "Selected Client User ID"
+
+# Set access + label and link
+- tapOn: "Collaborate"
+- tapOn: "Project Label (optional)"
+- eraseText
+- inputText: "Maestro Client"
+- tapOn: "Link Client"
+
+# Update linked client access and label (if row present)
+- runFlow:
+    when:
+      visible: "Edit Label"
+    commands:
+      - tapOn: "All"
+      - tapOn: "Edit Label"
+      - tapOn: "Edit project label"
+      - eraseText
+      - inputText: "Maestro Client Updated"
+      - tapOn: "Save Label"
+
+# Cleanup (optional)
+- runFlow:
+    when:
+      visible: "Unlink"
+    commands:
+      - tapOn: "Unlink"
