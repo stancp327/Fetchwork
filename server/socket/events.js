@@ -78,15 +78,21 @@ module.exports = (io) => {
             return;
           }
 
-          const roomAfterSeq = await ChatRoom.findByIdAndUpdate(
-            roomId,
-            { $inc: { seq: 1 }, $set: { lastActivity: new Date(), lastMessageSeq: (room.seq || 0) + 1 } },
-            { new: true }
-          );
+          const roomSeqEnabled = process.env.FF_ROOM_SEQ_V1 === 'true';
+          let roomAfterSeq = room;
+          if (roomSeqEnabled) {
+            roomAfterSeq = await ChatRoom.findByIdAndUpdate(
+              roomId,
+              { $inc: { seq: 1 }, $set: { lastActivity: new Date(), lastMessageSeq: (room.seq || 0) + 1 } },
+              { new: true }
+            );
+          } else {
+            await room.updateLastActivity();
+          }
 
           const newMessage = await Message.create({
             roomId,
-            seq: roomAfterSeq.seq,
+            ...(roomSeqEnabled ? { seq: roomAfterSeq.seq } : {}),
             sender: senderId,
             content,
             messageType,
@@ -582,6 +588,26 @@ module.exports = (io) => {
       io.to(call.recipient.toString()).emit('call:state', payload);
     };
 
+    const writeCallTimelineMessage = async (call, subtype, extra = {}) => {
+      try {
+        if (!call?.conversation) return;
+        await Message.create({
+          conversation: call.conversation,
+          sender: call.caller,
+          recipient: call.recipient,
+          content: '',
+          messageType: 'system',
+          metadata: {
+            type: subtype,
+            callId: call._id,
+            ...extra,
+          },
+        });
+      } catch (err) {
+        logSocketError('call:timeline', { correlationId: `call-timeline-${Date.now()}` }, err);
+      }
+    };
+
     socket.on('call:initiate', async ({ recipientId, type = 'video', jobId, conversationId }) => {
       try {
         if (!consumeRate('call:initiate', 6, 60_000)) {
@@ -605,6 +631,7 @@ module.exports = (io) => {
         io.to(recipientId).emit('call:incoming', { callId: call._id, caller: { _id: senderId, ...caller }, type });
         socket.emit('call:initiated', { callId: call._id, roomId: call.roomId, status: call.status });
         emitCallState(call);
+        await writeCallTimelineMessage(call, 'call_initiated', { status: call.status });
 
         setTimeout(async () => {
           const c = await Call.findById(call._id);
@@ -629,6 +656,7 @@ module.exports = (io) => {
 
         await transitionCall(call, 'accepted');
         emitCallState(call);
+        await writeCallTimelineMessage(call, 'call_accepted', { status: call.status });
         const recipient = await User.findById(senderId).select('firstName lastName profileImage').lean();
         io.to(call.caller.toString()).emit('call:accepted', { callId, recipient: { _id: senderId, ...recipient } });
         socket.emit('call:accepted', { callId });
@@ -644,6 +672,7 @@ module.exports = (io) => {
         if (!call || call.recipient.toString() !== senderId) return;
         await transitionCall(call, 'declined', { actorId: senderId, reason: 'recipient_declined' });
         emitCallState(call, 'recipient_declined');
+        await writeCallTimelineMessage(call, 'call_missed', { reason: 'recipient_declined' });
         io.to(call.caller.toString()).emit('call:ended', { callId, reason: 'declined' });
         socket.emit('call:ended', { callId, reason: 'declined' });
       } catch (err) { logSocketError('call:reject', { correlationId: `call-reject-${Date.now()}` }, err); }
@@ -662,6 +691,7 @@ module.exports = (io) => {
           reason: isCaller ? 'caller_ended' : 'recipient_ended',
         });
         emitCallState(call, call.endReason);
+        await writeCallTimelineMessage(call, 'call_ended', { reason: call.endReason, duration: call.duration || 0 });
 
         const otherUserId = isCaller ? call.recipient.toString() : call.caller.toString();
         io.to(otherUserId).emit('call:ended', { callId, reason: call.endReason, duration: call.duration });

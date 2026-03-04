@@ -128,8 +128,17 @@ Scope: inventory messaging + calling REST/socket surfaces, identify duplicates/c
    - `cursors.me.lastDeliveredSeq`
    - `cursors.me.lastReadSeq`
 
-## Immediate Day 7 Follow-ups
+## Day 7 Progress (implemented)
 
-1. Replace legacy read booleans with cursor-first UI derivation in thread lists.
-2. Add call timeline system message inserts on call state transitions.
-3. Add feature flags around room seq path before wider rollout.
+1. Cursor-first list derivation started:
+   - conversations API now returns `cursor` + `unreadSeqCount` based on `lastMessageSeq - lastReadSeq`.
+2. Call timeline system inserts added:
+   - writes `messageType='system'` call metadata messages for `call_initiated`, `call_accepted`, `call_missed`, `call_ended`.
+3. Room seq rollout gate added:
+   - `FF_ROOM_SEQ_V1=true` enables room sequence assignment.
+
+## Immediate Day 8 Follow-ups
+
+1. Render call timeline metadata in chat UI (system cards).
+2. Start off-platform detector v1 rule engine scaffold.
+3. Add rcpt:update event broadcast and client consumption.

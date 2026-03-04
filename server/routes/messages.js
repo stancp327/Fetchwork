@@ -28,9 +28,32 @@ router.get('/conversations', authenticateToken, validateQueryParams, async (req,
     .populate('lastMessage')
     .populate('job', '_id title status')
     .populate('service', '_id title pricing')
-    .sort({ lastActivity: -1 });
+    .sort({ lastActivity: -1 })
+    .lean();
 
-    res.json({ conversations });
+    const convoIds = conversations.map(c => c._id);
+    const cursors = await ReceiptCursor.find({
+      conversationId: { $in: convoIds },
+      userId: req.user._id,
+    }).select('conversationId lastReadSeq lastDeliveredSeq').lean();
+
+    const cursorMap = new Map(cursors.map(c => [c.conversationId.toString(), c]));
+    const withUnread = conversations.map((c) => {
+      const cursor = cursorMap.get(c._id.toString());
+      const lastReadSeq = cursor?.lastReadSeq || 0;
+      const lastMessageSeq = c.lastMessageSeq || 0;
+      const unreadSeqCount = Math.max(0, lastMessageSeq - lastReadSeq);
+      return {
+        ...c,
+        cursor: {
+          lastReadSeq,
+          lastDeliveredSeq: cursor?.lastDeliveredSeq || 0,
+        },
+        unreadSeqCount,
+      };
+    });
+
+    res.json({ conversations: withUnread });
   } catch (error) {
     logRouteError(req, 'get_conversations', error);
     res.status(500).json({ error: 'Failed to fetch conversations', correlationId: req.correlationId });
