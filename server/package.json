@@ -11,7 +11,8 @@
     "build": "echo 'No build step needed'",
     "test": "jest --forceExit --detectOpenHandles",
     "test:watch": "jest --watch --forceExit --detectOpenHandles",
-    "verify-deployment": "node ../scripts/verify-deployment.js"
+    "verify-deployment": "node ../scripts/verify-deployment.js",
+    "smoke:teams:phase3": "node ../scripts/smoke-teams-phase3.js"
   },
   "keywords": [],
   "author": "",
