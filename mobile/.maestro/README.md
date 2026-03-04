@@ -7,6 +7,7 @@
 - `teams-phase3-linked-clients.yaml` — linked client lifecycle scenario
 
 ## Preconditions
+- Maestro CLI installed: https://docs.maestro.dev/getting-started/installing-maestro
 - App installed on simulator/device (`com.fetchwork.app`)
 - User is already logged in
 - At least one team exists
@@ -26,6 +27,13 @@ Or run all phase-3 flows:
 cd mobile
 npm run e2e:maestro:teams:phase3:all
 ```
+
+Windows helper (does prerequisite checks + runs all):
+```powershell
+cd mobile
+npm run e2e:maestro:teams:phase3:ps
+```
+
 
 ## Notes
 - This is a lightweight smoke flow, not full e2e coverage.

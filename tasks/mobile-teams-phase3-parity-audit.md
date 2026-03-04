@@ -43,7 +43,7 @@ _Last updated: 2026-03-03_
 
 ## What remains (next pass)
 1. Execute Maestro flows on a connected device/simulator and capture stable selectors where flaky.
-2. Add UX polish around inline helper text and disabled states when numeric values are invalid.
+2. Add UX polish around inline helper text / disabled states for invalid numeric entries.
 
 ## Files touched in this pass
 - `mobile/src/api/endpoints/teamsApi.ts`
