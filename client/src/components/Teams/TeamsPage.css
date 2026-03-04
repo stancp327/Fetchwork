@@ -546,3 +546,79 @@
     padding: 1.5rem;
   }
 }
+
+/* Phase 3b: custom roles + linked clients */
+.custom-roles-list,
+.linked-clients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.custom-role-row,
+.linked-client-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.permission-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.custom-role-form {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.permission-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.access-level-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.access-level-badge.access-view_assigned {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.access-level-badge.access-view_all {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.access-level-badge.access-collaborate {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+@media (min-width: 640px) {
+  .permission-checkbox-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

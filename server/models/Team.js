@@ -16,6 +16,7 @@ const memberSchema = new mongoose.Schema({
       'assign_work',        // assign jobs/orders to members
     ],
   }],
+  customRoleName: { type: String, default: '' },
   title:       { type: String, default: '' },     // "Lead Developer", "Project Manager", etc.
   invitedBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   invitedAt:   { type: Date, default: Date.now },
@@ -29,6 +30,23 @@ const teamSchema = new mongoose.Schema({
   type:        { type: String, enum: ['client_team', 'agency'], default: 'client_team' },
   owner:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   members:     [memberSchema],
+  customRoles: [{
+    name: { type: String, required: true, trim: true, maxlength: 50 },
+    permissions: [{
+      type: String,
+      enum: [
+        'manage_members',
+        'manage_billing',
+        'approve_orders',
+        'create_jobs',
+        'manage_services',
+        'view_analytics',
+        'message_clients',
+        'assign_work',
+      ],
+    }],
+    createdAt: { type: Date, default: Date.now },
+  }],
   description: { type: String, maxlength: 1000, default: '' },
   logo:        { type: String, default: '' },
   website:     { type: String, default: '' },
@@ -106,7 +124,14 @@ teamSchema.methods.hasPermission = function(userId, permission) {
   const member = this.getMember(userId);
   if (!member) return false;
   if (member.role === 'owner' || member.role === 'admin') return true;
-  return member.permissions.includes(permission);
+
+  const rolePermissions = new Set(member.permissions || []);
+  if (member.customRoleName) {
+    const customRole = (this.customRoles || []).find((r) => r.name === member.customRoleName);
+    (customRole?.permissions || []).forEach((p) => rolePermissions.add(p));
+  }
+
+  return rolePermissions.has(permission);
 };
 
 teamSchema.methods.isOwnerOrAdmin = function(userId) {

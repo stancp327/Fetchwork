@@ -39,6 +39,17 @@ const TeamDetail = () => {
   const [savingControls, setSavingControls] = useState(false);
   const [analytics, setAnalytics] = useState(null);
 
+  // Phase 3b state
+  const [customRoles, setCustomRoles] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [showAddRole, setShowAddRole] = useState(false);
+  const [editingRoleId, setEditingRoleId] = useState('');
+  const [roleForm, setRoleForm] = useState({ name: '', permissions: [] });
+  const [clients, setClients] = useState([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [clientForm, setClientForm] = useState({ clientUserId: '', accessLevel: 'view_assigned', projectLabel: '' });
+
   const fetchTeam = useCallback(async () => {
     try {
       setLoading(true);
@@ -77,6 +88,19 @@ const TeamDetail = () => {
   const isOwnerOrAdmin = Boolean(isOwner || isAdmin);
   const canManageMembers = Boolean(isOwnerOrAdmin || team?.currentUserCanManageMembers);
   const activeMembers = team?.members?.filter(m => m.status === 'active') || [];
+
+  const permissionOptions = [
+    { value: 'manage_members', label: 'Manage Members' },
+    { value: 'manage_billing', label: 'Manage Billing' },
+    { value: 'approve_orders', label: 'Approve Orders' },
+    { value: 'create_jobs', label: 'Post Jobs' },
+    { value: 'manage_services', label: 'Manage Services' },
+    { value: 'view_analytics', label: 'View Analytics' },
+    { value: 'message_clients', label: 'Message Clients' },
+    { value: 'assign_work', label: 'Assign Work' },
+  ];
+
+  const permissionLabel = (key) => permissionOptions.find((p) => p.value === key)?.label || key;
 
   const inviteMember = async (e) => {
     e.preventDefault();
@@ -195,6 +219,126 @@ const TeamDetail = () => {
       console.error('Failed to load analytics:', err);
     }
   }, [id]);
+
+  const fetchCustomRoles = useCallback(async () => {
+    try {
+      setRolesLoading(true);
+      const data = await apiRequest(`/api/teams/${id}/custom-roles`);
+      setCustomRoles(data.customRoles || []);
+    } catch (err) {
+      console.error('Failed to load custom roles:', err);
+    } finally {
+      setRolesLoading(false);
+    }
+  }, [id]);
+
+  const fetchLinkedClients = useCallback(async () => {
+    try {
+      setClientsLoading(true);
+      const data = await apiRequest(`/api/teams/${id}/clients`);
+      setClients(data.clients || []);
+    } catch (err) {
+      console.error('Failed to load linked clients:', err);
+    } finally {
+      setClientsLoading(false);
+    }
+  }, [id]);
+
+  const togglePermission = (permission) => {
+    setRoleForm((prev) => {
+      const has = prev.permissions.includes(permission);
+      return {
+        ...prev,
+        permissions: has ? prev.permissions.filter((p) => p !== permission) : [...prev.permissions, permission],
+      };
+    });
+  };
+
+  const submitCustomRole = async (e) => {
+    e.preventDefault();
+    try {
+      if (!roleForm.name.trim()) return;
+      if (editingRoleId) {
+        await apiRequest(`/api/teams/${id}/custom-roles/${editingRoleId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ name: roleForm.name.trim(), permissions: roleForm.permissions }),
+        });
+      } else {
+        await apiRequest(`/api/teams/${id}/custom-roles`, {
+          method: 'POST',
+          body: JSON.stringify({ name: roleForm.name.trim(), permissions: roleForm.permissions }),
+        });
+      }
+      setRoleForm({ name: '', permissions: [] });
+      setEditingRoleId('');
+      setShowAddRole(false);
+      fetchCustomRoles();
+      fetchTeam();
+    } catch (err) {
+      alert(err.message || 'Failed to save custom role');
+    }
+  };
+
+  const startEditRole = (role) => {
+    setShowAddRole(true);
+    setEditingRoleId(role._id);
+    setRoleForm({ name: role.name || '', permissions: role.permissions || [] });
+  };
+
+  const deleteCustomRole = async (role) => {
+    const inUse = activeMembers.some((m) => m.customRoleName === role.name);
+    if (inUse) return;
+    if (!window.confirm(`Delete custom role \"${role.name}\"?`)) return;
+    try {
+      await apiRequest(`/api/teams/${id}/custom-roles/${role._id}`, { method: 'DELETE' });
+      fetchCustomRoles();
+      fetchTeam();
+    } catch (err) {
+      alert(err.message || 'Failed to delete role');
+    }
+  };
+
+  const assignMemberCustomRole = async (memberUserId, customRoleName) => {
+    try {
+      await apiRequest(`/api/teams/${id}/members/${memberUserId}/custom-role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ customRoleName }),
+      });
+      fetchTeam();
+    } catch (err) {
+      alert(err.message || 'Failed to assign custom role');
+    }
+  };
+
+  const submitLinkedClient = async (e) => {
+    e.preventDefault();
+    try {
+      if (!clientForm.clientUserId.trim()) return;
+      await apiRequest(`/api/teams/${id}/clients`, {
+        method: 'POST',
+        body: JSON.stringify({
+          clientUserId: clientForm.clientUserId.trim(),
+          accessLevel: clientForm.accessLevel,
+          projectLabel: clientForm.projectLabel,
+        }),
+      });
+      setClientForm({ clientUserId: '', accessLevel: 'view_assigned', projectLabel: '' });
+      setShowAddClient(false);
+      fetchLinkedClients();
+    } catch (err) {
+      alert(err.message || 'Failed to add linked client');
+    }
+  };
+
+  const removeLinkedClient = async (clientId) => {
+    if (!window.confirm('Unlink this client from team?')) return;
+    try {
+      await apiRequest(`/api/teams/${id}/clients/${clientId}`, { method: 'DELETE' });
+      fetchLinkedClients();
+    } catch (err) {
+      alert(err.message || 'Failed to unlink client');
+    }
+  };
 
   const createApproval = async (e) => {
     e.preventDefault();
@@ -413,7 +557,11 @@ const TeamDetail = () => {
               setActiveTab(tab);
               if (tab === 'audit') fetchAuditLogs();
               if (tab === 'approvals') fetchApprovals(approvalFilter);
-              if (tab === 'controls') fetchControls();
+              if (tab === 'controls') {
+                fetchControls();
+                fetchCustomRoles();
+                fetchLinkedClients();
+              }
               if (tab === 'billing') fetchAnalytics();
             }}
             style={{ fontWeight: activeTab === tab ? 700 : 400, borderBottom: activeTab === tab ? '2px solid #3b82f6' : 'none' }}
@@ -511,7 +659,7 @@ const TeamDetail = () => {
                     </div>
                   </div>
                   {canManageMembers && m.role !== 'owner' && m.status === 'active' && (
-                    <div className="team-detail-member-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div className="team-detail-member-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <select
                         value={m.role}
                         onChange={e => updateRole(u._id, e.target.value)}
@@ -521,6 +669,18 @@ const TeamDetail = () => {
                         <option value="manager">Manager</option>
                         {isOwner && <option value="admin">Admin</option>}
                       </select>
+                      {customRoles.length > 0 && (
+                        <select
+                          value={m.customRoleName || ''}
+                          onChange={e => assignMemberCustomRole(u._id, e.target.value)}
+                          style={{ padding: '0.25rem 0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.8rem' }}
+                        >
+                          <option value="">No custom role</option>
+                          {customRoles.map((r) => (
+                            <option key={r._id} value={r.name}>{r.name}</option>
+                          ))}
+                        </select>
+                      )}
                       <button onClick={() => removeMember(u._id)} className="btn btn-danger btn-sm" style={{ fontSize: '0.75rem' }}>Remove</button>
                     </div>
                   )}
@@ -730,6 +890,115 @@ const TeamDetail = () => {
                     </label>
                   </div>
                 </div>
+              </div>
+
+              <div className="team-controls-section" style={{ marginTop: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0 }}>Custom Roles</h3>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setShowAddRole(!showAddRole); setEditingRoleId(''); setRoleForm({ name: '', permissions: [] }); }}>
+                    {showAddRole ? 'Cancel' : '+ Add Role'}
+                  </button>
+                </div>
+
+                {rolesLoading ? <p>Loading custom roles...</p> : (
+                  <div className="custom-roles-list">
+                    {customRoles.map((role) => {
+                      const inUse = activeMembers.some((m) => m.customRoleName === role.name);
+                      return (
+                        <div key={role._id} className="custom-role-row">
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{role.name}</div>
+                            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.35rem' }}>
+                              {(role.permissions || []).map((perm) => (
+                                <span key={perm} className="permission-badge">{permissionLabel(perm)}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.35rem' }}>
+                            <button className="btn btn-ghost btn-sm" onClick={() => startEditRole(role)}>Edit</button>
+                            <button className="btn btn-danger btn-sm" disabled={inUse} title={inUse ? 'Role is assigned to active members' : ''} onClick={() => deleteCustomRole(role)}>Delete</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {showAddRole && (
+                  <form onSubmit={submitCustomRole} className="custom-role-form" style={{ marginTop: '0.75rem' }}>
+                    <div className="team-controls-row">
+                      <label>Role Name</label>
+                      <input value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} placeholder="e.g. Finance Reviewer" required />
+                    </div>
+                    <div className="permission-checkbox-grid">
+                      {permissionOptions.map((p) => (
+                        <label key={p.value} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={roleForm.permissions.includes(p.value)}
+                            onChange={() => togglePermission(p.value)}
+                          />
+                          <span>{p.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <button type="submit" className="btn btn-primary btn-sm" style={{ marginTop: '0.75rem' }}>
+                      {editingRoleId ? 'Update Role' : 'Create Role'}
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              <div className="team-controls-section" style={{ marginTop: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0 }}>Linked Clients</h3>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setShowAddClient(!showAddClient)}>
+                    {showAddClient ? 'Cancel' : '+ Add Client'}
+                  </button>
+                </div>
+
+                {showAddClient && (
+                  <form onSubmit={submitLinkedClient} className="custom-role-form" style={{ marginBottom: '0.75rem' }}>
+                    <div className="team-controls-row">
+                      <label>Client User ID</label>
+                      <input value={clientForm.clientUserId} onChange={(e) => setClientForm({ ...clientForm, clientUserId: e.target.value })} placeholder="Paste client user id" required />
+                    </div>
+                    <div className="team-controls-row">
+                      <label>Access Level</label>
+                      <select value={clientForm.accessLevel} onChange={(e) => setClientForm({ ...clientForm, accessLevel: e.target.value })}>
+                        <option value="view_assigned">View Assigned</option>
+                        <option value="view_all">View All</option>
+                        <option value="collaborate">Collaborate</option>
+                      </select>
+                    </div>
+                    <div className="team-controls-row">
+                      <label>Project Label</label>
+                      <input value={clientForm.projectLabel} onChange={(e) => setClientForm({ ...clientForm, projectLabel: e.target.value })} placeholder="Optional project name" />
+                    </div>
+                    <button type="submit" className="btn btn-primary btn-sm">Link Client</button>
+                  </form>
+                )}
+
+                {clientsLoading ? <p>Loading linked clients...</p> : (
+                  <div className="linked-clients-list">
+                    {clients.length === 0 && <p style={{ color: '#6b7280' }}>No linked clients yet.</p>}
+                    {clients.map((c) => {
+                      const cid = String(c.client?._id || c.client || c._id);
+                      const label = c.accessLevel || 'view_assigned';
+                      return (
+                        <div key={c._id || cid} className="linked-client-row">
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{`${c.client?.firstName || ''} ${c.client?.lastName || ''}`.trim() || c.client?.email || cid}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{c.client?.email || ''}</div>
+                          </div>
+                          <span className={`access-level-badge access-${label}`}>{label}</span>
+                          <div style={{ fontSize: '0.85rem', color: '#4b5563' }}>{c.projectLabel || '—'}</div>
+                          <button className="btn btn-danger btn-sm" onClick={() => removeLinkedClient(cid)}>Remove</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <button className="btn btn-primary" onClick={saveControls} disabled={savingControls} style={{ marginTop: '1rem' }}>

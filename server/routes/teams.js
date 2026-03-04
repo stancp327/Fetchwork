@@ -7,12 +7,23 @@ const Notification = require('../models/Notification');
 const BillingCredit = require('../models/BillingCredit');
 const TeamAuditLog = require('../models/TeamAuditLog');
 const TeamApproval = require('../models/TeamApproval');
+const TeamClient = require('../models/TeamClient');
 const emailService = require('../services/emailService');
 
 // All routes require auth
 router.use(authenticateToken);
 
 const VALID_ROLES = ['owner', 'admin', 'manager', 'member'];
+const TEAM_PERMISSION_KEYS = [
+  'manage_members',
+  'manage_billing',
+  'approve_orders',
+  'create_jobs',
+  'manage_services',
+  'view_analytics',
+  'message_clients',
+  'assign_work',
+];
 
 function getId(value) {
   return String(value?._id || value?.id || value || '');
@@ -52,22 +63,31 @@ function getTeamAccessContext(team, requesterId) {
   );
 
   const role = ownerId === requesterId ? 'owner' : (activeMember?.role || null);
-  const permissions = new Set(activeMember?.permissions || []);
   const isOwner = role === 'owner';
   const isAdmin = role === 'admin';
+
+  const builtInPermissions = new Set(activeMember?.permissions || []);
+  const customRoleName = activeMember?.customRoleName || '';
+  const customRole = customRoleName
+    ? (team.customRoles || []).find((r) => r.name === customRoleName)
+    : null;
+  const customRolePermissions = new Set(customRole?.permissions || []);
+  const resolvedPermissions = new Set([...builtInPermissions, ...customRolePermissions]);
 
   return {
     isOwner,
     isAdmin,
     isMember: Boolean(activeMember || isOwner),
     role,
-    permissions,
-    canManageMembers: isOwner || isAdmin || permissions.has('manage_members'),
-    canManageBilling: isOwner || isAdmin || permissions.has('manage_billing'),
-    canApproveOrders: isOwner || isAdmin || permissions.has('approve_orders'),
-    canAssignWork: isOwner || isAdmin || permissions.has('assign_work'),
-    canManagePortfolio: isOwner || isAdmin || permissions.has('manage_services'),
-    canReadBilling: isOwner || isAdmin || permissions.has('manage_billing') || permissions.has('view_analytics'),
+    customRoleName,
+    permissions: resolvedPermissions,
+    resolvedPermissions: [...resolvedPermissions],
+    canManageMembers: isOwner || isAdmin || resolvedPermissions.has('manage_members'),
+    canManageBilling: isOwner || isAdmin || resolvedPermissions.has('manage_billing'),
+    canApproveOrders: isOwner || isAdmin || resolvedPermissions.has('approve_orders'),
+    canAssignWork: isOwner || isAdmin || resolvedPermissions.has('assign_work'),
+    canManagePortfolio: isOwner || isAdmin || resolvedPermissions.has('manage_services'),
+    canReadBilling: isOwner || isAdmin || resolvedPermissions.has('manage_billing') || resolvedPermissions.has('view_analytics'),
   };
 }
 
@@ -1535,6 +1555,283 @@ router.get('/:id/analytics', async (req, res) => {
   } catch (err) {
     console.error('Analytics error:', err.message);
     res.status(500).json({ error: 'Failed to load analytics' });
+  }
+});
+
+// ── GET /api/teams/:id/custom-roles ── list custom roles
+router.get('/:id/custom-roles', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    res.json({ customRoles: team.customRoles || [] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load custom roles' });
+  }
+});
+
+// ── POST /api/teams/:id/custom-roles ── create custom role
+router.post('/:id/custom-roles', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const name = String(req.body?.name || '').trim();
+    const permissions = Array.isArray(req.body?.permissions) ? req.body.permissions : [];
+    if (!name) return res.status(400).json({ error: 'Role name is required' });
+    if (permissions.some((p) => !TEAM_PERMISSION_KEYS.includes(p))) return res.status(400).json({ error: 'Invalid permissions' });
+
+    const dup = (team.customRoles || []).some((r) => String(r.name || '').toLowerCase() === name.toLowerCase());
+    if (dup) return res.status(400).json({ error: 'Role name already exists' });
+
+    team.customRoles.push({ name, permissions });
+    await team.save();
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'custom_role_created', after: { name, permissions }, req });
+
+    res.status(201).json({ customRoles: team.customRoles || [] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create custom role' });
+  }
+});
+
+// ── PATCH /api/teams/:id/custom-roles/:roleId ── update custom role
+router.patch('/:id/custom-roles/:roleId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const role = (team.customRoles || []).id(req.params.roleId);
+    if (!role) return res.status(404).json({ error: 'Custom role not found' });
+
+    const name = req.body?.name !== undefined ? String(req.body.name || '').trim() : role.name;
+    const permissions = Array.isArray(req.body?.permissions) ? req.body.permissions : role.permissions;
+
+    if (!name) return res.status(400).json({ error: 'Role name is required' });
+    if ((permissions || []).some((p) => !TEAM_PERMISSION_KEYS.includes(p))) return res.status(400).json({ error: 'Invalid permissions' });
+
+    const dup = (team.customRoles || []).some((r) => String(r._id) !== String(role._id) && String(r.name || '').toLowerCase() === name.toLowerCase());
+    if (dup) return res.status(400).json({ error: 'Role name already exists' });
+
+    role.name = name;
+    role.permissions = permissions;
+    await team.save();
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'custom_role_updated', after: { name, permissions }, req });
+
+    res.json({ customRoles: team.customRoles || [] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update custom role' });
+  }
+});
+
+// ── DELETE /api/teams/:id/custom-roles/:roleId ── delete custom role
+router.delete('/:id/custom-roles/:roleId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const role = (team.customRoles || []).id(req.params.roleId);
+    if (!role) return res.status(404).json({ error: 'Custom role not found' });
+
+    const roleName = role.name;
+    const inUse = (team.members || []).some((m) => m.status === 'active' && m.customRoleName === roleName);
+    if (inUse) return res.status(400).json({ error: 'Role is currently assigned to active members' });
+
+    role.deleteOne();
+    await team.save();
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'custom_role_deleted', before: { name: roleName }, req });
+
+    res.json({ customRoles: team.customRoles || [] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete custom role' });
+  }
+});
+
+// ── PATCH /api/teams/:id/members/:userId/custom-role ── assign custom role
+router.patch('/:id/members/:userId/custom-role', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'update_member_role' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const member = team.members.find((m) => getId(m.user) === String(req.params.userId) && m.status === 'active');
+    if (!member) return res.status(404).json({ error: 'Member not found' });
+
+    const customRoleName = String(req.body?.customRoleName || '').trim();
+    if (customRoleName) {
+      const exists = (team.customRoles || []).some((r) => r.name === customRoleName);
+      if (!exists) return res.status(400).json({ error: 'Custom role not found' });
+    }
+
+    member.customRoleName = customRoleName;
+    await team.save();
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'member_custom_role_assigned', targetUser: member.user, after: { customRoleName }, req });
+
+    res.json({ member });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to assign custom role' });
+  }
+});
+
+// ── GET /api/teams/:id/clients ── list linked clients
+router.get('/:id/clients', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const clients = await TeamClient.findActiveForTeam(team._id);
+    res.json({ clients });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load linked clients' });
+  }
+});
+
+// ── POST /api/teams/:id/clients ── link client
+router.post('/:id/clients', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const { clientUserId, accessLevel = 'view_assigned', projectLabel = '' } = req.body || {};
+    if (!clientUserId) return res.status(400).json({ error: 'clientUserId is required' });
+    if (!['view_assigned', 'view_all', 'collaborate'].includes(accessLevel)) return res.status(400).json({ error: 'Invalid accessLevel' });
+
+    const client = await User.findById(clientUserId);
+    if (!client) return res.status(404).json({ error: 'Client user not found' });
+
+    const isActiveMember = (team.members || []).some((m) => getId(m.user) === String(clientUserId) && m.status === 'active');
+    if (isActiveMember) return res.status(400).json({ error: 'User is already an active team member' });
+
+    const relationship = await TeamClient.findOneAndUpdate(
+      { team: team._id, client: client._id },
+      { $set: { isActive: true, accessLevel, projectLabel, addedBy: requesterId } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).populate('client', 'firstName lastName email profileImage').populate('addedBy', 'firstName lastName email');
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'client_linked', targetUser: client._id, after: { accessLevel, projectLabel }, req });
+
+    res.status(201).json({ client: relationship });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to link client' });
+  }
+});
+
+// ── PATCH /api/teams/:id/clients/:clientId ── update linked client
+router.patch('/:id/clients/:clientId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const updates = {};
+    if (req.body?.accessLevel) {
+      if (!['view_assigned', 'view_all', 'collaborate'].includes(req.body.accessLevel)) return res.status(400).json({ error: 'Invalid accessLevel' });
+      updates.accessLevel = req.body.accessLevel;
+    }
+    if (req.body?.projectLabel !== undefined) updates.projectLabel = String(req.body.projectLabel || '');
+
+    const relationship = await TeamClient.findOneAndUpdate(
+      { team: team._id, client: req.params.clientId, isActive: true },
+      { $set: updates },
+      { new: true }
+    ).populate('client', 'firstName lastName email profileImage').populate('addedBy', 'firstName lastName email');
+
+    if (!relationship) return res.status(404).json({ error: 'Linked client not found' });
+
+    res.json({ client: relationship });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update linked client' });
+  }
+});
+
+// ── DELETE /api/teams/:id/clients/:clientId ── unlink client
+router.delete('/:id/clients/:clientId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const relationship = await TeamClient.findOneAndUpdate(
+      { team: team._id, client: req.params.clientId, isActive: true },
+      { $set: { isActive: false } },
+      { new: true }
+    );
+
+    if (!relationship) return res.status(404).json({ error: 'Linked client not found' });
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'client_unlinked', targetUser: relationship.client, req });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to unlink client' });
+  }
+});
+
+// ── GET /api/teams/:id/clients/:clientId/access ── client-access snapshot
+router.get('/:id/clients/:clientId/access', async (req, res) => {
+  try {
+    const requesterId = String(req.user?.userId || req.user?._id || req.user?.id || '');
+    if (!requesterId) return res.status(401).json({ error: 'Unauthorized' });
+
+    if (String(req.params.clientId) !== requesterId) return res.status(403).json({ error: 'Forbidden' });
+
+    const relationship = await TeamClient.findOne({ team: req.params.id, client: req.params.clientId, isActive: true });
+    if (!relationship) return res.status(404).json({ error: 'Client relationship not found' });
+
+    const team = await Team.findById(req.params.id).select('name');
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+
+    const Job = require('../models/Job');
+    const assignedWork = await Job.find({ team: team._id })
+      .select('title status createdAt')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    res.json({
+      accessLevel: relationship.accessLevel,
+      projectLabel: relationship.projectLabel,
+      team: { id: team._id, name: team.name },
+      assignedWork,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load client access' });
   }
 });
 
