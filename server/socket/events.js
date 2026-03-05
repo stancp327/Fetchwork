@@ -11,7 +11,11 @@ const socketToUser = new Map(); // socketId -> userId
 
 module.exports = (io) => {
   io.on('connection', (socket) => {
-    const senderId = socket.user.userId;
+    const senderId = String(socket.user?.userId || socket.user?.id || socket.user?._id || '');
+    if (!senderId) {
+      socket.disconnect(true);
+      return;
+    }
     console.log(`🔌 User connected: ${senderId}`);
 
     // Lightweight per-socket rate limiter (anti-spam / abuse control)
@@ -78,6 +82,7 @@ module.exports = (io) => {
       }
 
       const { recipientId, roomId, content, messageType = 'text', attachments = [], jobId, mentions = [], requestId = null } = data || {};
+      const normalizedRecipientId = recipientId != null ? String(recipientId) : null;
       if (typeof content !== 'string' || !content.trim()) {
         ackErr(ack, data, 'ERR_VALIDATION', 'Message content is required');
         socket.emit('error', { message: 'Message content is required', correlationId: getCid(data) });
@@ -159,21 +164,21 @@ module.exports = (io) => {
 
 
         } else {
-          if (!recipientId || !content) {
+          if (!normalizedRecipientId || !content) {
             socket.emit('error', { message: 'Recipient and message content are required' });
             return;
           }
 
-          if (recipientId === senderId) {
+          if (normalizedRecipientId === senderId) {
             socket.emit('error', { message: 'Cannot send message to yourself' });
             return;
           }
 
-          let conversation = await Conversation.findByParticipants(senderId, recipientId);
+          let conversation = await Conversation.findByParticipants(senderId, normalizedRecipientId);
 
           if (!conversation) {
             conversation = new Conversation({
-              participants: [senderId, recipientId],
+              participants: [senderId, normalizedRecipientId],
               job: jobId || null,
               seq: 0,
             });
@@ -207,7 +212,7 @@ module.exports = (io) => {
                     seq: convo.seq,
                     requestId,
                     sender: senderId,
-                    recipient: recipientId,
+                    recipient: normalizedRecipientId,
                     content,
                     messageType,
                     attachments,
@@ -274,12 +279,12 @@ module.exports = (io) => {
 
           socket.join(conversation._id.toString());
           io.sockets.sockets.forEach(s => {
-            if (s.user && s.user.userId === recipientId) {
+            if (s.user && String(s.user.userId) === normalizedRecipientId) {
               s.join(conversation._id.toString());
             }
           });
 
-          const isRecipientOnline = activeUsers.has(recipientId);
+          const isRecipientOnline = activeUsers.has(normalizedRecipientId);
           
           if (isRecipientOnline) {
             newMessage.deliveredAt = new Date();
@@ -300,11 +305,11 @@ module.exports = (io) => {
 
           socket.emit('message:receive', { message: messageWithId });
 
-          io.to(recipientId).emit('message:receive', { message: messageWithId });
+          io.to(normalizedRecipientId).emit('message:receive', { message: messageWithId });
 
           await recordModerationEvent({ conversationId: conversation._id, messageId: newMessage._id, userId: senderId, safety: newMessage.safety, source: 'socket' });
           io.to(senderId).emit('conversation:update', { conversation });
-          io.to(recipientId).emit('conversation:update', { conversation });
+          io.to(normalizedRecipientId).emit('conversation:update', { conversation });
           if (newMessage.safety?.action === 'nudge' || newMessage.safety?.action === 'warn') {
             socket.emit('safety:nudge', {
               conversationId: conversation._id.toString(),

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { locationSchema } = require('../config/locationSchema');
+const { canonicalizeEmail } = require('../utils/authIdentity');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -10,6 +11,14 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+  },
+  emailCanonical: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    index: true,
   },
   password: {
     type: String,
@@ -295,6 +304,8 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.index({ email: 1 });
+userSchema.index({ emailCanonical: 1 }, { unique: true, name: 'uniq_email_canonical' });
+userSchema.index({ googleId: 1 }, { unique: true, sparse: true, name: 'uniq_google_id' });
 userSchema.index({ email: 1, isVerified: 1 });
 userSchema.index({ skills: 1 });
 userSchema.index({ 'location.locationType': 1 });
@@ -307,6 +318,11 @@ userSchema.index({ username: 1 }, { unique: true, sparse: true });
 userSchema.index({ accountType: 1 });
 userSchema.index({ accountType: 1, isActive: 1, rating: -1 }); // sorted freelancer browse
 
+
+userSchema.pre('validate', function(next) {
+  if (this.email) this.emailCanonical = canonicalizeEmail(this.email);
+  next();
+});
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

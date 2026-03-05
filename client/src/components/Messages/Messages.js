@@ -13,6 +13,7 @@ import SafetyNudge from './parts/SafetyNudge';
 
 // ── Main Messages ───────────────────────────────────────────────
 const getEntityId = (v) => (v && typeof v === 'object' ? (v._id || v.id || v.userId || v.toString?.()) : v);
+const idEq = (a, b) => String(getEntityId(a)) === String(getEntityId(b));
 
 const Messages = () => {
   const { user } = useAuth();
@@ -36,6 +37,9 @@ const Messages = () => {
   const [mobileView, setMobileView] = useState('inbox');
   const [onlineUsers, setOnlineUsers] = useState({}); // userId → { isOnline, lastSeen }
   const messagesEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
+  const prevMessagesLenRef = useRef(0);
   const typingTimeoutRef = useRef(null);
   const lastSeqByConvoRef = useRef({});
 
@@ -46,14 +50,26 @@ const Messages = () => {
     try {
       setLoading(true);
       const data = await apiRequest('/api/messages/conversations');
-      setConversations(data.conversations || []);
+      const raw = data.conversations || [];
+      // Deduplicate inbox rows by "other participant" (latest activity wins)
+      // to avoid split-thread noise when legacy data created multiple job-linked convos.
+      const byOther = new Map();
+      raw.forEach((c) => {
+        const other = (c.participants || []).find(p => String(getEntityId(p?._id || p)) !== String(userId));
+        const otherId = String(getEntityId(other?._id || other) || c._id);
+        const prev = byOther.get(otherId);
+        if (!prev || new Date(c.lastActivity || 0).getTime() > new Date(prev.lastActivity || 0).getTime()) {
+          byOther.set(otherId, c);
+        }
+      });
+      setConversations(Array.from(byOther.values()).sort((a, b) => new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0)));
       setError(null);
     } catch (err) {
       setError(err.data?.error || err.message || 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   // Fetch online status for all conversation participants
   useEffect(() => {
@@ -282,8 +298,6 @@ const Messages = () => {
     setAttachFiles([]);
 
     try {
-      const other = selectedConvo.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
-
       if (hasFiles) {
         // Use upload endpoint for files
         const formData = new FormData();
@@ -300,31 +314,19 @@ const Messages = () => {
         if (!resp.ok) throw new Error(data.error || 'Upload failed');
         setMessages(prev => prev.map(m => m._id === optimistic._id ? data.data : m));
         fetchConversations();
-      } else if (socketRef.current) {
-        socketRef.current.emit('message:send', {
-          v: 1,
-          requestId,
-          correlationId: requestId,
-          clientTs: Date.now(),
-          recipientId: getEntityId(other?._id || other),
-          content,
-          messageType: 'text'
-        }, (ack) => {
-          if (!ack?.ok) {
-            setMessages(prev => prev.filter(m => m._id !== optimistic._id));
-            setError(ack?.message || 'Failed to send message');
-          }
-        });
       } else {
+        // Force REST as source of truth until socket auth/presence path is fully stabilized
         const res = await apiRequest(
           `/api/messages/conversations/${selectedConvo._id}/messages`,
           { method: 'POST', body: JSON.stringify({ content }) }
         );
         setMessages(prev => prev.map(m => m._id === optimistic._id ? res.data : m));
         fetchConversations();
+        if (selectedConvo?._id) fetchMessages(selectedConvo);
       }
     } catch (err) {
-      setError('Failed to send message');
+      console.error('[Messages] send failed', err);
+      setError(err?.data?.error || err?.message || 'Failed to send message');
       setMessages(prev => prev.filter(m => m._id !== optimistic._id));
     } finally {
       setSending(false);
@@ -343,7 +345,25 @@ const Messages = () => {
   };
 
   useEffect(() => { if (user) fetchConversations(); }, [user, fetchConversations]);
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    const el = chatMessagesRef.current;
+    if (!el) return;
+
+    const prevLen = prevMessagesLenRef.current;
+    const currLen = messages.length;
+    const appended = currLen > prevLen;
+    prevMessagesLenRef.current = currLen;
+
+    if (!appended) return;
+
+    const last = messages[currLen - 1];
+    const lastSenderId = String(getEntityId(last?.sender?._id || last?.sender));
+    const isMine = lastSenderId === String(userId);
+
+    if (isMine || shouldAutoScrollRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, userId]);
 
   // Auto-open conversation from URL ?conversation=ID
   useEffect(() => {
@@ -442,10 +462,10 @@ const Messages = () => {
                   </div>
                   <div>
                     <h3>{otherParticipant?.firstName} {otherParticipant?.lastName}</h3>
-                    {otherParticipant?._id && onlineUsers[otherParticipant._id] !== undefined && (
+                    {getEntityId(otherParticipant?._id || otherParticipant) && onlineUsers[getEntityId(otherParticipant?._id || otherParticipant)] !== undefined && (
                       <OnlineStatus
-                        isOnline={onlineUsers[otherParticipant._id]?.isOnline ?? false}
-                        lastSeen={onlineUsers[otherParticipant._id]?.lastSeen}
+                        isOnline={onlineUsers[getEntityId(otherParticipant?._id || otherParticipant)]?.isOnline ?? false}
+                        lastSeen={onlineUsers[getEntityId(otherParticipant?._id || otherParticipant)]?.lastSeen}
                         size="sm"
                       />
                     )}
@@ -480,14 +500,22 @@ const Messages = () => {
                 </div>
               </div>
 
-              <div className="chat-messages">
+              <div
+                className="chat-messages"
+                ref={chatMessagesRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+                  shouldAutoScrollRef.current = distanceFromBottom < 48;
+                }}
+              >
                 {messages.length === 0 ? (
                   <div className="chat-empty"><p>No messages yet. Start the conversation!</p></div>
                 ) : (
                   messages.map(msg => (
                     <MsgBubble
                       key={msg._id} msg={msg}
-                      isMine={msg.sender?._id === userId || msg.sender === userId}
+                      isMine={idEq(msg.sender?._id || msg.sender, userId)}
                       deliveryStatus={deliveryStatus}
                       userId={userId}
                       onProposalAction={() => fetchMessages(selectedConvo)}

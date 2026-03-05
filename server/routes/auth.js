@@ -11,19 +11,22 @@ const { ADMIN_EMAILS, JWT_SECRET, CLIENT_URL } = require('../config/env');
 const { applyReferral } = require('./referrals');
 const { trackEvent } = require('../middleware/analytics');
 const { assignDefaultPlan } = require('../utils/billingUtils');
+const { canonicalizeEmail } = require('../utils/authIdentity');
 
 // ── Register ────────────────────────────────────────────────────
 router.post('/register', validateRegister, async (req, res) => {
   try {
     const { email, password, firstName, lastName, accountType, ref } = req.body;
-    
-    const existingUser = await User.findOne({ email });
+    const emailCanonical = canonicalizeEmail(email);
+
+    const existingUser = await User.findOne({ emailCanonical });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
     
     const user = new User({ 
-      email, 
+      email: emailCanonical,
+      emailCanonical,
       password, 
       firstName, 
       lastName,
@@ -74,10 +77,11 @@ router.post('/register', validateRegister, async (req, res) => {
 router.post('/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
+    const emailCanonical = canonicalizeEmail(email);
     const isDev = process.env.NODE_ENV !== 'production';
-    if (isDev) console.log(`🔐 Login attempt for: ${email}`);
+    if (isDev) console.log(`🔐 Login attempt for: ${emailCanonical}`);
     
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ emailCanonical });
     
     if (!user) {
       if (isDev) console.log(`❌ User not found: ${email}`);
@@ -208,7 +212,7 @@ router.post('/resend-verification', async (req, res) => {
     if (!email || typeof email !== 'string') {
       return res.status(400).json({ error: 'Valid email is required' });
     }
-    const normalized = email.trim().toLowerCase();
+    const normalized = canonicalizeEmail(email);
     const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     if (!req.app.locals._resendIp) req.app.locals._resendIp = new Map();
     if (!req.app.locals._resendEmail) req.app.locals._resendEmail = new Map();
@@ -233,7 +237,7 @@ router.post('/resend-verification', async (req, res) => {
       return res.status(429).json({ error: 'Too many requests for this email. Please try again later.' });
     }
 
-    const user = await User.findOne({ email: normalized });
+    const user = await User.findOne({ emailCanonical: normalized });
 
     const generic = { message: 'If an account exists, a verification email has been sent.' };
 
@@ -278,9 +282,10 @@ router.post('/resend-verification', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    console.log(`🔄 Password reset request for: ${email}`);
+    const emailCanonical = canonicalizeEmail(email);
+    console.log(`🔄 Password reset request for: ${emailCanonical}`);
     
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ emailCanonical });
     
     if (!user) {
       console.log(`❌ User not found for password reset: ${email}`);
@@ -358,16 +363,17 @@ router.post('/reset-password', [
 router.post('/recover-admin', async (req, res) => {
   try {
     const { email, recoveryKey } = req.body;
+    const emailCanonical = canonicalizeEmail(email);
     
     if (recoveryKey !== process.env.ADMIN_RECOVERY_KEY) {
       return res.status(401).json({ error: 'Invalid recovery key' });
     }
     
-    if (!ADMIN_EMAILS.includes(email)) {
+    if (!ADMIN_EMAILS.includes(emailCanonical)) {
       return res.status(400).json({ error: 'Not an admin email' });
     }
     
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ emailCanonical });
     if (!user) {
       return res.status(404).json({ error: 'Admin user not found' });
     }
@@ -400,7 +406,7 @@ router.get('/google/callback',
         await User.updateOne({ _id: req.user._id }, { $set: { role: 'admin' } });
         req.user.role = 'admin';
       }
-      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role, tokenVersion: req.user.tokenVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
       
       res.redirect(`${CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
         id: req.user._id,
@@ -430,7 +436,7 @@ router.get('/facebook/callback',
         await User.updateOne({ _id: req.user._id }, { $set: { role: 'admin' } });
         req.user.role = 'admin';
       }
-      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role, tokenVersion: req.user.tokenVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
       
       res.redirect(`${CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
         id: req.user._id,
@@ -483,7 +489,7 @@ router.post('/google/mobile', async (req, res) => {
     const { idToken, accessToken } = req.body;
     if (!idToken && !accessToken) return res.status(400).json({ error: 'idToken or accessToken required' });
 
-    let email, given_name, family_name, picture, googleId;
+    let email, given_name, family_name, picture, googleId, email_verified;
 
     if (idToken) {
       // Verify ID token (preferred — available when webClientId is set)
@@ -491,36 +497,56 @@ router.post('/google/mobile', async (req, res) => {
       const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
       const ticket = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
       const payload = ticket.getPayload();
-      ({ email, given_name, family_name, picture, sub: googleId } = payload);
+      ({ email, given_name, family_name, picture, sub: googleId, email_verified } = payload);
     } else {
       // Fallback: exchange accessToken for user info (Android-only flow)
       const resp = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`);
       if (!resp.ok) return res.status(401).json({ error: 'Invalid Google access token' });
       const info = await resp.json();
-      ({ email, given_name, family_name, picture, sub: googleId } = info);
+      ({ email, given_name, family_name, picture, sub: googleId, email_verified } = info);
     }
 
-    let user = await User.findOne({ email });
+    const emailCanonical = canonicalizeEmail(email);
+    if (!emailCanonical) return res.status(400).json({ error: 'Google account did not return an email' });
+    if (email_verified === false) return res.status(403).json({ error: 'Google email is not verified' });
+
+    let user = await User.findOne({ googleId });
+
     if (!user) {
-      user = new User({
-        email,
-        firstName: given_name || '',
-        lastName:  family_name || '',
-        profilePicture: picture || '',
-        googleId,
-        isEmailVerified: true,
-        isVerified: true,
-        verificationLevel: 'email',
-        badges: ['email_verified'],
-        role: 'freelancer',
-        tokenVersion: 0,
-      });
-      await user.save();
-    } else if (!user.googleId) {
-      user.googleId = googleId;
-      user.isEmailVerified = true;
-      if (!user.badges.includes('email_verified')) user.badges.push('email_verified');
-      await user.save();
+      try {
+        user = await User.findOneAndUpdate(
+          { emailCanonical },
+          {
+            $set: {
+              googleId,
+              email: emailCanonical,
+              emailCanonical,
+              profilePicture: picture || '',
+              isEmailVerified: true,
+              isVerified: true,
+              verificationLevel: 'email',
+              lastLogin: new Date(),
+            },
+            $setOnInsert: {
+              firstName: given_name || '',
+              lastName: family_name || '',
+              role: 'freelancer',
+              tokenVersion: 0,
+            },
+            $addToSet: {
+              providers: 'google',
+              badges: 'email_verified',
+            },
+          },
+          { upsert: true, new: true }
+        );
+      } catch (e) {
+        if (e?.code === 11000) {
+          user = await User.findOne({ $or: [{ googleId }, { emailCanonical }] });
+        } else {
+          throw e;
+        }
+      }
     }
 
     const isAdmin = ADMIN_EMAILS.includes(user.email) || user.isAdminPromoted || user.role === 'admin';
@@ -548,3 +574,4 @@ router.post('/google/mobile', async (req, res) => {
 });
 
 module.exports = router;
+

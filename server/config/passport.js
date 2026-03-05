@@ -3,6 +3,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const User = require('../models/User');
 const { assignDefaultPlan } = require('../utils/billingUtils');
+const { canonicalizeEmail, getGoogleProfileEmail } = require('../utils/authIdentity');
 
 function configurePassport() {
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
@@ -12,36 +13,49 @@ function configurePassport() {
       callbackURL: "/api/auth/google/callback"
     }, async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ googleId: profile.id });
-        
-        if (user) {
-          return done(null, user);
+        const googleId = profile?.id;
+        const emailCanonical = getGoogleProfileEmail(profile);
+        if (!googleId || !emailCanonical) {
+          return done(new Error('Google profile missing required identity fields'), null);
         }
-        
-        user = await User.findOne({ email: profile.emails[0].value });
-        if (user) {
-          // Link Google account — use updateOne to skip full model validation
-          await User.updateOne(
-            { _id: user._id },
-            { 
-              $set: { googleId: profile.id },
-              $addToSet: { providers: 'google' }
-            }
+
+        let user = await User.findOne({ googleId });
+        if (user) return done(null, user);
+
+        try {
+          user = await User.findOneAndUpdate(
+            { emailCanonical },
+            {
+              $set: {
+                googleId,
+                email: emailCanonical,
+                emailCanonical,
+                isVerified: true,
+                isEmailVerified: true,
+                verificationLevel: 'email',
+                lastLogin: new Date(),
+              },
+              $setOnInsert: {
+                firstName: profile?.name?.givenName || '',
+                lastName: profile?.name?.familyName || '',
+              },
+              $addToSet: {
+                providers: 'google',
+                badges: 'email_verified',
+              }
+            },
+            { upsert: true, new: true }
           );
-          user.googleId = profile.id;
-          return done(null, user);
+        } catch (e) {
+          if (e?.code === 11000) {
+            user = await User.findOne({ $or: [{ googleId }, { emailCanonical }] });
+          } else {
+            throw e;
+          }
         }
-        
-        user = new User({
-          googleId: profile.id,
-          email: profile.emails[0].value,
-          firstName: profile.name.givenName,
-          lastName: profile.name.familyName,
-          isVerified: true,
-          providers: ['google']
-        });
-        
-        await user.save();
+
+        if (!user) return done(new Error('Failed to resolve Google user'), null);
+
         assignDefaultPlan(user._id, 'freelancer').catch(() => {});
         return done(null, user);
       } catch (error) {
@@ -67,7 +81,8 @@ function configurePassport() {
         }
         
         if (profile.emails && profile.emails[0]) {
-          user = await User.findOne({ email: profile.emails[0].value });
+          const emailCanonical = canonicalizeEmail(profile.emails[0].value);
+          user = await User.findOne({ emailCanonical });
           if (user) {
             await User.updateOne(
               { _id: user._id },
@@ -81,9 +96,11 @@ function configurePassport() {
           }
         }
         
+        const facebookEmail = profile.emails ? canonicalizeEmail(profile.emails[0].value) : '';
         user = new User({
           facebookId: profile.id,
-          email: profile.emails ? profile.emails[0].value : '',
+          email: facebookEmail,
+          emailCanonical: facebookEmail,
           firstName: profile.name.givenName,
           lastName: profile.name.familyName,
           isVerified: true,
