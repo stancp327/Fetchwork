@@ -2,27 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
 import './VideoCallModal.css';
 
-const STUN_SERVERS = [
+const FALLBACK_ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
 ];
-
-const TURN_URLS = (process.env.REACT_APP_TURN_URLS || '')
-  .split(',')
-  .map(v => v.trim())
-  .filter(Boolean);
-
-const ICE_SERVERS = TURN_URLS.length
-  ? [
-      ...STUN_SERVERS,
-      {
-        urls: TURN_URLS,
-        username: process.env.REACT_APP_TURN_USERNAME || '',
-        credential: process.env.REACT_APP_TURN_CREDENTIAL || '',
-      },
-    ]
-  : STUN_SERVERS;
 
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const hasWebRTC = !!(navigator.mediaDevices?.getUserMedia && window.RTCPeerConnection);
@@ -170,12 +153,11 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
         return data.iceServers;
       }
     } catch (err) {
-      // TURN may be unavailable in some environments; safely fall back to static config.
       console.warn('Using fallback ICE servers:', err?.message || err);
     }
 
-    iceServersRef.current = ICE_SERVERS;
-    return ICE_SERVERS;
+    iceServersRef.current = FALLBACK_ICE_SERVERS;
+    return FALLBACK_ICE_SERVERS;
   }, [callId]);
 
   // Create peer connection
@@ -426,7 +408,6 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
 
   const toggleScreenShare = async () => {
     if (isScreenSharing) {
-      // Stop screen sharing, restore camera
       screenStreamRef.current?.getTracks().forEach(t => t.stop());
       const videoTrack = localStreamRef.current?.getVideoTracks()[0];
       if (videoTrack && pcRef.current) {

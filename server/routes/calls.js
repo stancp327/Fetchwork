@@ -15,6 +15,32 @@ const normalizeCallForResponse = (call) => ({
   status: normalizeCallStatus(call?.status),
 });
 
+// GET /api/calls/turn-credentials — time-limited TURN credentials (RFC 5389 long-term)
+router.get('/turn-credentials', authenticateToken, (req, res) => {
+  const secret = process.env.TURN_AUTH_SECRET;
+  const urls = process.env.TURN_URLS;
+  if (!secret || !urls) {
+    return res.status(503).json({ error: 'TURN not configured' });
+  }
+
+  const ttl = parseInt(process.env.TURN_TTL_SECONDS, 10) || 86400;
+  const unixExpiry = Math.floor(Date.now() / 1000) + ttl;
+  const username = `${unixExpiry}:${req.user.userId}`;
+  const credential = crypto.createHmac('sha1', secret).update(username).digest('base64');
+
+  res.json({
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      {
+        urls: urls.split(',').map(u => u.trim()),
+        username,
+        credential,
+      },
+    ],
+    ttl,
+  });
+});
+
 // GET /api/calls — user's call history
 router.get('/', authenticateToken, async (req, res) => {
   try {
