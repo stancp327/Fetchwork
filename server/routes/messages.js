@@ -31,6 +31,22 @@ const recordModerationEvent = async ({ conversationId = null, roomId = null, mes
   });
 };
 
+const emitRealtimeDirectMessage = ({ conversation, message, senderId, recipientId }) => {
+  const io = global.io;
+  if (!io || !conversation || !message || !senderId || !recipientId) return;
+
+  const conversationId = String(conversation._id || conversation);
+  const senderRoom = String(senderId);
+  const recipientRoom = String(recipientId);
+
+  io.to(senderRoom).emit('message:receive', { message });
+  io.to(recipientRoom).emit('message:receive', { message });
+  io.to(conversationId).emit('message:receive', { message });
+
+  io.to(senderRoom).emit('conversation:update', { conversation });
+  io.to(recipientRoom).emit('conversation:update', { conversation });
+};
+
 if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -209,8 +225,16 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
 
     const safeContent = content || (normalizedAssetRefs.length > 0 ? `📎 Sent ${normalizedAssetRefs.length} file${normalizedAssetRefs.length > 1 ? 's' : ''}` : '');
     const safety = detectOffPlatform(safeContent);
+
+    const updatedConversation = await Conversation.findByIdAndUpdate(
+      conversation._id,
+      { $inc: { seq: 1 }, $set: { lastActivity: new Date() } },
+      { new: true }
+    );
+
     const message = new Message({
       conversation: conversation._id,
+      seq: updatedConversation.seq,
       sender: req.user._id,
       recipient: recipientId,
       content: safeContent,
@@ -221,11 +245,24 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
     await message.save();
     await recordModerationEvent({ conversationId: conversation._id, messageId: message._id, userId: req.user._id, safety, source: 'rest' });
 
-    conversation.lastMessage = message._id;
-    await conversation.updateLastActivity();
+    await Conversation.updateOne(
+      { _id: conversation._id },
+      { $set: { lastMessage: message._id, lastMessageSeq: updatedConversation.seq, lastMessageAt: new Date(), lastActivity: new Date() } }
+    );
 
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'firstName lastName profilePicture');
+
+    const conversationForEmit = await Conversation.findById(conversation._id)
+      .populate('participants', 'firstName lastName profilePicture')
+      .lean();
+
+    emitRealtimeDirectMessage({
+      conversation: conversationForEmit || updatedConversation,
+      message: { ...populatedMessage.toObject(), _id: String(populatedMessage._id), conversation: String(conversation._id) },
+      senderId: req.user._id,
+      recipientId,
+    });
 
     res.status(201).json({
       message: 'Message sent successfully',
@@ -275,8 +312,16 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
 
     const safeContent = content || (attachments.length > 0 ? `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : '');
     const safety = detectOffPlatform(safeContent);
+
+    const updatedConversation = await Conversation.findByIdAndUpdate(
+      conversation._id,
+      { $inc: { seq: 1 }, $set: { lastActivity: new Date() } },
+      { new: true }
+    );
+
     const message = new Message({
       conversation: conversation._id,
+      seq: updatedConversation.seq,
       sender: req.user._id,
       recipient: recipientId,
       content: safeContent,
@@ -287,11 +332,24 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
     await message.save();
     await recordModerationEvent({ conversationId: conversation._id, messageId: message._id, userId: req.user._id, safety, source: 'rest' });
 
-    conversation.lastMessage = message._id;
-    await conversation.updateLastActivity();
+    await Conversation.updateOne(
+      { _id: conversation._id },
+      { $set: { lastMessage: message._id, lastMessageSeq: updatedConversation.seq, lastMessageAt: new Date(), lastActivity: new Date() } }
+    );
 
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'firstName lastName profilePicture');
+
+    const conversationForEmit = await Conversation.findById(conversation._id)
+      .populate('participants', 'firstName lastName profilePicture')
+      .lean();
+
+    emitRealtimeDirectMessage({
+      conversation: conversationForEmit || updatedConversation,
+      message: { ...populatedMessage.toObject(), _id: String(populatedMessage._id), conversation: String(conversation._id) },
+      senderId: req.user._id,
+      recipientId,
+    });
 
     res.status(201).json({
       message: 'Message sent successfully',
@@ -329,8 +387,16 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
 
     const safeContent = content || `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}`;
     const safety = detectOffPlatform(safeContent);
+
+    const updatedConversation = await Conversation.findByIdAndUpdate(
+      conversation._id,
+      { $inc: { seq: 1 }, $set: { lastActivity: new Date() } },
+      { new: true }
+    );
+
     const message = new Message({
       conversation: conversation._id,
+      seq: updatedConversation.seq,
       sender: req.user._id,
       recipient: recipientId,
       content: safeContent,
@@ -340,11 +406,25 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
 
     await message.save();
     await recordModerationEvent({ conversationId: conversation._id, messageId: message._id, userId: req.user._id, safety, source: 'rest' });
-    conversation.lastMessage = message._id;
-    await conversation.updateLastActivity();
+
+    await Conversation.updateOne(
+      { _id: conversation._id },
+      { $set: { lastMessage: message._id, lastMessageSeq: updatedConversation.seq, lastMessageAt: new Date(), lastActivity: new Date() } }
+    );
 
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'firstName lastName profilePicture');
+
+    const conversationForEmit = await Conversation.findById(conversation._id)
+      .populate('participants', 'firstName lastName profilePicture')
+      .lean();
+
+    emitRealtimeDirectMessage({
+      conversation: conversationForEmit || updatedConversation,
+      message: { ...populatedMessage.toObject(), _id: String(populatedMessage._id), conversation: String(conversation._id) },
+      senderId: req.user._id,
+      recipientId,
+    });
 
     res.status(201).json({ message: 'Message sent', data: populatedMessage });
   } catch (error) {
