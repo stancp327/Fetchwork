@@ -4,11 +4,13 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: var(--space-sm);
+  box-sizing: border-box;
   /* .page-content already adds padding-top: var(--nav-height).
-     This height fills exactly the remaining viewport space below nav. */
-  height: calc(100vh - var(--nav-height, 64px));
+     Keep messaging fully inside remaining viewport on desktop/mobile. */
+  height: calc(100dvh - var(--nav-height, 64px));
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── Header ───────────────────────────────────────────────────── */
@@ -160,6 +162,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-header {
