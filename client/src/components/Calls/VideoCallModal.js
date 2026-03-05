@@ -63,6 +63,8 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   const screenStreamRef = useRef(null);
   const durationIntervalRef = useRef(null);
   const iceServersRef = useRef(null);
+  const pendingOfferRef = useRef(null);
+  const pendingIceCandidatesRef = useRef([]);
 
   const cleanup = useCallback(() => {
     if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
@@ -78,6 +80,8 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       pcRef.current.close();
       pcRef.current = null;
     }
+    pendingOfferRef.current = null;
+    pendingIceCandidatesRef.current = [];
   }, []);
 
   const collectQualityStats = useCallback(async () => {
@@ -151,9 +155,9 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
 
   const finalizeAndClose = useCallback(async (nextStatus = 'ended') => {
     setCallStatus(nextStatus);
-    await uploadQualitySummary();
     cleanup();
-    setTimeout(() => onClose?.(), 1500);
+    uploadQualitySummary().catch(() => {});
+    setTimeout(() => onClose?.(), 800);
   }, [cleanup, onClose, uploadQualitySummary]);
 
   const getIceServers = useCallback(async () => {
@@ -255,6 +259,35 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
 
     const pc = await createPeerConnection();
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+    if (pendingOfferRef.current) {
+      const { fromUserId, offer } = pendingOfferRef.current;
+      pendingOfferRef.current = null;
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('call:answer', {
+        callId,
+        targetUserId: fromUserId,
+        answer: pc.localDescription,
+      });
+      setCallStatus('active');
+      if (!durationIntervalRef.current) {
+        durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+      }
+    }
+
+    if (pendingIceCandidatesRef.current.length > 0) {
+      const queued = [...pendingIceCandidatesRef.current];
+      pendingIceCandidatesRef.current = [];
+      for (const c of queued) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(c));
+        } catch (err) {
+          console.error('Queued ICE candidate error:', err);
+        }
+      }
+    }
   }, [callId, createPeerConnection, getLocalMedia, socket]);
 
   // Handle incoming offer
@@ -262,7 +295,10 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     if (!socket) return;
 
     const handleOffer = async ({ fromUserId, offer }) => {
-      if (!pcRef.current) return;
+      if (!pcRef.current) {
+        pendingOfferRef.current = { fromUserId, offer };
+        return;
+      }
       await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pcRef.current.createAnswer();
       await pcRef.current.setLocalDescription(answer);
@@ -283,7 +319,10 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     };
 
     const handleIceCandidate = async ({ candidate }) => {
-      if (!pcRef.current) return;
+      if (!pcRef.current) {
+        pendingIceCandidatesRef.current.push(candidate);
+        return;
+      }
       try {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (err) {

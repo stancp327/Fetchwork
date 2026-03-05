@@ -680,19 +680,55 @@ module.exports = (io) => {
       }
     };
 
+    const writeOfflineCallAttemptMessage = async ({ callerId, recipientId, conversationId, type = 'video' }) => {
+      try {
+        let convoId = conversationId;
+        if (!convoId) {
+          const convo = await Conversation.findByParticipants(callerId, recipientId).select('_id').lean();
+          convoId = convo?._id;
+        }
+        if (!convoId) return;
+
+        const caller = await User.findById(callerId).select('firstName lastName').lean();
+        const callerName = `${caller?.firstName || 'Someone'} ${caller?.lastName || ''}`.trim();
+
+        const message = await Message.create({
+          conversation: convoId,
+          sender: callerId,
+          recipient: recipientId,
+          content: `📞 ${callerName} tried to start a ${type} call while you were offline.`,
+          messageType: 'system',
+          metadata: {
+            type: 'call_offline_attempt',
+            callType: type,
+          },
+        });
+
+        await Conversation.updateOne(
+          { _id: convoId },
+          { $set: { lastMessage: message._id, lastMessageAt: new Date(), lastActivity: new Date() } }
+        );
+      } catch (err) {
+        logSocketError('call:offline_notice', { correlationId: `call-offline-${Date.now()}` }, err);
+      }
+    };
+
     socket.on('call:initiate', async ({ recipientId, type = 'video', jobId, conversationId }) => {
       try {
         if (!consumeRate('call:initiate', 6, 60_000)) {
           return socket.emit('call:rate-limit', { action: 'call:initiate' });
         }
-        if (!recipientId) return socket.emit('call:error', { message: 'recipientId required' });
-        if (!activeUsers.has(recipientId)) {
-          return socket.emit('call:error', { message: 'User is offline' });
+        const normalizedRecipientId = recipientId ? String(recipientId) : null;
+        if (!normalizedRecipientId) return socket.emit('call:error', { message: 'recipientId required' });
+        if (!activeUsers.has(normalizedRecipientId)) {
+          await writeOfflineCallAttemptMessage({ callerId: senderId, recipientId: normalizedRecipientId, conversationId, type });
+          socket.emit('call:error', { message: 'User is offline — they were notified in chat.' });
+          return;
         }
 
         const call = await Call.create({
           caller: senderId,
-          recipient: recipientId,
+          recipient: normalizedRecipientId,
           type,
           status: 'ringing',
           job: jobId || null,
@@ -700,7 +736,7 @@ module.exports = (io) => {
         });
 
         const caller = await User.findById(senderId).select('firstName lastName profileImage').lean();
-        io.to(recipientId).emit('call:incoming', { callId: call._id, caller: { _id: senderId, ...caller }, type });
+        io.to(normalizedRecipientId).emit('call:incoming', { callId: call._id, caller: { _id: senderId, ...caller }, type });
         socket.emit('call:initiated', { callId: call._id, roomId: call.roomId, status: call.status });
         emitCallState(call);
         await writeCallTimelineMessage(call, 'call_initiated', { status: call.status });
@@ -711,7 +747,7 @@ module.exports = (io) => {
             await transitionCall(c, 'missed', { reason: 'timeout' });
             emitCallState(c, 'timeout');
             io.to(senderId).emit('call:ended', { callId: call._id, reason: 'timeout' });
-            io.to(recipientId).emit('call:ended', { callId: call._id, reason: 'timeout' });
+            io.to(normalizedRecipientId).emit('call:ended', { callId: call._id, reason: 'timeout' });
           }
         }, 30_000);
       } catch (err) {
