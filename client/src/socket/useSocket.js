@@ -33,6 +33,7 @@ const SOCKET_EVENTS = [
   'call:error',
   'rcpt:update',
   'safety:nudge',
+  'diag:socket',
 ];
 
 export const useSocket = (options) => {
@@ -82,6 +83,9 @@ export const useSocket = (options) => {
       // Use ref so changing onEvent never causes a socket reconnect
       SOCKET_EVENTS.forEach((event) => {
         socket.on(event, (data) => {
+          if (event === 'diag:socket') {
+            console.debug('[SOCKET_DIAG]', data);
+          }
           if (typeof onEventRef.current === 'function') onEventRef.current(event, data);
           // Dispatch call events as window events for IncomingCallOverlay
           if (event.startsWith('call:')) {

@@ -20,6 +20,7 @@ module.exports = (io) => {
 
     // Lightweight per-socket rate limiter (anti-spam / abuse control)
     const rateBuckets = new Map();
+    const socketDiagEnabled = process.env.FF_SOCKET_DIAGNOSTICS === 'true';
     const getCid = (payload) => payload?.correlationId || payload?.requestId || `sock-${Date.now()}`;
     const ackOk = (ack, payload, data = {}) => {
       if (typeof ack !== 'function') return;
@@ -32,6 +33,12 @@ module.exports = (io) => {
     const logSocketError = (scope, payload, err) => {
       const cid = getCid(payload);
       console.error(`[socket:${scope}] cid=${cid} user=${senderId} err=${err.message}`);
+    };
+    const emitDiag = (phase, payload = {}) => {
+      if (!socketDiagEnabled) return;
+      const packet = { phase, at: Date.now(), userId: senderId, socketId: socket.id, ...payload };
+      socket.emit('diag:socket', packet);
+      console.log(`[socket:diag] ${phase} user=${senderId} socket=${socket.id} ${JSON.stringify(payload)}`);
     };
     const recordModerationEvent = async ({ conversationId = null, roomId = null, messageId = null, userId, safety, source = 'socket' }) => {
       try {
@@ -63,7 +70,8 @@ module.exports = (io) => {
     };
     
     socket.join(senderId);
-    
+    emitDiag('connect:joined-user-room', { room: senderId });
+
     socketToUser.set(socket.id, senderId);
     
     if (!activeUsers.has(senderId)) {
@@ -303,9 +311,20 @@ module.exports = (io) => {
             conversation: newMessage.conversation.toString()
           };
 
+          const conversationRoomId = conversation._id.toString();
           socket.emit('message:receive', { message: messageWithId });
-
           io.to(normalizedRecipientId).emit('message:receive', { message: messageWithId });
+          io.to(conversationRoomId).emit('message:receive', { message: messageWithId });
+
+          emitDiag('message:receive:emits', {
+            cid: getCid(data),
+            conversationId: conversationRoomId,
+            recipientRoom: normalizedRecipientId,
+            senderRoom: senderId,
+            recipientOnline: isRecipientOnline,
+            messageId: messageWithId._id,
+            seq: messageWithId.seq || null,
+          });
 
           await recordModerationEvent({ conversationId: conversation._id, messageId: newMessage._id, userId: senderId, safety: newMessage.safety, source: 'socket' });
           io.to(senderId).emit('conversation:update', { conversation });
@@ -539,6 +558,7 @@ module.exports = (io) => {
         }
 
         socket.join(conversationId);
+        emitDiag('conv:join', { cid: getCid(data), conversationId });
         ackOk(ack, data, { conversationId });
         socket.emit('conv:joined', { conversationId, correlationId: getCid(data) });
       } catch (err) {
@@ -833,6 +853,16 @@ module.exports = (io) => {
       chatrooms.forEach(room => {
         socket.join(room._id.toString());
       });
+
+      if (process.env.FF_SOCKET_DIAGNOSTICS === 'true') {
+        socket.emit('diag:socket', {
+          phase: 'rejoin:rooms',
+          at: Date.now(),
+          userId,
+          conversationRooms: conversations.map(c => c._id.toString()),
+          chatRooms: chatrooms.map(r => r._id.toString()),
+        });
+      }
 
       socket.emit('user:sync_missed_messages');
       
