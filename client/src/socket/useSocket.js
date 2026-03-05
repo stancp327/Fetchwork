@@ -73,8 +73,22 @@ export const useSocket = (options) => {
       socket.on('disconnect', (reason) => {
         console.warn('[SOCKET] Disconnected:', reason);
       });
+      let tokenRefreshTried = false;
       socket.on('connect_error', (error) => {
         console.error('[SOCKET] Connection error:', error);
+
+        const msg = String(error?.message || '').toLowerCase();
+        // Common after login/logout churn: socket holds a revoked old token.
+        // Try one silent token refresh from localStorage and reconnect.
+        if (!tokenRefreshTried && (msg.includes('token revoked') || msg.includes('invalid token') || msg.includes('jwt'))) {
+          tokenRefreshTried = true;
+          const latestToken = localStorage.getItem('token');
+          if (latestToken && latestToken !== resolvedToken) {
+            socket.auth = { ...(socket.auth || {}), token: latestToken };
+            socket.connect();
+            return;
+          }
+        }
       });
       socket.on('error', (error) => {
         console.error('[SOCKET] Socket error:', error);
