@@ -378,6 +378,23 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     }
   }, [isIncoming, callStatus, startCall]);
 
+  // Safety: always release camera/mic when modal unmounts
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
+
+  // Safety timeout: if call never connects, auto-end and release devices
+  useEffect(() => {
+    if (!['ringing', 'connecting', 'incoming'].includes(callStatus)) return undefined;
+    const t = setTimeout(() => {
+      socket?.emit('call:end', { callId });
+      finalizeAndClose('ended').catch(() => {});
+    }, 30000);
+    return () => clearTimeout(t);
+  }, [callStatus, callId, socket, finalizeAndClose]);
+
   const handleEndCall = useCallback(async () => {
     socket?.emit('call:end', { callId });
     await finalizeAndClose('ended');
