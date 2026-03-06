@@ -5,17 +5,24 @@ const { requireFeature } = require('../middleware/entitlements');
 const Booking = require('../models/Booking');
 const Service = require('../models/Service');
 const Notification = require('../models/Notification');
-const { isBookingSqlEnabled } = require('../booking-sql/db/featureFlag');
-const {
-  getSlotsSql,
-  createBookingHoldSql,
-  confirmBookingSql,
-  cancelBookingSql,
-  completeBookingSql,
-  getMyBookingsSql,
-  getBookingByIdSql,
-} = require('../booking-sql/routes/bookingsSqlController');
-const { bookingSqlHealthcheck } = require('../booking-sql/db/healthcheck');
+let isBookingSqlEnabled = () => false;
+let getSlotsSql, createBookingHoldSql, confirmBookingSql, cancelBookingSql, completeBookingSql, getMyBookingsSql, getBookingByIdSql;
+let bookingSqlHealthcheck = async () => ({ ok: false, error: 'booking-sql module not loaded' });
+
+try {
+  isBookingSqlEnabled = require('../booking-sql/db/featureFlag').isBookingSqlEnabled;
+  const ctrl = require('../booking-sql/routes/bookingsSqlController');
+  getSlotsSql          = ctrl.getSlotsSql;
+  createBookingHoldSql = ctrl.createBookingHoldSql;
+  confirmBookingSql    = ctrl.confirmBookingSql;
+  cancelBookingSql     = ctrl.cancelBookingSql;
+  completeBookingSql   = ctrl.completeBookingSql;
+  getMyBookingsSql     = ctrl.getMyBookingsSql;
+  getBookingByIdSql    = ctrl.getBookingByIdSql;
+  bookingSqlHealthcheck = require('../booking-sql/db/healthcheck').bookingSqlHealthcheck;
+} catch (e) {
+  console.error('[bookings] booking-sql module failed to load — falling back to Mongo-only mode:', e.message);
+}
 
 // TODO(SQL cutover): route handlers in this file branch by BOOKING_SQL_ENABLED.
 // If enabled -> delegate to booking-sql service/repositories (Prisma/PostgreSQL).
