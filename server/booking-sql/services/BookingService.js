@@ -273,6 +273,172 @@ class BookingService {
     await this.idempotencyRepo.saveResponse({ idempotencyKey, route, actorId, requestHash, responseJson: response, statusCode });
     return { replayed: false, statusCode, response };
   }
+
+  /**
+   * Reschedule a booking to a new time slot.
+   * Validates new slot, checks policy, applies fees if applicable.
+   */
+  async rescheduleBooking({ 
+    actorId, 
+    route, 
+    idempotencyKey, 
+    requestHash, 
+    bookingId, 
+    newDate, 
+    newStartTime, 
+    newEndTime,
+    reason = '' 
+  }) {
+    const existing = await this.idempotencyRepo.findByKey({ idempotencyKey, route, actorId });
+    if (existing) {
+      return { replayed: true, statusCode: existing.statusCode, response: existing.responseJson };
+    }
+
+    const response = await withTx(async (tx) => {
+      // Get booking and occurrence
+      const booking = await this.bookingRepo.findBookingById(bookingId, tx);
+      if (!booking) {
+        return { error: 'Booking not found', code: 'BOOKING_NOT_FOUND' };
+      }
+
+      const occurrence = await this.bookingRepo.findFirstOccurrenceByBookingId(booking.id, tx);
+      if (!occurrence) {
+        return { error: 'Booking occurrence not found', code: 'OCCURRENCE_NOT_FOUND' };
+      }
+
+      // Authorization: client or freelancer can reschedule
+      const isClient = String(booking.clientId) === String(actorId);
+      const isFreelancer = String(booking.freelancerId) === String(actorId);
+      if (!isClient && !isFreelancer) {
+        return { error: 'Not authorized', code: 'NOT_AUTHORIZED' };
+      }
+
+      // Can only reschedule confirmed or held bookings
+      if (!['held', 'confirmed'].includes(String(occurrence.status))) {
+        return { 
+          error: `Cannot reschedule a ${occurrence.status} booking`, 
+          code: 'INVALID_RESCHEDULE_STATE' 
+        };
+      }
+
+      // Count previous reschedules from audit trail
+      const rescheduleCount = await this.auditRepo.countByEventType(booking.id, 'booking.rescheduled', tx);
+
+      // Evaluate reschedule policy
+      const policyOutcome = this.policyEngine.evaluateReschedule({
+        policySnapshot: booking.policySnapshotJson || {},
+        bookingAmountCents: Number(booking?.pricingSnapshotJson?.amountCents || 0),
+        startAtUtc: occurrence.startAtUtc,
+        rescheduleAtUtc: new Date(),
+        rescheduleCount,
+      });
+
+      if (!policyOutcome.allowed) {
+        return { 
+          error: policyOutcome.reason, 
+          code: 'RESCHEDULE_NOT_ALLOWED',
+          policyOutcome,
+        };
+      }
+
+      // Build new slot times
+      const newLocalStartWallclock = `${newDate}T${newStartTime}`;
+      const newLocalEndWallclock = `${newDate}T${newEndTime}`;
+      const newStartAtUtc = new Date(`${newDate}T${newStartTime}:00Z`);
+      const newEndAtUtc = new Date(`${newDate}T${newEndTime}:00Z`);
+
+      // Acquire lock on new slot
+      await acquireSlotLock(tx, {
+        freelancerId: booking.freelancerId,
+        localStartWallclock: newLocalStartWallclock,
+        serviceId: String(booking.serviceOfferingId || ''),
+      });
+
+      // Check for conflicts at new slot (excluding current booking)
+      const conflictCount = await this.bookingRepo.countConflictsAtLocalStart({
+        freelancerId: booking.freelancerId,
+        localStartWallclock: newLocalStartWallclock,
+        excludeBookingId: booking.id,
+      }, tx);
+
+      // Get service to check maxPerSlot
+      const service = await this.serviceAdapter.getById(booking.serviceOfferingId);
+      const maxPerSlot = service?.maxPerSlot || 1;
+
+      if (conflictCount >= maxPerSlot) {
+        return {
+          error: 'New time slot is not available',
+          code: 'SLOT_CONFLICT',
+          policyOutcome,
+        };
+      }
+
+      // Store old times for audit
+      const oldTimes = {
+        startAtUtc: occurrence.startAtUtc,
+        endAtUtc: occurrence.endAtUtc,
+        localStartWallclock: occurrence.localStartWallclock,
+        localEndWallclock: occurrence.localEndWallclock,
+      };
+
+      // Update occurrence with new times
+      await this.bookingRepo.updateOccurrenceTimes(occurrence.id, {
+        startAtUtc: newStartAtUtc,
+        endAtUtc: newEndAtUtc,
+        localStartWallclock: newLocalStartWallclock,
+        localEndWallclock: newLocalEndWallclock,
+      }, tx);
+
+      // Audit the reschedule
+      await this.auditRepo.append({
+        bookingId: booking.id,
+        occurrenceId: occurrence.id,
+        actorType: isClient ? 'client' : 'freelancer',
+        actorId: String(actorId),
+        eventType: 'booking.rescheduled',
+        payload: { 
+          route, 
+          reason, 
+          policyOutcome,
+          oldTimes,
+          newTimes: {
+            startAtUtc: newStartAtUtc,
+            endAtUtc: newEndAtUtc,
+            localStartWallclock: newLocalStartWallclock,
+            localEndWallclock: newLocalEndWallclock,
+          },
+        },
+      }, tx);
+
+      return {
+        message: 'Booking rescheduled (SQL path)',
+        bookingId: booking.id,
+        occurrenceId: occurrence.id,
+        status: occurrence.status,
+        policyOutcome,
+        newTimes: {
+          date: newDate,
+          startTime: newStartTime,
+          endTime: newEndTime,
+        },
+      };
+    });
+
+    const statusCode = response?.error 
+      ? (['BOOKING_NOT_FOUND', 'OCCURRENCE_NOT_FOUND'].includes(response.code) ? 404 : 400) 
+      : 200;
+
+    await this.idempotencyRepo.saveResponse({
+      idempotencyKey,
+      route,
+      actorId,
+      requestHash,
+      responseJson: response,
+      statusCode,
+    });
+
+    return { replayed: false, statusCode, response };
+  }
 }
 
 module.exports = { BookingService };

@@ -1,5 +1,91 @@
 class PolicyEngine {
   /**
+   * Evaluate reschedule eligibility and fees.
+   * Returns whether reschedule is allowed and any applicable fee.
+   * 
+   * Reschedule policy (from booking-feature-project.md):
+   * - Flexible: free if T >= 6h, else $X or % fee, max 2 reschedules
+   * - Moderate: free if T >= 24h, else fee
+   * - Strict: free if T >= 48h, else fee, max 1 reschedule
+   */
+  evaluateReschedule({ 
+    policySnapshot = {}, 
+    bookingAmountCents = 0, 
+    startAtUtc, 
+    rescheduleAtUtc = new Date(),
+    rescheduleCount = 0,
+  }) {
+    const tier = String(policySnapshot?.tier || 'flexible').toLowerCase();
+    const start = new Date(startAtUtc);
+    const rescheduleAt = new Date(rescheduleAtUtc);
+    
+    if (Number.isNaN(start.getTime()) || Number.isNaN(rescheduleAt.getTime())) {
+      return { allowed: false, reason: 'Invalid dates', feeCents: 0 };
+    }
+
+    const hours = (start.getTime() - rescheduleAt.getTime()) / (1000 * 60 * 60);
+    const gross = Math.max(0, Number(bookingAmountCents || 0));
+
+    // Check max reschedule count
+    const maxReschedules = this._getMaxReschedules(tier);
+    if (rescheduleCount >= maxReschedules) {
+      return { 
+        allowed: false, 
+        reason: `Maximum reschedules (${maxReschedules}) reached for ${tier} policy`,
+        feeCents: 0,
+        maxReschedules,
+        rescheduleCount,
+        tier,
+      };
+    }
+
+    // Already started
+    if (hours <= 0) {
+      return { allowed: false, reason: 'Cannot reschedule past bookings', feeCents: 0 };
+    }
+
+    // Get fee based on tier and time window
+    const { free, feePct } = this._getRescheduleFeeByTier(tier, hours);
+    const feeCents = free ? 0 : Math.round(gross * feePct);
+
+    return {
+      allowed: true,
+      tier,
+      hoursUntilStart: hours,
+      rescheduleCount: rescheduleCount + 1,
+      maxReschedules,
+      free,
+      feePct: free ? 0 : feePct,
+      feeCents,
+      bookingAmountCents: gross,
+    };
+  }
+
+  _getMaxReschedules(tier) {
+    switch (tier) {
+      case 'strict': return 1;
+      case 'moderate': return 2;
+      case 'flexible':
+      default: return 2;
+    }
+  }
+
+  _getRescheduleFeeByTier(tier, hours) {
+    // Strict: free if >= 48h, else 10% fee
+    if (tier === 'strict') {
+      return hours >= 48 ? { free: true } : { free: false, feePct: 0.10 };
+    }
+
+    // Moderate: free if >= 24h, else 10% fee
+    if (tier === 'moderate') {
+      return hours >= 24 ? { free: true } : { free: false, feePct: 0.10 };
+    }
+
+    // Flexible: free if >= 6h, else 5% fee
+    return hours >= 6 ? { free: true } : { free: false, feePct: 0.05 };
+  }
+
+  /**
    * Evaluate cancellation fees from an immutable booking policy snapshot.
    * Returns cents-based deterministic outcome.
    */

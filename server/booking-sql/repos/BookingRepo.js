@@ -29,13 +29,14 @@ class BookingRepo {
     });
   }
 
-  async countConflictsAtLocalStart({ freelancerId, localStartWallclock }, tx = null) {
+  async countConflictsAtLocalStart({ freelancerId, localStartWallclock, excludeBookingId = null }, tx = null) {
     const db = tx || getPrisma();
     return db.bookingOccurrence.count({
       where: {
         freelancerId: String(freelancerId),
         localStartWallclock,
         status: { in: ['held', 'confirmed', 'in_progress'] },
+        ...(excludeBookingId ? { bookingId: { not: excludeBookingId } } : {}),
       },
     });
   }
@@ -43,6 +44,14 @@ class BookingRepo {
   async updateOccurrenceStatus(id, status, tx = null) {
     const db = tx || getPrisma();
     return db.bookingOccurrence.update({ where: { id }, data: { status } });
+  }
+
+  async updateOccurrenceTimes(id, { startAtUtc, endAtUtc, localStartWallclock, localEndWallclock }, tx = null) {
+    const db = tx || getPrisma();
+    return db.bookingOccurrence.update({
+      where: { id },
+      data: { startAtUtc, endAtUtc, localStartWallclock, localEndWallclock },
+    });
   }
 
   async updateBookingState(id, currentState, tx = null) {

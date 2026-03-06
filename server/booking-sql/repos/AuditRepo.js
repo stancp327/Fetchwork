@@ -19,6 +19,21 @@ class AuditRepo {
       },
     });
   }
+
+  async countByEventType(bookingId, eventType, tx = null) {
+    const db = tx || getPrisma();
+    return db.auditEvent.count({
+      where: { bookingId, eventType },
+    });
+  }
+
+  async findByBookingId(bookingId, tx = null) {
+    const db = tx || getPrisma();
+    return db.auditEvent.findMany({
+      where: { bookingId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
 }
 
 module.exports = { AuditRepo };
