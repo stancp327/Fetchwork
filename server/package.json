@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node index.js",
     "build": "echo 'No build step needed'",
+    "postinstall": "prisma generate --schema=./prisma/schema.prisma",
     "test": "jest --forceExit --detectOpenHandles",
     "test:watch": "jest --watch --forceExit --detectOpenHandles",
     "verify-deployment": "node ../scripts/verify-deployment.js",
