@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  pending_payment
+  held
+  confirmed
+  in_progress
+  completed
+  cancelled_by_client
+  cancelled_by_freelancer
+  no_show_client
+  no_show_freelancer
+  disputed
+  resolved
+}
+
+enum ActorType {
+  client
+  freelancer
+  admin
+  system
+}
+
+model Booking {
+  id                  String        @id @default(uuid()) @db.Uuid
+  bookingRef          String        @unique
+  clientId            String
+  freelancerId        String
+  serviceOfferingId   String?       @db.Uuid
+  policySnapshotJson  Json
+  pricingSnapshotJson Json
+  currentState        BookingStatus @default(pending_payment)
+  notes               String?
+  createdAt           DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime      @updatedAt @db.Timestamptz(6)
+
+  occurrences   BookingOccurrence[]
+  auditEvents   AuditEvent[]
+  chargeRecords ChargeRecord[]
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([freelancerId, createdAt(sort: Desc)])
+}
+
+model BookingOccurrence {
+  id                  String        @id @default(uuid()) @db.Uuid
+  bookingId           String        @db.Uuid
+  occurrenceNo        Int           @default(1)
+  clientId            String
+  freelancerId        String
+  startAtUtc          DateTime      @db.Timestamptz(6)
+  endAtUtc            DateTime      @db.Timestamptz(6)
+  timezone            String
+  localStartWallclock String
+  localEndWallclock   String
+  status              BookingStatus @default(held)
+  createdAt           DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime      @updatedAt @db.Timestamptz(6)
+
+  booking          Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  auditEvents      AuditEvent[]
+  chargeRecords    ChargeRecord[]
+  attendanceRecord AttendanceRecord?
+
+  @@unique([bookingId, occurrenceNo])
+  @@index([freelancerId, startAtUtc])
+  @@index([clientId, startAtUtc])
+  @@index([status, startAtUtc])
+}
+
+model AuditEvent {
+  id           BigInt    @id @default(autoincrement())
+  bookingId    String    @db.Uuid
+  occurrenceId String?   @db.Uuid
+  actorType    ActorType
+  actorId      String?
+  eventType    String
+  payloadJson  Json
+  payloadHash  String
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+
+  booking    Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  occurrence BookingOccurrence? @relation(fields: [occurrenceId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId, createdAt])
+  @@index([occurrenceId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model IdempotencyKey {
+  id             BigInt   @id @default(autoincrement())
+  idempotencyKey String
+  route          String
+  actorId        String
+  requestHash    String
+  responseJson   Json
+  statusCode     Int
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([idempotencyKey, route, actorId])
+  @@index([createdAt])
+}
+
+model ChargeRecord {
+  id                    String   @id @default(uuid()) @db.Uuid
+  bookingId             String   @db.Uuid
+  occurrenceId          String?  @db.Uuid
+  stripePaymentIntentId String?  @unique
+  stripeChargeId        String?  @unique
+  amountCents           Int
+  currency              String   @default("usd")
+  platformFeeCents      Int      @default(0)
+  payoutAmountCents     Int      @default(0)
+  state                 String   @default("none")
+  idempotencyKey        String?
+  metadataJson          Json     @default("{}")
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(6)
+
+  booking    Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  occurrence BookingOccurrence? @relation(fields: [occurrenceId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId, createdAt(sort: Desc)])
+  @@index([occurrenceId, createdAt(sort: Desc)])
+}
+
+model AttendanceRecord {
+  id                    String    @id @default(uuid()) @db.Uuid
+  occurrenceId          String    @unique @db.Uuid
+  status                String    @default("not_started")
+  clientCheckinAt       DateTime? @db.Timestamptz(6)
+  freelancerCheckinAt   DateTime? @db.Timestamptz(6)
+  clientCheckoutAt      DateTime? @db.Timestamptz(6)
+  freelancerCheckoutAt  DateTime? @db.Timestamptz(6)
+  clientCheckinMeta     Json?
+  freelancerCheckinMeta Json?
+  disputeFlag           Boolean   @default(false)
+  adminAdjustmentJson   Json?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(6)
+
+  occurrence BookingOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}

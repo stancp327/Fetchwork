@@ -5,6 +5,41 @@ const { requireFeature } = require('../middleware/entitlements');
 const Booking = require('../models/Booking');
 const Service = require('../models/Service');
 const Notification = require('../models/Notification');
+const { isBookingSqlEnabled } = require('../booking-sql/db/featureFlag');
+const {
+  getSlotsSql,
+  createBookingHoldSql,
+  confirmBookingSql,
+  cancelBookingSql,
+  completeBookingSql,
+  getMyBookingsSql,
+  getBookingByIdSql,
+} = require('../booking-sql/routes/bookingsSqlController');
+const { bookingSqlHealthcheck } = require('../booking-sql/db/healthcheck');
+
+// TODO(SQL cutover): route handlers in this file branch by BOOKING_SQL_ENABLED.
+// If enabled -> delegate to booking-sql service/repositories (Prisma/PostgreSQL).
+// If disabled -> keep current Mongo path for safe rollback.
+
+// ── GET /api/bookings/sql/status ────────────────────────────────
+// Lightweight SQL readiness endpoint for rollout checks.
+router.get('/sql/status', authenticateToken, async (_req, res) => {
+  const enabled = isBookingSqlEnabled();
+  if (!enabled) {
+    return res.json({ enabled: false, healthy: false, reason: 'BOOKING_SQL_ENABLED=false' });
+  }
+
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ enabled: true, healthy: false, reason: 'DATABASE_URL missing' });
+  }
+
+  const health = await bookingSqlHealthcheck();
+  if (!health.ok) {
+    return res.status(503).json({ enabled: true, healthy: false, reason: health.error || 'db unavailable' });
+  }
+
+  return res.json({ enabled: true, healthy: true });
+});
 
 // ── Helper: generate available slots for a date ──────────────────
 function generateSlots(windows, slotDuration, bufferTime, dayOfWeek) {
@@ -84,6 +119,9 @@ router.get('/availability/:serviceId', async (req, res) => {
 // ── GET /api/bookings/slots/:serviceId?date=YYYY-MM-DD ──────────
 // Public — returns available time slots for a specific date
 router.get('/slots/:serviceId', async (req, res) => {
+  if (isBookingSqlEnabled()) {
+    return getSlotsSql(req, res);
+  }
   try {
     const { date } = req.query;
     if (!date) return res.status(400).json({ error: 'date query param required (YYYY-MM-DD)' });
@@ -145,6 +183,9 @@ router.get('/slots/:serviceId', async (req, res) => {
 // ── POST /api/bookings/:serviceId ────────────────────────────────
 // Client books a slot
 router.post('/:serviceId', authenticateToken, async (req, res) => {
+  if (isBookingSqlEnabled()) {
+    return createBookingHoldSql(req, res);
+  }
   try {
     const { date, startTime, endTime, notes } = req.body;
     if (!date || !startTime || !endTime)
@@ -231,6 +272,7 @@ router.post('/:serviceId', authenticateToken, async (req, res) => {
 
 // ── GET /api/bookings/me?role=client|freelancer&status=upcoming|past|cancelled
 router.get('/me', authenticateToken, async (req, res) => {
+  if (isBookingSqlEnabled()) return getMyBookingsSql(req, res);
   try {
     const { role = 'client', status = 'upcoming' } = req.query;
     const filter = {};
@@ -263,6 +305,9 @@ router.get('/me', authenticateToken, async (req, res) => {
 
 // ── PATCH /api/bookings/:bookingId/confirm ───────────────────────
 router.patch('/:bookingId/confirm', authenticateToken, async (req, res) => {
+  if (isBookingSqlEnabled()) {
+    return confirmBookingSql(req, res);
+  }
   try {
     const booking = await Booking.findById(req.params.bookingId).populate('service', 'title');
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
@@ -290,6 +335,9 @@ router.patch('/:bookingId/confirm', authenticateToken, async (req, res) => {
 
 // ── PATCH /api/bookings/:bookingId/cancel ────────────────────────
 router.patch('/:bookingId/cancel', authenticateToken, async (req, res) => {
+  if (isBookingSqlEnabled()) {
+    return cancelBookingSql(req, res);
+  }
   try {
     const booking = await Booking.findById(req.params.bookingId).populate('service', 'title');
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
@@ -325,6 +373,9 @@ router.patch('/:bookingId/cancel', authenticateToken, async (req, res) => {
 
 // ── PATCH /api/bookings/:bookingId/complete ──────────────────────
 router.patch('/:bookingId/complete', authenticateToken, async (req, res) => {
+  if (isBookingSqlEnabled()) {
+    return completeBookingSql(req, res);
+  }
   try {
     const booking = await Booking.findById(req.params.bookingId).populate('service', 'title');
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
@@ -345,6 +396,26 @@ router.patch('/:bookingId/complete', authenticateToken, async (req, res) => {
     });
 
     res.json({ message: 'Booking completed', booking });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/bookings/:bookingId — get single booking detail
+router.get('/:bookingId', authenticateToken, async (req, res) => {
+  if (isBookingSqlEnabled()) return getBookingByIdSql(req, res);
+  try {
+    const booking = await Booking.findById(req.params.bookingId)
+      .populate('service', 'title pricing availability')
+      .populate('client', 'firstName lastName profilePicture')
+      .populate('freelancer', 'firstName lastName profilePicture')
+      .lean();
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    const userId = String(req.user.userId);
+    if (String(booking.client._id) !== userId && String(booking.freelancer._id) !== userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    res.json({ booking });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
