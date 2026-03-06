@@ -150,3 +150,79 @@ model AttendanceRecord {
 
   @@index([status])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HYBRID AVAILABILITY SYSTEM
+// Freelancer global defaults + per-service overrides + date exceptions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model FreelancerAvailability {
+  id                    String   @id @default(uuid()) @db.Uuid
+  freelancerId          String   @unique
+  timezone              String   @default("America/Los_Angeles")
+  defaultSlotDuration   Int      @default(60)  // minutes
+  bufferTime            Int      @default(0)   // minutes between slots
+  defaultCapacity       Int      @default(1)   // 1=individual, >1=group
+  minNoticeHours        Int      @default(24)  // can't book < X hours from now
+  maxAdvanceBookingDays Int      @default(60)  // can't book > X days out
+  isActive              Boolean  @default(true)
+  
+  // Weekly schedule: JSON array of { dayOfWeek: 0-6, windows: [{startTime, endTime}] }
+  weeklyScheduleJson    Json     @default("[]")
+  
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(6)
+
+  serviceOverrides ServiceAvailabilityOverride[]
+  exceptions       AvailabilityException[]
+
+  @@index([freelancerId])
+}
+
+model ServiceAvailabilityOverride {
+  id                    String   @id @default(uuid()) @db.Uuid
+  freelancerAvailId     String   @db.Uuid
+  serviceId             String   // MongoDB ObjectId reference
+  
+  // Override fields (null = use freelancer default)
+  timezone              String?
+  slotDuration          Int?     // minutes
+  bufferTime            Int?     // minutes
+  capacity              Int?     // max per slot
+  minNoticeHours        Int?
+  maxAdvanceBookingDays Int?
+  
+  // Override weekly schedule (null = use freelancer default)
+  weeklyScheduleJson    Json?
+  
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(6)
+
+  freelancerAvailability FreelancerAvailability @relation(fields: [freelancerAvailId], references: [id], onDelete: Cascade)
+
+  @@unique([freelancerAvailId, serviceId])
+  @@index([serviceId])
+}
+
+model AvailabilityException {
+  id                String   @id @default(uuid()) @db.Uuid
+  freelancerAvailId String   @db.Uuid
+  serviceId         String?  // null = applies to all services
+  
+  date              String   // "YYYY-MM-DD" in freelancer's local timezone
+  unavailable       Boolean  @default(true)  // true = day off, false = custom hours
+  
+  // Custom windows for this date (only used when unavailable=false)
+  windowsJson       Json?    // [{startTime, endTime}]
+  
+  reason            String?  // "Holiday", "Vacation", etc.
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
+
+  freelancerAvailability FreelancerAvailability @relation(fields: [freelancerAvailId], references: [id], onDelete: Cascade)
+
+  @@unique([freelancerAvailId, serviceId, date])
+  @@index([freelancerAvailId, date])
+  @@index([serviceId, date])
+}
