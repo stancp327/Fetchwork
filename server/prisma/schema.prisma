@@ -226,3 +226,48 @@ model AvailabilityException {
   @@index([freelancerAvailId, date])
   @@index([serviceId, date])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REMINDER SYSTEM
+// Scheduled notifications for bookings (email, push, SMS)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum ReminderChannel {
+  email
+  push
+  sms
+}
+
+enum ReminderStatus {
+  scheduled
+  sent
+  failed
+  cancelled
+}
+
+model BookingReminder {
+  id            String         @id @default(uuid()) @db.Uuid
+  bookingId     String         @db.Uuid
+  occurrenceId  String         @db.Uuid
+  recipientId   String         // User ID (client or freelancer)
+  recipientRole String         // "client" or "freelancer"
+  channel       ReminderChannel
+  
+  reminderType  String         // "24h_before", "1h_before", "15m_before", "followup"
+  scheduledFor  DateTime       @db.Timestamptz(6)
+  
+  status        ReminderStatus @default(scheduled)
+  sentAt        DateTime?      @db.Timestamptz(6)
+  failReason    String?
+  
+  // Content snapshot (so we don't need to re-fetch booking details)
+  contentJson   Json           @default("{}")
+  
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+
+  @@index([status, scheduledFor])
+  @@index([bookingId])
+  @@index([occurrenceId])
+  @@index([recipientId, status])
+}
