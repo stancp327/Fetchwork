@@ -99,11 +99,12 @@ describe('PolicyEngine — evaluateCancellation', () => {
       expect(result.refundCents).toBe(5000);
     });
 
-    test('cancels < 6h out → full charge (no refund)', () => {
+    test('cancels < 2h out → full charge (no refund)', () => {
+      // New thresholds: <2h = 100% charge
       const result = engine.evaluateCancellation({
         policySnapshot: { tier: 'flexible' },
         bookingAmountCents: amount,
-        startAtUtc: hoursFromNow(2),
+        startAtUtc: hoursFromNow(1), // Less than 2h
         cancelledAtUtc: new Date(),
       });
       expect(result.chargePct).toBe(1.0);
@@ -124,48 +125,12 @@ describe('PolicyEngine — evaluateCancellation', () => {
       expect(result.refundCents).toBe(10000);
     });
 
-    test('cancels 24-48h out → 25% charge', () => {
+    test('cancels 24-48h out → 50% charge', () => {
+      // New thresholds: 48h+=0%, 24-48h=50%, <24h=100%
       const result = engine.evaluateCancellation({
         policySnapshot: { tier: 'moderate' },
         bookingAmountCents: amount,
         startAtUtc: hoursFromNow(36),
-        cancelledAtUtc: new Date(),
-      });
-      expect(result.chargePct).toBe(0.25);
-      expect(result.chargeCents).toBe(2500);
-      expect(result.refundCents).toBe(7500);
-    });
-
-    test('cancels < 24h out → 75% charge', () => {
-      const result = engine.evaluateCancellation({
-        policySnapshot: { tier: 'moderate' },
-        bookingAmountCents: amount,
-        startAtUtc: hoursFromNow(10),
-        cancelledAtUtc: new Date(),
-      });
-      expect(result.chargePct).toBe(0.75);
-      expect(result.chargeCents).toBe(7500);
-      expect(result.refundCents).toBe(2500);
-    });
-  });
-
-  describe('strict tier', () => {
-    test('cancels >= 72h out → full refund', () => {
-      const result = engine.evaluateCancellation({
-        policySnapshot: { tier: 'strict' },
-        bookingAmountCents: amount,
-        startAtUtc: hoursFromNow(96),
-        cancelledAtUtc: new Date(),
-      });
-      expect(result.chargePct).toBe(0.0);
-      expect(result.refundCents).toBe(10000);
-    });
-
-    test('cancels 24-72h out → 50% charge', () => {
-      const result = engine.evaluateCancellation({
-        policySnapshot: { tier: 'strict' },
-        bookingAmountCents: amount,
-        startAtUtc: hoursFromNow(48),
         cancelledAtUtc: new Date(),
       });
       expect(result.chargePct).toBe(0.5);
@@ -174,10 +139,50 @@ describe('PolicyEngine — evaluateCancellation', () => {
     });
 
     test('cancels < 24h out → 100% charge', () => {
+      // New thresholds: <24h = 100% charge
+      const result = engine.evaluateCancellation({
+        policySnapshot: { tier: 'moderate' },
+        bookingAmountCents: amount,
+        startAtUtc: hoursFromNow(10),
+        cancelledAtUtc: new Date(),
+      });
+      expect(result.chargePct).toBe(1.0);
+      expect(result.chargeCents).toBe(10000);
+      expect(result.refundCents).toBe(0);
+    });
+  });
+
+  describe('strict tier', () => {
+    // New thresholds: 7d+=0%, 48h-7d=50%, <48h=100%
+    test('cancels >= 7d (168h) out → full refund', () => {
       const result = engine.evaluateCancellation({
         policySnapshot: { tier: 'strict' },
         bookingAmountCents: amount,
-        startAtUtc: hoursFromNow(5),
+        startAtUtc: hoursFromNow(200), // Well over 7 days
+        cancelledAtUtc: new Date(),
+      });
+      expect(result.chargePct).toBe(0.0);
+      expect(result.refundCents).toBe(10000);
+    });
+
+    test('cancels 48h-7d out → 50% charge', () => {
+      // 96h = 4 days, which is in 48h-7d range
+      const result = engine.evaluateCancellation({
+        policySnapshot: { tier: 'strict' },
+        bookingAmountCents: amount,
+        startAtUtc: hoursFromNow(96),
+        cancelledAtUtc: new Date(),
+      });
+      expect(result.chargePct).toBe(0.5);
+      expect(result.chargeCents).toBe(5000);
+      expect(result.refundCents).toBe(5000);
+    });
+
+    test('cancels < 48h out → 100% charge', () => {
+      const result = engine.evaluateCancellation({
+        policySnapshot: { tier: 'strict' },
+        bookingAmountCents: amount,
+        startAtUtc: hoursFromNow(24),
         cancelledAtUtc: new Date(),
       });
       expect(result.chargePct).toBe(1.0);
@@ -252,12 +257,14 @@ describe('BookingService.cancelBooking — policyOutcome integration', () => {
     expect(response.policyOutcome.chargeCents).toBe(0);
   });
 
-  test('flexible: cancels 3h out → full charge in policyOutcome', async () => {
+  test('flexible: cancels 3h out → 50% charge in policyOutcome', async () => {
+    // New thresholds: 24h+=0%, 2-24h=50%, <2h=100%
+    // 3h is in 2-24h range = 50% charge
     const { statusCode, response } = await runCancel({ tier: 'flexible', amountCents: 10000, hoursUntilStart: 3 });
     expect(statusCode).toBe(200);
-    expect(response.policyOutcome.chargePct).toBe(1.0);
-    expect(response.policyOutcome.refundCents).toBe(0);
-    expect(response.policyOutcome.chargeCents).toBe(10000);
+    expect(response.policyOutcome.chargePct).toBe(0.5);
+    expect(response.policyOutcome.refundCents).toBe(5000);
+    expect(response.policyOutcome.chargeCents).toBe(5000);
   });
 
   test('strict: cancels 48h out → 50% charge in policyOutcome', async () => {

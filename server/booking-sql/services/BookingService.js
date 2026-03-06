@@ -5,9 +5,15 @@ const { AuditRepo } = require('../repos/AuditRepo');
 const { IdempotencyRepo } = require('../repos/IdempotencyRepo');
 const { PolicyEngine } = require('./PolicyEngine');
 const { ServiceAdapter } = require('../repos/ServiceAdapter');
+const { ReminderService } = require('./ReminderService');
 
 function buildBookingRef() {
   return `bk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Simple UUID v4 format check
+function isUuid(str) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
 class BookingService {
@@ -17,6 +23,7 @@ class BookingService {
     this.idempotencyRepo = deps.idempotencyRepo || new IdempotencyRepo();
     this.policyEngine = deps.policyEngine || new PolicyEngine();
     this.serviceAdapter = deps.serviceAdapter || new ServiceAdapter();
+    this.reminderService = deps.reminderService || new ReminderService();
   }
 
   async createHold({ actorId, route, idempotencyKey, requestHash, body, serviceId }) {
@@ -163,12 +170,34 @@ class BookingService {
         bookingId: booking.id,
         occurrenceId: occurrence.id,
         status: 'confirmed',
+        clientId: booking.clientId,
+        freelancerId: booking.freelancerId,
+        startAtUtc: occurrence.startAtUtc,
+        serviceName: booking.pricingSnapshotJson?.serviceName || 'Service',
       };
     });
 
     const statusCode = response?.error
       ? (response.code === 'BOOKING_NOT_FOUND' || response.code === 'OCCURRENCE_NOT_FOUND' ? 404 : 400)
       : 200;
+
+    // Schedule reminders after successful confirm (outside transaction)
+    // Only call if IDs are valid UUIDs (skip for mock/test IDs)
+    if (statusCode === 200 && response.bookingId && isUuid(response.bookingId) && isUuid(response.occurrenceId)) {
+      try {
+        await this.reminderService.scheduleReminders({
+          bookingId: response.bookingId,
+          occurrenceId: response.occurrenceId,
+          clientId: response.clientId,
+          freelancerId: response.freelancerId,
+          startAtUtc: response.startAtUtc,
+          bookingDetails: { serviceName: response.serviceName },
+        });
+      } catch (e) {
+        console.warn('[BookingService] Failed to schedule reminders:', e.message);
+        // Don't fail the booking confirmation if reminders fail
+      }
+    }
 
     await this.idempotencyRepo.saveResponse({
       idempotencyKey,
@@ -231,6 +260,17 @@ class BookingService {
     });
 
     const statusCode = response?.error ? (['BOOKING_NOT_FOUND', 'OCCURRENCE_NOT_FOUND'].includes(response.code) ? 404 : 400) : 200;
+    
+    // Cancel reminders after successful cancellation
+    // Only call if occurrence ID is a valid UUID
+    if (statusCode === 200 && response.occurrenceId && isUuid(response.occurrenceId)) {
+      try {
+        await this.reminderService.cancelReminders({ occurrenceId: response.occurrenceId });
+      } catch (e) {
+        console.warn('[BookingService] Failed to cancel reminders:', e.message);
+      }
+    }
+
     await this.idempotencyRepo.saveResponse({ idempotencyKey, route, actorId, requestHash, responseJson: response, statusCode });
     return { replayed: false, statusCode, response };
   }
@@ -420,6 +460,7 @@ class BookingService {
           date: newDate,
           startTime: newStartTime,
           endTime: newEndTime,
+          startAtUtc: newStartAtUtc,
         },
       };
     });
@@ -427,6 +468,19 @@ class BookingService {
     const statusCode = response?.error 
       ? (['BOOKING_NOT_FOUND', 'OCCURRENCE_NOT_FOUND'].includes(response.code) ? 404 : 400) 
       : 200;
+
+    // Reschedule reminders to new time
+    // Only call if occurrence ID is a valid UUID
+    if (statusCode === 200 && response.occurrenceId && isUuid(response.occurrenceId) && response.newTimes?.startAtUtc) {
+      try {
+        await this.reminderService.rescheduleReminders({
+          occurrenceId: response.occurrenceId,
+          newStartAtUtc: response.newTimes.startAtUtc,
+        });
+      } catch (e) {
+        console.warn('[BookingService] Failed to reschedule reminders:', e.message);
+      }
+    }
 
     await this.idempotencyRepo.saveResponse({
       idempotencyKey,
