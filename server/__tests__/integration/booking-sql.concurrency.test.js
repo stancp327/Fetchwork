@@ -8,6 +8,18 @@ const { getPrisma } = require('../../booking-sql/db/client');
 
 let prisma;
 
+// Mock ServiceAdapter - single slot by default
+const createMockServiceAdapter = (maxPerSlot = 1) => ({
+  getById: jest.fn().mockResolvedValue({
+    _id: 'mock-service-concurrent',
+    freelancerId: 'test-freelancer-concurrent',
+    maxPerSlot,
+    cancellationTier: 'flexible',
+    pricingBaseCents: 5000,
+    timezone: 'America/Los_Angeles'
+  })
+});
+
 describe('Booking SQL Concurrency', () => {
   let bookingService;
   const testClientPrefix = 'test-client-concurrent';
@@ -20,7 +32,8 @@ describe('Booking SQL Concurrency', () => {
       console.warn('Prisma not available - skipping concurrency tests:', e.message);
       return;
     }
-    bookingService = new BookingService();
+    // Default single-slot service; individual tests override as needed
+    bookingService = new BookingService({ serviceAdapter: createMockServiceAdapter(1) });
   });
 
   beforeEach(async () => {
@@ -95,14 +108,16 @@ describe('Booking SQL Concurrency', () => {
 
   describe('Group service (maxPerSlot=5)', () => {
     test('10 parallel holds: exactly 5 win', async () => {
+      // Override with group service (maxPerSlot=5)
+      const groupService = new BookingService({ serviceAdapter: createMockServiceAdapter(5) });
       const testServiceId = 'test-service-group-slot';
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const dateStr = tomorrow.toISOString().split('T')[0];
       const timestamp = Date.now();
 
-      // Fire 10 concurrent hold requests
+      // Fire 10 concurrent hold requests using groupService
       const holdPromises = Array.from({ length: 10 }, (_, i) =>
-        bookingService.createHold({
+        groupService.createHold({
           actorId: `${testClientPrefix}-group-${i}`,
           route: '/api/bookings-sql/slots/hold',
           idempotencyKey: `concurrent-group-${timestamp}-${i}`,

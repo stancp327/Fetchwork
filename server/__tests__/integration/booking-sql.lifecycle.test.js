@@ -8,6 +8,20 @@ const { getPrisma } = require('../../booking-sql/db/client');
 
 let prisma;
 
+// Mock ServiceAdapter to avoid MongoDB dependency in integration tests
+const mockService = {
+  _id: 'mock-service-id',
+  freelancerId: 'test-freelancer-lifecycle',
+  maxPerSlot: 1,
+  cancellationTier: 'flexible',
+  pricingBaseCents: 10000,
+  timezone: 'America/Los_Angeles'
+};
+
+const mockServiceAdapter = {
+  getById: jest.fn().mockResolvedValue(mockService)
+};
+
 describe('Booking SQL Lifecycle', () => {
   let bookingService;
   let testServiceId;
@@ -21,11 +35,11 @@ describe('Booking SQL Lifecycle', () => {
       console.warn('Prisma not available - skipping integration tests:', e.message);
       return;
     }
-    bookingService = new BookingService();
-    // Use existing test fixtures or create minimal test data
+    // Inject mock ServiceAdapter to avoid MongoDB dependency
+    bookingService = new BookingService({ serviceAdapter: mockServiceAdapter });
     testFreelancerId = 'test-freelancer-lifecycle';
     testClientId = 'test-client-lifecycle';
-    testServiceId = 'test-service-lifecycle';
+    testServiceId = 'mock-service-id';
   });
 
   beforeEach(async () => {
