@@ -271,3 +271,118 @@ model BookingReminder {
   @@index([occurrenceId])
   @@index([recipientId, status])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GROUP BOOKINGS + WAITLIST
+// Supports classes, group sessions, and waitlist auto-promotion
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum WaitlistStatus {
+  waiting
+  promoted
+  expired
+  cancelled
+}
+
+model GroupBookingSlot {
+  id                String   @id @default(uuid()) @db.Uuid
+  serviceId         String   // MongoDB service reference
+  freelancerId      String
+  
+  // Slot timing
+  date              String   // "YYYY-MM-DD"
+  startTime         String   // "HH:mm"
+  endTime           String   // "HH:mm"
+  startAtUtc        DateTime @db.Timestamptz(6)
+  endAtUtc          DateTime @db.Timestamptz(6)
+  timezone          String
+  
+  // Capacity
+  totalCapacity     Int      @default(10)
+  bookedCount       Int      @default(0)
+  
+  // Pricing (can differ from 1:1)
+  pricePerPersonCents Int    @default(0)
+  
+  // Status
+  isActive          Boolean  @default(true)
+  isFull            Boolean  @default(false)
+  
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
+
+  participants      GroupParticipant[]
+  waitlistEntries   WaitlistEntry[]
+
+  @@unique([serviceId, date, startTime])
+  @@index([freelancerId, date])
+  @@index([serviceId, startAtUtc])
+  @@index([isFull, startAtUtc])
+}
+
+enum ParticipantStatus {
+  held
+  confirmed
+  cancelled
+  no_show
+}
+
+model GroupParticipant {
+  id                String            @id @default(uuid()) @db.Uuid
+  slotId            String            @db.Uuid
+  clientId          String
+  
+  // Booking reference (links to main Booking if needed)
+  bookingId         String?           @db.Uuid
+  
+  seatCount         Int               @default(1)
+  status            ParticipantStatus @default(held)
+  
+  // Hold expiry for pending payments
+  holdExpiresAt     DateTime?         @db.Timestamptz(6)
+  
+  // Payment tracking
+  paidAmountCents   Int               @default(0)
+  
+  createdAt         DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(6)
+
+  slot              GroupBookingSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@unique([slotId, clientId])
+  @@index([clientId, status])
+  @@index([slotId, status])
+  @@index([holdExpiresAt])
+}
+
+model WaitlistEntry {
+  id                String         @id @default(uuid()) @db.Uuid
+  slotId            String         @db.Uuid
+  clientId          String
+  
+  seatCount         Int            @default(1)
+  status            WaitlistStatus @default(waiting)
+  position          Int            // Queue position (1 = first in line)
+  
+  // When they joined the waitlist
+  joinedAt          DateTime       @default(now()) @db.Timestamptz(6)
+  
+  // When they were promoted (if applicable)
+  promotedAt        DateTime?      @db.Timestamptz(6)
+  
+  // Expiry for promotion offer
+  promotionExpiresAt DateTime?     @db.Timestamptz(6)
+  
+  // Contact preference for notification
+  notifyEmail       Boolean        @default(true)
+  notifyPush        Boolean        @default(true)
+  
+  createdAt         DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime       @updatedAt @db.Timestamptz(6)
+
+  slot              GroupBookingSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@unique([slotId, clientId])
+  @@index([slotId, status, position])
+  @@index([clientId, status])
+}
