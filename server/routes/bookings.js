@@ -6,19 +6,20 @@ const Booking = require('../models/Booking');
 const Service = require('../models/Service');
 const Notification = require('../models/Notification');
 let isBookingSqlEnabled = () => false;
-let getSlotsSql, createBookingHoldSql, confirmBookingSql, cancelBookingSql, completeBookingSql, getMyBookingsSql, getBookingByIdSql;
+let getSlotsSql, createBookingHoldSql, confirmBookingSql, cancelBookingSql, completeBookingSql, rescheduleBookingSql, getMyBookingsSql, getBookingByIdSql;
 let bookingSqlHealthcheck = async () => ({ ok: false, error: 'booking-sql module not loaded' });
 
 try {
   isBookingSqlEnabled = require('../booking-sql/db/featureFlag').isBookingSqlEnabled;
   const ctrl = require('../booking-sql/routes/bookingsSqlController');
-  getSlotsSql          = ctrl.getSlotsSql;
-  createBookingHoldSql = ctrl.createBookingHoldSql;
-  confirmBookingSql    = ctrl.confirmBookingSql;
-  cancelBookingSql     = ctrl.cancelBookingSql;
-  completeBookingSql   = ctrl.completeBookingSql;
-  getMyBookingsSql     = ctrl.getMyBookingsSql;
-  getBookingByIdSql    = ctrl.getBookingByIdSql;
+  getSlotsSql           = ctrl.getSlotsSql;
+  createBookingHoldSql  = ctrl.createBookingHoldSql;
+  confirmBookingSql     = ctrl.confirmBookingSql;
+  cancelBookingSql      = ctrl.cancelBookingSql;
+  completeBookingSql    = ctrl.completeBookingSql;
+  rescheduleBookingSql  = ctrl.rescheduleBookingSql;
+  getMyBookingsSql      = ctrl.getMyBookingsSql;
+  getBookingByIdSql     = ctrl.getBookingByIdSql;
   bookingSqlHealthcheck = require('../booking-sql/db/healthcheck').bookingSqlHealthcheck;
 } catch (e) {
   console.error('[bookings] booking-sql module failed to load — falling back to Mongo-only mode:', e.message);
@@ -338,6 +339,19 @@ router.patch('/:bookingId/confirm', authenticateToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── PATCH /api/bookings/:bookingId/reschedule ────────────────────
+// Either party can reschedule; policy engine enforces fees + max count
+router.patch('/:bookingId/reschedule', authenticateToken, async (req, res) => {
+  if (isBookingSqlEnabled()) {
+    return rescheduleBookingSql(req, res);
+  }
+  // Mongo path: reschedule not implemented yet (SQL-first feature)
+  return res.status(501).json({
+    error: 'Reschedule is only available in the new booking engine. Enable BOOKING_SQL_ENABLED to use this feature.',
+    code: 'NOT_IMPLEMENTED_MONGO_PATH',
+  });
 });
 
 // ── PATCH /api/bookings/:bookingId/cancel ────────────────────────

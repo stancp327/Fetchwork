@@ -1,3 +1,4 @@
+const { DateTime } = require('luxon');
 const { withTx } = require('../db/tx');
 const { acquireSlotLock } = require('../db/locks');
 const { BookingRepo } = require('../repos/BookingRepo');
@@ -55,6 +56,7 @@ class BookingService {
       const localStartWallclock = `${body.date}T${body.startTime}`;
       const localEndWallclock = `${body.date}T${body.endTime}`;
       const maxPerSlot = service.maxPerSlot;
+      const tz = service.timezone || 'America/Los_Angeles';
 
       await acquireSlotLock(tx, {
         freelancerId,
@@ -74,11 +76,18 @@ class BookingService {
         };
       }
 
+      // Fix 3: store the actual serviceId when it's a valid UUID (column is uuid type).
+      //        MongoDB service IDs are not UUIDs — store null for those until services
+      //        are migrated to the SQL layer.
+      // Fix 4: convert wallclock → UTC using the service's timezone (via Luxon)
+      const startAtUtc = DateTime.fromISO(`${body.date}T${body.startTime}`, { zone: tz }).toUTC().toJSDate();
+      const endAtUtc   = DateTime.fromISO(`${body.date}T${body.endTime}`,   { zone: tz }).toUTC().toJSDate();
+
       const booking = await this.bookingRepo.createBooking({
         bookingRef: buildBookingRef(),
         clientId: String(actorId),
         freelancerId,
-        serviceOfferingId: null,
+        serviceOfferingId: isUuid(String(serviceId)) ? String(serviceId) : null,
         policySnapshotJson: { tier: service.cancellationTier, snapshotVersion: 1 },
         pricingSnapshotJson: {
           amountCents: service.pricingBaseCents,
@@ -93,9 +102,9 @@ class BookingService {
         occurrenceNo: 1,
         clientId: String(actorId),
         freelancerId,
-        startAtUtc: new Date(`${body.date}T${body.startTime}:00Z`),
-        endAtUtc: new Date(`${body.date}T${body.endTime}:00Z`),
-        timezone: service.timezone,
+        startAtUtc,
+        endAtUtc,
+        timezone: tz,
         localStartWallclock,
         localEndWallclock,
         status: 'held',
@@ -144,6 +153,11 @@ class BookingService {
         return { error: 'Booking not found', code: 'BOOKING_NOT_FOUND' };
       }
 
+      // Fix 2: only the booking's freelancer may confirm
+      if (String(booking.freelancerId) !== String(actorId)) {
+        return { error: 'Only the freelancer can confirm this booking', code: 'NOT_AUTHORIZED' };
+      }
+
       const occurrence = await this.bookingRepo.findFirstOccurrenceByBookingId(booking.id, tx);
       if (!occurrence) {
         return { error: 'Booking occurrence not found', code: 'OCCURRENCE_NOT_FOUND' };
@@ -178,7 +192,9 @@ class BookingService {
     });
 
     const statusCode = response?.error
-      ? (response.code === 'BOOKING_NOT_FOUND' || response.code === 'OCCURRENCE_NOT_FOUND' ? 404 : 400)
+      ? (response.code === 'BOOKING_NOT_FOUND' || response.code === 'OCCURRENCE_NOT_FOUND' ? 404
+        : response.code === 'NOT_AUTHORIZED' ? 403
+        : 400)
       : 200;
 
     // Schedule reminders after successful confirm (outside transaction)

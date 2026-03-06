@@ -3,6 +3,7 @@
  * Tests full booking flows against real Postgres (Neon)
  */
 
+const { DateTime } = require('luxon');
 const { BookingService } = require('../../booking-sql/services/BookingService');
 const { getPrisma } = require('../../booking-sql/db/client');
 
@@ -116,10 +117,10 @@ describe('Booking SQL Lifecycle', () => {
 
   describe('Cancel with fee verification', () => {
     test('flexible tier: cancel <2h out = 100% charge', async () => {
-      // Create booking 1 hour from now
-      const soon = new Date(Date.now() + 1 * 60 * 60 * 1000);
-      const dateStr = soon.toISOString().split('T')[0];
-      const timeStr = soon.toISOString().split('T')[1].slice(0, 5);
+      // Create booking 1 hour from now — use LA timezone since mockService.timezone = 'America/Los_Angeles'
+      const soon = DateTime.now().plus({ hours: 1 }).setZone('America/Los_Angeles');
+      const dateStr = soon.toFormat('yyyy-MM-dd');
+      const timeStr = soon.toFormat('HH:mm');
 
       const holdResult = await bookingService.createHold({
         actorId: testClientId,
@@ -172,10 +173,10 @@ describe('Booking SQL Lifecycle', () => {
     });
 
     test('flexible tier: cancel 25h out = 0% charge', async () => {
-      // Create booking 25 hours from now
-      const later = new Date(Date.now() + 25 * 60 * 60 * 1000);
-      const dateStr = later.toISOString().split('T')[0];
-      const timeStr = later.toISOString().split('T')[1].slice(0, 5);
+      // Create booking 25 hours from now — use LA timezone since mockService.timezone = 'America/Los_Angeles'
+      const later = DateTime.now().plus({ hours: 25 }).setZone('America/Los_Angeles');
+      const dateStr = later.toFormat('yyyy-MM-dd');
+      const timeStr = later.toFormat('HH:mm');
 
       const holdResult = await bookingService.createHold({
         actorId: testClientId,

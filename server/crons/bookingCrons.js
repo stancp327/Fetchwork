@@ -1,9 +1,12 @@
 /**
  * Booking system cron jobs:
- * 1. Clean up expired holds (every minute)
- * 2. Send 24h reminders (every 5 minutes)
- * 3. Send 1h reminders (every 5 minutes)
+ * 1. Clean up expired holds (every minute) — Mongo path only
+ * 2. Send 24h reminders (every 5 minutes)  — Mongo path only; SQL path uses ReminderService
+ * 3. Send 1h reminders (every 5 minutes)   — Mongo path only; SQL path uses ReminderService
  * 4. Calendar sync retry for failed syncs (every 10 minutes)
+ *
+ * Crons 1-3 are guarded by !isBookingSqlEnabled() to prevent duplicate
+ * notifications when the SQL booking path is active.
  */
 const cron    = require('node-cron');
 const Booking = require('../models/Booking');
@@ -11,10 +14,16 @@ const User    = require('../models/User');
 const Notification = require('../models/Notification');
 const calendarService = require('../services/calendarService');
 
+let isBookingSqlEnabled = () => false;
+try {
+  isBookingSqlEnabled = require('../booking-sql/db/featureFlag').isBookingSqlEnabled;
+} catch (_) { /* booking-sql not available — keep Mongo crons active */ }
+
 function initBookingCrons() {
 
-  // ── 1. Expire stale holds every minute ────────────────────────────────
+  // ── 1. Expire stale holds every minute (Mongo path only) ─────────────
   cron.schedule('* * * * *', async () => {
+    if (isBookingSqlEnabled()) return; // SQL path manages hold expiry via BookingService
     try {
       const expired = await Booking.updateMany(
         { status: 'hold', holdExpiresAt: { $lt: new Date() } },
@@ -28,8 +37,10 @@ function initBookingCrons() {
     }
   });
 
-  // ── 2. Send 24h reminders ─────────────────────────────────────────────
+  // ── 2. Send 24h reminders (Mongo path only) ──────────────────────────
+  // SQL path: reminders are scheduled by ReminderService at confirm time
   cron.schedule('*/5 * * * *', async () => {
+    if (isBookingSqlEnabled()) return;
     try {
       const windowStart = new Date(Date.now() + 23.5 * 3600 * 1000);
       const windowEnd   = new Date(Date.now() + 24.5 * 3600 * 1000);
@@ -79,8 +90,9 @@ function initBookingCrons() {
     }
   });
 
-  // ── 3. Send 1h reminders ──────────────────────────────────────────────
+  // ── 3. Send 1h reminders (Mongo path only) ───────────────────────────
   cron.schedule('*/5 * * * *', async () => {
+    if (isBookingSqlEnabled()) return;
     try {
       const windowStart = new Date(Date.now() + 50 * 60 * 1000);
       const windowEnd   = new Date(Date.now() + 70 * 60 * 1000);

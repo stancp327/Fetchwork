@@ -168,6 +168,41 @@ async function completeBookingSql(req, res) {
   return res.status(result.statusCode).json(result.response);
 }
 
+async function rescheduleBookingSql(req, res) {
+  const { bookingId } = req.params || {};
+  if (!bookingId) return res.status(400).json({ error: 'bookingId is required' });
+
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/:bookingId/reschedule');
+  if (guard) return guard;
+
+  const { newDate, newStartTime, newEndTime, reason } = req.body || {};
+  if (!newDate || !newStartTime || !newEndTime) {
+    return res.status(400).json({
+      error: 'newDate, newStartTime, and newEndTime are required',
+      code: 'MISSING_RESCHEDULE_PARAMS',
+    });
+  }
+
+  const idempotencyKey = req.header('Idempotency-Key');
+  if (!idempotencyKey) {
+    return res.status(400).json({ error: 'Idempotency-Key header is required', code: 'MISSING_IDEMPOTENCY_KEY' });
+  }
+
+  const result = await bookingService.rescheduleBooking({
+    actorId: String(req.user?.userId || req.user?._id || 'unknown'),
+    route: 'PATCH:/api/bookings/:bookingId/reschedule',
+    idempotencyKey,
+    requestHash: buildRequestHash(req),
+    bookingId,
+    newDate,
+    newStartTime,
+    newEndTime,
+    reason: reason || '',
+  });
+
+  return res.status(result.statusCode).json(result.response);
+}
+
 async function getMyBookingsSql(req, res) {
   const guard = await ensureSqlReady(res, 'GET /bookings/me');
   if (guard) return guard;
@@ -277,11 +312,12 @@ async function getBookingByIdSql(req, res) {
 }
 
 module.exports = {
-  getSlotsSql:          withHandler(getSlotsSql),
-  createBookingHoldSql: withHandler(createBookingHoldSql),
-  confirmBookingSql:    withHandler(confirmBookingSql),
-  cancelBookingSql:     withHandler(cancelBookingSql),
-  completeBookingSql:   withHandler(completeBookingSql),
-  getMyBookingsSql:     withHandler(getMyBookingsSql),
-  getBookingByIdSql:    withHandler(getBookingByIdSql),
+  getSlotsSql:           withHandler(getSlotsSql),
+  createBookingHoldSql:  withHandler(createBookingHoldSql),
+  confirmBookingSql:     withHandler(confirmBookingSql),
+  cancelBookingSql:      withHandler(cancelBookingSql),
+  completeBookingSql:    withHandler(completeBookingSql),
+  rescheduleBookingSql:  withHandler(rescheduleBookingSql),
+  getMyBookingsSql:      withHandler(getMyBookingsSql),
+  getBookingByIdSql:     withHandler(getBookingByIdSql),
 };
