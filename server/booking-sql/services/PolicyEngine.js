@@ -17,6 +17,8 @@ class PolicyEngine {
       bookingAmountCents: gross,
       chargeCents,
       refundCents,
+      chargeFeeAmountCents: chargeCents,
+      refundAmountCents: refundCents,
     };
   }
 
@@ -29,21 +31,23 @@ class PolicyEngine {
 
     const hours = (start.getTime() - cancelled.getTime()) / (1000 * 60 * 60);
 
+    // Strict: 7d+=0%, 48h-7d=50%, <48h=100%
     if (tier === 'strict') {
-      if (hours >= 72) return 0.0;
+      if (hours >= 168) return 0.0;  // 7 days
+      if (hours >= 48) return 0.5;
+      return 1.0;
+    }
+
+    // Moderate: 48h+=0%, 24-48h=50%, <24h=100%
+    if (tier === 'moderate') {
+      if (hours >= 48) return 0.0;
       if (hours >= 24) return 0.5;
       return 1.0;
     }
 
-    if (tier === 'moderate') {
-      if (hours >= 48) return 0.0;
-      if (hours >= 24) return 0.25;
-      return 0.75;
-    }
-
-    // flexible default
+    // Flexible (default): 24h+=0%, 2-24h=50%, <2h=100%
     if (hours >= 24) return 0.0;
-    if (hours >= 6) return 0.5;
+    if (hours >= 2) return 0.5;
     return 1.0;
   }
 }
