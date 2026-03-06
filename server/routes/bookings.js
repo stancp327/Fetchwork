@@ -6,23 +6,60 @@ const Booking = require('../models/Booking');
 const Service = require('../models/Service');
 const Notification = require('../models/Notification');
 let isBookingSqlEnabled = () => false;
-let getSlotsSql, createBookingHoldSql, confirmBookingSql, cancelBookingSql, completeBookingSql, rescheduleBookingSql, getMyBookingsSql, getBookingByIdSql;
+let getSlotsSql, createBookingHoldSql, confirmBookingSql, cancelBookingSql, completeBookingSql,
+    rescheduleBookingSql, getMyBookingsSql, getBookingByIdSql,
+    // Group
+    createGroupSlot, getGroupSlots, getGroupSlotDetail, bookGroupSeats,
+    confirmGroupBooking, cancelGroupBooking, joinGroupWaitlist, leaveGroupWaitlist,
+    getGroupWaitlistPosition, acceptWaitlistPromotion,
+    // Attendance
+    attendanceCheckin, attendanceCheckout, markNoShow,
+    flagAttendanceDispute, getAttendanceRecord, adminResolveAttendance,
+    // Audit
+    getBookingTimeline, queryAuditEvents, recordAdminOverride,
+    getDisputeEvidence, getAuditStats, verifyAuditIntegrity;
 let bookingSqlHealthcheck = async () => ({ ok: false, error: 'booking-sql module not loaded' });
 
 try {
   isBookingSqlEnabled = require('../booking-sql/db/featureFlag').isBookingSqlEnabled;
   const ctrl = require('../booking-sql/routes/bookingsSqlController');
-  getSlotsSql           = ctrl.getSlotsSql;
-  createBookingHoldSql  = ctrl.createBookingHoldSql;
-  confirmBookingSql     = ctrl.confirmBookingSql;
-  cancelBookingSql      = ctrl.cancelBookingSql;
-  completeBookingSql    = ctrl.completeBookingSql;
-  rescheduleBookingSql  = ctrl.rescheduleBookingSql;
-  getMyBookingsSql      = ctrl.getMyBookingsSql;
-  getBookingByIdSql     = ctrl.getBookingByIdSql;
-  bookingSqlHealthcheck = require('../booking-sql/db/healthcheck').bookingSqlHealthcheck;
+  // Core
+  getSlotsSql              = ctrl.getSlotsSql;
+  createBookingHoldSql     = ctrl.createBookingHoldSql;
+  confirmBookingSql        = ctrl.confirmBookingSql;
+  cancelBookingSql         = ctrl.cancelBookingSql;
+  completeBookingSql       = ctrl.completeBookingSql;
+  rescheduleBookingSql     = ctrl.rescheduleBookingSql;
+  getMyBookingsSql         = ctrl.getMyBookingsSql;
+  getBookingByIdSql        = ctrl.getBookingByIdSql;
+  // Group
+  createGroupSlot          = ctrl.createGroupSlot;
+  getGroupSlots            = ctrl.getGroupSlots;
+  getGroupSlotDetail       = ctrl.getGroupSlotDetail;
+  bookGroupSeats           = ctrl.bookGroupSeats;
+  confirmGroupBooking      = ctrl.confirmGroupBooking;
+  cancelGroupBooking       = ctrl.cancelGroupBooking;
+  joinGroupWaitlist        = ctrl.joinGroupWaitlist;
+  leaveGroupWaitlist       = ctrl.leaveGroupWaitlist;
+  getGroupWaitlistPosition = ctrl.getGroupWaitlistPosition;
+  acceptWaitlistPromotion  = ctrl.acceptWaitlistPromotion;
+  // Attendance
+  attendanceCheckin        = ctrl.attendanceCheckin;
+  attendanceCheckout       = ctrl.attendanceCheckout;
+  markNoShow               = ctrl.markNoShow;
+  flagAttendanceDispute    = ctrl.flagAttendanceDispute;
+  getAttendanceRecord      = ctrl.getAttendanceRecord;
+  adminResolveAttendance   = ctrl.adminResolveAttendance;
+  // Audit
+  getBookingTimeline       = ctrl.getBookingTimeline;
+  queryAuditEvents         = ctrl.queryAuditEvents;
+  recordAdminOverride      = ctrl.recordAdminOverride;
+  getDisputeEvidence       = ctrl.getDisputeEvidence;
+  getAuditStats            = ctrl.getAuditStats;
+  verifyAuditIntegrity     = ctrl.verifyAuditIntegrity;
+  bookingSqlHealthcheck    = require('../booking-sql/db/healthcheck').bookingSqlHealthcheck;
 } catch (e) {
-  console.error('[bookings] booking-sql module failed to load — falling back to Mongo-only mode:', e.message);
+  console.error('[bookings] booking-sql module failed to load - falling back to Mongo-only mode:', e.message);
 }
 
 // TODO(SQL cutover): route handlers in this file branch by BOOKING_SQL_ENABLED.
@@ -112,7 +149,7 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
 });
 
 // ── GET /api/bookings/availability/:serviceId ────────────────────
-// Public — returns availability config
+// Public - returns availability config
 router.get('/availability/:serviceId', async (req, res) => {
   try {
     const service = await Service.findById(req.params.serviceId)
@@ -125,7 +162,7 @@ router.get('/availability/:serviceId', async (req, res) => {
 });
 
 // ── GET /api/bookings/slots/:serviceId?date=YYYY-MM-DD ──────────
-// Public — returns available time slots for a specific date
+// Public - returns available time slots for a specific date
 router.get('/slots/:serviceId', async (req, res) => {
   if (isBookingSqlEnabled()) {
     return getSlotsSql(req, res);
@@ -422,7 +459,136 @@ router.patch('/:bookingId/complete', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/bookings/:bookingId — get single booking detail
+// ── GROUP BOOKING ROUTES ─────────────────────────────────────────────────────
+
+// POST   /api/bookings/group/slots                           — create group slot (freelancer)
+// GET    /api/bookings/group/slots/:serviceId                — available slots for a service
+// GET    /api/bookings/group/slots/:slotId/detail            — slot detail + participants + waitlist
+// POST   /api/bookings/group/slots/:slotId/book              — book seats (client)
+// PATCH  /api/bookings/group/participants/:participantId/confirm  — confirm held group seat
+// PATCH  /api/bookings/group/participants/:participantId/cancel   — cancel seat (auto-promotes waitlist)
+// POST   /api/bookings/group/slots/:slotId/waitlist          — join waitlist
+// DELETE /api/bookings/group/slots/:slotId/waitlist          — leave waitlist
+// GET    /api/bookings/group/slots/:slotId/waitlist/position — get position
+// POST   /api/bookings/group/waitlist/:waitlistId/accept     — accept waitlist promotion
+
+router.post('/group/slots', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return createGroupSlot(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/group/slots/:serviceId', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getGroupSlots(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/group/slots/:slotId/detail', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getGroupSlotDetail(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.post('/group/slots/:slotId/book', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return bookGroupSeats(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.patch('/group/participants/:participantId/confirm', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return confirmGroupBooking(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.patch('/group/participants/:participantId/cancel', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return cancelGroupBooking(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.post('/group/slots/:slotId/waitlist', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return joinGroupWaitlist(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.delete('/group/slots/:slotId/waitlist', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return leaveGroupWaitlist(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/group/slots/:slotId/waitlist/position', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getGroupWaitlistPosition(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.post('/group/waitlist/:waitlistId/accept', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return acceptWaitlistPromotion(req, res);
+  return res.status(501).json({ error: 'Group bookings require BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+// ── AUDIT ROUTES (admin) ──────────────────────────────────────────────────────
+
+router.get('/audit/events', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return queryAuditEvents(req, res);
+  return res.status(501).json({ error: 'Audit requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/audit/stats', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getAuditStats(req, res);
+  return res.status(501).json({ error: 'Audit requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/audit/events/:eventId/verify', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return verifyAuditIntegrity(req, res);
+  return res.status(501).json({ error: 'Audit requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+// ── PER-BOOKING ROUTES (must stay above /:bookingId catch-all) ───────────────
+
+router.get('/:bookingId/timeline', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getBookingTimeline(req, res);
+  return res.status(501).json({ error: 'Timeline requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.post('/:bookingId/audit/admin-override', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return recordAdminOverride(req, res);
+  return res.status(501).json({ error: 'Audit requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/:bookingId/audit/dispute-evidence', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getDisputeEvidence(req, res);
+  return res.status(501).json({ error: 'Audit requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+// ── ATTENDANCE ROUTES (per-occurrence) ───────────────────────────────────────
+
+router.post('/:bookingId/occurrences/:occurrenceId/checkin', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return attendanceCheckin(req, res);
+  return res.status(501).json({ error: 'Attendance requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.post('/:bookingId/occurrences/:occurrenceId/checkout', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return attendanceCheckout(req, res);
+  return res.status(501).json({ error: 'Attendance requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.post('/:bookingId/occurrences/:occurrenceId/no-show', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return markNoShow(req, res);
+  return res.status(501).json({ error: 'Attendance requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.post('/:bookingId/occurrences/:occurrenceId/dispute', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return flagAttendanceDispute(req, res);
+  return res.status(501).json({ error: 'Attendance requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/:bookingId/occurrences/:occurrenceId/attendance', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getAttendanceRecord(req, res);
+  return res.status(501).json({ error: 'Attendance requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.patch('/:bookingId/occurrences/:occurrenceId/attendance/admin-resolve', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return adminResolveAttendance(req, res);
+  return res.status(501).json({ error: 'Attendance requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+// GET /api/bookings/:bookingId - get single booking detail
 router.get('/:bookingId', authenticateToken, async (req, res) => {
   if (isBookingSqlEnabled()) return getBookingByIdSql(req, res);
   try {

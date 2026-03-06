@@ -2,12 +2,18 @@ const { bookingSqlHealthcheck } = require('../db/healthcheck');
 const { buildRequestHash } = require('../middleware/idempotency');
 const { BookingService } = require('../services/BookingService');
 const { SlotEngine } = require('../services/SlotEngine');
+const { GroupBookingService } = require('../services/GroupBookingService');
+const { AttendanceService } = require('../services/AttendanceService');
+const { AuditService } = require('../services/AuditService');
 
 const { BookingRepo } = require('../repos/BookingRepo');
 
-const bookingService = new BookingService();
-const slotEngine = new SlotEngine();
-const bookingRepo = new BookingRepo();
+const bookingService    = new BookingService();
+const slotEngine        = new SlotEngine();
+const bookingRepo       = new BookingRepo();
+const groupBooking      = new GroupBookingService();
+const attendanceService = new AttendanceService();
+const auditService      = new AuditService();
 
 /**
  * Wraps an async route handler so any unhandled error returns a clean 500
@@ -311,13 +317,333 @@ async function getBookingByIdSql(req, res) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GROUP BOOKING HANDLERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function createGroupSlot(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/group/slots');
+  if (guard) return guard;
+
+  const { serviceId, date, startTime, endTime, timezone, totalCapacity, pricePerPersonCents } = req.body || {};
+  if (!serviceId || !date || !startTime || !endTime) {
+    return res.status(400).json({ error: 'serviceId, date, startTime, endTime are required', code: 'MISSING_PARAMS' });
+  }
+
+  const freelancerId = String(req.user?.userId || req.user?._id);
+  const slot = await groupBooking.createSlot({ serviceId, freelancerId, date, startTime, endTime, timezone, totalCapacity, pricePerPersonCents });
+  return res.status(201).json({ slot });
+}
+
+async function getGroupSlots(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/group/slots/:serviceId');
+  if (guard) return guard;
+
+  const { serviceId } = req.params;
+  const { fromDate, toDate } = req.query;
+  if (!fromDate || !toDate) {
+    return res.status(400).json({ error: 'fromDate and toDate query params required (YYYY-MM-DD)', code: 'MISSING_PARAMS' });
+  }
+
+  const slots = await groupBooking.getAvailableSlots({ serviceId, fromDate, toDate });
+  return res.json({ slots });
+}
+
+async function getGroupSlotDetail(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/group/slots/:slotId/detail');
+  if (guard) return guard;
+
+  const slot = await groupBooking.getSlot(req.params.slotId);
+  if (!slot) return res.status(404).json({ error: 'Slot not found', code: 'SLOT_NOT_FOUND' });
+  return res.json({ slot });
+}
+
+async function bookGroupSeats(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/group/slots/:slotId/book');
+  if (guard) return guard;
+
+  const clientId = String(req.user?.userId || req.user?._id);
+  const { seatCount = 1, paid = false } = req.body || {};
+  const result = await groupBooking.bookSeats({ slotId: req.params.slotId, clientId, seatCount, paid });
+
+  if (result.error) {
+    const code = result.code === 'SLOT_NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.status(201).json(result);
+}
+
+async function confirmGroupBooking(req, res) {
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/group/participants/:participantId/confirm');
+  if (guard) return guard;
+
+  const { paidAmountCents } = req.body || {};
+  const result = await groupBooking.confirmBooking({ participantId: req.params.participantId, paidAmountCents });
+
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+async function cancelGroupBooking(req, res) {
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/group/participants/:participantId/cancel');
+  if (guard) return guard;
+
+  const result = await groupBooking.cancelBooking({ participantId: req.params.participantId, reason: req.body?.reason || '' });
+
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+async function joinGroupWaitlist(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/group/slots/:slotId/waitlist');
+  if (guard) return guard;
+
+  const clientId = String(req.user?.userId || req.user?._id);
+  const { seatCount = 1 } = req.body || {};
+  const result = await groupBooking.joinWaitlist({ slotId: req.params.slotId, clientId, seatCount });
+
+  if (result.error) {
+    const code = result.code === 'SLOT_NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.status(201).json(result);
+}
+
+async function leaveGroupWaitlist(req, res) {
+  const guard = await ensureSqlReady(res, 'DELETE /bookings/group/slots/:slotId/waitlist');
+  if (guard) return guard;
+
+  const clientId = String(req.user?.userId || req.user?._id);
+  const result = await groupBooking.leaveWaitlist({ slotId: req.params.slotId, clientId });
+
+  if (result.error) return res.status(404).json(result);
+  return res.json(result);
+}
+
+async function getGroupWaitlistPosition(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/group/slots/:slotId/waitlist/position');
+  if (guard) return guard;
+
+  const clientId = String(req.user?.userId || req.user?._id);
+  const position = await groupBooking.getWaitlistPosition({ slotId: req.params.slotId, clientId });
+  return res.json({ position });
+}
+
+async function acceptWaitlistPromotion(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/group/waitlist/:waitlistId/accept');
+  if (guard) return guard;
+
+  const { paid = false } = req.body || {};
+  const result = await groupBooking.acceptPromotion({ waitlistId: req.params.waitlistId, paid });
+
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ATTENDANCE HANDLERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function attendanceCheckin(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/:bookingId/occurrences/:occurrenceId/checkin');
+  if (guard) return guard;
+
+  const { occurrenceId } = req.params;
+  const actor = req.user?.role === 'freelancer' ? 'freelancer' : 'client';
+  const meta = req.body?.meta || {};
+
+  const result = actor === 'freelancer'
+    ? await attendanceService.freelancerCheckin({ occurrenceId, meta })
+    : await attendanceService.clientCheckin({ occurrenceId, meta });
+
+  return res.json(result);
+}
+
+async function attendanceCheckout(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/:bookingId/occurrences/:occurrenceId/checkout');
+  if (guard) return guard;
+
+  const { occurrenceId } = req.params;
+  const actor = req.user?.role === 'freelancer' ? 'freelancer' : 'client';
+
+  const result = actor === 'freelancer'
+    ? await attendanceService.freelancerCheckout({ occurrenceId })
+    : await attendanceService.clientCheckout({ occurrenceId });
+
+  return res.json(result);
+}
+
+async function markNoShow(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/:bookingId/occurrences/:occurrenceId/no-show');
+  if (guard) return guard;
+
+  const { occurrenceId } = req.params;
+  const { noShowParty } = req.body || {};
+
+  if (!['client', 'freelancer'].includes(noShowParty)) {
+    return res.status(400).json({ error: 'noShowParty must be "client" or "freelancer"', code: 'INVALID_PARTY' });
+  }
+
+  const result = await attendanceService.markNoShow({ occurrenceId, noShowParty });
+  return res.json(result);
+}
+
+async function flagAttendanceDispute(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/:bookingId/occurrences/:occurrenceId/dispute');
+  if (guard) return guard;
+
+  const { reason } = req.body || {};
+  if (!reason) return res.status(400).json({ error: 'reason is required', code: 'MISSING_REASON' });
+
+  const result = await attendanceService.flagDispute({ occurrenceId: req.params.occurrenceId, reason });
+  return res.json(result);
+}
+
+async function getAttendanceRecord(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/:bookingId/occurrences/:occurrenceId/attendance');
+  if (guard) return guard;
+
+  const record = await attendanceService.getRecord(req.params.occurrenceId);
+  if (!record) return res.status(404).json({ error: 'No attendance record found', code: 'NOT_FOUND' });
+  return res.json({ record });
+}
+
+async function adminResolveAttendance(req, res) {
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/:bookingId/occurrences/:occurrenceId/attendance/admin-resolve');
+  if (guard) return guard;
+
+  const { resolution } = req.body || {};
+  if (!resolution) return res.status(400).json({ error: 'resolution is required', code: 'MISSING_RESOLUTION' });
+
+  const adminId = String(req.user?.userId || req.user?._id);
+  const result = await attendanceService.adminResolve({ occurrenceId: req.params.occurrenceId, resolution, adminId });
+  return res.json(result);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT HANDLERS (admin only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function getBookingTimeline(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/:bookingId/timeline');
+  if (guard) return guard;
+
+  const timeline = await auditService.getBookingTimelineFormatted({ bookingId: req.params.bookingId });
+  return res.json({ timeline });
+}
+
+async function queryAuditEvents(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/audit/events');
+  if (guard) return guard;
+
+  const { bookingId, eventTypes, actorTypes, actorId, fromDate, toDate, limit = 100, offset = 0 } = req.query;
+
+  const result = await auditService.queryEvents({
+    bookingId: bookingId || null,
+    eventTypes: eventTypes ? String(eventTypes).split(',') : null,
+    actorTypes: actorTypes ? String(actorTypes).split(',') : null,
+    actorId: actorId || null,
+    fromDate: fromDate || null,
+    toDate: toDate || null,
+    limit: Math.min(Number(limit) || 100, 500),
+    offset: Number(offset) || 0,
+  });
+
+  return res.json(result);
+}
+
+async function recordAdminOverride(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/:bookingId/audit/admin-override');
+  if (guard) return guard;
+
+  const { action, reason, changes } = req.body || {};
+  if (!action || !reason) {
+    return res.status(400).json({ error: 'action and reason are required', code: 'MISSING_PARAMS' });
+  }
+
+  const adminId = String(req.user?.userId || req.user?._id);
+  const event = await auditService.recordAdminOverride({
+    bookingId: req.params.bookingId,
+    occurrenceId: req.body?.occurrenceId || null,
+    adminId,
+    action,
+    reason,
+    changes: changes || {},
+  });
+
+  return res.status(201).json({ event: { id: event.id.toString(), eventType: event.eventType, createdAt: event.createdAt } });
+}
+
+async function getDisputeEvidence(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/:bookingId/audit/dispute-evidence');
+  if (guard) return guard;
+
+  const result = await auditService.packageDisputeEvidence({ bookingId: req.params.bookingId });
+  if (result.error) return res.status(404).json(result);
+  return res.json(result);
+}
+
+async function getAuditStats(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/audit/stats');
+  if (guard) return guard;
+
+  const { days = 7 } = req.query;
+  const stats = await auditService.getStats({ days: Number(days) });
+  return res.json({ stats });
+}
+
+async function verifyAuditIntegrity(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/audit/events/:eventId/verify');
+  if (guard) return guard;
+
+  const result = await auditService.verifyPayloadIntegrity(req.params.eventId);
+  return res.json(result);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 module.exports = {
-  getSlotsSql:           withHandler(getSlotsSql),
-  createBookingHoldSql:  withHandler(createBookingHoldSql),
-  confirmBookingSql:     withHandler(confirmBookingSql),
-  cancelBookingSql:      withHandler(cancelBookingSql),
-  completeBookingSql:    withHandler(completeBookingSql),
-  rescheduleBookingSql:  withHandler(rescheduleBookingSql),
-  getMyBookingsSql:      withHandler(getMyBookingsSql),
-  getBookingByIdSql:     withHandler(getBookingByIdSql),
+  // Core booking
+  getSlotsSql:              withHandler(getSlotsSql),
+  createBookingHoldSql:     withHandler(createBookingHoldSql),
+  confirmBookingSql:        withHandler(confirmBookingSql),
+  cancelBookingSql:         withHandler(cancelBookingSql),
+  completeBookingSql:       withHandler(completeBookingSql),
+  rescheduleBookingSql:     withHandler(rescheduleBookingSql),
+  getMyBookingsSql:         withHandler(getMyBookingsSql),
+  getBookingByIdSql:        withHandler(getBookingByIdSql),
+  // Group bookings
+  createGroupSlot:          withHandler(createGroupSlot),
+  getGroupSlots:            withHandler(getGroupSlots),
+  getGroupSlotDetail:       withHandler(getGroupSlotDetail),
+  bookGroupSeats:           withHandler(bookGroupSeats),
+  confirmGroupBooking:      withHandler(confirmGroupBooking),
+  cancelGroupBooking:       withHandler(cancelGroupBooking),
+  joinGroupWaitlist:        withHandler(joinGroupWaitlist),
+  leaveGroupWaitlist:       withHandler(leaveGroupWaitlist),
+  getGroupWaitlistPosition: withHandler(getGroupWaitlistPosition),
+  acceptWaitlistPromotion:  withHandler(acceptWaitlistPromotion),
+  // Attendance
+  attendanceCheckin:        withHandler(attendanceCheckin),
+  attendanceCheckout:       withHandler(attendanceCheckout),
+  markNoShow:               withHandler(markNoShow),
+  flagAttendanceDispute:    withHandler(flagAttendanceDispute),
+  getAttendanceRecord:      withHandler(getAttendanceRecord),
+  adminResolveAttendance:   withHandler(adminResolveAttendance),
+  // Audit (admin)
+  getBookingTimeline:       withHandler(getBookingTimeline),
+  queryAuditEvents:         withHandler(queryAuditEvents),
+  recordAdminOverride:      withHandler(recordAdminOverride),
+  getDisputeEvidence:       withHandler(getDisputeEvidence),
+  getAuditStats:            withHandler(getAuditStats),
+  verifyAuditIntegrity:     withHandler(verifyAuditIntegrity),
 };

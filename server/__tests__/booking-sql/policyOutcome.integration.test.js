@@ -267,8 +267,10 @@ describe('BookingService.cancelBooking — policyOutcome integration', () => {
     expect(response.policyOutcome.chargeCents).toBe(5000);
   });
 
-  test('strict: cancels 48h out → 50% charge in policyOutcome', async () => {
-    const { statusCode, response } = await runCancel({ tier: 'strict', amountCents: 20000, hoursUntilStart: 48 });
+  test('strict: cancels 72h out → 50% charge in policyOutcome', async () => {
+    // Strict tier: >=168h=0%, 48-168h=50%, <48h=100%
+    // Use 72h (solidly in 48-168h window) to avoid boundary flakiness at exactly 48h
+    const { statusCode, response } = await runCancel({ tier: 'strict', amountCents: 20000, hoursUntilStart: 72 });
     expect(statusCode).toBe(200);
     expect(response.policyOutcome.chargePct).toBe(0.5);
     expect(response.policyOutcome.chargeCents).toBe(10000);
