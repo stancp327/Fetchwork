@@ -41,9 +41,10 @@ model Booking {
   createdAt           DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime      @updatedAt @db.Timestamptz(6)
 
-  occurrences   BookingOccurrence[]
-  auditEvents   AuditEvent[]
-  chargeRecords ChargeRecord[]
+  occurrences      BookingOccurrence[]
+  auditEvents      AuditEvent[]
+  chargeRecords    ChargeRecord[]
+  recurringSeries  RecurringSeries?
 
   @@index([clientId, createdAt(sort: Desc)])
   @@index([freelancerId, createdAt(sort: Desc)])
@@ -61,10 +62,13 @@ model BookingOccurrence {
   localStartWallclock String
   localEndWallclock   String
   status              BookingStatus @default(held)
+  seriesId            String?       @db.Uuid
+  skipped             Boolean       @default(false)
   createdAt           DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime      @updatedAt @db.Timestamptz(6)
 
-  booking          Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking          Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  series           RecurringSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   auditEvents      AuditEvent[]
   chargeRecords    ChargeRecord[]
   attendanceRecord AttendanceRecord?
@@ -73,6 +77,44 @@ model BookingOccurrence {
   @@index([freelancerId, startAtUtc])
   @@index([clientId, startAtUtc])
   @@index([status, startAtUtc])
+  @@index([seriesId, startAtUtc])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RECURRING SERIES
+// Weekly/biweekly/monthly recurring booking schedules
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model RecurringSeries {
+  id               String    @id @default(uuid()) @db.Uuid
+  bookingId        String    @unique @db.Uuid
+
+  frequency        String    // weekly | biweekly | monthly | custom
+  intervalDays     Int       // 7=weekly, 14=biweekly, ~30=monthly, custom
+
+  startDate        String    // YYYY-MM-DD (first occurrence)
+  endDate          String?   // YYYY-MM-DD (last possible, null=indefinite)
+  maxOccurrences   Int?      // cap on total occurrences (null=no cap)
+
+  startTime        String    // HH:MM wallclock
+  endTime          String    // HH:MM wallclock
+  timezone         String
+
+  status           String    @default("active") // active | paused | cancelled | completed
+  cancelledAt      DateTime? @db.Timestamptz(6)
+  cancelledFromDate String?  // YYYY-MM-DD — occurrences on/after this date are cancelled
+
+  generatedThrough String?   // YYYY-MM-DD — last date occurrences were generated up to
+  generatedCount   Int       @default(0)
+
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(6)
+
+  booking          Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  occurrences      BookingOccurrence[]
+
+  @@map("recurring_series")
+  @@index([status, startDate])
 }
 
 model AuditEvent {

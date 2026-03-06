@@ -3,6 +3,7 @@ const { buildRequestHash } = require('../middleware/idempotency');
 const { BookingService } = require('../services/BookingService');
 const { SlotEngine } = require('../services/SlotEngine');
 const { GroupBookingService } = require('../services/GroupBookingService');
+const { RecurringSeriesService } = require('../services/RecurringSeriesService');
 const { AttendanceService } = require('../services/AttendanceService');
 const { AuditService } = require('../services/AuditService');
 
@@ -11,7 +12,8 @@ const { BookingRepo } = require('../repos/BookingRepo');
 const bookingService    = new BookingService();
 const slotEngine        = new SlotEngine();
 const bookingRepo       = new BookingRepo();
-const groupBooking      = new GroupBookingService();
+const groupBooking       = new GroupBookingService();
+const recurringSeriesSvc = new RecurringSeriesService();
 const attendanceService = new AttendanceService();
 const auditService      = new AuditService();
 
@@ -610,6 +612,109 @@ async function verifyAuditIntegrity(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// RECURRING SERIES HANDLERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function createRecurringSeries(req, res) {
+  const guard = await ensureSqlReady(res, 'POST /bookings/:bookingId/series');
+  if (guard) return guard;
+
+  const { bookingId } = req.params;
+  const { frequency, intervalDays, startDate, startTime, endTime, timezone, endDate, maxOccurrences } = req.body || {};
+
+  if (!frequency || !startDate || !startTime || !endTime || !timezone) {
+    return res.status(400).json({ error: 'frequency, startDate, startTime, endTime, and timezone are required', code: 'MISSING_PARAMS' });
+  }
+
+  const result = await recurringSeriesSvc.createSeries({
+    bookingId, frequency, intervalDays, startDate, startTime, endTime, timezone, endDate, maxOccurrences,
+  });
+
+  if (result.error) {
+    const code = result.code === 'BOOKING_NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.status(201).json(result);
+}
+
+async function getRecurringSeries(req, res) {
+  const guard = await ensureSqlReady(res, 'GET /bookings/:bookingId/series/:seriesId');
+  if (guard) return guard;
+
+  const series = await recurringSeriesSvc.getSeriesDetails(req.params.seriesId);
+  if (!series) return res.status(404).json({ error: 'Series not found', code: 'NOT_FOUND' });
+  return res.json({ series });
+}
+
+async function skipSeriesOccurrence(req, res) {
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/:bookingId/series/:seriesId/skip');
+  if (guard) return guard;
+
+  const { occurrenceId, reason } = req.body || {};
+  if (!occurrenceId) return res.status(400).json({ error: 'occurrenceId is required', code: 'MISSING_PARAMS' });
+
+  const result = await recurringSeriesSvc.skipOccurrence({ seriesId: req.params.seriesId, occurrenceId, reason });
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+async function cancelSeriesFromDate(req, res) {
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/:bookingId/series/:seriesId/cancel-from');
+  if (guard) return guard;
+
+  const { fromDate, reason } = req.body || {};
+  if (!fromDate) return res.status(400).json({ error: 'fromDate is required (YYYY-MM-DD)', code: 'MISSING_PARAMS' });
+
+  const actorId = String(req.user?.userId || req.user?._id);
+  const result = await recurringSeriesSvc.cancelFromDate({ seriesId: req.params.seriesId, fromDate, reason, actorId });
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+async function cancelEntireSeries(req, res) {
+  const guard = await ensureSqlReady(res, 'DELETE /bookings/:bookingId/series/:seriesId');
+  if (guard) return guard;
+
+  const actorId = String(req.user?.userId || req.user?._id);
+  const result = await recurringSeriesSvc.cancelSeries({ seriesId: req.params.seriesId, reason: req.body?.reason, actorId });
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+async function pauseRecurringSeries(req, res) {
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/:bookingId/series/:seriesId/pause');
+  if (guard) return guard;
+
+  const result = await recurringSeriesSvc.pauseSeries(req.params.seriesId);
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+async function resumeRecurringSeries(req, res) {
+  const guard = await ensureSqlReady(res, 'PATCH /bookings/:bookingId/series/:seriesId/resume');
+  if (guard) return guard;
+
+  const result = await recurringSeriesSvc.resumeSeries(req.params.seriesId);
+  if (result.error) {
+    const code = result.code === 'NOT_FOUND' ? 404 : 400;
+    return res.status(code).json(result);
+  }
+  return res.json(result);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
   // Core booking
@@ -646,4 +751,12 @@ module.exports = {
   getDisputeEvidence:       withHandler(getDisputeEvidence),
   getAuditStats:            withHandler(getAuditStats),
   verifyAuditIntegrity:     withHandler(verifyAuditIntegrity),
+  // Recurring series
+  createRecurringSeries:    withHandler(createRecurringSeries),
+  getRecurringSeries:       withHandler(getRecurringSeries),
+  skipSeriesOccurrence:     withHandler(skipSeriesOccurrence),
+  cancelSeriesFromDate:     withHandler(cancelSeriesFromDate),
+  cancelEntireSeries:       withHandler(cancelEntireSeries),
+  pauseRecurringSeries:     withHandler(pauseRecurringSeries),
+  resumeRecurringSeries:    withHandler(resumeRecurringSeries),
 };

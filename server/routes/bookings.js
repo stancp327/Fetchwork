@@ -17,7 +17,10 @@ let getSlotsSql, createBookingHoldSql, confirmBookingSql, cancelBookingSql, comp
     flagAttendanceDispute, getAttendanceRecord, adminResolveAttendance,
     // Audit
     getBookingTimeline, queryAuditEvents, recordAdminOverride,
-    getDisputeEvidence, getAuditStats, verifyAuditIntegrity;
+    getDisputeEvidence, getAuditStats, verifyAuditIntegrity,
+    // Recurring series
+    createRecurringSeries, getRecurringSeries, skipSeriesOccurrence,
+    cancelSeriesFromDate, cancelEntireSeries, pauseRecurringSeries, resumeRecurringSeries;
 let bookingSqlHealthcheck = async () => ({ ok: false, error: 'booking-sql module not loaded' });
 
 try {
@@ -50,6 +53,15 @@ try {
   flagAttendanceDispute    = ctrl.flagAttendanceDispute;
   getAttendanceRecord      = ctrl.getAttendanceRecord;
   adminResolveAttendance   = ctrl.adminResolveAttendance;
+  // Audit
+  // Recurring series
+  createRecurringSeries    = ctrl.createRecurringSeries;
+  getRecurringSeries       = ctrl.getRecurringSeries;
+  skipSeriesOccurrence     = ctrl.skipSeriesOccurrence;
+  cancelSeriesFromDate     = ctrl.cancelSeriesFromDate;
+  cancelEntireSeries       = ctrl.cancelEntireSeries;
+  pauseRecurringSeries     = ctrl.pauseRecurringSeries;
+  resumeRecurringSeries    = ctrl.resumeRecurringSeries;
   // Audit
   getBookingTimeline       = ctrl.getBookingTimeline;
   queryAuditEvents         = ctrl.queryAuditEvents;
@@ -537,6 +549,51 @@ router.get('/audit/stats', authenticateToken, (req, res) => {
 router.get('/audit/events/:eventId/verify', authenticateToken, (req, res) => {
   if (isBookingSqlEnabled()) return verifyAuditIntegrity(req, res);
   return res.status(501).json({ error: 'Audit requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+// ── RECURRING SERIES ROUTES ──────────────────────────────────────────────────
+
+// POST   /:bookingId/series                              — create recurring series from booking
+// GET    /:bookingId/series/:seriesId                    — series details + all occurrences
+// PATCH  /:bookingId/series/:seriesId/skip               — skip one occurrence
+// PATCH  /:bookingId/series/:seriesId/cancel-from        — cancel from date forward
+// DELETE /:bookingId/series/:seriesId                    — cancel entire series
+// PATCH  /:bookingId/series/:seriesId/pause              — pause series
+// PATCH  /:bookingId/series/:seriesId/resume             — resume paused series
+
+router.post('/:bookingId/series', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return createRecurringSeries(req, res);
+  return res.status(501).json({ error: 'Recurring series requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.get('/:bookingId/series/:seriesId', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return getRecurringSeries(req, res);
+  return res.status(501).json({ error: 'Recurring series requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.patch('/:bookingId/series/:seriesId/skip', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return skipSeriesOccurrence(req, res);
+  return res.status(501).json({ error: 'Recurring series requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.patch('/:bookingId/series/:seriesId/cancel-from', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return cancelSeriesFromDate(req, res);
+  return res.status(501).json({ error: 'Recurring series requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.delete('/:bookingId/series/:seriesId', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return cancelEntireSeries(req, res);
+  return res.status(501).json({ error: 'Recurring series requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.patch('/:bookingId/series/:seriesId/pause', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return pauseRecurringSeries(req, res);
+  return res.status(501).json({ error: 'Recurring series requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
+});
+
+router.patch('/:bookingId/series/:seriesId/resume', authenticateToken, (req, res) => {
+  if (isBookingSqlEnabled()) return resumeRecurringSeries(req, res);
+  return res.status(501).json({ error: 'Recurring series requires BOOKING_SQL_ENABLED', code: 'NOT_IMPLEMENTED' });
 });
 
 // ── PER-BOOKING ROUTES (must stay above /:bookingId catch-all) ───────────────
