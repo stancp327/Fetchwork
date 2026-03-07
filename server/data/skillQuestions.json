@@ -1,0 +1,652 @@
+{
+  "web_development": {
+    "label": "Web Development",
+    "questions": [
+      {
+        "id": "wd1",
+        "q": "Which HTTP status code means a resource was not found?",
+        "options": ["200", "301", "404", "500"],
+        "answer": 2
+      },
+      {
+        "id": "wd2",
+        "q": "What does CSS stand for?",
+        "options": ["Computer Style Sheets", "Cascading Style Sheets", "Creative Style System", "Coded Style Syntax"],
+        "answer": 1
+      },
+      {
+        "id": "wd3",
+        "q": "Which JavaScript method adds an element to the end of an array?",
+        "options": ["push()", "pop()", "shift()", "unshift()"],
+        "answer": 0
+      },
+      {
+        "id": "wd4",
+        "q": "What is the purpose of semantic HTML elements like <article> and <section>?",
+        "options": ["Style the page", "Improve SEO and accessibility", "Speed up JavaScript", "Define CSS variables"],
+        "answer": 1
+      },
+      {
+        "id": "wd5",
+        "q": "Which of the following is a CSS flexbox property?",
+        "options": ["float: center", "align-items: center", "text-align: flex", "display: grid"],
+        "answer": 1
+      },
+      {
+        "id": "wd6",
+        "q": "What does 'async/await' do in JavaScript?",
+        "options": ["Synchronously loads assets", "Handles asynchronous operations with cleaner syntax", "Delays script execution", "Prevents memory leaks"],
+        "answer": 1
+      },
+      {
+        "id": "wd7",
+        "q": "Which HTTP method is used to update a resource on a server?",
+        "options": ["GET", "POST", "PUT", "DELETE"],
+        "answer": 2
+      },
+      {
+        "id": "wd8",
+        "q": "What does 'responsive design' mean?",
+        "options": ["Fast server response times", "Layouts adapt to different screen sizes", "Auto-reply to user actions", "Real-time data updates"],
+        "answer": 1
+      },
+      {
+        "id": "wd9",
+        "q": "What is the Document Object Model (DOM)?",
+        "options": ["A CSS preprocessor", "A JavaScript framework", "An API representing HTML as objects browsers can manipulate", "A database query language"],
+        "answer": 2
+      },
+      {
+        "id": "wd10",
+        "q": "Which tool is commonly used to bundle JavaScript modules?",
+        "options": ["Babel", "Webpack", "ESLint", "Prettier"],
+        "answer": 1
+      }
+    ]
+  },
+  "mobile_development": {
+    "label": "Mobile Development",
+    "questions": [
+      {
+        "id": "md1",
+        "q": "What language is used natively for iOS development?",
+        "options": ["Kotlin", "Swift", "Java", "Dart"],
+        "answer": 1
+      },
+      {
+        "id": "md2",
+        "q": "React Native renders to:",
+        "options": ["A WebView", "Native platform components", "HTML canvas", "Flutter widgets"],
+        "answer": 1
+      },
+      {
+        "id": "md3",
+        "q": "What is the purpose of a 'release build' in mobile development?",
+        "options": ["Debug the app", "Optimized, signed build for app store distribution", "Run tests locally", "Generate source maps"],
+        "answer": 1
+      },
+      {
+        "id": "md4",
+        "q": "Which file in an Android project defines app permissions?",
+        "options": ["build.gradle", "MainActivity.java", "AndroidManifest.xml", "settings.gradle"],
+        "answer": 2
+      },
+      {
+        "id": "md5",
+        "q": "What is deep linking in mobile apps?",
+        "options": ["Linking two databases", "Opening a specific screen via URL", "Connecting Bluetooth devices", "Embedding web pages"],
+        "answer": 1
+      },
+      {
+        "id": "md6",
+        "q": "What does APK stand for?",
+        "options": ["Apple Package Kit", "Android Package Kit", "App Publishing Key", "Android Platform Kernel"],
+        "answer": 1
+      },
+      {
+        "id": "md7",
+        "q": "Which state management solution is commonly used with Flutter?",
+        "options": ["Redux", "MobX", "Provider/Riverpod", "Vuex"],
+        "answer": 2
+      },
+      {
+        "id": "md8",
+        "q": "What is the main advantage of cross-platform development?",
+        "options": ["Better performance than native", "Single codebase for multiple platforms", "No need for app store approval", "Free distribution"],
+        "answer": 1
+      },
+      {
+        "id": "md9",
+        "q": "What is TestFlight used for?",
+        "options": ["Android beta testing", "iOS beta testing", "Automated unit tests", "Performance profiling"],
+        "answer": 1
+      },
+      {
+        "id": "md10",
+        "q": "What is a 'push notification' in mobile?",
+        "options": ["Force-pushing git changes", "Server-initiated alerts sent to user devices", "Uploading app updates", "Background data sync"],
+        "answer": 1
+      }
+    ]
+  },
+  "design": {
+    "label": "Design",
+    "questions": [
+      {
+        "id": "dg1",
+        "q": "What does 'kerning' refer to in typography?",
+        "options": ["Font weight", "Space between individual letter pairs", "Line height", "Font color"],
+        "answer": 1
+      },
+      {
+        "id": "dg2",
+        "q": "What color model is used for print design?",
+        "options": ["RGB", "HSL", "CMYK", "HEX"],
+        "answer": 2
+      },
+      {
+        "id": "dg3",
+        "q": "What is a 'wireframe' in UI/UX design?",
+        "options": ["3D mesh model", "Low-fidelity layout sketch", "Animation timeline", "CSS grid template"],
+        "answer": 1
+      },
+      {
+        "id": "dg4",
+        "q": "Which file format supports transparency in web design?",
+        "options": ["JPG", "BMP", "PNG", "GIF only"],
+        "answer": 2
+      },
+      {
+        "id": "dg5",
+        "q": "What is the 'rule of thirds' in visual design?",
+        "options": ["Use only 3 colors", "Divide canvas into 9 equal parts for composition", "Limit to 3 fonts", "Use 3:1 contrast ratio"],
+        "answer": 1
+      },
+      {
+        "id": "dg6",
+        "q": "What does DPI stand for?",
+        "options": ["Design Per Iteration", "Dots Per Inch", "Display Pixel Index", "Digital Print Interface"],
+        "answer": 1
+      },
+      {
+        "id": "dg7",
+        "q": "What is a 'style guide' in design?",
+        "options": ["A CSS file", "Documentation of visual and brand standards", "A Figma tutorial", "Color palette generator"],
+        "answer": 1
+      },
+      {
+        "id": "dg8",
+        "q": "What does 'white space' (negative space) do in design?",
+        "options": ["Wastes space", "Improves readability and visual hierarchy", "Creates print bleeding", "Sets background color"],
+        "answer": 1
+      },
+      {
+        "id": "dg9",
+        "q": "Which tool is most commonly used for UI/UX prototyping?",
+        "options": ["Photoshop", "Illustrator", "Figma", "InDesign"],
+        "answer": 2
+      },
+      {
+        "id": "dg10",
+        "q": "What is 'WCAG' in web design?",
+        "options": ["Web Color Accuracy Guide", "Web Content Accessibility Guidelines", "Wireframe Component Architecture Guide", "Website Code Audit Checklist"],
+        "answer": 1
+      }
+    ]
+  },
+  "writing": {
+    "label": "Writing",
+    "questions": [
+      {
+        "id": "wr1",
+        "q": "What is 'SEO copywriting'?",
+        "options": ["Writing legal documents", "Writing content optimized for search engine rankings", "Software error reporting", "Email marketing"],
+        "answer": 1
+      },
+      {
+        "id": "wr2",
+        "q": "What is the 'inverted pyramid' structure in journalism?",
+        "options": ["Writing conclusions first", "Most important information first, details after", "Triangle layout for headlines", "Ranked list format"],
+        "answer": 1
+      },
+      {
+        "id": "wr3",
+        "q": "What does 'CTA' stand for in copywriting?",
+        "options": ["Content Type Analysis", "Call To Action", "Creative Text Appeal", "Copy Text Audit"],
+        "answer": 1
+      },
+      {
+        "id": "wr4",
+        "q": "What is 'ghostwriting'?",
+        "options": ["Writing horror stories", "Writing content published under someone else's name", "Anonymous blog posts", "Unpublished drafts"],
+        "answer": 1
+      },
+      {
+        "id": "wr5",
+        "q": "Which of the following best describes 'active voice'?",
+        "options": ["'The report was written by John'", "'John wrote the report'", "'The report, written by John, was...'", "'It was John who wrote the report'"],
+        "answer": 1
+      },
+      {
+        "id": "wr6",
+        "q": "What is 'long-tail keyword' in SEO writing?",
+        "options": ["Keywords over 10 characters", "Specific multi-word phrases with lower search volume but higher conversion", "Keywords in the last paragraph", "Anchor text links"],
+        "answer": 1
+      },
+      {
+        "id": "wr7",
+        "q": "What does 'editing for clarity' primarily involve?",
+        "options": ["Fixing spelling only", "Making ideas easier to understand by simplifying language and structure", "Adding more adjectives", "Increasing word count"],
+        "answer": 1
+      },
+      {
+        "id": "wr8",
+        "q": "What is a 'style guide' in writing?",
+        "options": ["A fashion reference", "A set of rules for consistent language, tone, and formatting", "Grammar checker software", "Thesaurus"],
+        "answer": 1
+      },
+      {
+        "id": "wr9",
+        "q": "What is 'readability score' (Flesch-Kincaid) measuring?",
+        "options": ["Word count", "How easy text is to read based on sentence/word length", "Keyword density", "Plagiarism level"],
+        "answer": 1
+      },
+      {
+        "id": "wr10",
+        "q": "What is 'content marketing'?",
+        "options": ["Paid advertising", "Creating valuable content to attract and retain an audience", "Product placement in videos", "Email campaigns"],
+        "answer": 1
+      }
+    ]
+  },
+  "marketing": {
+    "label": "Marketing",
+    "questions": [
+      {
+        "id": "mk1",
+        "q": "What does 'CTR' stand for?",
+        "options": ["Customer Trust Rate", "Click-Through Rate", "Conversion To Revenue", "Cost To Reach"],
+        "answer": 1
+      },
+      {
+        "id": "mk2",
+        "q": "What is A/B testing in marketing?",
+        "options": ["Testing two products simultaneously", "Comparing two versions to see which performs better", "Grade A vs Grade B content", "Alpha and Beta software testing"],
+        "answer": 1
+      },
+      {
+        "id": "mk3",
+        "q": "What is 'ROAS'?",
+        "options": ["Return On Ad Spend", "Rate Of Audience Segmentation", "Revenue Over All Sales", "ROI And Spend"],
+        "answer": 0
+      },
+      {
+        "id": "mk4",
+        "q": "What does 'top of funnel' mean?",
+        "options": ["Best-performing ads", "Early-stage awareness targeting broad audiences", "Premium pricing tier", "Homepage traffic"],
+        "answer": 1
+      },
+      {
+        "id": "mk5",
+        "q": "What is 'organic reach' on social media?",
+        "options": ["Reach from paid ads", "Reach achieved without paid promotion", "International audience", "Reach on nature-themed posts"],
+        "answer": 1
+      },
+      {
+        "id": "mk6",
+        "q": "What is 'lookalike audience' in Facebook Ads?",
+        "options": ["People who look like your team", "Audience similar to your existing customers", "Users with same profile photo", "Duplicate ad sets"],
+        "answer": 1
+      },
+      {
+        "id": "mk7",
+        "q": "What does 'CPM' mean?",
+        "options": ["Cost Per Month", "Cost Per Mille (thousand impressions)", "Click Per Minute", "Conversion Per Message"],
+        "answer": 1
+      },
+      {
+        "id": "mk8",
+        "q": "What is 'email deliverability'?",
+        "options": ["How quickly emails are written", "Whether emails reach recipients' inboxes vs spam", "Email open rates", "Delivery speed"],
+        "answer": 1
+      },
+      {
+        "id": "mk9",
+        "q": "What is 'retargeting'?",
+        "options": ["Changing marketing goals mid-campaign", "Showing ads to people who previously visited your site", "Updating audience demographics", "Re-running old campaigns"],
+        "answer": 1
+      },
+      {
+        "id": "mk10",
+        "q": "What is 'brand voice'?",
+        "options": ["Spokesperson for the brand", "Consistent personality and tone across all communications", "Audio branding", "Customer feedback"],
+        "answer": 1
+      }
+    ]
+  },
+  "photography": {
+    "label": "Photography",
+    "questions": [
+      {
+        "id": "ph1",
+        "q": "What does 'ISO' control in photography?",
+        "options": ["Shutter speed", "Focal length", "Camera sensor sensitivity to light", "Aperture size"],
+        "answer": 2
+      },
+      {
+        "id": "ph2",
+        "q": "What is 'depth of field'?",
+        "options": ["Distance from camera to subject", "Range of distance that appears acceptably sharp", "Zoom capability", "Image resolution"],
+        "answer": 1
+      },
+      {
+        "id": "ph3",
+        "q": "What does a lower f-number (e.g., f/1.8) mean?",
+        "options": ["Smaller aperture opening", "Larger aperture opening, more background blur", "Slower shutter speed", "Higher ISO"],
+        "answer": 1
+      },
+      {
+        "id": "ph4",
+        "q": "What is the 'rule of thirds' in photography composition?",
+        "options": ["Use 3 different lenses", "Place subjects along imaginary grid lines at 1/3 intervals", "Shoot for 3 hours", "Use 3-point lighting"],
+        "answer": 1
+      },
+      {
+        "id": "ph5",
+        "q": "What is 'RAW format'?",
+        "options": ["Uncompressed, unprocessed image data", "Low-resolution file format", "JPG alternative with transparency", "Real-time video format"],
+        "answer": 0
+      },
+      {
+        "id": "ph6",
+        "q": "What is 'golden hour' in photography?",
+        "options": ["Noon sunlight", "First/last hour of sunlight with warm, soft light", "Studio lighting setup time", "Award-winning shots"],
+        "answer": 1
+      },
+      {
+        "id": "ph7",
+        "q": "What does 'white balance' control?",
+        "options": ["Exposure level", "Brightness of whites", "Color temperature accuracy", "Shadow detail"],
+        "answer": 2
+      },
+      {
+        "id": "ph8",
+        "q": "What is 'bokeh' in photography?",
+        "options": ["Japanese camera brand", "The aesthetic quality of out-of-focus areas", "HDR effect", "Long exposure blur"],
+        "answer": 1
+      },
+      {
+        "id": "ph9",
+        "q": "Which metering mode measures light from the entire frame equally?",
+        "options": ["Spot metering", "Center-weighted", "Evaluative/Matrix metering", "Partial metering"],
+        "answer": 2
+      },
+      {
+        "id": "ph10",
+        "q": "What does 'culling' mean in photo editing workflow?",
+        "options": ["Color grading", "Selecting best photos from a shoot", "Cropping images", "Noise reduction"],
+        "answer": 1
+      }
+    ]
+  },
+  "personal_training": {
+    "label": "Personal Training & Fitness",
+    "questions": [
+      {
+        "id": "pt1",
+        "q": "What does 'progressive overload' mean in training?",
+        "options": ["Overtraining injuries", "Gradually increasing training demands over time", "Using heavy weights immediately", "Training multiple muscle groups"],
+        "answer": 1
+      },
+      {
+        "id": "pt2",
+        "q": "What is a 'compound exercise'?",
+        "options": ["Exercise using only one joint", "Exercise that works multiple muscle groups simultaneously", "Combination of cardio and weights", "Exercise with compound movements in sequence"],
+        "answer": 1
+      },
+      {
+        "id": "pt3",
+        "q": "What is the RPE scale used for?",
+        "options": ["Repetitions Per Exercise", "Rate of Perceived Exertion — subjective exercise intensity", "Recovery Period Estimate", "Reps Per Endurance level"],
+        "answer": 1
+      },
+      {
+        "id": "pt4",
+        "q": "What does DOMS stand for?",
+        "options": ["Daily Output Measurement System", "Delayed Onset Muscle Soreness", "Duration Of Metabolic Stress", "Dynamic Output Monitoring Score"],
+        "answer": 1
+      },
+      {
+        "id": "pt5",
+        "q": "What is a 'superset' in training?",
+        "options": ["Extra sets added to routine", "Two exercises performed back-to-back without rest", "Heavy compound lift sets", "Warm-up before main sets"],
+        "answer": 1
+      },
+      {
+        "id": "pt6",
+        "q": "What is 'periodization' in a training program?",
+        "options": ["Timing workouts to periods of day", "Systematic variation of training variables over time", "Monthly weight check-ins", "Tracking period cycle for female athletes"],
+        "answer": 1
+      },
+      {
+        "id": "pt7",
+        "q": "What macronutrient is most important for muscle repair and growth?",
+        "options": ["Carbohydrates", "Fats", "Protein", "Fiber"],
+        "answer": 2
+      },
+      {
+        "id": "pt8",
+        "q": "What is 'VO2 max'?",
+        "options": ["Maximum volume of vitamins needed", "Maximum oxygen uptake during exercise — measure of aerobic fitness", "Voice activation in fitness apps", "Volume of water intake"],
+        "answer": 1
+      },
+      {
+        "id": "pt9",
+        "q": "What is the primary energy system used in a 100m sprint?",
+        "options": ["Aerobic system", "Lactic acid system", "Phosphocreatine (ATP-PC) system", "Glycolytic system"],
+        "answer": 2
+      },
+      {
+        "id": "pt10",
+        "q": "What should a trainer do FIRST when assessing a new client?",
+        "options": ["Start a max test", "Conduct a fitness assessment and PAR-Q health screening", "Design a 12-week program", "Measure body fat"],
+        "answer": 1
+      }
+    ]
+  },
+  "tutoring": {
+    "label": "Tutoring & Education",
+    "questions": [
+      {
+        "id": "tu1",
+        "q": "What is 'scaffolding' in education?",
+        "options": ["Literal building structures", "Providing temporary support that's gradually removed as learner gains independence", "Strict sequential learning", "Group project management"],
+        "answer": 1
+      },
+      {
+        "id": "tu2",
+        "q": "What does 'differentiated instruction' mean?",
+        "options": ["Teaching only advanced students", "Adapting teaching methods to diverse learning needs", "Using different textbooks", "Separate classrooms by ability"],
+        "answer": 1
+      },
+      {
+        "id": "tu3",
+        "q": "What is 'formative assessment'?",
+        "options": ["End-of-term grading", "Ongoing assessment during learning to guide instruction", "Official certification exams", "Parent-teacher conferences"],
+        "answer": 1
+      },
+      {
+        "id": "tu4",
+        "q": "According to Bloom's Taxonomy, which is the highest cognitive skill?",
+        "options": ["Understanding", "Application", "Analysis", "Creation/Synthesis"],
+        "answer": 3
+      },
+      {
+        "id": "tu5",
+        "q": "What is 'spaced repetition' in learning?",
+        "options": ["Taking breaks every hour", "Reviewing material at increasing intervals for better retention", "Spacing students in the classroom", "Repeating lessons three times"],
+        "answer": 1
+      },
+      {
+        "id": "tu6",
+        "q": "What is the 'Socratic method'?",
+        "options": ["Memorization-based learning", "Question-based dialogue to stimulate critical thinking", "Lecture-heavy instruction", "Self-paced online learning"],
+        "answer": 1
+      },
+      {
+        "id": "tu7",
+        "q": "What does 'active recall' mean in studying?",
+        "options": ["Reading notes out loud", "Actively retrieving information from memory rather than re-reading", "Group recall sessions", "Recording lectures"],
+        "answer": 1
+      },
+      {
+        "id": "tu8",
+        "q": "What is 'growth mindset' (Carol Dweck)?",
+        "options": ["Believing talent is fixed", "Believing abilities can grow through effort and learning", "Career growth planning", "Financial mindset for teachers"],
+        "answer": 1
+      },
+      {
+        "id": "tu9",
+        "q": "What is a 'learning objective'?",
+        "options": ["Classroom decorations theme", "A measurable statement of what a student will be able to do after instruction", "A teacher's personal goal", "A textbook chapter summary"],
+        "answer": 1
+      },
+      {
+        "id": "tu10",
+        "q": "What does 'IEP' stand for?",
+        "options": ["Individualized Education Program", "International Education Protocol", "Integrated Evaluation Plan", "Instructional Enrichment Portfolio"],
+        "answer": 0
+      }
+    ]
+  },
+  "cooking_chef": {
+    "label": "Cooking & Culinary",
+    "questions": [
+      {
+        "id": "cc1",
+        "q": "What does 'mise en place' mean?",
+        "options": ["Menu planning", "Having all ingredients prepared and in place before cooking", "Table setting", "French cooking technique"],
+        "answer": 1
+      },
+      {
+        "id": "cc2",
+        "q": "What is the Maillard reaction?",
+        "options": ["Bread rising process", "Browning reaction between amino acids and sugars when heated", "Emulsification of sauces", "Carmelization of sugars"],
+        "answer": 1
+      },
+      {
+        "id": "cc3",
+        "q": "What does 'fold' mean in baking?",
+        "options": ["Wrap dough in foil", "Gently combine ingredients without deflating air bubbles", "Layer pastry dough", "Fold napkins for presentation"],
+        "answer": 1
+      },
+      {
+        "id": "cc4",
+        "q": "What is the safe minimum internal temperature for cooked chicken?",
+        "options": ["145°F (63°C)", "160°F (71°C)", "165°F (74°C)", "180°F (82°C)"],
+        "answer": 2
+      },
+      {
+        "id": "cc5",
+        "q": "What is an emulsion in cooking?",
+        "options": ["Thickened sauce", "Stable mixture of two immiscible liquids (like oil and water)", "Foam topping", "Reduction of liquid"],
+        "answer": 1
+      },
+      {
+        "id": "cc6",
+        "q": "What is 'al dente'?",
+        "options": ["Overcooked pasta", "Pasta cooked until firm to the bite", "Italian sauce style", "Thin-sliced meat"],
+        "answer": 1
+      },
+      {
+        "id": "cc7",
+        "q": "What is 'blanching' a vegetable?",
+        "options": ["Roasting at high heat", "Brief boiling then immediate ice bath to stop cooking", "Removing skin by soaking", "Slow cooking in liquid"],
+        "answer": 1
+      },
+      {
+        "id": "cc8",
+        "q": "What does 'deglaze' mean?",
+        "options": ["Remove sugar coating", "Add liquid to a hot pan to loosen browned bits (fond)", "Clean a glaze from pastry", "Reduce sauce by half"],
+        "answer": 1
+      },
+      {
+        "id": "cc9",
+        "q": "What are the 'mother sauces' in classical French cuisine?",
+        "options": ["Tomato, Pesto, Beurre Blanc, Hollandaise, Gravy", "Béchamel, Velouté, Espagnole, Hollandaise, Tomato", "Béarnaise, Mornay, Bordelaise, Velouté, Rouille", "Alfredo, Marinara, Pesto, Béchamel, Espagnole"],
+        "answer": 1
+      },
+      {
+        "id": "cc10",
+        "q": "What is 'tempering' chocolate?",
+        "options": ["Melting chocolate slowly", "Controlled heating/cooling process to stabilize crystals for a glossy finish", "Adding milk to dark chocolate", "Tempering means mixing in flavors"],
+        "answer": 1
+      }
+    ]
+  },
+  "cleaning": {
+    "label": "Cleaning & Home Services",
+    "questions": [
+      {
+        "id": "cl1",
+        "q": "What does 'deep cleaning' include that regular cleaning does not?",
+        "options": ["Vacuuming", "Inside appliances, baseboards, vents, and hard-to-reach areas", "Mopping floors", "Dusting surfaces"],
+        "answer": 1
+      },
+      {
+        "id": "cl2",
+        "q": "What is the proper dilution ratio for a standard bleach disinfectant solution?",
+        "options": ["1:1 (equal parts)", "1:10 (1 part bleach to 10 parts water)", "1:50", "Undiluted"],
+        "answer": 1
+      },
+      {
+        "id": "cl3",
+        "q": "Why should you clean top-to-bottom in a room?",
+        "options": ["It's faster", "Dust and dirt fall down, so clean higher areas first to avoid re-cleaning", "Tools work better", "Better for back health"],
+        "answer": 1
+      },
+      {
+        "id": "cl4",
+        "q": "What should NEVER be mixed with bleach?",
+        "options": ["Water", "Ammonia-based cleaners", "Baking soda", "Dish soap"],
+        "answer": 1
+      },
+      {
+        "id": "cl5",
+        "q": "What is the most hygienic way to clean a kitchen cutting board used for raw meat?",
+        "options": ["Rinse with cold water", "Wipe with paper towel", "Wash with hot soapy water and sanitize with food-safe sanitizer", "Run through dishwasher only"],
+        "answer": 2
+      },
+      {
+        "id": "cl6",
+        "q": "What does EPA 'List N' refer to?",
+        "options": ["Natural cleaning products", "Disinfectants effective against SARS-CoV-2", "Non-toxic certifications", "Commercial cleaning equipment"],
+        "answer": 1
+      },
+      {
+        "id": "cl7",
+        "q": "How should microfiber cloths be washed to maintain effectiveness?",
+        "options": ["Hot water with fabric softener", "Warm water without fabric softener or bleach", "Dry clean only", "Cold water with bleach"],
+        "answer": 1
+      },
+      {
+        "id": "cl8",
+        "q": "What is the correct order for cleaning a bathroom?",
+        "options": ["Floor → toilet → sink → mirror", "Mirror → sink → toilet → floor", "Toilet → sink → mirror → floor", "Any order works equally"],
+        "answer": 1
+      },
+      {
+        "id": "cl9",
+        "q": "What does HEPA mean in vacuum cleaners?",
+        "options": ["High Efficiency Pressure Air", "High Efficiency Particulate Air", "Heavy Equipment Power Attachment", "Home Environmental Protection Act"],
+        "answer": 1
+      },
+      {
+        "id": "cl10",
+        "q": "What is the best practice when entering a client's home for the first time?",
+        "options": ["Start cleaning immediately", "Do a walkthrough with the client to confirm expectations and note existing damage", "Ask for payment upfront", "Check what supplies they have"],
+        "answer": 1
+      }
+    ]
+  }
+}
