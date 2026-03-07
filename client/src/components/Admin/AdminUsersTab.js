@@ -1,7 +1,7 @@
 import React from 'react';
 import { apiRequest } from '../../utils/api';
 import TracingErrorBoundary from '../common/TracingErrorBoundary';
-import AdminUserDrawer from './AdminUserDrawer';
+import AdminUserCard from './AdminUserCard';
 
 const AdminUsersTab = ({
   usersData, selectedUser, setSelectedUser, loadUserDetail,
@@ -14,7 +14,7 @@ const AdminUsersTab = ({
         <h2>User Management</h2>
 
         {selectedUser && (
-          <AdminUserDrawer
+          <AdminUserCard
             data={selectedUser}
             onClose={() => setSelectedUser(null)}
             onRefresh={() => loadUserDetail(selectedUser.user._id)}
@@ -56,8 +56,12 @@ const AdminUsersTab = ({
                   {Array.isArray(usersData?.users) && usersData.users.length > 0 ? usersData.users.map((u) => (
                     <tr key={u._id} style={{ cursor: 'pointer' }} onClick={() => loadUserDetail(u._id)}>
                       <td>
-                        {u.firstName} {u.lastName}
+                        <span style={{ color: '#2563eb', fontWeight: 600 }}>
+                          {u.firstName} {u.lastName}
+                        </span>
+                        {u.walletFrozen && <span title="Wallet frozen" style={{ marginLeft: '0.3rem' }}>🧊</span>}
                         {u.feeWaiver?.enabled && <span title="Fee waived" style={{ marginLeft: '0.3rem' }}>💚</span>}
+                        {u.isSuspended && <span title="Suspended" style={{ marginLeft: '0.3rem' }}>⛔</span>}
                       </td>
                       <td>{u.email}</td>
                       <td>

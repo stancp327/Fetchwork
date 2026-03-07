@@ -2156,6 +2156,77 @@ router.post('/wallets/:userId/adjust', authenticateAdmin, requirePermission('pay
   }
 });
 
+// ── GET /api/admin/users/:userId/wallet — user wallet detail ──────────────────
+router.get('/users/:userId/wallet', authenticateAdmin, requirePermission('payment_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select('firstName lastName email walletFrozen walletFrozenReason walletFrozenAt').lean();
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Sum active, unexpired BillingCredit entries = wallet balance
+    const credits = await BillingCredit.find({
+      user: userId,
+      status: 'active',
+      remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).sort({ createdAt: -1 }).lean();
+
+    const balance = credits.reduce((sum, c) => sum + (c.remaining || 0), 0);
+
+    // Recent transaction history (all credits including used/expired)
+    const history = await BillingCredit.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(30)
+      .lean();
+
+    res.json({
+      user,
+      balance: Math.round(balance * 100) / 100,
+      activeCredits: credits,
+      history,
+      walletFrozen: user.walletFrozen || false,
+      walletFrozenReason: user.walletFrozenReason || '',
+      walletFrozenAt: user.walletFrozenAt || null,
+    });
+  } catch (err) {
+    console.error('Admin wallet detail error:', err);
+    res.status(500).json({ error: 'Failed to fetch wallet data' });
+  }
+});
+
+// ── PUT /api/admin/wallets/:userId/freeze — freeze / unfreeze wallet ──────────
+router.put('/wallets/:userId/freeze', authenticateAdmin, requirePermission('payment_management'), validateUserIdParam, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { freeze, reason } = req.body;  // freeze: boolean
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    user.walletFrozen       = !!freeze;
+    user.walletFrozenReason = freeze ? (reason || 'Admin freeze') : '';
+    user.walletFrozenAt     = freeze ? new Date() : null;
+    await user.save();
+
+    await logBillingAction({
+      userId,
+      action:  freeze ? 'wallet_frozen' : 'wallet_unfrozen',
+      before:  { walletFrozen: !freeze },
+      after:   { walletFrozen: !!freeze, reason },
+      adminId: req.user.userId,
+      note:    freeze ? `Wallet frozen — ${reason}` : 'Wallet unfrozen by admin',
+    });
+
+    res.json({
+      walletFrozen: user.walletFrozen,
+      message: freeze ? '🧊 Wallet frozen' : '✅ Wallet unfrozen',
+    });
+  } catch (err) {
+    console.error('Admin wallet freeze error:', err);
+    res.status(500).json({ error: 'Failed to update wallet status' });
+  }
+});
+
 // Teams summary for Admin Dashboard
 router.get('/teams', authenticateAdmin, async (req, res) => {
   try {

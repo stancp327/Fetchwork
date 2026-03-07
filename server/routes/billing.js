@@ -687,6 +687,12 @@ router.post('/wallet/pay', authenticateToken, async (req, res) => {
     if (!amount || amount <= 0) return res.status(400).json({ error: 'amount must be positive' });
     if (!reason) return res.status(400).json({ error: 'reason is required' });
 
+    // Check wallet freeze
+    const userCheck = await User.findById(userId).select('walletFrozen walletFrozenReason').lean();
+    if (userCheck?.walletFrozen) {
+      return res.status(403).json({ error: 'wallet_frozen', message: 'Your wallet has been frozen by an admin. Please contact support.' });
+    }
+
     let result;
     await session.withTransaction(async () => {
       // Fetch active credits FIFO (oldest first) — within transaction for isolation

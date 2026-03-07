@@ -107,6 +107,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  walletFrozen: {
+    type: Boolean,
+    default: false
+  },
+  walletFrozenReason: {
+    type: String,
+    default: ''
+  },
+  walletFrozenAt: {
+    type: Date,
+    default: null
+  },
   lastLogin: {
     type: Date,
     default: Date.now
