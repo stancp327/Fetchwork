@@ -16,11 +16,12 @@ export type JobsStackParamList = {
 };
 
 export type ServicesStackParamList = {
-  BrowseServices: undefined;
-  ServiceDetail:  { id: string };
-  BookService:    { serviceId: string; pkg: 'basic' | 'standard' | 'premium' };
-  MyServices:     undefined;
-  MyBundles:      undefined;
+  BrowseServices:      undefined;
+  ServiceDetail:       { id: string };
+  BookService:         { serviceId: string; pkg: 'basic' | 'standard' | 'premium' };
+  MyServices:          undefined;
+  MyBundles:           undefined;
+  AvailabilityManager: { serviceId: string };
 };
 
 export type MessagesStackParamList = {

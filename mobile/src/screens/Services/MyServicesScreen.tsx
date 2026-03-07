@@ -55,6 +55,18 @@ export default function MyServicesScreen({ navigation }: any) {
       {item.rating > 0 && (
         <Text style={styles.rating}>⭐ {item.rating.toFixed(1)} ({item.totalReviews} reviews)</Text>
       )}
+      <View style={styles.actions}>
+        <Pressable
+          style={styles.actionBtn}
+          onPress={e => {
+            e.stopPropagation?.();
+            navigation.navigate('AvailabilityManager', { serviceId: item._id });
+          }}
+        >
+          <Ionicons name="calendar-outline" size={14} color={colors.primary} />
+          <Text style={styles.actionBtnText}>Availability</Text>
+        </Pressable>
+      </View>
     </Card>
   );
 
@@ -102,4 +114,7 @@ const styles = StyleSheet.create({
   boostBadge: { backgroundColor: colors.primary + '12', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 4 },
   boostText:  { fontSize: 11, color: colors.primary, fontWeight: '600' },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  actions:    { flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+  actionBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.primary + '40', borderRadius: 6, backgroundColor: colors.primaryLight, minHeight: 32 },
+  actionBtnText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
 });
