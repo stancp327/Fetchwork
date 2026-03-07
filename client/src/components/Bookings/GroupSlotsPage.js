@@ -108,7 +108,7 @@ function BookingSuccess({ result, slotDate, onDismiss }) {
       <h3>You're booked!</h3>
       <p>
         {result.waitlisted
-          ? 'You've been added to the waitlist. We'll notify you if a spot opens up.'
+          ? "You've been added to the waitlist. We'll notify you if a spot opens up."
           : `Your seat${result.seatCount > 1 ? 's are' : ' is'} confirmed for ${formatDate(slotDate)}.`
         }
       </p>
