@@ -11,7 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const SkillAssessment = require('../models/SkillAssessment');
 const Service = require('../models/Service');
 const Job = require('../models/Job');
@@ -23,7 +23,7 @@ const PASS_THRESHOLD = 80; // % to earn badge
 const quizLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req),
   message: { error: 'Too many attempts. Try again in an hour.' },
 });
 

@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { authenticateToken, authenticateAdmin, requirePermission } = require('../middleware/auth');
 
 // Rate limiter for dispute messages — 20 per 15 min per user
 const disputeMessageLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'production' ? 20 : 200,
-  keyGenerator: (req) => req.user?.userId || req.ip,
+  keyGenerator: (req) => req.user?.userId || ipKeyGenerator(req),
   message: { error: 'Too many messages. Please wait before sending more.' },
   standardHeaders: true,
   legacyHeaders: false
@@ -17,7 +17,7 @@ const disputeMessageLimit = rateLimit({
 const disputeFileLimit = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: process.env.NODE_ENV === 'production' ? 5 : 50,
-  keyGenerator: (req) => req.user?.userId || req.ip,
+  keyGenerator: (req) => req.user?.userId || ipKeyGenerator(req),
   message: { error: 'Too many dispute filings. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false
