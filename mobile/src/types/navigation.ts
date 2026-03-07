@@ -30,6 +30,7 @@ export type MessagesStackParamList = {
 };
 
 export type ProfileStackParamList = {
+  Earnings: undefined;
   MyProfile:         undefined;
   EditProfile:       undefined;
   Verification:      undefined;

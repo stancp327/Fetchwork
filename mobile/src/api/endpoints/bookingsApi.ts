@@ -25,6 +25,12 @@ export interface GroupSlot {
 }
 
 export const bookingsApi = {
+  getPaymentIntent: (bookingId: string) =>
+    client.post(`/api/bookings/${bookingId}/payment-intent`, {}).then(r => r.data),
+
+  confirmPayment: (bookingId: string, paymentIntentId: string) =>
+    client.post(`/api/bookings/${bookingId}/confirm-payment`, { paymentIntentId }).then(r => r.data),
+
   getMyBookings: (role: BookingRole, status: BookingStatus) =>
     client.get('/api/bookings/me', { params: { role, status } }).then(r => r.data),
 

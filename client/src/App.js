@@ -36,6 +36,7 @@ const PostJob = React.lazy(() => import('./components/Jobs/PostJob'));
 const JobDetails = React.lazy(() => import('./components/Jobs/JobDetails'));
 const Profile = React.lazy(() => import('./components/Profile/Profile'));
 const PublicProfile = React.lazy(() => import('./components/Profile/PublicProfile'));
+const EarningsDashboard = React.lazy(() => import('./components/Profile/EarningsDashboard'));
 
 const FreelancerDiscovery = React.lazy(() => import('./components/Freelancers/FreelancerDiscovery'));
 const Messages = React.lazy(() => import('./components/Messages/Messages'));
@@ -269,6 +270,11 @@ function AppContent() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/earnings" element={
+            <ProtectedRoute>
+              <EarningsDashboard />
             </ProtectedRoute>
           } />
           <Route path="/messages" element={

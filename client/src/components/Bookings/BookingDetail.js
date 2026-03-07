@@ -5,6 +5,7 @@ import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
 import SEO from '../common/SEO';
 import RecurringSeriesPanel from './RecurringSeriesPanel';
+import BookingPayModal from './BookingPayModal';
 import './BookingDetail.css';
 
 /* ─── Helpers ─── */
@@ -179,6 +180,7 @@ const BookingDetail = () => {
   const [flash, setFlash]           = useState('');
   const [actionBusy, setActionBusy] = useState('');
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showPayModal, setShowPayModal]     = useState(false);
 
   const showFlash = (text) => { setFlash(text); setTimeout(() => setFlash(''), 4500); };
 
@@ -379,9 +381,26 @@ const BookingDetail = () => {
         </div>
       )}
 
+      {/* Booking payment modal */}
+      {showPayModal && (
+        <BookingPayModal
+          bookingId={bid(booking)}
+          onSuccess={() => { setShowPayModal(false); load(); }}
+          onClose={() => setShowPayModal(false)}
+        />
+      )}
+
       {/* Action buttons */}
       {isActive && (
         <div className="bd-actions">
+          {/* Client: pay to confirm when held with a price */}
+          {isMyBooking && ['held', 'hold', 'pending_payment'].includes(booking.status) &&
+           (booking.pricingSnapshotJson?.amountCents || booking.pricing?.amountCents || 0) > 0 && (
+            <button className="bd-btn bd-btn-pay" onClick={() => setShowPayModal(true)}>
+              💳 Pay to Confirm
+            </button>
+          )}
+
           {amFreelancer && booking.status === 'pending' && (
             <button
               className="bd-btn bd-btn-confirm"

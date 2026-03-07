@@ -281,8 +281,18 @@ router.get('/:id', validateMongoId, async (req, res) => {
     }
     
     await job.incrementViews();
-    
-    res.json({ job });
+
+    // Sort proposals: promoted first, then newest
+    const jobObj = job.toObject();
+    if (Array.isArray(jobObj.proposals)) {
+      jobObj.proposals.sort((a, b) => {
+        if (a.isPromoted && !b.isPromoted) return -1;
+        if (!a.isPromoted && b.isPromoted) return 1;
+        return new Date(b.submittedAt) - new Date(a.submittedAt);
+      });
+    }
+
+    res.json({ job: jobObj });
   } catch (error) {
     console.error('Error fetching job:', error);
     res.status(500).json({ error: 'Failed to fetch job' });
@@ -483,6 +493,139 @@ router.get('/:id/boost', authenticateToken, validateMongoId, async (req, res) =>
     if (!job) return res.status(404).json({ error: 'Job not found' });
     const active = job.isBoosted && job.boostExpiresAt && new Date(job.boostExpiresAt) > new Date();
     res.json({ isBoosted: active, expiresAt: job.boostExpiresAt });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Feature a job listing ──────────────────────────────────────────────────
+const FEATURE_TIERS = {
+  standard: { amountCents: 999,  days: 7,  label: 'Standard feature (7 days)' },
+  premium:  { amountCents: 1999, days: 14, label: 'Premium feature (14 days)' },
+};
+
+router.post('/:id/feature', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { tier = 'standard' } = req.body;
+    const option = FEATURE_TIERS[tier];
+    if (!option) return res.status(400).json({ error: 'Invalid tier. Use standard or premium.' });
+
+    const job = await Job.findById(req.params.id).select('client title isFeatured featuredExpiresAt');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (String(job.client) !== String(req.user._id || req.user.userId)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Already active?
+    if (job.isFeatured && job.featuredExpiresAt && new Date(job.featuredExpiresAt) > new Date()) {
+      return res.status(409).json({ error: 'Job is already featured', expiresAt: job.featuredExpiresAt });
+    }
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.create({
+      amount:   option.amountCents,
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        type:        'job_feature',
+        jobId:       String(job._id),
+        userId:      String(req.user._id || req.user.userId),
+        featureTier: tier,
+        featureDays: String(option.days),
+      },
+    });
+
+    return res.json({ clientSecret: pi.client_secret, tier, option });
+  } catch (err) {
+    console.error('[feature job]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Verify job feature after payment ──────────────────────────────────────
+router.post('/:id/feature/verify', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+    if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (pi.status !== 'succeeded') {
+      return res.status(402).json({ error: 'Payment not complete', status: pi.status });
+    }
+
+    const days = parseInt(pi.metadata.featureDays) || 7;
+    const tier = pi.metadata.featureTier || 'standard';
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+    await Job.findByIdAndUpdate(req.params.id, {
+      isFeatured: true, featuredTier: tier, featuredExpiresAt: expiresAt,
+    });
+
+    return res.json({ success: true, tier, expiresAt });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Promote a proposal ─────────────────────────────────────────────────────
+router.post('/:id/proposals/:proposalId/promote', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id).select('proposals');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const proposal = job.proposals.id(req.params.proposalId);
+    if (!proposal) return res.status(404).json({ error: 'Proposal not found' });
+    if (String(proposal.freelancer) !== String(req.user._id || req.user.userId)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    if (proposal.isPromoted) {
+      return res.status(409).json({ error: 'Proposal is already promoted' });
+    }
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.create({
+      amount:   299, // $2.99
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        type:       'proposal_promote',
+        jobId:      String(job._id),
+        proposalId: String(proposal._id),
+        userId:     String(req.user._id || req.user.userId),
+      },
+    });
+
+    return res.json({ clientSecret: pi.client_secret, amount: 2.99 });
+  } catch (err) {
+    console.error('[promote proposal]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Verify proposal promotion after payment ────────────────────────────────
+router.post('/:id/proposals/:proposalId/promote/verify', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+    if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (pi.status !== 'succeeded') {
+      return res.status(402).json({ error: 'Payment not complete', status: pi.status });
+    }
+
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    const proposal = job.proposals.id(req.params.proposalId);
+    if (!proposal) return res.status(404).json({ error: 'Proposal not found' });
+
+    proposal.isPromoted = true;
+    proposal.promotedAt = new Date();
+    await job.save();
+
+    return res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

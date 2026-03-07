@@ -582,6 +582,53 @@ router.webhookHandler = async (req, res) => {
           break;
         }
 
+        // ── Booking payment confirmation ──
+        if (pi.metadata?.type === 'booking_payment') {
+          try {
+            const { getPrisma } = require('../booking-sql/db/client');
+            const db = getPrisma();
+            const { bookingId } = pi.metadata;
+
+            await db.chargeRecord.updateMany({
+              where: { bookingId, stripePaymentIntentId: pi.id },
+              data:  { state: 'captured', stripeChargeId: pi.latest_charge || null },
+            });
+            await db.booking.update({ where: { id: bookingId }, data: { currentState: 'confirmed' } });
+            await db.bookingOccurrence.updateMany({ where: { bookingId }, data: { status: 'confirmed' } });
+            console.log(`✅ Booking auto-confirmed via webhook: ${bookingId}`);
+          } catch (bookingErr) {
+            console.error('[webhook] booking_payment error:', bookingErr.message);
+          }
+          break;
+        }
+
+        // ── Featured job listing activation ──
+        if (pi.metadata?.type === 'job_feature') {
+          const days    = parseInt(pi.metadata.featureDays) || 7;
+          const tier    = pi.metadata.featureTier || 'standard';
+          const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+          await Job.findByIdAndUpdate(pi.metadata.jobId, {
+            isFeatured: true, featuredTier: tier, featuredExpiresAt: expiresAt,
+          });
+          console.log(`✅ Job featured: ${pi.metadata.jobId} (${tier}, ${days} days)`);
+          break;
+        }
+
+        // ── Promoted proposal activation ──
+        if (pi.metadata?.type === 'proposal_promote') {
+          const job = await Job.findById(pi.metadata.jobId);
+          if (job) {
+            const proposal = job.proposals.id(pi.metadata.proposalId);
+            if (proposal && !proposal.isPromoted) {
+              proposal.isPromoted = true;
+              proposal.promotedAt = new Date();
+              await job.save();
+              console.log(`✅ Proposal promoted: ${pi.metadata.proposalId}`);
+            }
+          }
+          break;
+        }
+
         // ── Failsafe: auto-activate any pending service order tied to this PI ──
         try {
           const service = await Service.findOne({ 'orders.stripePaymentIntentId': pi.id })

@@ -120,7 +120,10 @@ const jobSchema = new mongoose.Schema({
     submittedAt: {
       type: Date,
       default: Date.now
-    }
+    },
+    // Promoted proposal (freelancer pays to pin at top)
+    isPromoted:  { type: Boolean, default: false },
+    promotedAt:  { type: Date,    default: null },
   }],
   attachments: [{
     filename: String,
@@ -147,6 +150,10 @@ const jobSchema = new mongoose.Schema({
   },
   isBoosted: { type: Boolean, default: false },
   boostExpiresAt: { type: Date, default: null },
+  // Featured job listings (client-side boost)
+  isFeatured:      { type: Boolean, default: false },
+  featuredTier:    { type: String, enum: ['standard', 'premium'], default: null },
+  featuredExpiresAt: { type: Date, default: null },
   boostPaymentId: { type: String, default: null },
   views: {
     type: Number,

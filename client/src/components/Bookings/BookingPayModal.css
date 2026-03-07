@@ -1,0 +1,11 @@
+.bpm-overlay  { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:var(--space-md); }
+.bpm-modal    { background:var(--color-bg-primary); border-radius:var(--radius-xl); padding:var(--space-xl); width:100%; max-width:480px; box-shadow:var(--shadow-xl); }
+.bpm-header   { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-lg); }
+.bpm-title    { font-size:var(--font-size-lg); font-weight:var(--font-weight-bold); margin:0; }
+.bpm-close    { background:none; border:none; font-size:18px; cursor:pointer; color:var(--color-text-muted); padding:4px; }
+.bpm-loading  { text-align:center; color:var(--color-text-muted); padding:var(--space-xl) 0; }
+.bpm-error    { color:var(--color-danger); font-size:var(--font-size-sm); margin:var(--space-sm) 0; }
+.bpm-form     { display:flex; flex-direction:column; gap:var(--space-lg); margin-top:var(--space-md); }
+.bpm-pay-btn  { width:100%; padding:var(--space-md); background:var(--gradient-primary); color:#fff; border:none; border-radius:var(--radius-lg); font-size:var(--font-size-base); font-weight:700; cursor:pointer; min-height:48px; transition:opacity var(--transition-fast); }
+.bpm-pay-btn:disabled { opacity:0.55; cursor:not-allowed; }
+.bpm-pay-btn:hover:not(:disabled) { opacity:0.9; }

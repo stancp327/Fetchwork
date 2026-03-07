@@ -155,6 +155,128 @@ router.patch('/:bookingId/cancel', authenticateToken, requireSql((...a) => ctrl.
 // ── PATCH /api/bookings/:bookingId/complete ──────────────────────
 router.patch('/:bookingId/complete', authenticateToken, requireSql((...a) => ctrl.completeBookingSql(...a)));
 
+// ── POST /api/bookings/:bookingId/payment-intent ─────────────────
+// Creates a Stripe PaymentIntent for the booking amount.
+// Client uses returned clientSecret to present PaymentSheet.
+router.post('/:bookingId/payment-intent', authenticateToken, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const actorId = String(req.user?.userId || req.user?._id);
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+
+    const booking = await db.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.clientId !== actorId) return res.status(403).json({ error: 'Not authorized' });
+    if (!['held', 'pending_payment'].includes(booking.currentState)) {
+      return res.status(409).json({ error: `Cannot charge booking in state: ${booking.currentState}` });
+    }
+
+    const pricing = booking.pricingSnapshotJson || {};
+    const amountCents = Number(pricing.amountCents || 0);
+    if (amountCents < 50) {
+      // Under $0.50 — treat as free, auto-confirm without payment
+      await db.booking.update({ where: { id: bookingId }, data: { currentState: 'confirmed' } });
+      await db.bookingOccurrence.updateMany({ where: { bookingId }, data: { status: 'confirmed' } });
+      return res.json({ free: true, confirmed: true });
+    }
+
+    // Check for existing pending ChargeRecord to avoid double-charging
+    const existing = await db.chargeRecord.findFirst({
+      where: { bookingId, state: { in: ['intent_created', 'captured'] } },
+    });
+    if (existing?.state === 'captured') {
+      return res.json({ alreadyPaid: true, confirmed: true });
+    }
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.create({
+      amount:   amountCents,
+      currency: pricing.currency || 'usd',
+      automatic_payment_methods: { enabled: true },
+      metadata: { type: 'booking_payment', bookingId, bookingRef: booking.bookingRef, userId: actorId },
+    });
+
+    // Record the intent
+    await db.chargeRecord.upsert({
+      where:  { stripePaymentIntentId: pi.id },
+      create: {
+        bookingId,
+        stripePaymentIntentId: pi.id,
+        amountCents,
+        currency: pricing.currency || 'usd',
+        state:    'intent_created',
+        idempotencyKey: pi.id,
+      },
+      update: { state: 'intent_created' },
+    });
+
+    return res.json({ clientSecret: pi.client_secret, amountCents });
+  } catch (err) {
+    console.error('[booking payment-intent]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/bookings/:bookingId/confirm-payment ─────────────────
+// Called after client confirms payment via PaymentSheet.
+// Verifies PI succeeded → auto-confirms booking → notifies freelancer.
+router.post('/:bookingId/confirm-payment', authenticateToken, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { paymentIntentId } = req.body;
+    if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
+
+    const actorId = String(req.user?.userId || req.user?._id);
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+
+    const booking = await db.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.clientId !== actorId) return res.status(403).json({ error: 'Not authorized' });
+
+    // Verify with Stripe
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (pi.status !== 'succeeded') {
+      return res.status(402).json({ error: 'Payment not complete', status: pi.status });
+    }
+
+    // Mark ChargeRecord as captured
+    await db.chargeRecord.updateMany({
+      where: { bookingId, stripePaymentIntentId: paymentIntentId },
+      data:  { state: 'captured', stripeChargeId: pi.latest_charge || null },
+    });
+
+    // Auto-confirm booking
+    await db.booking.update({ where: { id: bookingId }, data: { currentState: 'confirmed' } });
+    await db.bookingOccurrence.updateMany({ where: { bookingId }, data: { status: 'confirmed' } });
+
+    // Notify freelancer
+    try {
+      const occ = await db.bookingOccurrence.findFirst({ where: { bookingId }, orderBy: { occurrenceNo: 'asc' } });
+      const { BookingNotificationService } = require('../booking-sql/services/BookingNotificationService');
+      const notifySvc = new BookingNotificationService();
+      await notifySvc.onConfirmed({
+        bookingId,
+        bookingRef:   booking.bookingRef,
+        clientId:     booking.clientId,
+        freelancerId: booking.freelancerId,
+        serviceTitle: 'Service',
+        date:         occ?.localStartWallclock?.split('T')[0] || '',
+        startTime:    occ?.localStartWallclock?.split('T')[1]?.slice(0, 5) || '',
+      });
+    } catch (_) {}
+
+    return res.json({ success: true, confirmed: true });
+  } catch (err) {
+    console.error('[booking confirm-payment]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GROUP BOOKING ROUTES ─────────────────────────────────────────
 router.post  ('/group/slots',                                  authenticateToken, requireSql((...a) => ctrl.createGroupSlot(...a)));
 router.get   ('/group/slots/:serviceId',                       authenticateToken, requireSql((...a) => ctrl.getGroupSlots(...a)));

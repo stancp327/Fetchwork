@@ -7,7 +7,9 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { bookingsApi, SlotItem } from '../../api/endpoints/bookingsApi';
+import { paymentsApi } from '../../api/endpoints/paymentsApi';
 import { useAuthStore } from '../../store/authStore';
+import { useStripe } from '@stripe/stripe-react-native';
 import { colors, spacing, typography, radius } from '../../theme';
 import { ProfileStackParamList } from '../../types/navigation';
 
@@ -173,6 +175,45 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
   const queryClient = useQueryClient();
 
   const [rescheduleVisible, setRescheduleVisible] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  const handlePayToConfirm = async (bookingId: string) => {
+    setPayLoading(true);
+    try {
+      const data = await bookingsApi.getPaymentIntent(bookingId);
+      if (data.free || data.alreadyPaid) {
+        queryClient.invalidateQueries({ queryKey: ['booking', id] });
+        return;
+      }
+
+      const { ephemeralKey, customerId } = await paymentsApi.getEphemeralKey();
+      const { error: initErr } = await initPaymentSheet({
+        merchantDisplayName:        'Fetchwork',
+        customerId,
+        customerEphemeralKeySecret: ephemeralKey,
+        paymentIntentClientSecret:  data.clientSecret,
+        allowsDelayedPaymentMethods: false,
+      });
+      if (initErr) { Alert.alert('Error', initErr.message); return; }
+
+      const { error: presentErr, paymentOption } = await presentPaymentSheet();
+      if (presentErr) {
+        if (presentErr.code !== 'Canceled') Alert.alert('Payment failed', presentErr.message);
+        return;
+      }
+
+      // Verify + confirm
+      const piId = data.clientSecret.split('_secret_')[0];
+      await bookingsApi.confirmPayment(bookingId, piId);
+      Alert.alert('Confirmed! ✅', 'Your booking is now confirmed.');
+      queryClient.invalidateQueries({ queryKey: ['booking', id] });
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.error || err.message || 'Payment failed');
+    } finally {
+      setPayLoading(false);
+    }
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['booking', id],
@@ -328,6 +369,20 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
         {/* Actions */}
         {isActive && (
           <View style={styles.actionsCard}>
+            {/* Client: pay to confirm */}
+            {!isFreelancer && ['held', 'hold', 'pending_payment'].includes(status) &&
+             ((pricing?.amountCents as number) > 0) && (
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.btnPay]}
+                onPress={() => handlePayToConfirm(bid(booking as Record<string, unknown>))}
+                disabled={payLoading}
+              >
+                <Text style={styles.actionBtnTextLight}>
+                  {payLoading ? 'Processing…' : '💳 Pay to Confirm'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {isFreelancer && status === 'pending' && (
               <TouchableOpacity
                 style={[styles.actionBtn, styles.btnConfirm]}
@@ -422,6 +477,7 @@ const styles = StyleSheet.create({
   actionBtn:   { borderRadius: radius.md, padding: spacing.md, alignItems: 'center', minHeight: 44, justifyContent: 'center', borderWidth: 1 },
   btnConfirm:    { backgroundColor: colors.success, borderColor: colors.success },
   btnComplete:   { backgroundColor: colors.success, borderColor: colors.success },
+  btnPay:        { backgroundColor: colors.primary, borderColor: colors.primary },
   btnReschedule: { backgroundColor: colors.white, borderColor: colors.primary },
   btnCancel:     { backgroundColor: colors.white, borderColor: colors.danger },
   actionBtnTextLight:   { ...typography.button, color: colors.white },

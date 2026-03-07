@@ -620,4 +620,105 @@ router.delete('/push-token', authenticateToken, async (req, res) => {
   }
 });
 
+// ── GET /api/users/me/earnings ────────────────────────────────────────────────
+router.get('/me/earnings', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.userId;
+    const year   = parseInt(req.query.year) || new Date().getFullYear();
+
+    const start = new Date(`${year}-01-01T00:00:00Z`);
+    const end   = new Date(`${year + 1}-01-01T00:00:00Z`);
+
+    // Aggregate release payments by month
+    const monthly = await Payment.aggregate([
+      {
+        $match: {
+          freelancer: userId,
+          type:       'release',
+          status:     'completed',
+          createdAt:  { $gte: start, $lt: end },
+        },
+      },
+      {
+        $group: {
+          _id:       { month: { $month: '$createdAt' }, year: { $year: '$createdAt' } },
+          total:     { $sum: '$amount' },
+          jobCount:  { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.month': 1 } },
+    ]);
+
+    // All-time totals
+    const allTime = await Payment.aggregate([
+      { $match: { freelancer: userId, type: 'release', status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+    ]);
+
+    // Pending (escrow held)
+    const pending = await Payment.aggregate([
+      { $match: { freelancer: userId, type: 'escrow', status: 'pending' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]);
+
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const rows = MONTHS.map((name, i) => {
+      const found = monthly.find(m => m._id.month === i + 1);
+      return { month: i + 1, name, year, amount: found?.total || 0, jobCount: found?.jobCount || 0 };
+    });
+
+    return res.json({
+      year,
+      monthly:      rows,
+      ytd:          rows.reduce((s, r) => s + r.amount, 0),
+      allTime:      allTime[0]?.total    || 0,
+      allTimeJobs:  allTime[0]?.count    || 0,
+      pendingEscrow: pending[0]?.total   || 0,
+    });
+  } catch (err) {
+    console.error('[earnings]', err.message);
+    res.status(500).json({ error: 'Failed to load earnings' });
+  }
+});
+
+// ── GET /api/users/me/earnings/export ─────────────────────────────────────────
+router.get('/me/earnings/export', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.userId;
+    const year   = parseInt(req.query.year) || new Date().getFullYear();
+
+    const start = new Date(`${year}-01-01T00:00:00Z`);
+    const end   = new Date(`${year + 1}-01-01T00:00:00Z`);
+
+    const payments = await Payment.find({
+      freelancer: userId,
+      type:       'release',
+      status:     'completed',
+      createdAt:  { $gte: start, $lt: end },
+    })
+      .populate('job', 'title')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const rows = [
+      ['Date', 'Job', 'Amount (USD)', 'Transaction ID'],
+      ...payments.map(p => [
+        p.createdAt.toISOString().slice(0, 10),
+        p.job?.title || 'N/A',
+        p.amount.toFixed(2),
+        p.transactionId || p.stripePaymentIntentId || '',
+      ]),
+    ];
+
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="fetchwork-earnings-${year}.csv"`);
+    return res.send(csv);
+  } catch (err) {
+    console.error('[earnings export]', err.message);
+    res.status(500).json({ error: 'Failed to export earnings' });
+  }
+});
+
 module.exports = router;

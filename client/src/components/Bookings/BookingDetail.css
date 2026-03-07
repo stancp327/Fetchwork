@@ -92,3 +92,6 @@
 .bd-btn-primary { background: var(--primary); color: white; padding: var(--space-2) var(--space-5); border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; min-height: 44px; }
 .bd-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .bd-btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); padding: var(--space-2) var(--space-5); border-radius: var(--radius-md); font-weight: 600; cursor: pointer; min-height: 44px; }
+
+.bd-btn-pay { background: var(--gradient-primary); color: #fff; border: none; border-radius: var(--radius-lg); padding: var(--space-md) var(--space-xl); font-size: var(--font-size-base); font-weight: 700; cursor: pointer; min-height: 48px; transition: opacity var(--transition-fast); box-shadow: var(--shadow-sm); }
+.bd-btn-pay:hover { opacity: 0.9; }
