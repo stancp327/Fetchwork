@@ -139,18 +139,23 @@ class SlotEngine {
           });
         }
       } catch (e) {
-        // Fall back to service-based availability if SQL fails
-        console.warn('[SlotEngine] Hybrid availability failed, using service fallback:', e.message);
+        console.error('[SlotEngine] SQL availability error:', e.message);
+        return { statusCode: 503, body: { error: 'Availability service unavailable' } };
       }
     }
 
-    // Determine settings: hybrid or service fallback
-    const tz = availability?.timezone || service.timezone || 'America/Los_Angeles';
-    const slotDuration = availability?.slotDuration || service.slotDuration || 60;
-    const bufferTime = availability?.bufferTime || service.bufferTime || 0;
-    const minNoticeHours = availability?.minNoticeHours || service.minNoticeHours || 0;
-    const maxAdvanceDays = availability?.maxAdvanceBookingDays || service.maxAdvanceDays || 60;
-    const maxPerSlot = availability?.capacity || service.maxPerSlot || 1;
+    // No SQL availability record — booking is not configured for this freelancer.
+    if (!availability) {
+      return { statusCode: 200, body: { slots: [], message: 'Booking not configured for this service' } };
+    }
+
+    // All settings come from SQL FreelancerAvailability — no Mongo fallback.
+    const tz = availability.timezone || 'America/Los_Angeles';
+    const slotDuration = availability.slotDuration || 60;
+    const bufferTime = availability.bufferTime || 0;
+    const minNoticeHours = availability.minNoticeHours || 0;
+    const maxAdvanceDays = availability.maxAdvanceBookingDays || 60;
+    const maxPerSlot = availability.capacity || service.maxPerSlot || 1;
 
     const requestedDate = DateTime.fromISO(date, { zone: tz });
     
@@ -196,7 +201,7 @@ class SlotEngine {
         minNoticeHours,
       });
     } else if (availability?.weeklySchedule) {
-      // Use weekly schedule from hybrid availability
+      // Use weekly schedule from SQL availability
       allSlots = generateSlots({
         windows: availability.weeklySchedule,
         slotDuration,
@@ -206,15 +211,8 @@ class SlotEngine {
         minNoticeHours,
       });
     } else {
-      // Fallback to service availability windows
-      allSlots = generateSlots({
-        windows: service.availabilityWindows,
-        slotDuration: service.slotDuration || 60,
-        bufferTime: service.bufferTime || 0,
-        dateStr: date,
-        timezone: tz,
-        minNoticeHours: service.minNoticeHours || 0,
-      });
+      // No windows configured in SQL — return empty.
+      allSlots = [];
     }
 
     // Query existing bookings
