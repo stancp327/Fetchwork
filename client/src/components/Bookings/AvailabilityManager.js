@@ -5,42 +5,100 @@ import { useFeatures } from '../../hooks/useFeatures';
 import './AvailabilityManager.css';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const SLOT_DURATIONS = [30, 45, 60, 90, 120];
+const SLOT_DURATIONS = [30, 45, 60, 90, 120, 240];
 const BUFFER_OPTIONS = [0, 15, 30, 45, 60];
+const TIMEZONES = [
+  'America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York',
+  'America/Phoenix', 'America/Anchorage', 'Pacific/Honolulu',
+  'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Australia/Sydney',
+];
+
+const LOCATION_MODES = [
+  { value: 'remote',         label: '💻 Remote only',                desc: 'Video call, phone, or online' },
+  { value: 'at_freelancer',  label: '📍 At my location',            desc: 'Client comes to you' },
+  { value: 'at_client',      label: '🚗 I travel to the client',    desc: 'You go to the client' },
+  { value: 'flexible',       label: '🔄 Flexible',                  desc: 'Remote, at your place, or travel — client chooses' },
+];
+
+const defaultWindow = () => ({ startTime: '09:00', endTime: '17:00' });
 
 const AvailabilityManager = () => {
   const { serviceId } = useParams();
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
   const { hasFeature } = useFeatures();
   const canGroupBooking = hasFeature('capacity_controls');
+
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState(null);
   const [success, setSuccess]   = useState('');
   const [serviceName, setServiceName] = useState('');
+  const [hasGlobal, setHasGlobal]     = useState(true);
 
-  const [enabled, setEnabled]           = useState(false);
-  const [windows, setWindows]           = useState([]);
-  const [slotDuration, setSlotDuration] = useState(60);
+  // Schedule fields (per-service override)
+  const [useOverride, setUseOverride] = useState(false);
+  const [enabled, setEnabled]           = useState(true);
+  const [timezone, setTimezone]         = useState('');
+  const [slotDuration, setSlotDuration] = useState(0);
   const [bufferTime, setBufferTime]     = useState(0);
-  const [maxAdvanceDays, setMaxAdvanceDays] = useState(30);
-  const [maxPerSlot, setMaxPerSlot]     = useState(1);
-  const [timezone, setTimezone]         = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [capacity, setCapacity]         = useState(1);
+  const [minNotice, setMinNotice]       = useState(24);
+  const [maxAdvance, setMaxAdvance]     = useState(60);
+  const [schedule, setSchedule]         = useState([]);
+
+  // Location fields
+  const [locationMode, setLocationMode]     = useState('remote');
+  const [locationAddress, setLocationAddr]  = useState('');
+  const [travelRadius, setTravelRadius]     = useState(25);
+  const [locationNotes, setLocationNotes]   = useState('');
+
+  // Resolved (from global + override merged)
+  const [resolvedInfo, setResolvedInfo] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiRequest(`/api/bookings/availability/${serviceId}`);
-      const a = data.availability || {};
-      setEnabled(a.enabled || false);
-      setWindows(a.windows || []);
-      setSlotDuration(a.slotDuration || 60);
-      setBufferTime(a.bufferTime || 0);
-      setMaxAdvanceDays(a.maxAdvanceDays || 30);
-      setMaxPerSlot(a.maxPerSlot || 1);
-      if (a.timezone) setTimezone(a.timezone);
+      // Load resolved availability for this service
+      const data = await apiRequest(`/api/availability/service/${serviceId}`);
+      const a = data.availability;
+      const loc = data.serviceLocation;
 
-      // Get service name
+      if (!a) {
+        setHasGlobal(false);
+      } else {
+        setHasGlobal(true);
+        setResolvedInfo(a);
+        setTimezone(a.timezone || 'America/Los_Angeles');
+        setSlotDuration(a.slotDuration || 60);
+        setBufferTime(a.bufferTime || 0);
+        setCapacity(a.capacity || 1);
+        setMinNotice(a.minNoticeHours || 24);
+        setMaxAdvance(a.maxAdvanceBookingDays || 60);
+        setEnabled(a.isActive !== false);
+        setUseOverride(!!a.isOverride);
+
+        // Convert weeklySchedule to day-indexed format
+        const ws = a.weeklySchedule || [];
+        const daySchedule = DAYS.map((_, i) => {
+          const existing = ws.find(d => d.dayOfWeek === i);
+          return {
+            dayOfWeek: i,
+            enabled:   !!existing && existing.windows?.length > 0,
+            windows:   existing?.windows?.length > 0 ? existing.windows : [defaultWindow()],
+          };
+        });
+        setSchedule(daySchedule);
+      }
+
+      // Location
+      if (loc) {
+        setLocationMode(loc.mode || 'remote');
+        setLocationAddr(loc.address || '');
+        setTravelRadius(loc.travelRadius || 25);
+        setLocationNotes(loc.notes || '');
+      }
+
+      // Service name
       const svc = await apiRequest(`/api/services/${serviceId}`);
       setServiceName(svc.title || svc.service?.title || '');
     } catch (err) {
@@ -52,27 +110,71 @@ const AvailabilityManager = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const addWindow = (dayOfWeek) => {
-    setWindows(prev => [...prev, { dayOfWeek, startTime: '09:00', endTime: '17:00' }]);
+  const toggleDay = (idx) => {
+    setSchedule(s => s.map((d, i) => i === idx ? { ...d, enabled: !d.enabled } : d));
   };
 
-  const removeWindow = (index) => {
-    setWindows(prev => prev.filter((_, i) => i !== index));
+  const updateWindow = (dayIdx, winIdx, field, value) => {
+    setSchedule(s => s.map((d, i) => {
+      if (i !== dayIdx) return d;
+      const windows = d.windows.map((w, j) => j === winIdx ? { ...w, [field]: value } : w);
+      return { ...d, windows };
+    }));
   };
 
-  const updateWindow = (index, field, value) => {
-    setWindows(prev => prev.map((w, i) => i === index ? { ...w, [field]: value } : w));
+  const addWindow = (dayIdx) => {
+    setSchedule(s => s.map((d, i) =>
+      i === dayIdx ? { ...d, windows: [...d.windows, defaultWindow()] } : d
+    ));
+  };
+
+  const removeWindow = (dayIdx, winIdx) => {
+    setSchedule(s => s.map((d, i) => {
+      if (i !== dayIdx) return d;
+      const windows = d.windows.filter((_, j) => j !== winIdx);
+      return { ...d, windows: windows.length ? windows : [defaultWindow()] };
+    }));
   };
 
   const handleSave = async () => {
-    setSaving(true); setError(null); setSuccess('');
+    setSaving(true);
+    setError(null);
+    setSuccess('');
     try {
-      await apiRequest(`/api/bookings/availability/${serviceId}`, {
+      // Save location
+      await apiRequest(`/api/availability/service/${serviceId}/location`, {
         method: 'PUT',
-        body: JSON.stringify({ enabled, windows, slotDuration, bufferTime, maxAdvanceDays, maxPerSlot, timezone }),
+        body: JSON.stringify({
+          mode:         locationMode,
+          address:      locationAddress,
+          travelRadius: travelRadius,
+          notes:        locationNotes,
+        }),
       });
-      setSuccess('Availability saved!');
-      setTimeout(() => setSuccess(''), 3000);
+
+      // Save per-service availability override (if customized)
+      if (useOverride) {
+        const weeklySchedule = schedule
+          .filter(d => d.enabled)
+          .map(d => ({ dayOfWeek: d.dayOfWeek, windows: d.windows }));
+
+        await apiRequest(`/api/availability/service/${serviceId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            timezone,
+            slotDuration,
+            bufferTime,
+            capacity,
+            minNoticeHours: minNotice,
+            maxAdvanceBookingDays: maxAdvance,
+            weeklySchedule,
+            isActive: enabled,
+          }),
+        });
+      }
+
+      setSuccess('Settings saved ✅');
+      setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,109 +182,214 @@ const AvailabilityManager = () => {
     }
   };
 
-  if (loading) return <div className="am-loading">Loading availability...</div>;
+  if (loading) return <div className="am-loading">Loading…</div>;
 
-  // Group windows by day
-  const windowsByDay = DAYS.map((_, i) => windows
-    .map((w, idx) => ({ ...w, _idx: idx }))
-    .filter(w => w.dayOfWeek === i)
-  );
+  if (!hasGlobal) {
+    return (
+      <div className="am-page">
+        <div className="am-alert">
+          <h3>⚠️ Set up global availability first</h3>
+          <p>Before customizing availability for this service, set your default schedule.</p>
+          <button className="am-btn" onClick={() => navigate('/settings')}>
+            Go to Settings
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="am-page">
       <div className="am-header">
         <button className="am-back" onClick={() => navigate(-1)}>← Back</button>
-        <div>
-          <h1 className="am-title">📅 Booking Availability</h1>
-          {serviceName && <p className="am-service-name">{serviceName}</p>}
-        </div>
+        <h1 className="am-title">Availability: {serviceName}</h1>
+        <p className="am-subtitle">Customize scheduling and location for this service</p>
       </div>
 
       {error && <div className="am-error">{error}</div>}
       {success && <div className="am-success">{success}</div>}
 
-      {/* Enable toggle */}
-      <div className="am-toggle-row">
-        <label className="am-toggle">
-          <input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} />
-          <span className="am-toggle-slider" />
-        </label>
-        <div>
-          <strong>Accept Bookings</strong>
-          <p className="am-hint">When enabled, clients can book available time slots on your service page</p>
+      {/* ── Location Section ── */}
+      <div className="am-card">
+        <h2 className="am-section-title">📍 Service Location</h2>
+        <p className="am-hint">How and where will you deliver this service?</p>
+
+        <div className="am-location-modes">
+          {LOCATION_MODES.map(m => (
+            <button
+              key={m.value}
+              className={`am-location-mode ${locationMode === m.value ? 'active' : ''}`}
+              onClick={() => setLocationMode(m.value)}
+              type="button"
+            >
+              <span className="am-location-mode-label">{m.label}</span>
+              <span className="am-location-mode-desc">{m.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        {(locationMode === 'at_freelancer' || locationMode === 'flexible') && (
+          <div className="am-field">
+            <label>Your Service Address</label>
+            <input
+              type="text"
+              placeholder="e.g. 123 Main St, Suite 4, Oakland CA"
+              value={locationAddress}
+              onChange={e => setLocationAddr(e.target.value)}
+            />
+          </div>
+        )}
+
+        {(locationMode === 'at_client' || locationMode === 'flexible') && (
+          <div className="am-field">
+            <label>Travel Radius (miles)</label>
+            <input
+              type="number"
+              min="1"
+              max="200"
+              value={travelRadius}
+              onChange={e => setTravelRadius(Number(e.target.value))}
+            />
+            <span className="am-hint">How far you're willing to travel to the client</span>
+          </div>
+        )}
+
+        <div className="am-field">
+          <label>Location Notes (optional)</label>
+          <input
+            type="text"
+            placeholder="e.g. Free parking, buzzer #4"
+            value={locationNotes}
+            onChange={e => setLocationNotes(e.target.value)}
+            maxLength={300}
+          />
         </div>
       </div>
 
-      {enabled && (
+      {/* ── Schedule Override Toggle ── */}
+      <div className="am-card">
+        <div className="am-override-toggle">
+          <div>
+            <h2 className="am-section-title">🕐 Custom Schedule</h2>
+            <p className="am-hint">
+              {useOverride
+                ? 'This service has its own schedule (overrides your global defaults).'
+                : 'Using your global availability schedule. Toggle to customize for this service only.'}
+            </p>
+          </div>
+          <button
+            className={`am-toggle ${useOverride ? 'on' : 'off'}`}
+            onClick={() => setUseOverride(!useOverride)}
+            type="button"
+          >
+            <span className="am-toggle-dot" />
+          </button>
+        </div>
+
+        {!useOverride && resolvedInfo && (
+          <div className="am-resolved-summary">
+            <p><strong>Current:</strong> {resolvedInfo.timezone}, {resolvedInfo.slotDuration}min sessions,
+              {resolvedInfo.bufferTime > 0 ? ` ${resolvedInfo.bufferTime}min buffer,` : ''} up to {resolvedInfo.maxAdvanceBookingDays} days out</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Custom Schedule Fields (when override is on) ── */}
+      {useOverride && (
         <>
-          {/* Settings row */}
-          <div className="am-settings">
-            <div className="am-setting">
-              <label>Slot Duration</label>
-              <select value={slotDuration} onChange={e => setSlotDuration(Number(e.target.value))}>
-                {SLOT_DURATIONS.map(d => <option key={d} value={d}>{d} min</option>)}
-              </select>
-            </div>
-            <div className="am-setting">
-              <label>Buffer Between</label>
-              <select value={bufferTime} onChange={e => setBufferTime(Number(e.target.value))}>
-                {BUFFER_OPTIONS.map(b => <option key={b} value={b}>{b === 0 ? 'None' : `${b} min`}</option>)}
-              </select>
-            </div>
-            <div className="am-setting">
-              <label>Max Advance</label>
-              <select value={maxAdvanceDays} onChange={e => setMaxAdvanceDays(Number(e.target.value))}>
-                {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>{d} days</option>)}
-              </select>
-            </div>
-            <div className="am-setting">
-              <label>Spots Per Slot</label>
-              {canGroupBooking ? (
-                <select value={maxPerSlot} onChange={e => setMaxPerSlot(Number(e.target.value))}>
-                  {[1, 2, 3, 5, 10, 15, 20, 25, 30, 50].map(n => (
-                    <option key={n} value={n}>{n === 1 ? '1 (Private)' : `${n} (Group)`}</option>
-                  ))}
+          <div className="am-card">
+            <h3>General</h3>
+            <div className="am-row">
+              <div className="am-field">
+                <label>Timezone</label>
+                <select value={timezone} onChange={e => setTimezone(e.target.value)}>
+                  {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
-              ) : (
-                <div className="am-upgrade-hint">
-                  <span>1 (Private)</span>
-                  <a href="/pricing" className="am-upgrade-link">Upgrade to Pro for group sessions →</a>
+              </div>
+              <div className="am-field">
+                <label>Session Duration</label>
+                <select value={slotDuration} onChange={e => setSlotDuration(Number(e.target.value))}>
+                  {SLOT_DURATIONS.map(d => <option key={d} value={d}>{d} min</option>)}
+                </select>
+              </div>
+              <div className="am-field">
+                <label>Buffer Between Sessions</label>
+                <select value={bufferTime} onChange={e => setBufferTime(Number(e.target.value))}>
+                  {BUFFER_OPTIONS.map(b => <option key={b} value={b}>{b === 0 ? 'None' : `${b} min`}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="am-row">
+              {canGroupBooking && (
+                <div className="am-field">
+                  <label>Max Per Slot <span className="am-hint">(1 = 1:1, &gt;1 = group)</span></label>
+                  <input type="number" min="1" max="100" value={capacity}
+                    onChange={e => setCapacity(Number(e.target.value))} />
                 </div>
               )}
+              <div className="am-field">
+                <label>Minimum Notice <span className="am-hint">(hours)</span></label>
+                <input type="number" min="0" max="168" value={minNotice}
+                  onChange={e => setMinNotice(Number(e.target.value))} />
+              </div>
+              <div className="am-field">
+                <label>Book Up To <span className="am-hint">(days ahead)</span></label>
+                <input type="number" min="1" max="365" value={maxAdvance}
+                  onChange={e => setMaxAdvance(Number(e.target.value))} />
+              </div>
             </div>
           </div>
 
-          <p className="am-tz">Timezone: {timezone}</p>
-
-          {/* Weekly grid */}
-          <div className="am-week-grid">
-            {DAYS.map((dayName, dayIdx) => (
-              <div key={dayIdx} className="am-day-card">
-                <div className="am-day-header">
-                  <span className="am-day-name">{dayName}</span>
-                  <button className="am-add-window" onClick={() => addWindow(dayIdx)} title="Add time window">+</button>
-                </div>
-                {windowsByDay[dayIdx].length === 0 ? (
-                  <p className="am-day-off">No availability</p>
-                ) : (
-                  windowsByDay[dayIdx].map(w => (
-                    <div key={w._idx} className="am-window-row">
-                      <input type="time" value={w.startTime} onChange={e => updateWindow(w._idx, 'startTime', e.target.value)} />
-                      <span className="am-to">→</span>
-                      <input type="time" value={w.endTime} onChange={e => updateWindow(w._idx, 'endTime', e.target.value)} />
-                      <button className="am-rm-window" onClick={() => removeWindow(w._idx)}>✕</button>
+          {/* Weekly Schedule */}
+          <div className="am-card">
+            <h3>Weekly Schedule</h3>
+            <p className="am-hint">Toggle days on/off and set time windows.</p>
+            <div className="am-days">
+              {schedule.map((day, dayIdx) => (
+                <div key={day.dayOfWeek} className={`am-day ${day.enabled ? 'enabled' : ''}`}>
+                  <div className="am-day-header">
+                    <button
+                      type="button"
+                      className={`am-day-toggle ${day.enabled ? 'on' : 'off'}`}
+                      onClick={() => toggleDay(dayIdx)}
+                    >
+                      <span className="am-day-toggle-dot" />
+                    </button>
+                    <span className="am-day-name">{DAYS[day.dayOfWeek]}</span>
+                    {!day.enabled && <span className="am-unavail">Unavailable</span>}
+                  </div>
+                  {day.enabled && (
+                    <div className="am-windows">
+                      {day.windows.map((win, winIdx) => (
+                        <div key={winIdx} className="am-window-row">
+                          <input type="time" value={win.startTime}
+                            onChange={e => updateWindow(dayIdx, winIdx, 'startTime', e.target.value)} />
+                          <span className="am-dash">—</span>
+                          <input type="time" value={win.endTime}
+                            onChange={e => updateWindow(dayIdx, winIdx, 'endTime', e.target.value)} />
+                          {day.windows.length > 1 && (
+                            <button type="button" className="am-remove-window"
+                              onClick={() => removeWindow(dayIdx, winIdx)}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                      <button type="button" className="am-add-window"
+                        onClick={() => addWindow(dayIdx)}>+ Add time window</button>
                     </div>
-                  ))
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-
-          <button className="am-save-btn" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : '💾 Save Availability'}
-          </button>
         </>
       )}
+
+      {/* Save */}
+      <div className="am-actions">
+        <button className="am-btn" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : '💾 Save Settings'}
+        </button>
+      </div>
     </div>
   );
 };

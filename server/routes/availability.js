@@ -1,11 +1,18 @@
-const express    = require('express');
-const router     = express.Router();
-const Availability = require('../models/Availability');
-const Booking    = require('../models/Booking');
-const { authenticateToken } = require('../middleware/auth');
-const { generateSlotsForRange } = require('../utils/slotGenerator');
+/**
+ * availability.js — freelancer availability (global + per-service overrides)
+ * All data lives in SQL (Prisma FreelancerAvailability + ServiceAvailabilityOverride).
+ * No Mongo reads/writes for availability.
+ */
 
-// ── PUT /api/availability — freelancer sets/updates their schedule ──────────
+const express = require('express');
+const router  = express.Router();
+const { authenticateToken } = require('../middleware/auth');
+
+function getPrisma() {
+  return require('../booking-sql/db/client').getPrisma();
+}
+
+// ── PUT /api/availability — freelancer sets/updates global defaults ──────────
 router.put('/', authenticateToken, async (req, res) => {
   try {
     const {
@@ -13,26 +20,62 @@ router.put('/', authenticateToken, async (req, res) => {
       minNoticeHours, maxAdvanceBookingDays, weeklySchedule, exceptions, isActive,
     } = req.body;
 
-    const doc = await Availability.findOneAndUpdate(
-      { freelancer: req.user.userId },
-      {
-        freelancer: req.user.userId,
-        ...(timezone              !== undefined && { timezone }),
-        ...(defaultSlotDuration   !== undefined && { defaultSlotDuration: parseInt(defaultSlotDuration) }),
-        ...(bufferTime            !== undefined && { bufferTime: parseInt(bufferTime) }),
-        ...(defaultCapacity       !== undefined && { defaultCapacity: parseInt(defaultCapacity) }),
-        ...(minNoticeHours        !== undefined && { minNoticeHours: parseInt(minNoticeHours) }),
-        ...(maxAdvanceBookingDays !== undefined && { maxAdvanceBookingDays: parseInt(maxAdvanceBookingDays) }),
-        ...(weeklySchedule        !== undefined && { weeklySchedule }),
-        ...(exceptions            !== undefined && { exceptions }),
-        ...(isActive              !== undefined && { isActive }),
-      },
-      { upsert: true, new: true, runValidators: true }
-    );
+    const prisma = getPrisma();
+    const freelancerId = req.user.userId.toString();
 
-    res.json({ availability: doc });
+    const payload = {
+      ...(isActive              !== undefined && { isActive }),
+      ...(timezone              !== undefined && { timezone }),
+      ...(defaultSlotDuration   !== undefined && { defaultSlotDuration: parseInt(defaultSlotDuration) }),
+      ...(bufferTime            !== undefined && { bufferTime: parseInt(bufferTime) }),
+      ...(defaultCapacity       !== undefined && { defaultCapacity: parseInt(defaultCapacity) }),
+      ...(minNoticeHours        !== undefined && { minNoticeHours: parseInt(minNoticeHours) }),
+      ...(maxAdvanceBookingDays !== undefined && { maxAdvanceBookingDays: parseInt(maxAdvanceBookingDays) }),
+      ...(weeklySchedule        !== undefined && { weeklyScheduleJson: weeklySchedule }),
+    };
+
+    const doc = await prisma.freelancerAvailability.upsert({
+      where:  { freelancerId },
+      update: payload,
+      create: { freelancerId, ...payload },
+    });
+
+    // Handle exceptions separately if provided
+    if (exceptions && Array.isArray(exceptions)) {
+      // Clear existing and re-create
+      await prisma.availabilityException.deleteMany({
+        where: { freelancerAvailId: doc.id, serviceId: null },
+      });
+      if (exceptions.length > 0) {
+        await prisma.availabilityException.createMany({
+          data: exceptions.map(ex => ({
+            freelancerAvailId: doc.id,
+            date:              ex.date,
+            unavailable:       ex.unavailable !== false,
+            windowsJson:       ex.windows || null,
+            reason:            ex.reason || null,
+          })),
+        });
+      }
+    }
+
+    // Return in the shape the frontend expects
+    res.json({
+      availability: {
+        freelancerId:          doc.freelancerId,
+        timezone:              doc.timezone,
+        defaultSlotDuration:   doc.defaultSlotDuration,
+        bufferTime:            doc.bufferTime,
+        defaultCapacity:       doc.defaultCapacity,
+        minNoticeHours:        doc.minNoticeHours,
+        maxAdvanceBookingDays: doc.maxAdvanceBookingDays,
+        isActive:              doc.isActive,
+        weeklySchedule:        doc.weeklyScheduleJson || [],
+        exceptions:            exceptions || [],
+      },
+    });
   } catch (err) {
-    console.error('availability PUT error:', err);
+    console.error('[availability] PUT error:', err);
     res.status(500).json({ error: 'Failed to save availability' });
   }
 });
@@ -40,8 +83,32 @@ router.put('/', authenticateToken, async (req, res) => {
 // ── GET /api/availability/me — current freelancer's own config ──────────────
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const doc = await Availability.findOne({ freelancer: req.user.userId });
-    res.json({ availability: doc });
+    const prisma = getPrisma();
+    const doc = await prisma.freelancerAvailability.findUnique({
+      where: { freelancerId: req.user.userId.toString() },
+      include: {
+        exceptions: { where: { serviceId: null }, orderBy: { date: 'asc' } },
+      },
+    });
+
+    if (!doc) return res.json({ availability: null });
+
+    res.json({
+      availability: {
+        freelancerId:          doc.freelancerId,
+        timezone:              doc.timezone,
+        defaultSlotDuration:   doc.defaultSlotDuration,
+        bufferTime:            doc.bufferTime,
+        defaultCapacity:       doc.defaultCapacity,
+        minNoticeHours:        doc.minNoticeHours,
+        maxAdvanceBookingDays: doc.maxAdvanceBookingDays,
+        isActive:              doc.isActive,
+        weeklySchedule:        doc.weeklyScheduleJson || [],
+        exceptions:            (doc.exceptions || []).map(e => ({
+          date: e.date, unavailable: e.unavailable, reason: e.reason,
+        })),
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load availability' });
   }
@@ -50,52 +117,159 @@ router.get('/me', authenticateToken, async (req, res) => {
 // ── GET /api/availability/:freelancerId — public availability config ─────────
 router.get('/:freelancerId', async (req, res) => {
   try {
-    const doc = await Availability.findOne({
-      freelancer: req.params.freelancerId,
-      isActive:   true,
+    const prisma = getPrisma();
+    const doc = await prisma.freelancerAvailability.findUnique({
+      where: { freelancerId: req.params.freelancerId },
     });
-    if (!doc) return res.status(404).json({ error: 'Availability not configured' });
-    res.json({ availability: doc });
+
+    if (!doc || !doc.isActive) {
+      return res.status(404).json({ error: 'Availability not configured' });
+    }
+
+    res.json({
+      availability: {
+        timezone:              doc.timezone,
+        defaultSlotDuration:   doc.defaultSlotDuration,
+        bufferTime:            doc.bufferTime,
+        defaultCapacity:       doc.defaultCapacity,
+        minNoticeHours:        doc.minNoticeHours,
+        maxAdvanceBookingDays: doc.maxAdvanceBookingDays,
+        weeklySchedule:        doc.weeklyScheduleJson || [],
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load availability' });
   }
 });
 
-// ── GET /api/availability/:freelancerId/slots ─────────────────────────────
-// Query: from=YYYY-MM-DD&to=YYYY-MM-DD
-// Returns slots grouped by date — single DB query for entire range
-router.get('/:freelancerId/slots', async (req, res) => {
+// ── PUT /api/availability/service/:serviceId — per-service override ──────────
+router.put('/service/:serviceId', authenticateToken, async (req, res) => {
   try {
-    const { from, to } = req.query;
-    if (!from || !to) return res.status(400).json({ error: 'from and to dates required' });
+    const prisma = getPrisma();
+    const freelancerId = req.user.userId.toString();
+    const serviceId    = req.params.serviceId;
 
-    const availability = await Availability.findOne({
-      freelancer: req.params.freelancerId,
-      isActive:   true,
-    }).lean();
-    if (!availability) return res.status(404).json({ error: 'Availability not configured' });
+    // Verify freelancer owns this service
+    const Service = require('../models/Service');
+    const svc = await Service.findById(serviceId).select('freelancer').lean();
+    if (!svc) return res.status(404).json({ error: 'Service not found' });
+    if (svc.freelancer.toString() !== freelancerId)
+      return res.status(403).json({ error: 'Not your service' });
 
-    // Single DB query for the whole range — no N+1
-    const rangeStart = new Date(from + 'T00:00:00Z');
-    const rangeEnd   = new Date(to   + 'T23:59:59Z');
+    // Ensure global availability exists first
+    const global = await prisma.freelancerAvailability.findUnique({
+      where: { freelancerId },
+      select: { id: true },
+    });
+    if (!global) {
+      return res.status(400).json({
+        error: 'Set up your global availability first before customizing per-service.',
+      });
+    }
 
-    const existingBookings = await Booking.find({
-      freelancer: req.params.freelancerId,
-      status:     { $in: ['hold', 'confirmed'] },
-      startTime:  { $lt: rangeEnd   },
-      endTime:    { $gt: rangeStart },
-    }).select('startTime endTime status capacity participants').lean();
+    const {
+      timezone, slotDuration, bufferTime, capacity,
+      minNoticeHours, maxAdvanceBookingDays, weeklySchedule, isActive,
+    } = req.body;
 
-    const slots = generateSlotsForRange(from, to, availability, existingBookings);
+    const override = await prisma.serviceAvailabilityOverride.upsert({
+      where: {
+        freelancerAvailId_serviceId: {
+          freelancerAvailId: global.id,
+          serviceId,
+        },
+      },
+      create: {
+        freelancerAvailId:     global.id,
+        serviceId,
+        timezone:              timezone || null,
+        slotDuration:          slotDuration != null ? parseInt(slotDuration) : null,
+        bufferTime:            bufferTime != null ? parseInt(bufferTime) : null,
+        capacity:              capacity != null ? parseInt(capacity) : null,
+        minNoticeHours:        minNoticeHours != null ? parseInt(minNoticeHours) : null,
+        maxAdvanceBookingDays: maxAdvanceBookingDays != null ? parseInt(maxAdvanceBookingDays) : null,
+        weeklyScheduleJson:    weeklySchedule || null,
+        isActive:              isActive !== false,
+      },
+      update: {
+        timezone:              timezone ?? undefined,
+        slotDuration:          slotDuration != null ? parseInt(slotDuration) : undefined,
+        bufferTime:            bufferTime != null ? parseInt(bufferTime) : undefined,
+        capacity:              capacity != null ? parseInt(capacity) : undefined,
+        minNoticeHours:        minNoticeHours != null ? parseInt(minNoticeHours) : undefined,
+        maxAdvanceBookingDays: maxAdvanceBookingDays != null ? parseInt(maxAdvanceBookingDays) : undefined,
+        weeklyScheduleJson:    weeklySchedule ?? undefined,
+        isActive:              isActive ?? undefined,
+      },
+    });
+
+    res.json({ message: 'Service availability override saved', override });
+  } catch (err) {
+    console.error('[availability] service override PUT error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/availability/service/:serviceId — resolved availability for a service
+router.get('/service/:serviceId', authenticateToken, async (req, res) => {
+  try {
+    const serviceId = req.params.serviceId;
+
+    // Get freelancer ID from service
+    const Service = require('../models/Service');
+    const svc = await Service.findById(serviceId).select('freelancer serviceLocation').lean();
+    if (!svc) return res.status(404).json({ error: 'Service not found' });
+
+    const { AvailabilityService } = require('../booking-sql/services/AvailabilityService');
+    const availService = new AvailabilityService();
+    const resolved = await availService.getResolvedAvailability({
+      freelancerId: svc.freelancer.toString(),
+      serviceId,
+    });
+
+    if (!resolved) return res.json({ availability: null, serviceLocation: svc.serviceLocation || null });
 
     res.json({
-      freelancerId:       req.params.freelancerId,
-      freelancerTimezone: availability.timezone,
-      slots,
+      availability: {
+        timezone:              resolved.timezone,
+        slotDuration:          resolved.slotDuration,
+        bufferTime:            resolved.bufferTime,
+        capacity:              resolved.capacity,
+        minNoticeHours:        resolved.minNoticeHours,
+        maxAdvanceBookingDays: resolved.maxAdvanceBookingDays,
+        isActive:              resolved.isActive,
+        weeklySchedule:        resolved.weeklySchedule || [],
+        isOverride:            !!resolved._overrideId,
+      },
+      serviceLocation: svc.serviceLocation || null,
     });
   } catch (err) {
-    console.error('slots error:', err);
-    res.status(500).json({ error: 'Failed to generate slots' });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PUT /api/availability/service/:serviceId/location — service location mode
+router.put('/service/:serviceId/location', authenticateToken, async (req, res) => {
+  try {
+    const Service = require('../models/Service');
+    const svc = await Service.findById(req.params.serviceId);
+    if (!svc) return res.status(404).json({ error: 'Service not found' });
+    if (svc.freelancer.toString() !== req.user.userId.toString())
+      return res.status(403).json({ error: 'Not your service' });
+
+    const { mode, address, travelRadius, notes } = req.body;
+
+    svc.serviceLocation = {
+      mode:         mode || 'remote',
+      address:      address || '',
+      travelRadius: Number(travelRadius) || 0,
+      notes:        notes || '',
+    };
+
+    await svc.save();
+    res.json({ message: 'Service location updated', serviceLocation: svc.serviceLocation });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

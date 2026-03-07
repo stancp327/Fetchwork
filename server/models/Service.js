@@ -51,6 +51,18 @@ const serviceSchema = new mongoose.Schema({
     freeWithinMiles: { type: Number, default: 0 }, // no charge within X miles
   },
 
+  // Where the service happens and who travels
+  serviceLocation: {
+    mode: {
+      type: String,
+      enum: ['remote', 'at_freelancer', 'at_client', 'flexible'],
+      default: 'remote',
+    },
+    address:      { type: String, default: '' },        // freelancer's studio/office address (at_freelancer)
+    travelRadius: { type: Number, default: 0 },         // miles the freelancer will travel (at_client)
+    notes:        { type: String, default: '', maxlength: 300 }, // e.g. "Free parking available"
+  },
+
   // Capacity controls (Plus+ only)
   capacity: {
     enabled:       { type: Boolean, default: false },
