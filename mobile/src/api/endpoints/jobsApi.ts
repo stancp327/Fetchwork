@@ -39,4 +39,16 @@ export const jobsApi = {
 
   updateStatus: (jobId: string, status: string) =>
     client.put(`/api/jobs/${jobId}/status`, { status }).then(r => r.data),
+
+  featureJob: (jobId: string, tier: 'standard' | 'premium'): Promise<{ clientSecret: string; amount: number; paymentIntentId: string }> =>
+    client.post(`/api/jobs/${jobId}/feature`, { tier }).then(r => r.data),
+
+  verifyFeature: (jobId: string, paymentIntentId: string) =>
+    client.post(`/api/jobs/${jobId}/feature/verify`, { paymentIntentId }).then(r => r.data),
+
+  promoteProposal: (jobId: string, proposalId: string): Promise<{ clientSecret: string; amount: number; paymentIntentId: string }> =>
+    client.post(`/api/jobs/${jobId}/proposals/${proposalId}/promote`).then(r => r.data),
+
+  verifyPromotion: (jobId: string, proposalId: string, paymentIntentId: string) =>
+    client.post(`/api/jobs/${jobId}/proposals/${proposalId}/promote/verify`, { paymentIntentId }).then(r => r.data),
 };

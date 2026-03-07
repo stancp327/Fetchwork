@@ -110,19 +110,18 @@ const QuizView: React.FC<{
         <Text style={styles.questionText}>{q.q}</Text>
 
         {q.options.map((opt, i) => {
-          let optStyle = styles.option;
-          let optTextStyle = styles.optionText;
-          if (answered !== undefined) {
-            if (i === q.answer) { optStyle = { ...optStyle, ...styles.optionCorrect }; optTextStyle = { ...optTextStyle, ...styles.optionCorrectText }; }
-            else if (i === answered && i !== q.answer) { optStyle = { ...optStyle, ...styles.optionWrong }; optTextStyle = { ...optTextStyle, ...styles.optionWrongText }; }
-          } else if (i === answered) {
-            optStyle = { ...optStyle, ...styles.optionSelected };
-          }
+          const isCorrectAnswer = answered !== undefined && i === q.answer;
+          const isWrongAnswer   = answered !== undefined && i === answered && i !== q.answer;
+          const isSelected      = answered === undefined ? false : false; // only pre-answer highlight
 
           return (
             <TouchableOpacity
               key={i}
-              style={optStyle}
+              style={[
+                styles.option,
+                isCorrectAnswer && styles.optionCorrect,
+                isWrongAnswer   && styles.optionWrong,
+              ]}
               onPress={() => handleSelect(i)}
               disabled={answered !== undefined}
               activeOpacity={0.7}
@@ -130,7 +129,12 @@ const QuizView: React.FC<{
               <View style={styles.optionLetter}>
                 <Text style={styles.optionLetterText}>{String.fromCharCode(65 + i)}</Text>
               </View>
-              <Text style={[optTextStyle, { flex: 1 }]}>{opt}</Text>
+              <Text style={[
+                styles.optionText,
+                isCorrectAnswer && styles.optionCorrectText,
+                isWrongAnswer   && styles.optionWrongText,
+                { flex: 1 },
+              ]}>{opt}</Text>
             </TouchableOpacity>
           );
         })}
@@ -345,8 +349,11 @@ const SkillAssessmentScreen: React.FC = () => {
         {earned.length > 0 && (
           <View style={styles.earnedRow}>
             {earned.slice(0, 4).map(a => (
-              <View key={a.category} style={[styles.miniChip, styles[`chip_${a.badge?.tier}` as any] || {}]}>
-                <Text style={styles.miniChipText}>{BADGE_ICONS[a.badge?.tier]} {a.categoryLabel}</Text>
+              <View key={a.category} style={[
+                styles.miniChip,
+                a.badge?.tier === 'gold' ? styles.chip_gold : a.badge?.tier === 'silver' ? styles.chip_silver : styles.chip_bronze,
+              ]}>
+                <Text style={styles.miniChipText}>{BADGE_ICONS[a.badge?.tier ?? 'bronze']} {a.categoryLabel}</Text>
               </View>
             ))}
           </View>
@@ -373,13 +380,13 @@ const SkillAssessmentScreen: React.FC = () => {
         </View>
       )}
 
-      <FlatList
-        data={tab === 'mine' ? myAssessments : categories}
-        keyExtractor={(item) => ('id' in item ? item.id : item.category)}
-        renderItem={tab === 'mine' ? renderMyBadge : renderCategory}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          tab === 'mine' ? (
+      {tab === 'mine' ? (
+        <FlatList<SkillAssessment>
+          data={myAssessments}
+          keyExtractor={(item) => item.category}
+          renderItem={renderMyBadge}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Text style={styles.emptyIcon}>🏅</Text>
               <Text style={styles.emptyText}>No assessments yet. Take a test to earn your first badge!</Text>
@@ -387,9 +394,16 @@ const SkillAssessmentScreen: React.FC = () => {
                 <Text style={styles.btnPrimaryText}>Browse Tests</Text>
               </TouchableOpacity>
             </View>
-          ) : null
-        }
-      />
+          }
+        />
+      ) : (
+        <FlatList<SkillCategory>
+          data={categories}
+          keyExtractor={(item) => item.id}
+          renderItem={renderCategory}
+          contentContainerStyle={styles.list}
+        />
+      )}
     </View>
   );
 };

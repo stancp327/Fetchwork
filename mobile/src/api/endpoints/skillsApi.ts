@@ -11,6 +11,7 @@ export interface SkillQuestion {
   id: string;
   q: string;
   options: string[];
+  answer: number;  // correct option index — included for in-quiz feedback
 }
 
 export interface SkillBadge {

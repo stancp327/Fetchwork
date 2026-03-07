@@ -39,6 +39,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
   const [boosting, setBoosting] = useState(false);
   const [matches, setMatches]           = useState<MatchResult | null>(null);
   const [matchLoading, setMatchLoading] = useState(false);
+  const [featuring, setFeaturing]       = useState(false);
 
   const loadMatches = async () => {
     setMatchLoading(true);
@@ -130,6 +131,43 @@ export default function JobDetailScreen({ route, navigation }: Props) {
     } finally { setBoosting(false); }
   };
 
+  const handleFeatureJob = async (tier: 'standard' | 'premium') => {
+    setFeaturing(true);
+    try {
+      const res = await jobsApi.featureJob(id, tier);
+      if (res.clientSecret) {
+        const { ephemeralKey, customerId } = await paymentsApi.getEphemeralKey();
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: res.clientSecret,
+          customerEphemeralKeySecret: ephemeralKey,
+          customerId,
+          merchantDisplayName: 'Fetchwork',
+        });
+        if (initError) { Alert.alert('Error', initError.message); return; }
+        const { error } = await presentPaymentSheet();
+        if (!error) {
+          await jobsApi.verifyFeature(id, res.paymentIntentId);
+          Alert.alert('⭐ Featured!', `Your job is now featured for ${tier === 'premium' ? '14' : '7'} days.`);
+          qc.invalidateQueries({ queryKey: ['job', id] });
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.error || 'Feature failed');
+    } finally { setFeaturing(false); }
+  };
+
+  const showFeaturePicker = () => {
+    Alert.alert(
+      '⭐ Feature This Job',
+      'Get 2–4× more visibility from freelancers.',
+      [
+        { text: 'Standard — $9.99 (7 days)', onPress: () => handleFeatureJob('standard') },
+        { text: 'Premium — $19.99 (14 days) ⭐', onPress: () => handleFeatureJob('premium') },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
   if (isLoading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
   if (!job) return <View style={styles.center}><Text>Job not found</Text></View>;
 
@@ -144,7 +182,14 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         {/* Title + status */}
         <View style={styles.titleRow}>
           <Text style={styles.title}>{job.title}</Text>
-          <Badge label={job.status.replace(/_/g, ' ')} variant={getJobStatusVariant(job.status)} />
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            {job.isFeatured && (
+              <View style={styles.featuredChip}>
+                <Text style={styles.featuredChipText}>⭐ Featured</Text>
+              </View>
+            )}
+            <Badge label={job.status.replace(/_/g, ' ')} variant={getJobStatusVariant(job.status)} />
+          </View>
         </View>
 
         {/* Client info */}
@@ -194,11 +239,28 @@ export default function JobDetailScreen({ route, navigation }: Props) {
             )}
             {job.status === 'open' && !isBoosted && (
               <Button label={boosting ? 'Processing...' : '🚀 Boost Job'}
-                onPress={handleBoost} loading={boosting} variant="secondary" fullWidth />
+                onPress={handleBoost} loading={boosting} variant="secondary" fullWidth style={{ marginBottom: 8 }} />
             )}
             {isBoosted && (
               <View style={styles.boostActive}>
                 <Text style={styles.boostActiveText}>🚀 Boosted until {new Date(job.boostExpiresAt!).toLocaleDateString()}</Text>
+              </View>
+            )}
+            {job.status === 'open' && !job.isFeatured && (
+              <Button
+                label={featuring ? 'Processing…' : '⭐ Feature This Job'}
+                onPress={showFeaturePicker}
+                loading={featuring}
+                variant="secondary"
+                fullWidth
+                style={{ marginTop: 8 }}
+              />
+            )}
+            {job.isFeatured && (
+              <View style={[styles.boostActive, { borderColor: '#f59e0b', backgroundColor: '#fffbeb' }]}>
+                <Text style={[styles.boostActiveText, { color: '#92400e' }]}>
+                  ⭐ Featured{job.featuredExpiresAt ? ` until ${new Date(job.featuredExpiresAt).toLocaleDateString()}` : ''}
+                </Text>
               </View>
             )}
           </Card>
@@ -298,6 +360,8 @@ const styles = StyleSheet.create({
   skillText:   { fontSize: 12, color: colors.textSecondary },
   applyBtn:    { marginTop: spacing.md },
   boostActive: { backgroundColor: colors.primary + '10', borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
+  featuredChip: { backgroundColor: '#fef3c7', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: '#f59e0b' },
+  featuredChipText: { fontSize: 12, fontWeight: '700', color: '#92400e' },
   boostActiveText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   // AI matches
   aiMatchBtn:         { backgroundColor: colors.purple, borderRadius: 10, padding: spacing.sm, alignItems: 'center', minHeight: 44, justifyContent: 'center' },

@@ -47,7 +47,7 @@ const JobCard = ({ job }) => {
           <span className="tag primary">{formatCategory(job.category)}</span>
           <span className="tag">{job.experienceLevel}</span>
           {job.isUrgent && <span className="tag warning">Urgent</span>}
-          {job.isFeatured && <span className="tag success">Featured</span>}
+          {job.isFeatured && <span className="tag-featured">⭐ Featured</span>}
         </div>
       </div>
 

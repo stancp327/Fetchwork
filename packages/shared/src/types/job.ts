@@ -29,6 +29,8 @@ export interface Job {
   location?: string;
   isRemote?: boolean;
   isFeatured?: boolean;
+  featuredTier?: 'standard' | 'premium';
+  featuredExpiresAt?: string;
   isBoosted?: boolean;
   boostExpiresAt?: string;
   recurring?: {

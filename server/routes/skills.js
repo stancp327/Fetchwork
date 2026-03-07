@@ -28,12 +28,12 @@ const quizLimiter = rateLimit({
 });
 
 // ─── GET /api/skills/questions/:category ────────────────────────────────────
-// Serves questions WITHOUT answers (answers stripped for frontend)
+// Serves questions WITH answers (for in-quiz feedback — educational quizzes only)
 router.get('/questions/:category', (req, res) => {
   const { category } = req.params;
   const data = QUESTIONS[category];
   if (!data) return res.status(404).json({ error: 'Category not found' });
-  const questions = data.questions.map(({ id, q, options }) => ({ id, q, options })); // strip answer
+  const questions = data.questions.map(({ id, q, options, answer }) => ({ id, q, options, answer }));
   res.json({ category, label: data.label, questions });
 });
 

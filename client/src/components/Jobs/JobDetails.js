@@ -15,6 +15,7 @@ import { apiRequest } from '../../utils/api';
 import './JobDetails.css';
 import { getApiBaseUrl } from '../../utils/api';
 import { aiApi } from '../../api/ai';
+import JobFeatureModal from './JobFeatureModal';
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -44,6 +45,8 @@ const JobDetails = () => {
   ]);
   const [aiMatches, setAiMatches]           = useState(null);
   const [aiMatchLoading, setAiMatchLoading] = useState(false);
+  const [featureModal, setFeatureModal]     = useState(false);
+  const [promoteModal, setPromoteModal]     = useState(null); // { proposalId, freelancerName }
   const [aiMatchError, setAiMatchError]     = useState('');
 
   const API_BASE_URL = getApiBaseUrl();
@@ -263,7 +266,12 @@ const JobDetails = () => {
           <div className="job-main-card">
             <div className="job-title-row">
               <h1>{job.title}</h1>
-              <span className={`status-badge ${job.status}`}>{formatJobStatus(job.status)}</span>
+              <div className="job-title-badges">
+                {job.isFeatured && (
+                  <span className="featured-badge">⭐ Featured</span>
+                )}
+                <span className={`status-badge ${job.status}`}>{formatJobStatus(job.status)}</span>
+              </div>
             </div>
             
             <div className="job-stats-row">
@@ -398,6 +406,19 @@ const JobDetails = () => {
                           </div>
                         )}
                       </div>
+                    )}
+                    {/* Promote proposal — only for pending proposals not yet promoted */}
+                    {myProposal && myProposal.status === 'pending' && !myProposal.isPromoted && job.status === 'open' && (
+                      <button
+                        className="btn-full btn-promote-jd"
+                        style={{ marginTop: '0.5rem' }}
+                        onClick={() => setPromoteModal({ proposalId: myProposal._id, freelancerName: `${user?.firstName} ${user?.lastName}` })}
+                      >
+                        📌 Promote My Proposal — $2.99
+                      </button>
+                    )}
+                    {myProposal?.isPromoted && (
+                      <div className="my-proposal-promoted-chip">📌 Promoted — pinned to top</div>
                     )}
                     <Link to="/messages" className="btn-full btn-secondary-jd" style={{ marginTop: '0.75rem', textDecoration: 'none', display: 'block', textAlign: 'center' }}>
                       💬 Message the Client
@@ -555,6 +576,42 @@ const JobDetails = () => {
               </div>
             )}
 
+            {/* Feature this Job — owner only, open jobs not already featured */}
+            {isOwnJob && job.status === 'open' && !job.isFeatured && (
+              <div className="sidebar-card feature-job-card">
+                <div className="feature-job-header">
+                  <span className="feature-job-icon">⭐</span>
+                  <div>
+                    <h3 className="feature-job-title">Feature This Job</h3>
+                    <p className="feature-job-sub">Get 2–4× more visibility</p>
+                  </div>
+                </div>
+                <div className="feature-job-tiers">
+                  <span className="feature-tier-chip">7 days — $9.99</span>
+                  <span className="feature-tier-chip feature-tier-chip--best">14 days — $19.99 ⭐</span>
+                </div>
+                <button className="btn-full btn-feature-jd" onClick={() => setFeatureModal(true)}>
+                  ⭐ Feature for More Views
+                </button>
+              </div>
+            )}
+
+            {isOwnJob && job.status === 'open' && job.isFeatured && (
+              <div className="sidebar-card feature-job-card feature-job-card--active">
+                <div className="feature-job-header">
+                  <span className="feature-job-icon">⭐</span>
+                  <div>
+                    <h3 className="feature-job-title">Job is Featured</h3>
+                    <p className="feature-job-sub">
+                      {job.featuredExpiresAt
+                        ? `Expires ${new Date(job.featuredExpiresAt).toLocaleDateString()}`
+                        : 'Currently featured'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isOwnJob && job.status === 'open' && (
               <div className="sidebar-card ai-matches-panel">
                 <div className="ai-matches-header">
@@ -625,10 +682,13 @@ const JobDetails = () => {
                         const fl = p.freelancer || {};
                         const initials = `${(fl.firstName || '?')[0]}${(fl.lastName || '')[0] || ''}`.toUpperCase();
                         return (
-                          <div key={p._id} className="owner-proposal-row">
+                          <div key={p._id} className={`owner-proposal-row ${p.isPromoted ? 'opr--promoted' : ''}`}>
                             <div className="opr-avatar">{fl.profilePhoto ? <img src={fl.profilePhoto} alt="" /> : initials}</div>
                             <div className="opr-info">
-                              <div className="opr-name">{fl.firstName} {fl.lastName}</div>
+                              <div className="opr-name">
+                                {fl.firstName} {fl.lastName}
+                                {p.isPromoted && <span className="opr-promoted-badge">📌 Promoted</span>}
+                              </div>
                               <div className="opr-terms">${p.proposedBudget} · {p.proposedDuration?.replace(/_/g, ' ')}</div>
                               {fl.rating > 0 && <div className="opr-rating">⭐ {fl.rating.toFixed(1)}</div>}
                             </div>
@@ -726,6 +786,28 @@ const JobDetails = () => {
           amount={job.budget?.max || job.budget?.min || job.budget?.amount || 0}
           onClose={() => setShowSecurePayment(false)}
           onPaid={() => { setShowSecurePayment(false); fetchJobDetails(); }}
+        />
+      )}
+
+      {featureModal && job && (
+        <JobFeatureModal
+          mode="feature"
+          jobId={id}
+          jobTitle={job.title}
+          onClose={() => setFeatureModal(false)}
+          onSuccess={() => { setFeatureModal(false); fetchJobDetails(); }}
+        />
+      )}
+
+      {promoteModal && job && (
+        <JobFeatureModal
+          mode="promote"
+          jobId={id}
+          jobTitle={job.title}
+          proposalId={promoteModal.proposalId}
+          freelancerName={promoteModal.freelancerName}
+          onClose={() => setPromoteModal(null)}
+          onSuccess={() => { setPromoteModal(null); fetchJobDetails(); }}
         />
       )}
     </>

@@ -211,3 +211,18 @@
     transition: none;
   }
 }
+
+/* --- Featured tag --- */
+.tag-featured {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  white-space: nowrap;
+}

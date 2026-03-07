@@ -42,7 +42,7 @@ const PricingInsightWidget: React.FC<Props> = ({ category, subcategory, currentP
 
   // Tip based on current price
   let tip = '';
-  let tipColor = colors.textSecondary;
+  let tipColor: string = colors.textSecondary;
   if (currentPrice != null && p25 != null && p75 != null) {
     if (currentPrice < p25) {
       tip = '💡 Below market — consider raising your price';

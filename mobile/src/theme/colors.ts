@@ -27,6 +27,8 @@ export const colors = {
   bgSubtle:      '#f9fafb',
   bgMuted:       '#f3f4f6',
   bgCard:        '#ffffff',
+  surface:       '#ffffff',    // alias for bgCard
+  background:    '#f9fafb',    // alias for bgSubtle
 
   // Borders
   border:        '#e5e7eb',
