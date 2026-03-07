@@ -83,6 +83,9 @@ class BookingService {
       const startAtUtc = DateTime.fromISO(`${body.date}T${body.startTime}`, { zone: tz }).toUTC().toJSDate();
       const endAtUtc   = DateTime.fromISO(`${body.date}T${body.endTime}`,   { zone: tz }).toUTC().toJSDate();
 
+      const HOLD_TTL_MINUTES = 15;
+      const holdExpiresAt = new Date(Date.now() + HOLD_TTL_MINUTES * 60 * 1000);
+
       const booking = await this.bookingRepo.createBooking({
         bookingRef: buildBookingRef(),
         clientId: String(actorId),
@@ -94,6 +97,7 @@ class BookingService {
           currency: 'usd',
         },
         currentState: 'held',
+        holdExpiresAt,
         notes: body?.notes || null,
       }, tx);
 

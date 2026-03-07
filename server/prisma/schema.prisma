@@ -37,6 +37,7 @@ model Booking {
   policySnapshotJson  Json
   pricingSnapshotJson Json
   currentState        BookingStatus @default(pending_payment)
+  holdExpiresAt       DateTime?     @db.Timestamptz(6)
   notes               String?
   createdAt           DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime      @updatedAt @db.Timestamptz(6)

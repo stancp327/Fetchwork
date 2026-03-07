@@ -9,9 +9,12 @@ const { AuditService } = require('../services/AuditService');
 
 const { BookingRepo } = require('../repos/BookingRepo');
 
+const { BookingNotificationService } = require('../services/BookingNotificationService');
+
 const bookingService    = new BookingService();
 const slotEngine        = new SlotEngine();
 const bookingRepo       = new BookingRepo();
+const notifySvc         = new BookingNotificationService();
 const groupBooking       = new GroupBookingService();
 const recurringSeriesSvc = new RecurringSeriesService();
 const attendanceService = new AttendanceService();
@@ -101,6 +104,22 @@ async function createBookingHoldSql(req, res) {
     serviceId: req.params.serviceId,
   });
 
+  // Notify freelancer of new booking request
+  if (result.statusCode === 201 && result.response?.bookingId) {
+    const booking = await bookingRepo.findBookingById(result.response.bookingId);
+    if (booking) {
+      notifySvc.onHoldCreated({
+        bookingId:    booking.id,
+        bookingRef:   booking.bookingRef,
+        clientId:     booking.clientId,
+        freelancerId: booking.freelancerId,
+        serviceTitle: req.body?.serviceTitle || 'Service',
+        date:         req.body.date,
+        startTime:    req.body.startTime,
+      }).catch(() => {});
+    }
+  }
+
   return res.status(result.statusCode).json(result.response);
 }
 
@@ -126,6 +145,22 @@ async function confirmBookingSql(req, res) {
     bookingId,
   });
 
+  if (result.statusCode === 200 && !result.replayed) {
+    const booking = await bookingRepo.findBookingById(bookingId);
+    if (booking) {
+      const occ = await bookingRepo.findFirstOccurrenceByBookingId(bookingId);
+      notifySvc.onConfirmed({
+        bookingId:    booking.id,
+        bookingRef:   booking.bookingRef,
+        clientId:     booking.clientId,
+        freelancerId: booking.freelancerId,
+        serviceTitle: 'Service',
+        date:         occ?.localStartWallclock?.split('T')[0] || '',
+        startTime:    occ?.localStartWallclock?.split('T')[1]?.slice(0, 5) || '',
+      }).catch(() => {});
+    }
+  }
+
   return res.status(result.statusCode).json(result.response);
 }
 
@@ -141,14 +176,31 @@ async function cancelBookingSql(req, res) {
     return res.status(400).json({ error: 'Idempotency-Key header is required', code: 'MISSING_IDEMPOTENCY_KEY' });
   }
 
+  const actorId = String(req.user?.userId || req.user?._id || 'unknown');
   const result = await bookingService.cancelBooking({
-    actorId: String(req.user?.userId || req.user?._id || 'unknown'),
+    actorId,
     route: 'PATCH:/api/bookings/:bookingId/cancel',
     idempotencyKey,
     requestHash: buildRequestHash(req),
     bookingId,
     reason: req.body?.reason || '',
   });
+
+  if (result.statusCode === 200 && !result.replayed) {
+    const booking = await bookingRepo.findBookingById(bookingId);
+    if (booking) {
+      const cancelledBy = actorId === booking.clientId ? 'client' : 'freelancer';
+      notifySvc.onCancelled({
+        bookingId:    booking.id,
+        bookingRef:   booking.bookingRef,
+        clientId:     booking.clientId,
+        freelancerId: booking.freelancerId,
+        cancelledBy,
+        serviceTitle: 'Service',
+        reason:       req.body?.reason || '',
+      }).catch(() => {});
+    }
+  }
 
   return res.status(result.statusCode).json(result.response);
 }
@@ -172,6 +224,18 @@ async function completeBookingSql(req, res) {
     requestHash: buildRequestHash(req),
     bookingId,
   });
+
+  if (result.statusCode === 200 && !result.replayed) {
+    const booking = await bookingRepo.findBookingById(bookingId);
+    if (booking) {
+      notifySvc.onCompleted({
+        bookingId:    booking.id,
+        bookingRef:   booking.bookingRef,
+        clientId:     booking.clientId,
+        serviceTitle: 'Service',
+      }).catch(() => {});
+    }
+  }
 
   return res.status(result.statusCode).json(result.response);
 }

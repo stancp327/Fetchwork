@@ -328,6 +328,9 @@ app.use('*', (req, res) => {
 const { initBookingCrons } = require('./crons/bookingCrons');
 initBookingCrons();
 
+const { initBookingSqlCrons } = require('./crons/bookingSqlCrons');
+initBookingSqlCrons();
+
 const { initArchiveCrons } = require('./crons/archiveCrons');
 initArchiveCrons();
 
