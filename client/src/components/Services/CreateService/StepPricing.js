@@ -4,6 +4,7 @@ import PackageTierForm from './PackageTierForm';
 import BundleEditor from './BundleEditor';
 import FeesIncludedToggle from './FeesIncludedToggle';
 import IntakeFormEditor from '../IntakeFormEditor';
+import PricingInsightWidget from '../../Skills/PricingInsightWidget';
 
 const StepPricing = ({ data, onChange, errors, hasFeature = () => true }) => {
   const canRecurring = hasFeature('recurring_services');
@@ -81,6 +82,16 @@ const StepPricing = ({ data, onChange, errors, hasFeature = () => true }) => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Market pricing insight */}
+      {data.category && (
+        <PricingInsightWidget
+          category={data.category}
+          subcategory={data.subcategory}
+          currentPrice={data.basicPrice ? Number(data.basicPrice) : undefined}
+          mode="service"
+        />
       )}
 
       <PackageTierForm

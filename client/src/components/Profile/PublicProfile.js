@@ -12,6 +12,7 @@ import SEO from '../common/SEO';
 import { createPersonSchema } from '../../utils/structuredData';
 import { useAuth } from '../../context/AuthContext';
 import OnlineStatus, { formatResponseTime } from '../common/OnlineStatus';
+import { SkillBadge } from '../Skills/SkillAssessmentHub';
 import './PublicProfile.css';
 
 const StarRating = ({ rating }) => {
@@ -35,6 +36,7 @@ const PublicProfile = () => {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showBooking,    setShowBooking]    = useState(false);
   const [messagingLoading, setMessagingLoading] = useState(false);
+  const [skillBadges, setSkillBadges] = useState([]);
 
   const handleMessage = async () => {
     if (!currentUser) { navigate('/login'); return; }
@@ -75,6 +77,9 @@ const PublicProfile = () => {
       fetchProfile();
       apiRequest(`/api/freelancers/${freelancerId}/similar`)
         .then(data => setSimilar(data.similar || []))
+        .catch(() => {});
+      apiRequest(`/api/skills/user/${freelancerId}`)
+        .then(d => setSkillBadges(d.assessments || []))
         .catch(() => {});
     }
   }, [freelancerId]);
@@ -251,6 +256,19 @@ const PublicProfile = () => {
                       >
                         {s}
                       </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Verified Skill Badges */}
+              {skillBadges.length > 0 && (
+                <div className="pp-card">
+                  <h2>✅ Verified Skills</h2>
+                  <p className="pp-verified-sub">Earned by passing Fetchwork skill assessments</p>
+                  <div className="pp-skill-badges">
+                    {skillBadges.map(a => (
+                      <SkillBadge key={a.category} assessment={a} size="md" />
                     ))}
                   </div>
                 </div>

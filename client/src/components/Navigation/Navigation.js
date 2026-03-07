@@ -189,6 +189,7 @@ const Navigation = () => {
                 <NavLink to="/job-alerts">Job Alerts 🔔</NavLink>
                 <NavLink to="/discovery-settings">Discovery 🔍</NavLink>
                 <NavLink to="/referrals">Referrals 🎁</NavLink>
+                <NavLink to="/skills">Skills 🏅</NavLink>
                 <NavLink to="/profile">Profile</NavLink>
                 <button className="nav-logout-btn" onClick={() => { logout(); closeMobileMenu(); }}>
                   Logout

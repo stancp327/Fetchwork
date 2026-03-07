@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { jobsApi } from '../../api/endpoints/jobsApi';
 import { aiApi } from '../../api/endpoints/aiApi';
+import PricingInsightWidget from '../../components/PricingInsightWidget';
 import { JobsStackParamList } from '../../types/navigation';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
@@ -35,7 +36,9 @@ export default function PostJobScreen({ navigation }: Props) {
     defaultValues: { title: '', description: '', category: '', budgetType: 'fixed', budgetMin: 0, skills: '' },
   });
 
-  const budgetType = watch('budgetType');
+  const budgetType    = watch('budgetType');
+  const watchCategory = watch('category');
+  const watchBudget   = watch('budgetMin');
 
   const handleGenerate = async () => {
     const { title, category, skills, budgetType: bt, budgetMin } = getValues();
@@ -143,6 +146,15 @@ export default function PostJobScreen({ navigation }: Props) {
                 )} />
             )}
           </View>
+
+          {/* Market budget insight */}
+          {watchCategory ? (
+            <PricingInsightWidget
+              category={watchCategory}
+              currentPrice={watchBudget || undefined}
+              mode="job"
+            />
+          ) : null}
 
           <Controller control={control} name="skills"
             render={({ field: { onChange, value } }) => (

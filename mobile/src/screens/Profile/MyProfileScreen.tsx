@@ -110,6 +110,7 @@ export default function MyProfileScreen({ navigation }: Props) {
             { label: '📦 Subscriptions & Bundles', onPress: () => (navigation as any).navigate('Services', { screen: 'MyBundles' }) },
             { label: '👥 Teams',                   onPress: () => navigation.navigate('Teams') },
             { label: '💰 Earnings',                 onPress: () => navigation.navigate('Earnings') },
+            { label: '🏅 Skill Assessments',        onPress: () => navigation.navigate('Skills') },
             { label: '💼 Wallet',                  onPress: () => navigation.navigate('Wallet') },
             { label: '💳 Payments',                onPress: () => navigation.navigate('Payments') },
             { label: '📄 Contracts',               onPress: () => navigation.navigate('Contracts') },

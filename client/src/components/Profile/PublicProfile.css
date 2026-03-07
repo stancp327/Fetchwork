@@ -1,4 +1,4 @@
-﻿/* ── Public Profile — Mobile-first ──────────────────────────── */
+/* -- Public Profile � Mobile-first ---------------------------- */
 .pp-container {
   max-width: 1100px;
   margin: 0 auto;
@@ -18,11 +18,11 @@
 @keyframes pp-spin { to { transform: rotate(360deg); } }
 .pp-error h2 { color: var(--color-text); margin-bottom: 1rem; }
 
-/* ── Hero ────────────────────────────────────────────────────── */
+/* -- Hero ------------------------------------------------------ */
 .pp-hero {
   position: relative;
   border-radius: 0 0 16px 16px;
-  /* No overflow:hidden here — it clips the avatar that pokes into the banner */
+  /* No overflow:hidden here � it clips the avatar that pokes into the banner */
 }
 .pp-hero-bg {
   display: block;
@@ -59,7 +59,7 @@
 }
 .pp-hero-info {
   flex: 1;
-  min-width: 0;          /* ← only this element needs it; don't apply globally */
+  min-width: 0;          /* ? only this element needs it; don't apply globally */
   width: 100%;
   max-width: 100%;
   text-align: center;
@@ -109,7 +109,7 @@
 }
 .pp-btn-secondary:hover { background: var(--color-bg-subtle); border-color: var(--color-primary); color: var(--color-primary); }
 
-/* ── Stats Bar ───────────────────────────────────────────────── */
+/* -- Stats Bar ------------------------------------------------- */
 .pp-stats-bar {
   display: flex; flex-direction: row; flex-wrap: wrap;
   justify-content: center; gap: 0;
@@ -126,7 +126,7 @@
 .pp-stat-value { font-size: 1.2rem; font-weight: 700; color: var(--color-text-darker); }
 .pp-stat-label { font-size: 0.7rem; color: var(--color-text-secondary); margin-top: 0.1rem; }
 
-/* ── Navigation ──────────────────────────────────────────────── */
+/* -- Navigation ------------------------------------------------ */
 .pp-nav {
   display: flex; width: 100%; gap: 0; margin: 0; border-bottom: 2px solid var(--color-border);
   overflow-x: auto;
@@ -139,7 +139,7 @@
 .pp-nav-tab:hover { color: var(--color-text); }
 .pp-nav-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 
-/* ── Content ─────────────────────────────────────────────────── */
+/* -- Content --------------------------------------------------- */
 .pp-content { padding: 1rem; }
 
 .pp-section-grid {
@@ -204,7 +204,7 @@
 .pp-fact span { color: var(--color-text-secondary); }
 .pp-fact strong { color: var(--color-text-darker); }
 
-/* ── Portfolio Grid ──────────────────────────────────────────── */
+/* -- Portfolio Grid -------------------------------------------- */
 .pp-portfolio-grid {
   display: grid; grid-template-columns: 1fr; gap: 1rem;
 }
@@ -220,7 +220,7 @@
 .pp-portfolio-info h3 { margin: 0 0 0.25rem; font-size: 1rem; color: var(--color-text-darker); }
 .pp-portfolio-info p { margin: 0; font-size: 0.85rem; color: var(--color-text-secondary); }
 
-/* ── Services Grid ───────────────────────────────────────────── */
+/* -- Services Grid --------------------------------------------- */
 .pp-services-grid {
   display: grid; grid-template-columns: 1fr; gap: 1rem;
 }
@@ -236,7 +236,7 @@
 .pp-service-footer { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--color-text-secondary); }
 .pp-service-price { font-weight: 600; color: var(--color-text-darker); }
 
-/* ── Reviews ─────────────────────────────────────────────────── */
+/* -- Reviews --------------------------------------------------- */
 .pp-reviews { display: flex; flex-direction: column; gap: 1rem; }
 .pp-review-card {
   background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1.25rem;
@@ -251,11 +251,11 @@
 }
 .pp-review-text { margin: 0; color: var(--color-text); line-height: 1.6; }
 
-/* ── Empty State ─────────────────────────────────────────────── */
+/* -- Empty State ----------------------------------------------- */
 .pp-empty { text-align: center; padding: 3rem; color: var(--color-text-secondary); }
 .pp-empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
 
-/* ── Tablet (≥480px) ──────────────────────────────────────────── */
+/* -- Tablet (=480px) -------------------------------------------- */
 @media (min-width: 480px) {
   .pp-portfolio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pp-services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -264,7 +264,7 @@
   .pp-hero-actions .pp-btn-secondary { width: auto; }
 }
 
-/* ── Desktop (≥768px) ─────────────────────────────────────────── */
+/* -- Desktop (=768px) ------------------------------------------- */
 @media (min-width: 768px) {
   .pp-hero-bg { height: 160px; }
   .pp-avatar { width: 120px; height: 120px; }
@@ -303,4 +303,16 @@
   font-weight: 700;
   margin: 0 0 1.25rem;
   color: var(--color-text-heading);
+}
+
+/* --- Skill Badges (from SkillAssessmentHub) --- */
+.pp-verified-sub {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin: -0.5rem 0 0.75rem;
+}
+.pp-skill-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

@@ -8,6 +8,7 @@ import './PostJob.css';
 import SEO from '../common/SEO';
 import { validateFormData, buildJobPayload } from './postJobUtils';
 import { aiApi } from '../../api/ai';
+import PricingInsightWidget from '../Skills/PricingInsightWidget';
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -460,6 +461,17 @@ const PostJob = () => {
                 </select>
               </div>
             </div>
+
+            {/* Smart pricing hint */}
+            {formData.category && (
+              <PricingInsightWidget
+                category={formData.category}
+                subcategory={formData.subcategory}
+                currentPrice={formData.budgetAmount ? Number(formData.budgetAmount) : undefined}
+                mode="job"
+                compact
+              />
+            )}
 
             <div className="form-group">
               <label htmlFor="duration">Project Duration *</label>
