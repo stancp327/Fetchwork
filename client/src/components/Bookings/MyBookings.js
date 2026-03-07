@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
@@ -6,17 +7,22 @@ import SEO from '../common/SEO';
 import './MyBookings.css';
 
 function formatTime12(time24) {
+  if (!time24) return '';
   const [h, m] = time24.split(':').map(Number);
   const ampm = h >= 12 ? 'PM' : 'AM';
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
+// Normalise booking shape: SQL uses `id`; Mongo uses `_id`.
+function bid(b) { return b.id || b._id; }
+
 const STATUS_LABELS = {
-  pending:   { label: 'Pending',   cls: 'warning' },
-  confirmed: { label: 'Confirmed', cls: 'success' },
-  cancelled: { label: 'Cancelled', cls: 'danger' },
-  completed: { label: 'Completed', cls: 'muted' },
-  no_show:   { label: 'No Show',   cls: 'danger' },
+  pending:    { label: 'Pending',    cls: 'warning' },
+  hold:       { label: 'Hold',       cls: 'warning' },
+  confirmed:  { label: 'Confirmed',  cls: 'success' },
+  cancelled:  { label: 'Cancelled',  cls: 'danger'  },
+  completed:  { label: 'Completed',  cls: 'muted'   },
+  no_show:    { label: 'No Show',    cls: 'danger'  },
 };
 
 const MyBookings = () => {
@@ -24,13 +30,13 @@ const MyBookings = () => {
   const { isFreelancerMode } = useRole();
   const role = isFreelancerMode ? 'freelancer' : 'client';
 
-  const [tab, setTab]           = useState('upcoming');
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [tab, setTab]                   = useState('upcoming');
+  const [bookings, setBookings]         = useState([]);
+  const [loading, setLoading]           = useState(true);
   const [actionLoading, setActionLoading] = useState('');
-  const [msg, setMsg]           = useState('');
+  const [msg, setMsg]                   = useState({ text: '', ok: true });
 
-  const flash = (text) => { setMsg(text); setTimeout(() => setMsg(''), 4000); };
+  const flash = (text, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg({ text: '', ok: true }), 4500); };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,7 +44,7 @@ const MyBookings = () => {
       const data = await apiRequest(`/api/bookings/me?role=${role}&status=${tab}`);
       setBookings(data.bookings || []);
     } catch (err) {
-      flash('Failed to load bookings: ' + err.message);
+      flash('Failed to load bookings: ' + err.message, false);
     } finally {
       setLoading(false);
     }
@@ -46,35 +52,27 @@ const MyBookings = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleAction = async (bookingId, action) => {
+  const doAction = async (bookingId, action, body = {}) => {
     setActionLoading(`${bookingId}_${action}`);
     try {
-      await apiRequest(`/api/bookings/${bookingId}/${action}`, { method: 'PATCH' });
-      flash(`Booking ${action}ed ✅`);
+      await apiRequest(`/api/bookings/${bookingId}/${action}`, {
+        method: 'PATCH',
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        body: JSON.stringify(body),
+      });
+      flash(`Booking ${action}d ✅`);
       load();
     } catch (err) {
-      flash('Failed: ' + err.message);
+      flash('Failed: ' + err.message, false);
     } finally {
       setActionLoading('');
     }
   };
 
-  const handleCancel = async (bookingId) => {
+  const handleCancel = async (b) => {
     const reason = window.prompt('Cancellation reason (optional):');
-    if (reason === null) return; // user hit Cancel on prompt
-    setActionLoading(`${bookingId}_cancel`);
-    try {
-      await apiRequest(`/api/bookings/${bookingId}/cancel`, {
-        method: 'PATCH',
-        body: JSON.stringify({ reason }),
-      });
-      flash('Booking cancelled');
-      load();
-    } catch (err) {
-      flash('Failed: ' + err.message);
-    } finally {
-      setActionLoading('');
-    }
+    if (reason === null) return;
+    await doAction(bid(b), 'cancel', { reason });
   };
 
   return (
@@ -91,10 +89,12 @@ const MyBookings = () => {
         ))}
       </div>
 
-      {msg && <div className="mb-msg">{msg}</div>}
+      {msg.text && (
+        <div className={`mb-msg ${msg.ok ? 'mb-msg-ok' : 'mb-msg-err'}`}>{msg.text}</div>
+      )}
 
       {loading ? (
-        <div className="mb-loading">Loading...</div>
+        <div className="mb-loading">Loading…</div>
       ) : bookings.length === 0 ? (
         <div className="mb-empty">
           <span style={{ fontSize: '2.5rem' }}>📅</span>
@@ -104,49 +104,91 @@ const MyBookings = () => {
       ) : (
         <div className="mb-list">
           {bookings.map(b => {
+            const id          = bid(b);
             const otherPerson = role === 'client' ? b.freelancer : b.client;
-            const dateStr = new Date(b.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-            const statusInfo = STATUS_LABELS[b.status] || { label: b.status, cls: 'muted' };
+            const dateStr     = b.date
+              ? new Date(b.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+              : '—';
+            const statusInfo  = STATUS_LABELS[b.status] || { label: b.status, cls: 'muted' };
+            const isActive    = ['pending', 'hold', 'confirmed'].includes(b.status);
 
             return (
-              <div key={b._id} className="mb-card">
+              <div key={id} className="mb-card">
                 <div className="mb-card-top">
                   <div className="mb-card-info">
-                    <h3 className="mb-card-service">{b.service?.title || 'Service'}</h3>
-                    <p className="mb-card-person">
-                      {role === 'client' ? 'with' : 'from'}{' '}
-                      <strong>{otherPerson?.firstName} {otherPerson?.lastName}</strong>
-                    </p>
+                    <h3 className="mb-card-service">
+                      {b.service?.title || b.serviceTitle || 'Service'}
+                    </h3>
+                    {otherPerson && (
+                      <p className="mb-card-person">
+                        {role === 'client' ? 'with' : 'from'}{' '}
+                        <strong>{otherPerson.firstName} {otherPerson.lastName}</strong>
+                      </p>
+                    )}
+                    {b.bookingRef && (
+                      <p className="mb-card-ref">Ref: {b.bookingRef}</p>
+                    )}
                   </div>
                   <span className={`mb-status mb-status-${statusInfo.cls}`}>{statusInfo.label}</span>
                 </div>
 
                 <div className="mb-card-details">
                   <span className="mb-card-date">📅 {dateStr}</span>
-                  <span className="mb-card-time">🕐 {formatTime12(b.startTime)} — {formatTime12(b.endTime)}</span>
+                  {b.startTime && (
+                    <span className="mb-card-time">
+                      🕐 {formatTime12(b.startTime)} — {formatTime12(b.endTime)}
+                    </span>
+                  )}
+                  {b.timezone && (
+                    <span className="mb-card-tz">{b.timezone.split('/').pop()}</span>
+                  )}
                 </div>
 
                 {b.notes && <p className="mb-card-notes">💬 {b.notes}</p>}
-                {b.cancellationReason && <p className="mb-card-cancel-reason">Reason: {b.cancellationReason}</p>}
+                {b.cancellationReason && (
+                  <p className="mb-card-cancel-reason">Reason: {b.cancellationReason}</p>
+                )}
+
+                {/* Occurrences count (recurring / group) */}
+                {b.occurrences?.length > 1 && (
+                  <p className="mb-card-occurrences">
+                    📆 {b.occurrences.length} sessions in this series
+                  </p>
+                )}
 
                 {/* Actions */}
                 <div className="mb-card-actions">
+                  <Link to={`/bookings/${id}`} className="mb-action-btn view">
+                    View Details
+                  </Link>
+
                   {role === 'freelancer' && b.status === 'pending' && (
-                    <button className="mb-action-btn confirm" onClick={() => handleAction(b._id, 'confirm')}
-                      disabled={actionLoading === `${b._id}_confirm`}>
-                      {actionLoading === `${b._id}_confirm` ? '...' : '✅ Confirm'}
+                    <button
+                      className="mb-action-btn confirm"
+                      onClick={() => doAction(id, 'confirm')}
+                      disabled={actionLoading === `${id}_confirm`}
+                    >
+                      {actionLoading === `${id}_confirm` ? '…' : '✅ Confirm'}
                     </button>
                   )}
+
                   {role === 'freelancer' && b.status === 'confirmed' && (
-                    <button className="mb-action-btn complete" onClick={() => handleAction(b._id, 'complete')}
-                      disabled={actionLoading === `${b._id}_complete`}>
-                      {actionLoading === `${b._id}_complete` ? '...' : '✓ Mark Complete'}
+                    <button
+                      className="mb-action-btn complete"
+                      onClick={() => doAction(id, 'complete')}
+                      disabled={actionLoading === `${id}_complete`}
+                    >
+                      {actionLoading === `${id}_complete` ? '…' : '✓ Complete'}
                     </button>
                   )}
-                  {['pending', 'confirmed'].includes(b.status) && (
-                    <button className="mb-action-btn cancel" onClick={() => handleCancel(b._id)}
-                      disabled={actionLoading === `${b._id}_cancel`}>
-                      Cancel
+
+                  {isActive && (
+                    <button
+                      className="mb-action-btn cancel"
+                      onClick={() => handleCancel(b)}
+                      disabled={actionLoading === `${id}_cancel`}
+                    >
+                      {actionLoading === `${id}_cancel` ? '…' : 'Cancel'}
                     </button>
                   )}
                 </div>

@@ -41,3 +41,14 @@
 .mb-action-btn.cancel { color: var(--danger); border-color: var(--danger); }
 .mb-action-btn.cancel:hover { background: #fef2f2; }
 .mb-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.mb-action-btn.view { color: var(--primary); border-color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; }
+.mb-action-btn.view:hover { background: #eff6ff; }
+
+/* Flash messages */
+.mb-msg-ok  { background: #dcfce7; color: #166534; }
+.mb-msg-err { background: #fef2f2; color: #991b1b; }
+
+/* Extra card details */
+.mb-card-ref        { font-size: var(--text-xs); color: var(--text-muted); margin: 2px 0 0; }
+.mb-card-tz         { font-size: var(--text-xs); color: var(--text-muted); }
+.mb-card-occurrences { font-size: var(--text-xs); color: var(--primary); margin: var(--space-1) 0 0; }
