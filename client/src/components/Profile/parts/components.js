@@ -6,7 +6,7 @@ import PortfolioWizard from '../../Portfolio/PortfolioWizard';
 import CategoryCombobox from '../../common/CategoryCombobox';
 import StripeConnect from '../../Payments/StripeConnect';
 import PaymentMethods from '../../Payments/PaymentMethods';
-import CalendarConnect from '../../Booking/CalendarConnect';
+import CalendarConnect from '../../Bookings/CalendarConnect';
 import { TrustBadge } from '../../common/TrustBadges';
 const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification', 'Settings'];
 

@@ -5,7 +5,7 @@ import { getLocationDisplay } from '../../utils/location';
 import { getCategoryLabel, getCategoryIcon } from '../../utils/categories';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import SaveButton from '../common/SaveButton';
-import BookingCalendar from '../Booking/BookingCalendar';
+import BookingCalendar from '../Bookings/BookingCalendar';
 import AvailabilityBadge from '../common/AvailabilityBadge';
 import { TrustBadges, ReputationStats } from '../common/TrustBadges';
 import SEO from '../common/SEO';
