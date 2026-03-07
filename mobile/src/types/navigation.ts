@@ -40,6 +40,9 @@ export type ProfileStackParamList = {
   Wallet:            undefined;
   Payments:          undefined;
   Contracts:         undefined;
+  Bookings:          undefined;
+  BookingDetail:     { id: string };
+  GroupSlots:        { serviceId: string };
 };
 
 export type MoreStackParamList = {

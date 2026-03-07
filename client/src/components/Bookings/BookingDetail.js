@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
 import SEO from '../common/SEO';
+import RecurringSeriesPanel from './RecurringSeriesPanel';
 import './BookingDetail.css';
 
 /* ─── Helpers ─── */
@@ -358,6 +359,11 @@ const BookingDetail = () => {
             })}
           </div>
         </div>
+      )}
+
+      {/* Recurring series panel */}
+      {!['cancelled', 'completed'].includes(booking.status) && (
+        <RecurringSeriesPanel booking={booking} onRefresh={load} />
       )}
 
       {/* Policy */}
