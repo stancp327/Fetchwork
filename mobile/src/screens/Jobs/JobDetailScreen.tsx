@@ -45,8 +45,12 @@ export default function JobDetailScreen({ route, navigation }: Props) {
     try {
       const data = await aiApi.matchFreelancers(id);
       setMatches(data);
-    } catch {
-      Alert.alert('Error', 'Could not load matches');
+    } catch (err: any) {
+      if (err?.response?.data?.error === 'upgrade_required') {
+        Alert.alert('Pro feature', 'AI freelancer matching is available on Pro and above.\n\nUpgrade at fetchwork.net/pricing');
+      } else {
+        Alert.alert('Error', 'Could not load matches');
+      }
     } finally {
       setMatchLoading(false);
     }

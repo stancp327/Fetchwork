@@ -40,6 +40,10 @@ const FEATURES = {
   SPEND_DASHBOARD:      'spend_dashboard',        // spend tracking dashboard
   TEAM_ACCOUNTS:        'team_accounts',          // multiple logins per org
 
+  // AI features
+  AI_JOB_DESCRIPTION:   'ai_job_description',     // ✨ AI-generated job descriptions (Plus+)
+  AI_MATCHING:          'ai_matching',             // 🤖 AI freelancer matching (Pro+)
+
   // Admin-only flags (can also be used to restrict features)
   BETA_ACCESS:          'beta_access',            // early feature access
   UNLIMITED_SERVICES:   'unlimited_services',     // bypass service count limit
@@ -59,16 +63,19 @@ const PLAN_FEATURE_DEFAULTS = {
     'recurring_services', 'bundle_creation', 'booking_calendar',
     'intake_forms', 'repeat_client_tools', 'capacity_controls', 'faster_payout',
     'csv_export', 'saved_providers', 'job_templates', 'proposal_comparison',
+    'ai_job_description',
   ],
   pro: [
     'recurring_services', 'bundle_creation', 'bundle_expiration', 'booking_calendar',
     'intake_forms', 'deposits', 'travel_fees', 'repeat_client_tools', 'capacity_controls',
     'faster_payout', 'advanced_analytics', 'csv_export', 'unlimited_services',
     'saved_providers', 'job_templates', 'proposal_comparison', 'spend_dashboard',
+    'ai_job_description', 'ai_matching',
   ],
   business: [  // client business plan
     'saved_providers', 'job_templates', 'proposal_comparison',
     'spend_dashboard', 'team_accounts', 'csv_export', 'advanced_analytics',
+    'ai_job_description', 'ai_matching',
   ],
 };
 

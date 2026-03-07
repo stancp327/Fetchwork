@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useFeatures } from '../../hooks/useFeatures';
+import UpgradePrompt from '../Billing/UpgradePrompt';
 import { getLocationDisplay } from '../../utils/location';
 import { formatBudget } from '../../utils/formatters';
 import SEO from '../common/SEO';
@@ -18,6 +20,8 @@ const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { hasFeature } = useFeatures();
+  const canAIMatching = hasFeature('ai_matching');
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -558,9 +562,13 @@ const JobDetails = () => {
                   <p className="ai-matches-sub">Top freelancers for this job</p>
                 </div>
                 {!aiMatches && !aiMatchLoading && (
-                  <button className="ai-matches-btn" onClick={loadMatches}>
-                    ✨ Find Top Matches
-                  </button>
+                  canAIMatching
+                    ? <button className="ai-matches-btn" onClick={loadMatches}>✨ Find Top Matches</button>
+                    : <UpgradePrompt
+                        inline
+                        reason="feature_gated"
+                        message="AI freelancer matching is available on Pro and above."
+                      />
                 )}
                 {aiMatchLoading && <p className="ai-matches-loading">Finding best matches…</p>}
                 {aiMatchError && <p className="ai-matches-error">{aiMatchError}</p>}

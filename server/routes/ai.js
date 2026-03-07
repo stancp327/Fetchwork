@@ -11,6 +11,7 @@ const { validateMongoId }   = require('../middleware/validation');
 const User = require('../models/User');
 const Job  = require('../models/Job');
 const { generateJobDescription, aiRankFreelancers, hasAI } = require('../services/aiService');
+const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 
 // Tight rate limit for AI endpoints (they cost $)
 const aiLimiter = rateLimit({
@@ -24,6 +25,16 @@ const aiLimiter = rateLimit({
 // ── POST /api/ai/generate-description ─────────────────────────────────────
 router.post('/generate-description', authenticateToken, aiLimiter, async (req, res) => {
   try {
+    // Feature gate — Plus and above
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_JOB_DESCRIPTION);
+    if (!allowed) {
+      return res.status(403).json({
+        error:   'upgrade_required',
+        feature: 'ai_job_description',
+        message: 'AI job descriptions are available on Plus and above. Upgrade to unlock.',
+      });
+    }
+
     const { title, category, skills, budgetType, budgetAmount, duration, experienceLevel } = req.body;
 
     if (!title || !category) {
@@ -69,6 +80,16 @@ router.post('/generate-description', authenticateToken, aiLimiter, async (req, r
 // ── GET /api/ai/match-freelancers/:id ─────────────────────────────────────
 router.get('/match-freelancers/:id', authenticateToken, validateMongoId, aiLimiter, async (req, res) => {
   try {
+    // Feature gate — Pro and above
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_MATCHING);
+    if (!allowed) {
+      return res.status(403).json({
+        error:   'upgrade_required',
+        feature: 'ai_matching',
+        message: 'AI freelancer matching is available on Pro and above. Upgrade to unlock.',
+      });
+    }
+
     const job = await Job.findById(req.params.id).lean();
     if (!job) return res.status(404).json({ error: 'Job not found' });
 

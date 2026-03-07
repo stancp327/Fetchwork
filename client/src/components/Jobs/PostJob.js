@@ -12,7 +12,8 @@ import { aiApi } from '../../api/ai';
 const PostJob = () => {
   const navigate = useNavigate();
   const { hasFeature } = useFeatures();
-  const canTemplates = hasFeature('job_templates');
+  const canTemplates      = hasFeature('job_templates');
+  const canAIDescription  = hasFeature('ai_job_description');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -28,6 +29,10 @@ const PostJob = () => {
   const [aiMsg, setAiMsg] = useState('');
 
   const handleGenerateDescription = async () => {
+    if (!canAIDescription) {
+      setAiMsg('upgrade_required');
+      return;
+    }
     if (!formData.title) {
       setAiMsg('Add a job title first so I know what to write about.');
       setTimeout(() => setAiMsg(''), 4000);
@@ -316,14 +321,23 @@ const PostJob = () => {
                 <label htmlFor="description">Job Description *</label>
                 <button
                   type="button"
-                  className={`pj-ai-btn ${aiGenerating ? 'loading' : ''}`}
+                  className={`pj-ai-btn ${!canAIDescription ? 'locked' : ''} ${aiGenerating ? 'loading' : ''}`}
                   onClick={handleGenerateDescription}
                   disabled={aiGenerating}
+                  title={!canAIDescription ? 'Available on Plus and above' : undefined}
                 >
-                  {aiGenerating ? '⏳ Generating…' : '✨ Write for me'}
+                  {aiGenerating ? '⏳ Generating…' : canAIDescription ? '✨ Write for me' : '🔒 Write for me · Plus'}
                 </button>
               </div>
-              {aiMsg && <div className="pj-ai-msg">{aiMsg}</div>}
+              {aiMsg === 'upgrade_required'
+                ? <UpgradePrompt
+                    inline
+                    reason="feature_gated"
+                    message="AI job descriptions are available on Plus and above."
+                    onDismiss={() => setAiMsg('')}
+                  />
+                : aiMsg && <div className="pj-ai-msg">{aiMsg}</div>
+              }
               <textarea
                 id="description"
                 name="description"

@@ -50,8 +50,12 @@ export default function PostJobScreen({ navigation }: Props) {
       setValue('description', result.description);
       setAiMsg(result.aiGenerated ? '✨ AI-generated — feel free to edit' : '📝 Template applied — make it yours');
       setTimeout(() => setAiMsg(''), 5000);
-    } catch {
-      Alert.alert('Error', 'Could not generate description — try again.');
+    } catch (err: any) {
+      if (err?.response?.data?.error === 'upgrade_required') {
+        Alert.alert('Plus feature', 'AI job descriptions are available on Plus and above.\n\nUpgrade at fetchwork.net/pricing');
+      } else {
+        Alert.alert('Error', 'Could not generate description — try again.');
+      }
     } finally {
       setAiGenerating(false);
     }
