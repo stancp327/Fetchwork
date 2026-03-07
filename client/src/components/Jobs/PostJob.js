@@ -7,6 +7,7 @@ import UpgradePrompt from '../Billing/UpgradePrompt';
 import './PostJob.css';
 import SEO from '../common/SEO';
 import { validateFormData, buildJobPayload } from './postJobUtils';
+import { aiApi } from '../../api/ai';
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -23,6 +24,37 @@ const PostJob = () => {
   const [templateMsg, setTemplateMsg] = useState('');
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiMsg, setAiMsg] = useState('');
+
+  const handleGenerateDescription = async () => {
+    if (!formData.title) {
+      setAiMsg('Add a job title first so I know what to write about.');
+      setTimeout(() => setAiMsg(''), 4000);
+      return;
+    }
+    setAiGenerating(true);
+    setAiMsg('');
+    try {
+      const result = await aiApi.generateDescription({
+        title:           formData.title,
+        category:        formData.category,
+        skills:          formData.skills,
+        budgetType:      formData.budgetType,
+        budgetAmount:    formData.budgetAmount,
+        duration:        formData.duration,
+        experienceLevel: formData.experienceLevel,
+      });
+      setFormData(prev => ({ ...prev, description: result.description }));
+      setAiMsg(result.aiGenerated ? '✨ AI-generated — feel free to edit.' : '📝 Template applied — edit to make it yours.');
+      setTimeout(() => setAiMsg(''), 6000);
+    } catch (err) {
+      setAiMsg('Generation failed — try again.');
+      setTimeout(() => setAiMsg(''), 4000);
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   const loadTemplates = useCallback(async () => {
     if (!canTemplates) return;
@@ -280,13 +312,24 @@ const PostJob = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="description">Job Description *</label>
+              <div className="pj-label-row">
+                <label htmlFor="description">Job Description *</label>
+                <button
+                  type="button"
+                  className={`pj-ai-btn ${aiGenerating ? 'loading' : ''}`}
+                  onClick={handleGenerateDescription}
+                  disabled={aiGenerating}
+                >
+                  {aiGenerating ? '⏳ Generating…' : '✨ Write for me'}
+                </button>
+              </div>
+              {aiMsg && <div className="pj-ai-msg">{aiMsg}</div>}
               <textarea
                 id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Describe your project in detail..."
+                placeholder="Describe your project in detail, or click ✨ Write for me above…"
                 rows={6}
                 maxLength={5000}
               />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Pressable,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -12,6 +12,7 @@ import { useStripe } from '@stripe/stripe-react-native';
 import { jobsApi } from '../../api/endpoints/jobsApi';
 import { paymentsApi } from '../../api/endpoints/paymentsApi';
 import { boostsApi } from '../../api/endpoints/boostsApi';
+import { aiApi, MatchResult } from '../../api/endpoints/aiApi';
 import { JobsStackParamList } from '../../types/navigation';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/common/Button';
@@ -36,6 +37,20 @@ export default function JobDetailScreen({ route, navigation }: Props) {
   const [showProposal, setShowProposal] = useState(false);
   const [funding, setFunding] = useState(false);
   const [boosting, setBoosting] = useState(false);
+  const [matches, setMatches]           = useState<MatchResult | null>(null);
+  const [matchLoading, setMatchLoading] = useState(false);
+
+  const loadMatches = async () => {
+    setMatchLoading(true);
+    try {
+      const data = await aiApi.matchFreelancers(id);
+      setMatches(data);
+    } catch {
+      Alert.alert('Error', 'Could not load matches');
+    } finally {
+      setMatchLoading(false);
+    }
+  };
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const { data: job, isLoading } = useQuery({
@@ -185,6 +200,50 @@ export default function JobDetailScreen({ route, navigation }: Props) {
           </Card>
         )}
 
+        {/* AI Matches */}
+        {isOwnJob && job.status === 'open' && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionLabel}>🤖 Smart Matches</Text>
+            {!matches && !matchLoading && (
+              <Pressable style={styles.aiMatchBtn} onPress={loadMatches}>
+                <Text style={styles.aiMatchBtnText}>✨ Find Top Freelancers</Text>
+              </Pressable>
+            )}
+            {matchLoading && (
+              <View style={styles.aiMatchLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.aiMatchLoadingText}>Matching freelancers…</Text>
+              </View>
+            )}
+            {matches && (
+              <>
+                <Text style={styles.aiMatchMeta}>
+                  {matches.aiPowered ? '✨ AI-ranked' : '📊 Score-ranked'} · {matches.total} compared
+                </Text>
+                {matches.matches.map((m, i) => (
+                  <View key={m.userId} style={styles.aiMatchRow}>
+                    <Text style={styles.aiMatchRank}>#{i + 1}</Text>
+                    <View style={styles.aiMatchAvatarCircle}>
+                      <Text style={styles.aiMatchAvatarText}>{m.name[0]}</Text>
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.aiMatchName} numberOfLines={1}>{m.name}</Text>
+                      {m.rating > 0 && <Text style={styles.aiMatchRating}>⭐ {m.rating.toFixed(1)}</Text>}
+                      {!!m.matchReason && <Text style={styles.aiMatchReason} numberOfLines={2}>{m.matchReason}</Text>}
+                    </View>
+                    <View style={styles.aiMatchScoreBadge}>
+                      <Text style={styles.aiMatchScoreText}>{m.aiScore ?? m.algorithmicScore}</Text>
+                    </View>
+                  </View>
+                ))}
+                <Pressable onPress={loadMatches} style={styles.aiMatchRefresh}>
+                  <Text style={styles.aiMatchRefreshText}>↻ Refresh</Text>
+                </Pressable>
+              </>
+            )}
+          </Card>
+        )}
+
         {/* Proposal form */}
         {!isClient && !isOwnJob && job.status === 'open' && (
           <>
@@ -236,4 +295,21 @@ const styles = StyleSheet.create({
   applyBtn:    { marginTop: spacing.md },
   boostActive: { backgroundColor: colors.primary + '10', borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
   boostActiveText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  // AI matches
+  aiMatchBtn:         { backgroundColor: colors.purple, borderRadius: 10, padding: spacing.sm, alignItems: 'center', minHeight: 44, justifyContent: 'center' },
+  aiMatchBtnText:     { color: colors.white, fontSize: 14, fontWeight: '700' },
+  aiMatchLoading:     { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  aiMatchLoadingText: { ...typography.caption, color: colors.textMuted },
+  aiMatchMeta:        { ...typography.caption, color: colors.textMuted, marginBottom: spacing.sm },
+  aiMatchRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  aiMatchRank:        { fontSize: 11, fontWeight: '700', color: colors.textMuted, minWidth: 22, paddingTop: 2 },
+  aiMatchAvatarCircle:{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  aiMatchAvatarText:  { fontSize: 14, fontWeight: '700', color: colors.primary },
+  aiMatchName:        { fontSize: 13, fontWeight: '700', color: colors.textDark },
+  aiMatchRating:      { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  aiMatchReason:      { fontSize: 11, color: colors.textSecondary, marginTop: 2, lineHeight: 15 },
+  aiMatchScoreBadge:  { backgroundColor: colors.primaryLight, borderRadius: 9999, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
+  aiMatchScoreText:   { fontSize: 11, fontWeight: '700', color: colors.primary },
+  aiMatchRefresh:     { paddingTop: spacing.sm, alignSelf: 'flex-end' },
+  aiMatchRefreshText: { fontSize: 11, color: colors.textMuted },
 });

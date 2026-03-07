@@ -12,6 +12,7 @@ import EscrowModal from '../Payments/EscrowModal';
 import { apiRequest } from '../../utils/api';
 import './JobDetails.css';
 import { getApiBaseUrl } from '../../utils/api';
+import { aiApi } from '../../api/ai';
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -37,8 +38,25 @@ const JobDetails = () => {
   const [proposedMilestones, setProposedMilestones] = useState([
     { title: '', amount: '', description: '' }
   ]);
+  const [aiMatches, setAiMatches]           = useState(null);
+  const [aiMatchLoading, setAiMatchLoading] = useState(false);
+  const [aiMatchError, setAiMatchError]     = useState('');
 
   const API_BASE_URL = getApiBaseUrl();
+
+  const loadMatches = async () => {
+    if (!job?._id) return;
+    setAiMatchLoading(true);
+    setAiMatchError('');
+    try {
+      const data = await aiApi.matchFreelancers(job._id);
+      setAiMatches(data);
+    } catch (err) {
+      setAiMatchError(err.message || 'Failed to load matches');
+    } finally {
+      setAiMatchLoading(false);
+    }
+  };
 
   const fetchJobDetails = useCallback(async () => {
     try {
@@ -528,6 +546,48 @@ const JobDetails = () => {
                         </button>
                       </div>
                     </form>
+                  </>
+                )}
+              </div>
+            )}
+
+            {isOwnJob && job.status === 'open' && (
+              <div className="sidebar-card ai-matches-panel">
+                <div className="ai-matches-header">
+                  <h3>🤖 Smart Matches</h3>
+                  <p className="ai-matches-sub">Top freelancers for this job</p>
+                </div>
+                {!aiMatches && !aiMatchLoading && (
+                  <button className="ai-matches-btn" onClick={loadMatches}>
+                    ✨ Find Top Matches
+                  </button>
+                )}
+                {aiMatchLoading && <p className="ai-matches-loading">Finding best matches…</p>}
+                {aiMatchError && <p className="ai-matches-error">{aiMatchError}</p>}
+                {aiMatches && (
+                  <>
+                    <p className="ai-matches-meta">
+                      {aiMatches.aiPowered ? '✨ AI-ranked' : '📊 Algorithmically ranked'}
+                      {' · '}{aiMatches.total} freelancers compared
+                    </p>
+                    <div className="ai-matches-list">
+                      {(aiMatches.matches || []).map((m, i) => (
+                        <div key={m.userId} className="ai-match-card">
+                          <span className="ai-match-rank">#{i + 1}</span>
+                          {m.profilePicture
+                            ? <img src={m.profilePicture} alt={m.name} className="ai-match-avatar" />
+                            : <div className="ai-match-avatar ai-match-avatar-placeholder">{m.name[0]}</div>
+                          }
+                          <div className="ai-match-info">
+                            <Link to={`/profile/${m.userId}`} className="ai-match-name">{m.name}</Link>
+                            {m.rating > 0 && <span className="ai-match-rating">⭐ {m.rating.toFixed(1)}</span>}
+                            {m.matchReason && <p className="ai-match-reason">{m.matchReason}</p>}
+                          </div>
+                          <div className="ai-match-score">{m.aiScore ?? m.algorithmicScore}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="ai-matches-refresh" onClick={loadMatches}>↻ Refresh</button>
                   </>
                 )}
               </div>

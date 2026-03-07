@@ -497,3 +497,27 @@
 .opr-rating { font-size: 0.75rem; color: var(--color-warning); margin-top: 1px; }
 
 
+
+/* -- AI Smart Matches Panel ---------------------------------- */
+.ai-matches-panel { margin-bottom: var(--space-lg); }
+.ai-matches-header { margin-bottom: var(--space-sm); }
+.ai-matches-header h3 { font-size: var(--font-size-base); font-weight: var(--font-weight-bold); margin: 0 0 2px; }
+.ai-matches-sub { font-size: var(--font-size-xs); color: var(--color-text-muted); margin: 0; }
+.ai-matches-btn { width: 100%; padding: var(--space-sm) var(--space-md); background: linear-gradient(135deg, #7c3aed, #2563eb); color: white; border: none; border-radius: var(--radius-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); cursor: pointer; min-height: 44px; transition: opacity var(--transition-fast); }
+.ai-matches-btn:hover { opacity: 0.88; }
+.ai-matches-loading { font-size: var(--font-size-sm); color: var(--color-text-muted); text-align: center; padding: var(--space-md) 0; }
+.ai-matches-error { font-size: var(--font-size-sm); color: var(--color-danger); }
+.ai-matches-meta { font-size: var(--font-size-xs); color: var(--color-text-muted); margin: 0 0 var(--space-sm); }
+.ai-matches-list { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.ai-match-card { display: flex; align-items: flex-start; gap: var(--space-sm); padding: var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg-secondary); }
+.ai-match-rank { font-size: var(--font-size-xs); color: var(--color-text-muted); font-weight: var(--font-weight-bold); min-width: 20px; padding-top: 2px; }
+.ai-match-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.ai-match-avatar-placeholder { display: flex; align-items: center; justify-content: center; background: var(--color-primary-bg); color: var(--color-primary); font-weight: var(--font-weight-bold); font-size: var(--font-size-sm); }
+.ai-match-info { flex: 1; min-width: 0; }
+.ai-match-name { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--color-primary); text-decoration: none; }
+.ai-match-name:hover { text-decoration: underline; }
+.ai-match-rating { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-left: var(--space-xs); }
+.ai-match-reason { font-size: var(--font-size-xs); color: var(--color-text-secondary); margin: 2px 0 0; line-height: 1.4; }
+.ai-match-score { font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-primary); background: var(--color-primary-light); border-radius: var(--radius-full); padding: 2px 8px; align-self: flex-start; white-space: nowrap; }
+.ai-matches-refresh { background: none; border: none; font-size: var(--font-size-xs); color: var(--color-text-muted); cursor: pointer; padding: 0; }
+.ai-matches-refresh:hover { color: var(--color-primary); }

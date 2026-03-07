@@ -274,6 +274,7 @@ app.use('/api/job-alerts',   require('./routes/jobAlerts'));
 app.use('/api/referrals',    require('./routes/referrals'));
 app.use('/api/contracts',          require('./routes/contracts'));
 app.use('/api/background-checks', require('./routes/backgroundChecks'));
+app.use('/api/ai',               require('./routes/ai'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {

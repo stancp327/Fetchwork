@@ -51,10 +51,16 @@ console.log('✅ All critical environment variables present');
 
 const ADMIN_EMAILS = ['admin@fetchwork.com', 'stancp327@gmail.com'];
 
+// Optional — AI features degrade gracefully without it
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('⚠️  OPENAI_API_KEY not set — AI features (job description gen, smart matching) will use fallback mode');
+}
+
 module.exports = {
-  PORT: process.env.PORT || 10000,
-  MONGO_URI: process.env.MONGO_URI,
-  JWT_SECRET: process.env.JWT_SECRET,
-  CLIENT_URL: process.env.CLIENT_URL,
+  PORT:           process.env.PORT || 10000,
+  MONGO_URI:      process.env.MONGO_URI,
+  JWT_SECRET:     process.env.JWT_SECRET,
+  CLIENT_URL:     process.env.CLIENT_URL,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || null,
   ADMIN_EMAILS,
 };

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { jobsApi } from '../../api/endpoints/jobsApi';
+import { aiApi } from '../../api/endpoints/aiApi';
 import { JobsStackParamList } from '../../types/navigation';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
@@ -26,13 +27,35 @@ type FormData = z.infer<typeof schema>;
 
 export default function PostJobScreen({ navigation }: Props) {
   const qc = useQueryClient();
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiMsg, setAiMsg] = useState('');
 
-  const { control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { control, handleSubmit, watch, setValue, getValues, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { title: '', description: '', category: '', budgetType: 'fixed', budgetMin: 0, skills: '' },
   });
 
   const budgetType = watch('budgetType');
+
+  const handleGenerate = async () => {
+    const { title, category, skills, budgetType: bt, budgetMin } = getValues();
+    if (!title) {
+      Alert.alert('Add a title first', 'I need a job title to generate a description.');
+      return;
+    }
+    setAiGenerating(true);
+    setAiMsg('');
+    try {
+      const result = await aiApi.generateDescription({ title, category, skills, budgetType: bt, budgetAmount: budgetMin });
+      setValue('description', result.description);
+      setAiMsg(result.aiGenerated ? '✨ AI-generated — feel free to edit' : '📝 Template applied — make it yours');
+      setTimeout(() => setAiMsg(''), 5000);
+    } catch {
+      Alert.alert('Error', 'Could not generate description — try again.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: (data: FormData) => jobsApi.create({
@@ -64,9 +87,20 @@ export default function PostJobScreen({ navigation }: Props) {
                 value={value} onChangeText={onChange} error={errors.title?.message} />
             )} />
 
+          <View style={styles.descLabelRow}>
+            <Text style={styles.descLabel}>Description *</Text>
+            <Pressable style={[styles.aiBtnInline, aiGenerating && styles.aiBtnDisabled]}
+              onPress={handleGenerate} disabled={aiGenerating}>
+              {aiGenerating
+                ? <ActivityIndicator size="small" color={colors.white} />
+                : <Text style={styles.aiBtnText}>✨ Write for me</Text>
+              }
+            </Pressable>
+          </View>
+          {!!aiMsg && <Text style={styles.aiMsg}>{aiMsg}</Text>}
           <Controller control={control} name="description"
             render={({ field: { onChange, value } }) => (
-              <Input label="Description *" placeholder="Describe the job in detail..." value={value}
+              <Input placeholder="Describe the job in detail, or tap ✨ Write for me…" value={value}
                 onChangeText={onChange} multiline numberOfLines={5} error={errors.description?.message} />
             )} />
 
@@ -130,4 +164,11 @@ const styles = StyleSheet.create({
   budgetBtnText:      { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   budgetBtnTextActive:{ color: colors.primary },
   amountRow:          { flexDirection: 'row', gap: spacing.sm },
+  // AI gen
+  descLabelRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  descLabel:      { ...typography.label },
+  aiBtnInline:    { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 5, borderRadius: 9999, minHeight: 32, backgroundColor: colors.purple },
+  aiBtnDisabled:  { opacity: 0.55 },
+  aiBtnText:      { color: colors.white, fontSize: 12, fontWeight: '700' },
+  aiMsg:          { fontSize: 12, color: colors.primary, backgroundColor: colors.primaryLight, borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 4, marginBottom: spacing.xs },
 });
