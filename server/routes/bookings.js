@@ -124,6 +124,7 @@ function generateSlots(windows, slotDuration, bufferTime, dayOfWeek) {
 
 // ── PUT /api/bookings/availability/:serviceId ────────────────────
 // Freelancer sets/updates availability (feature-gated)
+// Dual-writes to Mongo (Service.availability) AND SQL (FreelancerAvailability)
 router.put('/availability/:serviceId', authenticateToken, requireFeature('booking_calendar'), async (req, res) => {
   try {
     const service = await Service.findById(req.params.serviceId);
@@ -142,7 +143,7 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
       }
     }
 
-    service.availability = {
+    const resolvedAvail = {
       enabled:        enabled !== false,
       timezone:       timezone || service.availability?.timezone || 'America/Los_Angeles',
       windows:        windows || [],
@@ -152,8 +153,42 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
       maxPerSlot:     maxPerSlot || 1,
     };
 
+    // 1. Write to Mongo (backward compat)
+    service.availability = resolvedAvail;
     await service.save();
-    res.json({ message: 'Availability updated', availability: service.availability });
+
+    // 2. Dual-write to SQL FreelancerAvailability
+    try {
+      const { getPrisma } = require('../booking-sql/db/client');
+      const prisma = getPrisma();
+      await prisma.freelancerAvailability.upsert({
+        where:  { freelancerId: req.user.userId.toString() },
+        update: {
+          isActive:             resolvedAvail.enabled,
+          timezone:             resolvedAvail.timezone,
+          weeklyScheduleJson:   resolvedAvail.windows,
+          defaultSlotDuration:  resolvedAvail.slotDuration,
+          bufferTime:           resolvedAvail.bufferTime,
+          maxAdvanceBookingDays: resolvedAvail.maxAdvanceDays,
+          defaultCapacity:      resolvedAvail.maxPerSlot,
+        },
+        create: {
+          freelancerId:         req.user.userId.toString(),
+          isActive:             resolvedAvail.enabled,
+          timezone:             resolvedAvail.timezone,
+          weeklyScheduleJson:   resolvedAvail.windows,
+          defaultSlotDuration:  resolvedAvail.slotDuration,
+          bufferTime:           resolvedAvail.bufferTime,
+          maxAdvanceBookingDays: resolvedAvail.maxAdvanceDays,
+          defaultCapacity:      resolvedAvail.maxPerSlot,
+        },
+      });
+    } catch (sqlErr) {
+      // Non-fatal: Mongo write succeeded, log and continue
+      console.error('[availability] SQL upsert failed (non-fatal):', sqlErr.message);
+    }
+
+    res.json({ message: 'Availability updated', availability: resolvedAvail });
   } catch (err) {
     console.error('Error updating availability:', err);
     res.status(500).json({ error: err.message });
