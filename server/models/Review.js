@@ -152,7 +152,12 @@ const reviewSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  lastEditedAt: Date
+  lastEditedAt: Date,
+
+  // Soft delete — set instead of hard removing; all queries filter { deletedAt: null }
+  deletedAt:    { type: Date, default: null },
+  deletedBy:    { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', default: null },
+  deleteReason: { type: String, default: null },
 }, {
   timestamps: true
 });
@@ -164,6 +169,7 @@ reviewSchema.index({ rating: -1 });
 reviewSchema.index({ createdAt: -1 });
 reviewSchema.index({ moderationStatus: 1 });
 reviewSchema.index({ isPublic: 1, moderationStatus: 1 });
+reviewSchema.index({ deletedAt: 1 }); // fast filter for soft deletes
 
 reviewSchema.pre('save', function(next) {
   if (this.isModified('comment') || this.isModified('rating') || this.isModified('title')) {
@@ -249,7 +255,8 @@ reviewSchema.statics.findByReviewee = function(revieweeId, options = {}) {
   const query = {
     reviewee: revieweeId,
     isPublic: true,
-    moderationStatus: 'approved'
+    moderationStatus: 'approved',
+    deletedAt: null,
   };
   
   return this.find(query)
@@ -266,7 +273,8 @@ reviewSchema.statics.getAverageRating = function(revieweeId) {
       $match: {
         reviewee: mongoose.Types.ObjectId(revieweeId),
         isPublic: true,
-        moderationStatus: 'approved'
+        moderationStatus: 'approved',
+        deletedAt: null,
       }
     },
     {
@@ -288,7 +296,8 @@ reviewSchema.statics.getRatingDistribution = function(revieweeId) {
       $match: {
         reviewee: mongoose.Types.ObjectId(revieweeId),
         isPublic: true,
-        moderationStatus: 'approved'
+        moderationStatus: 'approved',
+        deletedAt: null,
       }
     },
     {
@@ -305,13 +314,15 @@ reviewSchema.statics.getRatingDistribution = function(revieweeId) {
 
 reviewSchema.statics.findFlaggedReviews = function() {
   return this.find({
-    'flags.status': 'pending'
+    'flags.status': 'pending',
+    deletedAt: null,
   }).populate('reviewer reviewee', 'firstName lastName email');
 };
 
 reviewSchema.statics.findPendingModeration = function() {
   return this.find({
-    moderationStatus: 'pending'
+    moderationStatus: 'pending',
+    deletedAt: null,
   }).populate('reviewer reviewee', 'firstName lastName email')
     .sort({ createdAt: -1 });
 };

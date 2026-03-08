@@ -197,7 +197,7 @@ router.get('/:id', async (req, res) => {
 
     // Get their reviews
     const Review = require('../models/Review');
-    const reviews = await Review.find({ reviewee: user._id, moderationStatus: 'approved' })
+    const reviews = await Review.find({ reviewee: user._id, moderationStatus: 'approved', deletedAt: null })
       .populate('reviewer', 'firstName lastName profilePicture')
       .sort({ rating: -1 })
       .limit(5);

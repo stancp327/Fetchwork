@@ -151,7 +151,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
         .limit(5)
         .select('title status budget createdAt client')
         .lean(),
-      pendingReviews: await Review.find({ moderationStatus: 'pending' })
+      pendingReviews: await Review.find({ moderationStatus: 'pending', deletedAt: null })
         .populate('reviewer reviewee', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .limit(5)
@@ -520,7 +520,7 @@ router.get('/reviews', authenticateAdmin, requirePermission('content_moderation'
     const sortBy = req.query.sortBy || 'createdAt';
     const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
 
-    let query = {};
+    let query = { deletedAt: null };
     
     if (status !== 'all') {
       if (status === 'flagged') {
@@ -597,7 +597,11 @@ router.delete('/reviews/:reviewId', authenticateAdmin, requirePermission('conten
     const revieweeName = `${review.reviewee?.firstName} ${review.reviewee?.lastName}`;
     const revieweeId = review.reviewee?._id;
 
-    await Review.findByIdAndDelete(req.params.reviewId);
+    await Review.findByIdAndUpdate(req.params.reviewId, {
+      deletedAt:    new Date(),
+      deletedBy:    req.admin._id,
+      deleteReason: req.body.reason || null,
+    });
 
     await logAdminAction({
       adminId: req.admin._id, adminEmail: req.admin.email,
@@ -607,10 +611,10 @@ router.delete('/reviews/:reviewId', authenticateAdmin, requirePermission('conten
       ip: req.ip,
     });
 
-    // Recalculate reviewee's rating
+    // Recalculate reviewee's rating (exclude soft-deleted)
     if (revieweeId) {
       const stats = await Review.aggregate([
-        { $match: { reviewee: revieweeId, isPublic: true, moderationStatus: { $in: ['approved', 'pending'] } } },
+        { $match: { reviewee: revieweeId, isPublic: true, moderationStatus: { $in: ['approved', 'pending'] }, deletedAt: null } },
         { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } }
       ]);
       await User.findByIdAndUpdate(revieweeId, {
@@ -1120,7 +1124,7 @@ router.get('/users/:userId/detail', authenticateAdmin, requirePermission('user_m
       Job.find({ client: user._id }).select('title status budget createdAt proposalCount category freelancer').populate('freelancer', 'firstName lastName').sort({ createdAt: -1 }),
       Job.find({ freelancer: user._id }).select('title status budget createdAt category client').populate('client', 'firstName lastName').sort({ createdAt: -1 }),
       Service.find({ freelancer: user._id }).select('title status category pricing isActive createdAt').sort({ createdAt: -1 }),
-      Review.find({ $or: [{ freelancer: user._id }, { client: user._id }] }).populate('freelancer client', 'firstName lastName').sort({ createdAt: -1 }).limit(50)
+      Review.find({ $or: [{ freelancer: user._id }, { client: user._id }], deletedAt: null }).populate('freelancer client', 'firstName lastName').sort({ createdAt: -1 }).limit(50)
     ]);
 
     res.json({

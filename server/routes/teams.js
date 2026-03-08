@@ -793,7 +793,7 @@ router.get('/agency/:slug', async (req, res) => {
 
     const [completedJobs, reviews] = await Promise.all([
       Job.countDocuments({ freelancer: { $in: memberIds }, status: 'completed' }),
-      Review.find({ reviewee: { $in: memberIds } }).sort({ createdAt: -1 }).limit(10)
+      Review.find({ reviewee: { $in: memberIds }, deletedAt: null }).sort({ createdAt: -1 }).limit(10)
         .populate('reviewer', 'firstName lastName profileImage').lean(),
     ]);
 

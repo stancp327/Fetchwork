@@ -23,7 +23,8 @@ router.get('/', async (req, res) => {
     const total = await Review.countDocuments({
       reviewee: revieweeId,
       isPublic: true,
-      moderationStatus: 'approved'
+      moderationStatus: 'approved',
+      deletedAt: null,
     });
     
     const averageRating = await Review.getAverageRating(revieweeId);
@@ -51,7 +52,7 @@ router.get('/:id', async (req, res) => {
       .populate('reviewee', 'firstName lastName profilePicture')
       .populate('job', 'title category');
     
-    if (!review || (!review.isPublic && review.moderationStatus !== 'approved')) {
+    if (!review || review.deletedAt || (!review.isPublic && review.moderationStatus !== 'approved')) {
       return res.status(404).json({ error: 'Review not found' });
     }
     
