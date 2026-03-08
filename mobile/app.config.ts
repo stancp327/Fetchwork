@@ -28,7 +28,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: 'com.fetchwork.app',
     buildNumber: '1',
     infoPlist: {
-      NSCameraUsageDescription: 'Used for profile photo and ID verification uploads.',
+      NSCameraUsageDescription: 'Fetchwork needs camera access for video calls and profile photo uploads.',
+      NSMicrophoneUsageDescription: 'Fetchwork needs microphone access for calls.',
       NSPhotoLibraryUsageDescription: 'Used for profile photo and portfolio uploads.',
       NSPhotoLibraryAddUsageDescription: 'Used to save images from Fetchwork.',
       ITSAppUsesNonExemptEncryption: false,
@@ -43,6 +44,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     versionCode: 7,
     permissions: [
       'CAMERA',
+      'RECORD_AUDIO',
+      'MODIFY_AUDIO_SETTINGS',
       'READ_EXTERNAL_STORAGE',
       'WRITE_EXTERNAL_STORAGE',
       'RECEIVE_BOOT_COMPLETED',
@@ -71,6 +74,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-font',
     'expo-secure-store',
+    'react-native-webrtc',
     [
       'expo-notifications',
       {

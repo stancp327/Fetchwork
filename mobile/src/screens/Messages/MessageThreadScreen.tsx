@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, Pressable,
   KeyboardAvoidingView, Platform, ActivityIndicator, SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { messagesApi } from '../../api/endpoints/messagesApi';
 import { MessagesStackParamList } from '../../types/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { useCallContext } from '../../context/CallContext';
 import { getSocket } from '../../api/socket';
 import Avatar from '../../components/common/Avatar';
 import { colors, spacing, typography, radius } from '../../theme';
@@ -17,16 +19,49 @@ import { Message } from '@fetchwork/shared';
 type Props = NativeStackScreenProps<MessagesStackParamList, 'MessageThread'>;
 
 export default function MessageThreadScreen({ route, navigation }: Props) {
-  const { conversationId, recipientName } = route.params;
+  const {
+    conversationId,
+    recipientName,
+    recipientId,
+    recipientFirstName,
+    recipientLastName,
+  } = route.params;
   const { user } = useAuth();
+  const { startCall } = useCallContext();
   const qc = useQueryClient();
   const [text, setText] = useState('');
   const listRef = useRef<FlatList>(null);
 
-  // Set nav title
+  const handleVideoCall = useCallback(async () => {
+    if (!recipientId) return;
+    await startCall(
+      recipientId,
+      {
+        _id: recipientId,
+        firstName: recipientFirstName ?? recipientName?.split(' ')[0] ?? '',
+        lastName: recipientLastName ?? recipientName?.split(' ').slice(1).join(' ') ?? '',
+      },
+      'video',
+    );
+  }, [recipientId, recipientFirstName, recipientLastName, recipientName, startCall]);
+
+  // Set nav title + call button
   useEffect(() => {
-    if (recipientName) navigation.setOptions({ title: recipientName });
-  }, [recipientName]);
+    navigation.setOptions({
+      title: recipientName ?? '',
+      headerRight: recipientId
+        ? () => (
+            <TouchableOpacity
+              onPress={handleVideoCall}
+              style={{ marginRight: 4, padding: 4 }}
+              accessibilityLabel="Start video call"
+            >
+              <Ionicons name="videocam" size={24} color={colors.primary} />
+            </TouchableOpacity>
+          )
+        : undefined,
+    });
+  }, [recipientName, recipientId, handleVideoCall, navigation]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['messages', conversationId],

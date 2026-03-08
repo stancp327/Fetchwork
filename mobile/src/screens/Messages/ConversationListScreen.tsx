@@ -59,6 +59,9 @@ export default function ConversationListScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate('MessageThread', {
                   conversationId: conv._id,
                   recipientName: other ? `${other.firstName} ${other.lastName}` : '',
+                  recipientId: other?._id,
+                  recipientFirstName: other?.firstName,
+                  recipientLastName: other?.lastName,
                 })}
                 style={styles.convCard}
               >

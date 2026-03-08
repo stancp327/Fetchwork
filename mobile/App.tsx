@@ -7,6 +7,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { QueryContext } from './src/context/QueryContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { CallProvider } from './src/context/CallContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { linking } from './src/navigation/linking';
 import { PushPermissionPrompt } from './src/components/PushPermissionPrompt';
@@ -65,12 +66,12 @@ function AppInner() {
   }, [isAuthenticated]);
 
   return (
-    <>
+    <CallProvider>
       <NavigationContainer ref={navRef} linking={linking}>
         <RootNavigator />
       </NavigationContainer>
       <PushPermissionPrompt isAuthenticated={isAuthenticated} />
-    </>
+    </CallProvider>
   );
 }
 

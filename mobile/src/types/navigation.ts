@@ -32,7 +32,15 @@ export type ServicesStackParamList = {
 
 export type MessagesStackParamList = {
   ConversationList: undefined;
-  MessageThread:    { conversationId: string; recipientName?: string };
+  MessageThread: {
+    conversationId: string;
+    recipientName?: string;
+    /** _id of the other participant — required to initiate a call */
+    recipientId?: string;
+    /** Optional: pre-populated for the call button */
+    recipientFirstName?: string;
+    recipientLastName?: string;
+  };
 };
 
 export type ProfileStackParamList = {
