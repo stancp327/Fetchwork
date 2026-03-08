@@ -8,6 +8,8 @@ import PostJobScreen from '../screens/Jobs/PostJobScreen';
 import MyJobsScreen from '../screens/Jobs/MyJobsScreen';
 import JobProposalsScreen from '../screens/Jobs/JobProposalsScreen';
 import JobProgressScreen from '../screens/Jobs/JobProgressScreen';
+import BrowseFreelancersScreen from '../screens/Freelancers/BrowseFreelancersScreen';
+import FreelancerPublicProfileScreen from '../screens/Freelancers/FreelancerPublicProfileScreen';
 
 const Stack = createNativeStackNavigator<JobsStackParamList>();
 
@@ -27,6 +29,8 @@ export default function JobsStackNavigator() {
       <Stack.Screen name="MyJobs"     component={MyJobsScreen}     options={{ title: 'My Jobs' }} />
       <Stack.Screen name="JobProposals" component={JobProposalsScreen} options={{ title: 'Proposals' }} />
       <Stack.Screen name="JobProgress"  component={JobProgressScreen}  options={{ title: 'Job Progress' }} />
+      <Stack.Screen name="BrowseFreelancers" component={BrowseFreelancersScreen} options={{ title: 'Find Freelancers' }} />
+      <Stack.Screen name="FreelancerProfile" component={FreelancerPublicProfileScreen} options={{ title: 'Freelancer' }} />
     </Stack.Navigator>
   );
 }

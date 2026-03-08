@@ -50,13 +50,13 @@ export default function HomeScreen() {
             <Text style={styles.quickIcon}>➕</Text>
             <Text style={styles.quickLabel}>Post Job</Text>
           </Pressable>
+          <Pressable style={styles.quickBtn} onPress={() => navigation.navigate('Jobs', { screen: 'BrowseFreelancers' })}>
+            <Text style={styles.quickIcon}>👤</Text>
+            <Text style={styles.quickLabel}>Freelancers</Text>
+          </Pressable>
           <Pressable style={styles.quickBtn} onPress={() => navigation.navigate('Services', { screen: 'BrowseServices' })}>
             <Text style={styles.quickIcon}>⚡</Text>
             <Text style={styles.quickLabel}>Services</Text>
-          </Pressable>
-          <Pressable style={styles.quickBtn} onPress={() => navigation.navigate('Messages', { screen: 'ConversationList' })}>
-            <Text style={styles.quickIcon}>💬</Text>
-            <Text style={styles.quickLabel}>Messages</Text>
           </Pressable>
         </View>
 

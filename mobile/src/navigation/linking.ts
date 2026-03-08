@@ -18,10 +18,12 @@ export const linking: LinkingOptions<RootStackParamList> = {
           Home: 'home',
           Jobs: {
             screens: {
-              BrowseJobs: 'jobs',
-              JobDetail:  'jobs/:id',
-              PostJob:    'post-job',
-              MyJobs:     'my-jobs',
+              BrowseJobs:        'jobs',
+              JobDetail:         'jobs/:id',
+              PostJob:           'post-job',
+              MyJobs:            'my-jobs',
+              BrowseFreelancers: 'freelancers',
+              FreelancerProfile: 'freelancers/:id',
             },
           },
           Services: {
