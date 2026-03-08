@@ -292,6 +292,7 @@ app.use('/api/public-profiles', require('./routes/publicProfiles'));
 app.use('/api/portfolio', require('./routes/portfolio'));
 app.use('/api/errors', require('./routes/errors'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/cron', require('./routes/cron'));
 app.use('/api/offers', require('./routes/offers'));
 app.use('/api/saved', require('./routes/saved'));
 app.use('/api/stats',        require('./routes/stats'));
