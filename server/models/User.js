@@ -127,6 +127,10 @@ const userSchema = new mongoose.Schema({
   lastLoginCountry: { type: String, default: null },
   lastLoginCity:    { type: String, default: null },
   lastLoginAt:      { type: Date,   default: null },
+
+  // Onboarding email sequence — persisted so deploys don't kill the chain
+  onboardingEmailStep:  { type: Number, default: 0 }, // 0=not started,1=welcome sent,2=reminder sent,3=complete
+  nextOnboardingEmailAt: { type: Date, default: null }, // when to send next step
   accountType: {
     type: String,
     enum: ['client', 'freelancer', 'both'],

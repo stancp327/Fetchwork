@@ -35,27 +35,59 @@ class EmailWorkflowService {
     }
   }
 
-  async sendOnboardingSequence(userId, step = 1) {
+  // Kick off onboarding for a new user — just sends step 1 + persists state.
+  // Steps 2 & 3 are sent by the process-onboarding cron (deploy-safe).
+  async sendOnboardingSequence(userId) {
     try {
       const user = await User.findById(userId);
       if (!user || !await this.canSendEmail(userId, this.emailTypes.ONBOARDING)) return;
+      if (user.onboardingEmailStep > 0) return; // already started
 
-      switch (step) {
-        case 1:
-          await emailService.sendWelcomeEmail(user);
-          setTimeout(() => this.sendOnboardingSequence(userId, 2), 24 * 60 * 60 * 1000);
-          break;
-        case 2:
-          await this.sendProfileCompletionReminder(user);
-          setTimeout(() => this.sendOnboardingSequence(userId, 3), 72 * 60 * 60 * 1000);
-          break;
-        case 3:
-          await this.sendFirstJobGuidance(user);
-          break;
-      }
+      await emailService.sendWelcomeEmail(user);
+      await User.updateOne({ _id: userId }, {
+        onboardingEmailStep: 1,
+        nextOnboardingEmailAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // step 2 in 24h
+      });
     } catch (error) {
-      console.error('Error in onboarding sequence:', error);
+      console.error('Error in onboarding step 1:', error);
     }
+  }
+
+  // Called by cron — processes pending onboarding emails for all users.
+  // Deploy-safe: reads state from DB, not in-memory timers.
+  async processPendingOnboarding() {
+    const now = new Date();
+    const dueUsers = await User.find({
+      onboardingEmailStep: { $in: [1, 2] },
+      nextOnboardingEmailAt: { $lte: now },
+    }).limit(50);
+
+    for (const user of dueUsers) {
+      try {
+        if (!(await this.canSendEmail(user._id, this.emailTypes.ONBOARDING))) continue;
+
+        if (user.onboardingEmailStep === 1) {
+          await this.sendProfileCompletionReminder(user);
+          await User.updateOne({ _id: user._id }, {
+            onboardingEmailStep: 2,
+            nextOnboardingEmailAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // step 3 in 72h
+          });
+        } else if (user.onboardingEmailStep === 2) {
+          await this.sendFirstJobGuidance(user);
+          await User.updateOne({ _id: user._id }, {
+            onboardingEmailStep: 3,
+            nextOnboardingEmailAt: null, // sequence complete
+          });
+        }
+      } catch (err) {
+        console.error(`Error processing onboarding for ${user.email}:`, err.message);
+      }
+    }
+
+    if (dueUsers.length > 0) {
+      console.log(`[onboarding] Processed ${dueUsers.length} pending onboarding emails`);
+    }
+    return dueUsers.length;
   }
 
   async sendProfileCompletionReminder(user) {
