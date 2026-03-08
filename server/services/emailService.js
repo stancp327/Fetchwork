@@ -338,39 +338,6 @@ class EmailService {
     return this.sendEmail(recipient.email, subject, content, 'New Dispute Message');
   }
 
-  async sendNewMessageNotification(recipient, sender, conversationId) {
-    const content = `
-      <p>Hi ${recipient.firstName},</p>
-      <p>You have a new message from <strong>${sender.firstName} ${sender.lastName}</strong>.</p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.CLIENT_URL}/messages?conversation=${conversationId}" 
-           style="background: ${this.brandColors.primary}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-          View Message
-        </a>
-      </div>
-      <p style="color: #666; font-size: 14px;">You can manage your notification preferences in your <a href="${process.env.CLIENT_URL}/settings/email-preferences">account settings</a>.</p>
-    `;
-    return this.sendEmail(recipient.email, `New message from ${sender.firstName}`, content, 'New Message');
-  }
-
-  async sendReviewNotification(recipient, reviewer, job, rating) {
-    const stars = '⭐'.repeat(Math.round(rating));
-    const content = `
-      <p>Hi ${recipient.firstName},</p>
-      <p><strong>${reviewer.firstName} ${reviewer.lastName}</strong> left you a ${rating}-star review for <strong>${job.title}</strong>.</p>
-      <div style="background: #fefce8; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-        <p style="font-size: 2rem; margin: 0;">${stars}</p>
-      </div>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.CLIENT_URL}/profile" 
-           style="background: ${this.brandColors.primary}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-          View Your Reviews
-        </a>
-      </div>
-    `;
-    return this.sendEmail(recipient.email, `New ${rating}-star review on FetchWork`, content, 'New Review', this.brandColors.warning);
-  }
-
   async sendAdminBroadcast(recipients, subject, message) {
     if (!this.resend) {
       console.log(`[Email disabled] Would broadcast "${subject}" to ${recipients.length} recipients`);

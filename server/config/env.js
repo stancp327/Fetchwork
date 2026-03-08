@@ -49,10 +49,15 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
 
 console.log('✅ All critical environment variables present');
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'admin@fetchwork.com,stancp327@gmail.com')
+// ADMIN_EMAILS must be set in environment — no hardcoded fallback (security: H4)
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
   .split(',')
   .map(e => e.trim())
   .filter(Boolean);
+
+if (ADMIN_EMAILS.length === 0) {
+  console.warn('⚠️  ADMIN_EMAILS not set — no email-based admin access configured. Set ADMIN_EMAILS env var on Render.');
+}
 
 // Optional — AI features degrade gracefully without it
 if (!process.env.OPENAI_API_KEY) {
