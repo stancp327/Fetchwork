@@ -1,0 +1,260 @@
+/* ── TeamSettings ── prefix: ts- ── */
+
+.ts-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 24px);
+  max-width: 680px;
+}
+
+/* ── Sections ── */
+.ts-section {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: var(--space-md, 16px);
+}
+
+@media (min-width: 640px) {
+  .ts-section {
+    padding: var(--space-lg, 24px);
+  }
+}
+
+.ts-section-title {
+  font-size: var(--font-size-base, 0.9375rem);
+  font-weight: 700;
+  color: var(--color-text-heading);
+  margin: 0 0 var(--space-md, 16px);
+}
+
+/* ── Fields ── */
+.ts-field {
+  margin-bottom: var(--space-md, 16px);
+}
+
+.ts-label {
+  display: block;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-xs, 4px);
+}
+
+.ts-input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-sm, 10px) var(--space-md, 12px);
+  border: 1px solid var(--color-border-medium);
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  box-sizing: border-box;
+}
+
+.ts-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-ring);
+}
+
+.ts-input:disabled {
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+textarea.ts-input {
+  resize: vertical;
+}
+
+.ts-logo-preview {
+  margin-top: var(--space-sm, 8px);
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+.ts-type-display {
+  display: inline-block;
+  padding: var(--space-xs, 4px) var(--space-sm, 10px);
+  background: var(--color-bg-muted);
+  border-radius: 6px;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+}
+
+/* ── Toggle rows ── */
+.ts-toggle-row {
+  margin-bottom: var(--space-md, 16px);
+}
+
+.ts-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.ts-toggle-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* ── Save row ── */
+.ts-save-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 16px);
+  flex-wrap: wrap;
+}
+
+.ts-error {
+  color: var(--color-danger);
+  font-size: var(--font-size-sm, 0.875rem);
+  margin: 0;
+}
+
+.ts-success {
+  color: var(--color-success);
+  font-size: var(--font-size-sm, 0.875rem);
+  margin: 0;
+}
+
+/* ── Buttons ── */
+.ts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--space-sm, 10px) var(--space-lg, 20px);
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.ts-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ts-btn--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.ts-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.ts-btn--secondary {
+  background: var(--color-bg-muted);
+  color: var(--color-text-primary);
+}
+
+.ts-btn--secondary:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.ts-btn--danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.ts-btn--danger:hover:not(:disabled) {
+  background: var(--color-danger-dark);
+}
+
+.ts-btn--danger-outline {
+  background: none;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.ts-btn--danger-outline:hover:not(:disabled) {
+  background: var(--color-danger-subtle);
+}
+
+/* ── Danger zone ── */
+.ts-danger-zone {
+  border-color: var(--color-danger);
+}
+
+.ts-danger-title {
+  color: var(--color-danger);
+}
+
+.ts-danger-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md, 16px);
+  padding: var(--space-md, 16px) 0;
+  border-bottom: 1px solid var(--color-border-light);
+  flex-wrap: wrap;
+}
+
+.ts-danger-action:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.ts-danger-desc {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  margin: var(--space-xs, 4px) 0 0;
+}
+
+/* ── Modal ── */
+.ts-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md, 16px);
+}
+
+.ts-modal {
+  background: var(--color-bg-primary);
+  border-radius: 12px;
+  padding: var(--space-lg, 24px);
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0,0,0,.1));
+}
+
+.ts-modal-title {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 700;
+  color: var(--color-text-heading);
+  margin: 0 0 var(--space-sm, 8px);
+}
+
+.ts-modal-desc {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0 0 var(--space-md, 16px);
+}
+
+.ts-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm, 8px);
+  margin-top: var(--space-md, 16px);
+}
