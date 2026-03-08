@@ -22,6 +22,9 @@ import EscrowConfirmScreen from '../screens/Payments/EscrowConfirmScreen';
 import TipScreen           from '../screens/Payments/TipScreen';
 import WriteReviewScreen   from '../screens/Reviews/WriteReviewScreen';
 import ReviewListScreen    from '../screens/Reviews/ReviewListScreen';
+import DisputeListScreen   from '../screens/Disputes/DisputeListScreen';
+import DisputeDetailScreen from '../screens/Disputes/DisputeDetailScreen';
+import FileDisputeScreen   from '../screens/Disputes/FileDisputeScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -55,6 +58,10 @@ export default function ProfileStackNavigator() {
       <Stack.Screen name="TipScreen"        component={TipScreen}               options={{ title: 'Send Tip' }} />
       <Stack.Screen name="WriteReview"     component={WriteReviewScreen}        options={{ title: 'Write Review' }} />
       <Stack.Screen name="ReviewList"      component={ReviewListScreen}         options={{ title: 'Reviews' }} />
+      <Stack.Screen name="Disputes"        component={DisputeListScreen}       options={{ title: 'My Disputes' }} />
+      <Stack.Screen name="DisputeDetail"   component={DisputeDetailScreen}     options={{ title: 'Dispute Details' }} />
+      <Stack.Screen name="FileDispute"     component={FileDisputeScreen}       options={{ title: 'File a Dispute' }} />
     </Stack.Navigator>
   );
 }
+

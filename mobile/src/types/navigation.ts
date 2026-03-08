@@ -56,6 +56,9 @@ export type ProfileStackParamList = {
   TipScreen:         { jobId: string; freelancerName: string; freelancerId: string };
   WriteReview:       { jobId?: string; orderId?: string; serviceId?: string; targetName: string; targetId: string };
   ReviewList:        { freelancerId?: string; serviceId?: string; targetName: string };
+  Disputes:          undefined;
+  DisputeDetail:     { disputeId: string };
+  FileDispute:       { jobId?: string; orderId?: string };
 };
 
 export type MoreStackParamList = {
@@ -82,3 +85,4 @@ export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
 };
+
