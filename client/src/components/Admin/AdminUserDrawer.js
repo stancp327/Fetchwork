@@ -14,6 +14,15 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
   const [grantReason, setGrantReason]   = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditReason, setCreditReason] = useState('');
+
+  // Wallet tab state
+  const [walletData, setWalletData]         = useState(null);
+  const [walletLoading, setWalletLoading]   = useState(false);
+  const [walletMsg, setWalletMsg]           = useState('');
+  const [freezeReason, setFreezeReason]     = useState('');
+  const [adjustAmount, setAdjustAmount]     = useState('');
+  const [adjustType, setAdjustType]         = useState('credit');
+  const [adjustReason, setAdjustReason]     = useState('');
   const u = data?.user;
 
   // Derive these safely (u may be null before early return below)
@@ -125,6 +134,53 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     finally { setActionLoading(''); setTimeout(() => setBillingMsg(''), 3000); }
   };
 
+  // Fetch wallet data when tab is opened
+  useEffect(() => {
+    if (!u || activeSection !== 'wallet') return;
+    setWalletLoading(true);
+    apiRequest(`/api/admin/users/${u._id}/wallet`)
+      .then(d => setWalletData(d))
+      .catch(() => setWalletMsg('Failed to load wallet data'))
+      .finally(() => setWalletLoading(false));
+  }, [activeSection, u?._id]);
+
+  const handleFreezeToggle = async () => {
+    const isFrozen = walletData?.walletFrozen;
+    if (!isFrozen && !freezeReason.trim()) {
+      setWalletMsg('Please enter a reason before freezing.');
+      return;
+    }
+    if (!isFrozen && !window.confirm(`Freeze ${u.firstName}'s wallet? They will not be able to make payments.`)) return;
+    setActionLoading('freeze');
+    try {
+      const res = await apiRequest(`/api/admin/wallets/${u._id}/freeze`, {
+        method: 'PUT',
+        body: JSON.stringify({ freeze: !isFrozen, reason: freezeReason || undefined }),
+      });
+      setWalletMsg(res.message || (isFrozen ? 'Wallet unfrozen.' : 'Wallet frozen.'));
+      setFreezeReason('');
+      const d = await apiRequest(`/api/admin/users/${u._id}/wallet`);
+      setWalletData(d);
+    } catch (err) { setWalletMsg(err.message || 'Action failed'); }
+    finally { setActionLoading(''); setTimeout(() => setWalletMsg(''), 4000); }
+  };
+
+  const handleWalletAdjust = async () => {
+    if (!adjustAmount || !adjustReason.trim()) return;
+    setActionLoading('adjust');
+    try {
+      const res = await apiRequest(`/api/admin/wallets/${u._id}/adjust`, {
+        method: 'POST',
+        body: JSON.stringify({ type: adjustType, amount: Number(adjustAmount), reason: adjustReason }),
+      });
+      setWalletMsg(res.message || `Wallet ${adjustType} applied.`);
+      setAdjustAmount(''); setAdjustReason('');
+      const d = await apiRequest(`/api/admin/users/${u._id}/wallet`);
+      setWalletData(d);
+    } catch (err) { setWalletMsg(err.message || 'Adjust failed'); }
+    finally { setActionLoading(''); setTimeout(() => setWalletMsg(''), 4000); }
+  };
+
   const sections = [
     { id: 'overview', label: '👤 Overview' },
     { id: 'jobs', label: `📋 Jobs (${(data.jobsAsClient?.length || 0) + (data.jobsAsFreelancer?.length || 0)})` },
@@ -133,6 +189,7 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     { id: 'reviews', label: `⭐ Reviews (${data.reviews?.length || 0})` },
     { id: 'actions', label: '⚡ Actions' },
     { id: 'billing', label: '💳 Billing' },
+    { id: 'wallet', label: '👛 Wallet' },
     { id: 'features', label: '🚩 Features' },
   ];
 
@@ -436,6 +493,129 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
                         ))}
                       </div>
                     </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── Wallet Tab ───────────────────────────────────── */}
+          {activeSection === 'wallet' && (
+            <div className="aud-billing-section">
+              {walletLoading && <p className="aud-empty">Loading wallet…</p>}
+              {walletMsg && (
+                <div className={`aud-billing-msg ${walletMsg.toLowerCase().includes('fail') || walletMsg.toLowerCase().includes('error') ? 'error' : 'success'}`}>
+                  {walletMsg}
+                </div>
+              )}
+
+              {walletData && (
+                <>
+                  {/* Balance + freeze status */}
+                  <div className="aud-billing-card">
+                    <h4>Wallet Balance</h4>
+                    <div className="aud-billing-row">
+                      <span>Available Balance</span>
+                      <strong style={{ fontSize: '1.25rem' }}>${(walletData.balance || 0).toFixed(2)}</strong>
+                    </div>
+                    <div className="aud-billing-row">
+                      <span>Status</span>
+                      <strong style={{ color: walletData.walletFrozen ? 'var(--color-error)' : 'var(--color-success)' }}>
+                        {walletData.walletFrozen ? '🔒 Frozen' : '✅ Active'}
+                      </strong>
+                    </div>
+                    {walletData.walletFrozen && walletData.walletFrozenReason && (
+                      <div className="aud-billing-row">
+                        <span>Frozen Reason</span>
+                        <strong>{walletData.walletFrozenReason}</strong>
+                      </div>
+                    )}
+                    {walletData.walletFrozen && walletData.walletFrozenAt && (
+                      <div className="aud-billing-row">
+                        <span>Frozen At</span>
+                        <strong>{new Date(walletData.walletFrozenAt).toLocaleString()}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Freeze / unfreeze */}
+                  <div className="aud-billing-card">
+                    <h4>{walletData.walletFrozen ? 'Unfreeze Wallet' : 'Freeze Wallet'}</h4>
+                    {!walletData.walletFrozen && (
+                      <input
+                        className="aud-billing-input"
+                        placeholder="Reason for freeze (required)"
+                        value={freezeReason}
+                        onChange={e => setFreezeReason(e.target.value)}
+                      />
+                    )}
+                    <button
+                      className={`aud-action-btn ${walletData.walletFrozen ? 'success' : 'danger'}`}
+                      onClick={handleFreezeToggle}
+                      disabled={actionLoading === 'freeze'}
+                    >
+                      {actionLoading === 'freeze' ? 'Processing…' : walletData.walletFrozen ? '✅ Unfreeze Wallet' : '🔒 Freeze Wallet'}
+                    </button>
+                  </div>
+
+                  {/* Credit / debit */}
+                  <div className="aud-billing-card">
+                    <h4>Adjust Balance</h4>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <button
+                        className={`aud-action-btn ${adjustType === 'credit' ? 'success' : ''}`}
+                        style={{ flex: 1 }}
+                        onClick={() => setAdjustType('credit')}
+                      >➕ Credit</button>
+                      <button
+                        className={`aud-action-btn ${adjustType === 'debit' ? 'danger' : ''}`}
+                        style={{ flex: 1 }}
+                        onClick={() => setAdjustType('debit')}
+                      >➖ Debit</button>
+                    </div>
+                    <input
+                      className="aud-billing-input"
+                      type="number"
+                      placeholder="Amount ($)"
+                      value={adjustAmount}
+                      onChange={e => setAdjustAmount(e.target.value)}
+                      min="0.01" step="0.01"
+                    />
+                    <input
+                      className="aud-billing-input"
+                      placeholder="Reason (required)"
+                      value={adjustReason}
+                      onChange={e => setAdjustReason(e.target.value)}
+                    />
+                    <button
+                      className={`aud-action-btn ${adjustType === 'credit' ? 'success' : 'danger'}`}
+                      onClick={handleWalletAdjust}
+                      disabled={!adjustAmount || !adjustReason.trim() || actionLoading === 'adjust'}
+                    >
+                      {actionLoading === 'adjust' ? 'Processing…' : `Apply ${adjustType === 'credit' ? 'Credit' : 'Debit'}`}
+                    </button>
+                  </div>
+
+                  {/* Transaction history — backend field: history */}
+                  {walletData.history?.length > 0 ? (
+                    <div className="aud-billing-card">
+                      <h4>Recent Transactions (last 50)</h4>
+                      <div className="aud-audit-list">
+                        {walletData.history.map((tx, i) => (
+                          <div key={tx._id || i} className="aud-audit-row">
+                            <span className="aud-audit-action" style={{
+                              color: (tx.action?.includes('credit') || (tx.amount || 0) > 0) ? 'var(--color-success)' : 'var(--color-error)'
+                            }}>
+                              {(tx.action?.includes('credit') || (tx.amount || 0) > 0) ? '+' : '-'}${Math.abs(tx.amount || 0).toFixed(2)}
+                            </span>
+                            <span className="aud-audit-note">{tx.action?.replace(/_/g, ' ')}{tx.note ? ` — ${tx.note}` : ''}</span>
+                            <span className="aud-audit-date">{new Date(tx.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="aud-empty">No transactions yet</p>
                   )}
                 </>
               )}
