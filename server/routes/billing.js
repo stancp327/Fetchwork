@@ -18,7 +18,6 @@ const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 const User             = require('../models/User');
 const Plan             = require('../models/Plan');
 const UserSubscription = require('../models/UserSubscription');
-const BillingAuditLog  = require('../models/BillingAuditLog');
 const Notification     = require('../models/Notification');
 const { assignDefaultPlan, logBillingAction } = require('../utils/billingUtils');
 const { CLIENT_URL }   = require('../config/env');
@@ -1131,3 +1130,4 @@ router.post('/sessions/:sessionId/expire', authenticateToken, async (req, res) =
 module.exports = router;
 module.exports.webhookHandler = webhookHandler;
 module.exports.handleWalletTopup = handleWalletTopup;
+

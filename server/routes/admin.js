@@ -1588,32 +1588,8 @@ router.put('/stripe/products/:productId', authenticateAdmin, requirePermission('
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// USER SEARCH — for admin panels (feature groups, etc.)
-// ─────────────────────────────────────────────────────────────────────────────
-
-router.get('/users/search', authenticateAdmin, requirePermission('user_management'), async (req, res) => {
-  try {
-    const { q, limit = 10 } = req.query;
-    if (!q || q.length < 2) return res.json({ users: [] });
-
-    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    const users = await User.find({
-      $or: [
-        { email: regex },
-        { firstName: regex },
-        { lastName: regex },
-      ],
-    })
-      .select('firstName lastName email accountType role profilePicture')
-      .limit(Math.min(Number(limit), 25))
-      .lean();
-
-    res.json({ users });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Duplicate /users/search removed — the enhanced version with role/status filters
+// is defined earlier in this file and takes precedence via Express first-match.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FEATURE GRANTS — per-user admin overrides

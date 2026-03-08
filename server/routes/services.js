@@ -9,8 +9,6 @@ const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { parsePagination, buildServiceFilters } = require('./services.helpers');
 const stripeService = require('../services/stripeService');
-const emailWorkflowService = require('../services/emailWorkflowService');
-const emailService  = require('../services/emailService');
 const { checkServiceLimit } = require('../middleware/entitlements');
 const { getFeeDisplay } = require('../services/feeEngine');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
@@ -1159,3 +1157,4 @@ router.delete('/subscriptions/:subId', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+

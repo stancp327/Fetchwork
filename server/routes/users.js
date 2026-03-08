@@ -8,9 +8,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { uploadProfilePicture, uploadVerificationDocs } = require('../middleware/upload');
 const { validateProfilePictureUpdate } = require('../middleware/validation');
 const { normalize, isValid } = require('../utils/username');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 function computeProfileCompletion(user) {
   let total = 0;
   let achieved = 0;
@@ -722,3 +720,4 @@ router.get('/me/earnings/export', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
