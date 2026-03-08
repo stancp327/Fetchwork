@@ -42,10 +42,15 @@
 .nav-logo { height: 28px; width: auto; }
 
 .brand-text {
+  display: none; /* hidden on small mobile to give hamburger room */
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--color-primary, #2563eb);
   letter-spacing: -0.02em;
+}
+
+@media (min-width: 400px) {
+  .brand-text { display: block; }
 }
 
 /* ── Primary links (desktop) ── */
