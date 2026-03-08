@@ -8,13 +8,15 @@ export type AuthStackParamList = {
 };
 
 export type JobsStackParamList = {
-  BrowseJobs:     undefined;
-  JobDetail:      { id: string };
-  PostJob:        undefined;
-  MyJobs:         undefined;
-  ProposalDetail: { id: string; jobId: string };
-  JobProposals:   { jobId: string; jobTitle?: string };
-  JobProgress:    { jobId: string; jobTitle?: string };
+  BrowseJobs:        undefined;
+  JobDetail:         { id: string };
+  PostJob:           undefined;
+  MyJobs:            undefined;
+  ProposalDetail:    { id: string; jobId: string };
+  JobProposals:      { jobId: string; jobTitle?: string };
+  JobProgress:       { jobId: string; jobTitle?: string };
+  BrowseFreelancers: undefined;
+  FreelancerProfile: { id?: string; username?: string };
 };
 
 export type ServicesStackParamList = {
