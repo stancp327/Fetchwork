@@ -6,7 +6,7 @@
 .navigation {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 60px;
+  height: var(--nav-height);
   background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -540,8 +540,8 @@
   padding: 4px 6px;
   border-radius: 6px;
   line-height: 1;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -568,6 +568,7 @@
 .role-pill {
   flex: 1;
   padding: 0.4rem 0.75rem;
+  min-height: 44px;
   border: 1.5px solid var(--color-border, #e5e7eb);
   border-radius: 999px;
   background: #fff;
@@ -718,7 +719,7 @@
 
 /* ── Desktop breakpoint (≥ 1024px) ── */
 @media (min-width: 1024px) {
-  .navigation { height: 60px; }
+  .navigation { height: var(--nav-height); }
   .nav-logo { height: 30px; }
   .brand-text { font-size: 1.2rem; }
   .nav-inner { padding: 0 1.5rem; gap: 0.75rem; }
