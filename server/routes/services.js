@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { objectIdParam } = require('../middleware/validateObjectId');
+router.param('id', objectIdParam);
 const Service = require('../models/Service');
 const User    = require('../models/User');
 const Payment = require('../models/Payment');
@@ -1157,4 +1159,7 @@ router.delete('/subscriptions/:subId', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
+
+
 

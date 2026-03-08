@@ -7,6 +7,8 @@
 
 const express = require('express');
 const router  = express.Router();
+const { objectIdParam } = require('../middleware/validateObjectId');
+router.param('id', objectIdParam);
 const { authenticateToken } = require('../middleware/auth');
 const { requireFeature }    = require('../middleware/entitlements');
 const Service               = require('../models/Service'); // service catalog only
@@ -315,3 +317,5 @@ router.post  ('/:bookingId/timeline/admin-override', authenticateToken, requireS
 router.get   ('/:bookingId/audit/dispute-evidence', authenticateToken, requireSql((...a) => ctrl.getDisputeEvidence(...a)));
 
 module.exports = router;
+
+

@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { objectIdParam } = require('../middleware/validateObjectId');
+router.param('id', objectIdParam);
 const Review = require('../models/Review');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -221,3 +223,6 @@ router.post('/:id/helpful', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
+
+

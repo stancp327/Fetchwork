@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { objectIdParam } = require('../middleware/validateObjectId');
+router.param('id', objectIdParam);
 const Contract = require('../models/Contract');
 const Notification = require('../models/Notification');
 const { authenticateToken } = require('../middleware/auth');
@@ -364,3 +366,6 @@ router.post('/:id/cancel', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
+
+

@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { objectIdParam } = require('../middleware/validateObjectId');
+router.param('id', objectIdParam);
 const Job = require('../models/Job');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
@@ -1147,3 +1149,6 @@ router.post('/:id/refund', authenticateToken, validateMongoId, async (req, res) 
 router.use('/:id', milestoneRoutes);
 
 module.exports = router;
+
+
+

@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const { objectIdParam } = require('../middleware/validateObjectId');
+router.param('id', objectIdParam);
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { authenticateToken, authenticateAdmin, requirePermission } = require('../middleware/auth');
 
@@ -947,3 +949,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
+
+
