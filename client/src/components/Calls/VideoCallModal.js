@@ -30,7 +30,14 @@ const toUiStatus = (state, fallback = 'connecting') => {
 };
 
 const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false, autoAccept = false, onClose }) => {
-  const socket = window.__fetchworkSocket;
+  const socketRef = useRef(window.__fetchworkSocket);
+  // Re-check socket on each render in case it connected after mount
+  useEffect(() => {
+    if (!socketRef.current) {
+      socketRef.current = window.__fetchworkSocket;
+    }
+  });
+  const socket = socketRef.current;
   const [callStatus, setCallStatus] = useState(() => {
     if (!hasWebRTC) return 'failed';
     return isIncoming ? 'incoming' : 'ringing';
