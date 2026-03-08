@@ -11,6 +11,7 @@ const Payment = require('../models/Payment');
 const Review = require('../models/Review');
 const Team = require('../models/Team');
 const { Message, ChatRoom } = require('../models/Message');
+const { logAdminAction, AdminAuditLog } = require('../utils/adminAudit');
 
 router.get('/profile', authenticateAdmin, async (req, res) => {
   try {
@@ -242,6 +243,12 @@ router.put('/users/:userId/suspend', authenticateAdmin, requirePermission('user_
 
     await user.suspend(reason);
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.suspend',
+      reason, ip: req.ip,
+    });
+
     res.json({
       message: 'User suspended successfully',
       user: user.getPublicProfile()
@@ -262,6 +269,12 @@ router.put('/users/:userId/unsuspend', authenticateAdmin, requirePermission('use
     }
 
     await user.unsuspend();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.unsuspend',
+      ip: req.ip,
+    });
 
     res.json({
       message: 'User unsuspended successfully',
@@ -345,6 +358,14 @@ router.put('/jobs/:jobId/cancel', authenticateAdmin, requirePermission('job_mana
 
     await job.cancelJob(reason || 'Cancelled by admin');
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: job.client, action: 'job.cancel',
+      reason: reason || 'Cancelled by admin',
+      metadata: { jobId: job._id, jobTitle: job.title },
+      ip: req.ip,
+    });
+
     res.json({
       message: 'Job cancelled successfully',
       job
@@ -394,6 +415,13 @@ router.delete('/services/:serviceId', authenticateAdmin, requirePermission('job_
     service.status = 'paused';
     await service.save();
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: service.freelancer, action: 'service.delete',
+      metadata: { serviceId: service._id, serviceTitle: service.title },
+      ip: req.ip,
+    });
+
     res.json({ message: 'Service removed successfully', service: { _id: service._id, title: service.title } });
   } catch (error) {
     console.error('Admin remove service error:', error);
@@ -421,6 +449,14 @@ router.delete('/jobs/:jobId', authenticateAdmin, requirePermission('job_manageme
       removedBy: req.admin._id
     };
     await job.save();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: job.client, action: 'job.delete',
+      reason: reason || 'Removed by admin',
+      metadata: { jobId: job._id, jobTitle: job.title },
+      ip: req.ip,
+    });
 
     res.json({
       message: 'Job removed successfully',
@@ -529,7 +565,18 @@ router.put('/reviews/:reviewId/moderate', authenticateAdmin, requirePermission('
       return res.status(404).json({ error: 'Review not found' });
     }
 
+    const oldStatus = review.moderationStatus;
     await review.moderate(status, req.admin._id, notes);
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: review.reviewee, action: 'review.moderate',
+      reason: notes,
+      oldValue: { moderationStatus: oldStatus },
+      newValue: { moderationStatus: status },
+      metadata: { reviewId: review._id },
+      ip: req.ip,
+    });
 
     res.json({
       message: 'Review moderated successfully',
@@ -551,6 +598,14 @@ router.delete('/reviews/:reviewId', authenticateAdmin, requirePermission('conten
     const revieweeId = review.reviewee?._id;
 
     await Review.findByIdAndDelete(req.params.reviewId);
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: revieweeId, action: 'review.delete',
+      reason: req.body.reason,
+      metadata: { reviewId: req.params.reviewId, revieweeName, rating: review.rating },
+      ip: req.ip,
+    });
 
     // Recalculate reviewee's rating
     if (revieweeId) {
@@ -607,6 +662,15 @@ router.put('/verifications/:userId', authenticateAdmin, requirePermission('conte
       return res.status(400).json({ error: 'Invalid action. Use approve or reject.' });
     }
     await user.save();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: `verification.${action}`,
+      reason: notes,
+      newValue: { verificationLevel: user.verificationLevel },
+      ip: req.ip,
+    });
+
     res.json({ message: `Verification ${action}d for ${user.firstName}`, user: { verificationLevel: user.verificationLevel, badges: user.badges, idVerification: user.idVerification } });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update verification' });
@@ -837,6 +901,14 @@ router.put('/users/:userId/promote', authenticateAdmin, requirePermission('user_
 
     console.log(`[AUDIT] User ${user.email} promoted to admin by ${req.admin.email}`);
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.promote',
+      oldValue: { role: user.role },
+      newValue: { role: 'admin' },
+      ip: req.ip,
+    });
+
     res.json({
       message: 'User promoted to admin successfully',
       user: { ...user.toObject(), role: 'admin', isAdminPromoted: true }
@@ -878,6 +950,14 @@ router.put('/users/:userId/demote', authenticateAdmin, requirePermission('user_m
 
     console.log(`[AUDIT] User ${user.email} demoted from admin by ${req.admin.email}`);
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.demote',
+      oldValue: { role: user.role },
+      newValue: { role: 'user' },
+      ip: req.ip,
+    });
+
     res.json({
       message: 'User demoted from admin successfully',
       user: { ...user.toObject(), role: 'user', isAdminPromoted: false }
@@ -904,6 +984,14 @@ router.delete('/users/:userId', authenticateAdmin, requirePermission('user_manag
 
     await user.deleteUser(reason || 'Account deleted by admin');
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.delete',
+      reason: reason || 'Account deleted by admin',
+      metadata: { email: user.email, name: `${user.firstName} ${user.lastName}` },
+      ip: req.ip,
+    });
+
     res.json({
       message: 'User deleted successfully',
       user: user.getPublicProfile()
@@ -927,6 +1015,15 @@ router.put('/users/:userId/make-moderator', authenticateAdmin, requirePermission
     });
 
     console.log(`[AUDIT] User ${user.email} made moderator by ${req.admin.email}`);
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.make-moderator',
+      oldValue: { role: user.role },
+      newValue: { role: 'moderator', permissions: customPerms },
+      ip: req.ip,
+    });
+
     res.json({ message: `${user.firstName} is now a moderator`, permissions: customPerms });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update role' });
@@ -944,6 +1041,15 @@ router.put('/users/:userId/remove-moderator', authenticateAdmin, requirePermissi
     });
 
     console.log(`[AUDIT] User ${user.email} removed as moderator by ${req.admin.email}`);
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.remove-moderator',
+      oldValue: { role: user.role },
+      newValue: { role: 'user' },
+      ip: req.ip,
+    });
+
     res.json({ message: `${user.firstName} is no longer a moderator` });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update role' });
@@ -986,8 +1092,17 @@ router.put('/users/:userId/permissions', authenticateAdmin, requirePermission('u
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.role !== 'moderator') return res.status(400).json({ error: 'Custom permissions only apply to moderators' });
 
+    const oldPerms = [...(user.permissions || [])];
     user.permissions = filtered;
     await user.save();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: user._id, action: 'user.permissions-update',
+      oldValue: { permissions: oldPerms },
+      newValue: { permissions: filtered },
+      ip: req.ip,
+    });
 
     res.json({ message: 'Permissions updated', permissions: filtered });
   } catch (err) {
@@ -1541,6 +1656,15 @@ router.post('/users/:userId/features', authenticateAdmin, requirePermission('use
     const user = await User.findById(req.params.userId).select('firstName lastName email').lean();
     console.log(`[admin] Feature grant: ${feature}=${enabled} for user ${user?.email} by admin ${req.user.email}`);
 
+    await logAdminAction({
+      adminId: req.user._id || req.user.id, adminEmail: req.user.email,
+      targetId: req.params.userId, action: enabled ? 'feature.grant' : 'feature.revoke',
+      reason,
+      newValue: { feature, enabled },
+      metadata: { expiresAt: expiresAt || null },
+      ip: req.ip,
+    });
+
     res.json({ message: `Feature "${feature}" ${enabled ? 'granted' : 'revoked'} successfully`, grant });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1551,6 +1675,14 @@ router.post('/users/:userId/features', authenticateAdmin, requirePermission('use
 router.delete('/users/:userId/features/:feature', authenticateAdmin, requirePermission('user_management'), validateUserIdParam, async (req, res) => {
   try {
     await removeUserFeature(req.params.userId, req.params.feature);
+
+    await logAdminAction({
+      adminId: req.user._id || req.user.id, adminEmail: req.user.email,
+      targetId: req.params.userId, action: 'feature.remove',
+      metadata: { feature: req.params.feature },
+      ip: req.ip,
+    });
+
     res.json({ message: `Feature grant for "${req.params.feature}" removed — user reverts to plan default` });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1711,6 +1843,14 @@ router.put('/boosts/:type/:id/cancel', authenticateAdmin, requirePermission('job
     item.boost.cancelReason = req.body.reason || 'Cancelled by admin';
     await item.save();
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      action: 'boost.cancel',
+      reason: req.body.reason || 'Cancelled by admin',
+      metadata: { type: req.params.type, itemId: item._id, title: item.title },
+      ip: req.ip,
+    });
+
     res.json({ message: 'Boost cancelled', item: { _id: item._id, boost: item.boost } });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1773,6 +1913,14 @@ router.patch('/bookings/:id/cancel', authenticateAdmin, requirePermission('job_m
     booking.cancelReason = req.body.reason || 'Cancelled by admin';
     booking.cancelledAt = new Date();
     await booking.save();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: booking.client, action: 'booking.cancel',
+      reason: req.body.reason || 'Cancelled by admin',
+      metadata: { bookingId: booking._id },
+      ip: req.ip,
+    });
 
     res.json({ message: 'Booking cancelled', booking });
   } catch (err) {
@@ -1837,6 +1985,14 @@ router.post('/payments/:id/refund', authenticateAdmin, requirePermission('paymen
     payment.refundedBy = req.admin.id;
     await payment.save();
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: payment.client, action: 'payment.refund',
+      reason: req.body.reason || 'Admin refund',
+      metadata: { paymentId: payment._id, amount: payment.amount, stripePaymentIntentId: payment.stripePaymentIntentId },
+      ip: req.ip,
+    });
+
     res.json({ message: 'Payment refunded', payment });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1896,6 +2052,14 @@ router.patch('/contracts/:id/void', authenticateAdmin, requirePermission('conten
     contract.voidedAt = new Date();
     await contract.save();
 
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: contract.creator, action: 'contract.void',
+      reason: req.body.reason || 'Voided by admin',
+      metadata: { contractId: contract._id },
+      ip: req.ip,
+    });
+
     res.json({ message: 'Contract voided', contract });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1946,12 +2110,21 @@ router.delete('/messages/:id', authenticateAdmin, requirePermission('content_mod
     const message = await Message.findById(req.params.id);
     if (!message) return res.status(404).json({ error: 'Message not found' });
 
+    const originalContent = message.content;
     message.content = '[Removed by moderator]';
     message.moderatedAt = new Date();
     message.moderatedBy = req.admin.id;
     message.moderationReason = req.body.reason || 'Content violation';
     message.attachments = [];
     await message.save();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: message.sender, action: 'message.delete',
+      reason: req.body.reason || 'Content violation',
+      metadata: { messageId: message._id, conversationId: message.conversation, contentPreview: originalContent?.substring(0, 100) },
+      ip: req.ip,
+    });
 
     res.json({ message: 'Message removed' });
   } catch (err) {
@@ -2245,6 +2418,37 @@ router.get('/teams', authenticateAdmin, async (req, res) => {
     res.json({ teams: normalized });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load teams' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN AUDIT LOG
+// ═══════════════════════════════════════════════════════════════
+
+// GET /admin/audit-log?page=1&limit=50&action=user.ban&adminId=xxx&targetId=yyy
+router.get('/audit-log', authenticateAdmin, requirePermission('analytics_view'), async (req, res) => {
+  try {
+    const { page = 1, limit = 50, action, adminId, targetId } = req.query;
+    const filter = {};
+    if (action) filter.action = action;
+    if (adminId) filter.adminId = adminId;
+    if (targetId) filter.targetId = targetId;
+
+    const [logs, total] = await Promise.all([
+      AdminAuditLog.find(filter)
+        .populate('adminId', 'firstName lastName email')
+        .populate('targetId', 'firstName lastName email')
+        .sort({ createdAt: -1 })
+        .skip((Number(page) - 1) * Number(limit))
+        .limit(Number(limit))
+        .lean(),
+      AdminAuditLog.countDocuments(filter),
+    ]);
+
+    res.json({ logs, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (err) {
+    console.error('Audit log fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch audit log' });
   }
 });
 
