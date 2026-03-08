@@ -86,6 +86,11 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    // Allow Vercel preview deployments (*.vercel.app) for staging/PR reviews
+    if (/^https:\/\/[a-z0-9-]+-fetch-work\.vercel\.app$/.test(origin) ||
+        /^https:\/\/fetchwork[a-z0-9-]*\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
     // Block unknown origins in production; warn in development
     if (process.env.NODE_ENV === 'production') {
       return callback(new Error(`CORS blocked: ${origin}`));
