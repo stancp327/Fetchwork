@@ -660,6 +660,13 @@ module.exports = (io) => {
       io.to(call.recipient.toString()).emit('call:state', payload);
     };
 
+    const callTimelineContent = {
+      call_initiated: '📞 Call started',
+      call_accepted: '✅ Call accepted',
+      call_missed:   '📵 Missed call',
+      call_ended:    '📴 Call ended',
+    };
+
     const writeCallTimelineMessage = async (call, subtype, extra = {}) => {
       try {
         if (!call?.conversation) return;
@@ -667,7 +674,7 @@ module.exports = (io) => {
           conversation: call.conversation,
           sender: call.caller,
           recipient: call.recipient,
-          content: '',
+          content: callTimelineContent[subtype] || `Call ${subtype.replace('call_', '')}`,
           messageType: 'system',
           metadata: {
             type: subtype,
