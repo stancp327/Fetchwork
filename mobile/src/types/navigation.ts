@@ -63,9 +63,14 @@ export type MoreStackParamList = {
   Analytics:  undefined;
 };
 
+export type SearchStackParamList = {
+  UniversalSearch: undefined;
+};
+
 export type MainTabParamList = {
   Home:     undefined;
   Jobs:     NavigatorScreenParams<JobsStackParamList>;
+  Search:   NavigatorScreenParams<SearchStackParamList>;
   Services: NavigatorScreenParams<ServicesStackParamList>;
   Messages: NavigatorScreenParams<MessagesStackParamList>;
   Profile:  NavigatorScreenParams<ProfileStackParamList>;

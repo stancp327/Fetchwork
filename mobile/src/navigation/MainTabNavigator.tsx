@@ -8,6 +8,7 @@ import api from '../api/client';
 
 import HomeScreen from '../screens/HomeScreen';
 import JobsStackNavigator from './JobsStackNavigator';
+import SearchStackNavigator from './SearchStackNavigator';
 import ServicesStackNavigator from './ServicesStackNavigator';
 import MessagesStackNavigator from './MessagesStackNavigator';
 import ProfileStackNavigator from './ProfileStackNavigator';
@@ -19,6 +20,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 const TAB_ICONS: Record<string, { focused: IoniconName; unfocused: IoniconName }> = {
   Home:     { focused: 'home',             unfocused: 'home-outline' },
   Jobs:     { focused: 'briefcase',        unfocused: 'briefcase-outline' },
+  Search:   { focused: 'search',           unfocused: 'search-outline' },
   Services: { focused: 'grid',             unfocused: 'grid-outline' },
   Messages: { focused: 'chatbubbles',      unfocused: 'chatbubbles-outline' },
   Profile:  { focused: 'person-circle',   unfocused: 'person-circle-outline' },
@@ -66,6 +68,7 @@ export default function MainTabNavigator() {
     >
       <Tab.Screen name="Home"     component={HomeScreen}             options={{ title: 'Home' }} />
       <Tab.Screen name="Jobs"     component={JobsStackNavigator}     options={{ title: 'Jobs' }} />
+      <Tab.Screen name="Search"   component={SearchStackNavigator}   options={{ title: 'Search' }} />
       <Tab.Screen name="Services" component={ServicesStackNavigator} options={{ title: 'Services' }} />
       <Tab.Screen name="Messages" component={MessagesStackNavigator} options={{ title: 'Messages', tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} />
       <Tab.Screen name="Profile"  component={ProfileStackNavigator}  options={{ title: 'Profile' }} />
