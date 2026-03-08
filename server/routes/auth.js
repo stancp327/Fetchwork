@@ -19,6 +19,29 @@ const recoverAdminLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Short-lived OAuth code store — prevents JWT from leaking into redirect URLs
+// Codes expire after 60s and are single-use
+const oauthCodeStore = new Map();
+function createOAuthCode(payload) {
+  const code = crypto.randomBytes(32).toString('hex');
+  oauthCodeStore.set(code, { payload, expiresAt: Date.now() + 60_000 });
+  // Clean up expired codes periodically
+  if (oauthCodeStore.size > 500) {
+    const now = Date.now();
+    for (const [k, v] of oauthCodeStore) {
+      if (v.expiresAt < now) oauthCodeStore.delete(k);
+    }
+  }
+  return code;
+}
+function consumeOAuthCode(code) {
+  const entry = oauthCodeStore.get(code);
+  if (!entry) return null;
+  oauthCodeStore.delete(code); // single-use
+  if (entry.expiresAt < Date.now()) return null;
+  return entry.payload;
+}
 const { assignDefaultPlan } = require('../utils/billingUtils');
 const { canonicalizeEmail } = require('../utils/authIdentity');
 
@@ -424,14 +447,12 @@ router.get('/google/callback',
         req.user.role = 'admin';
       }
       const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role, tokenVersion: req.user.tokenVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
-      
-      res.redirect(`${CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
-        id: req.user._id,
-        email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        isAdmin
-      }))}`);
+      const code = createOAuthCode({
+        token,
+        user: { id: req.user._id, email: req.user.email, firstName: req.user.firstName, lastName: req.user.lastName, isAdmin }
+      });
+      // Redirect with a short-lived code only — token never appears in URL
+      res.redirect(`${CLIENT_URL}/auth/callback?code=${code}`);
     } catch (error) {
       res.redirect(`${CLIENT_URL}/login?error=oauth_failed`);
     }
@@ -454,19 +475,27 @@ router.get('/facebook/callback',
         req.user.role = 'admin';
       }
       const token = jwt.sign({ userId: req.user._id, isAdmin, role: req.user.role, tokenVersion: req.user.tokenVersion || 0 }, JWT_SECRET, { expiresIn: '7d' });
-      
-      res.redirect(`${CLIENT_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
-        id: req.user._id,
-        email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        isAdmin
-      }))}`);
+      const code = createOAuthCode({
+        token,
+        user: { id: req.user._id, email: req.user.email, firstName: req.user.firstName, lastName: req.user.lastName, isAdmin }
+      });
+      // Redirect with a short-lived code only — token never appears in URL
+      res.redirect(`${CLIENT_URL}/auth/callback?code=${code}`);
     } catch (error) {
       res.redirect(`${CLIENT_URL}/login?error=oauth_failed`);
     }
   }
 );
+
+// ── GET /api/auth/oauth/exchange — exchange short-lived OAuth code for JWT ──
+// Frontend calls this immediately on /auth/callback arrival
+router.get('/oauth/exchange', (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).json({ error: 'Missing code' });
+  const payload = consumeOAuthCode(code);
+  if (!payload) return res.status(400).json({ error: 'Invalid or expired code' });
+  return res.json(payload); // { token, user }
+});
 
 // ── POST /api/auth/refresh — exchange valid token for a new one ──
 router.post('/refresh', authenticateToken, async (req, res) => {
