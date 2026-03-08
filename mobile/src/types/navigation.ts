@@ -23,6 +23,7 @@ export type ServicesStackParamList = {
   BookService:           { serviceId: string; pkg: 'basic' | 'standard' | 'premium' };
   MyServices:            undefined;
   MyBundles:             undefined;
+  CreateService:         undefined;
   AvailabilityManager:   { serviceId: string };
   ServiceOrderProgress:  { serviceId: string; orderId: string; serviceTitle?: string };
 };

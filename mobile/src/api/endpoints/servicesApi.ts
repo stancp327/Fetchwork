@@ -32,6 +32,20 @@ export const servicesApi = {
   completeSession: (purchaseId: string, sessionIndex: number, notes?: string) =>
     client.post(`/api/services/bundles/${purchaseId}/sessions/${sessionIndex}/complete`, { notes }).then(r => r.data),
 
+  create: (data: {
+    title: string;
+    category: string;
+    description: string;
+    price: number;
+    priceType: 'fixed' | 'hourly';
+    deliveryDays: number;
+    tags: string[];
+    requirements?: string;
+    serviceLocation: { mode: 'remote' | 'in_person' | 'both' };
+    packages?: { label: string; price: number; description: string }[];
+  }): Promise<{ _id: string; title: string }> =>
+    client.post('/api/services', data).then(r => r.data),
+
   myServices: () =>
     client.get('/api/services/me').then(r => r.data),
 
