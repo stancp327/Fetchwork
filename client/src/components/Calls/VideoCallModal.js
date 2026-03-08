@@ -50,6 +50,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   const iceServersRef = useRef(null);
   const pendingOfferRef = useRef(null);
   const pendingIceCandidatesRef = useRef([]);
+  const finalizedRef = useRef(false); // guard against double-finalize from dual call:ended + call:state events
 
   const cleanup = useCallback(() => {
     if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
@@ -139,6 +140,12 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   }, [callId, collectQualityStats]);
 
   const finalizeAndClose = useCallback(async (nextStatus = 'ended') => {
+    // Guard: server emits both call:state AND call:ended on reject/end — prevent double teardown
+    if (finalizedRef.current) {
+      console.log('[Call] finalizeAndClose called again — ignoring duplicate (dual event guard)');
+      return;
+    }
+    finalizedRef.current = true;
     setCallStatus(nextStatus);
     cleanup();
     uploadQualitySummary().catch(() => {});
@@ -173,7 +180,13 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   // Create peer connection
   const createPeerConnection = useCallback(async () => {
     const dynamicIceServers = await getIceServers();
-    const pc = new RTCPeerConnection({ iceServers: dynamicIceServers });
+    // Debug: set localStorage.debug_turn_relay=1 in browser console to force relay-only (Q7 diagnostic)
+    const forceRelay = localStorage.getItem('debug_turn_relay') === '1';
+    if (forceRelay) console.warn('[WebRTC] debug_turn_relay=1: using iceTransportPolicy:relay (TURN-only mode)');
+    const pc = new RTCPeerConnection({
+      iceServers: dynamicIceServers,
+      ...(forceRelay && { iceTransportPolicy: 'relay' }),
+    });
 
     pc.onicecandidate = (e) => {
       if (e.candidate && socket) {
