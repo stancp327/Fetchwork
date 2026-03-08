@@ -123,6 +123,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  lastLoginIp:      { type: String, default: null },
+  lastLoginCountry: { type: String, default: null },
+  lastLoginCity:    { type: String, default: null },
+  lastLoginAt:      { type: Date,   default: null },
   accountType: {
     type: String,
     enum: ['client', 'freelancer', 'both'],

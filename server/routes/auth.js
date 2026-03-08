@@ -11,6 +11,8 @@ const { body } = require('express-validator');
 const { ADMIN_EMAILS, JWT_SECRET, CLIENT_URL } = require('../config/env');
 const { applyReferral } = require('./referrals');
 const { trackEvent } = require('../middleware/analytics');
+const { emailDomainMiddleware } = require('../middleware/emailValidator');
+const { geolocateLogin } = require('../middleware/geolocate');
 
 const recoverAdminLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -46,7 +48,7 @@ const { assignDefaultPlan } = require('../utils/billingUtils');
 const { canonicalizeEmail } = require('../utils/authIdentity');
 
 // ── Register ────────────────────────────────────────────────────
-router.post('/register', validateRegister, async (req, res) => {
+router.post('/register', validateRegister, emailDomainMiddleware, async (req, res) => {
   try {
     const { email, password, firstName, lastName, accountType, ref } = req.body;
     const emailCanonical = canonicalizeEmail(email);
@@ -160,6 +162,20 @@ router.post('/login', validateLogin, async (req, res) => {
       });
     });
     
+    // Track login location (non-blocking — don't await, don't fail login on error)
+    geolocateLogin(user, req).then(geoResult => {
+      if (geoResult) {
+        user.save().catch(() => {}); // persist lastLoginIp/Country/City
+        if (geoResult.isNewCountry) {
+          console.log(`[geo] New country login: ${user.email} from ${geoResult.geo.countryCode} (was ${geoResult.previousCountry})`);
+          // TODO: send new-location alert email when email system is stable
+        }
+        if (geoResult.isSuspiciousIp) {
+          console.warn(`[geo] Suspicious IP login: ${user.email} from ${geoResult.geo.ip} (proxy/hosting)`);
+        }
+      }
+    }).catch(() => {});
+
     trackEvent('successfulLogins');
     res.json({
       message: 'Login successful',
