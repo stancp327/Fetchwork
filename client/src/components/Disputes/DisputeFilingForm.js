@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { apiRequest } from '../../utils/api';
 import FileUpload from '../common/FileUpload';
 import './DisputeFilingForm.css';
-import { apiRequest } from '../../utils/api';
 
 const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
