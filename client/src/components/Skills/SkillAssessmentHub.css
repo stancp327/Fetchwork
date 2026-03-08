@@ -87,7 +87,7 @@
 /* ─── Grid ─── */
 .sah-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--space-md, 16px);
 }
 
@@ -98,6 +98,7 @@
   border-radius: var(--radius-lg, 12px);
   padding: var(--space-md, 16px);
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
   gap: var(--space-sm, 8px);
   transition: box-shadow 0.15s, border-color 0.15s;
@@ -154,6 +155,8 @@
 .sah-card-btn {
   flex-shrink: 0;
   white-space: nowrap;
+  width: 100%;
+  text-align: center;
 }
 
 /* ─── Chips ─── */
@@ -305,11 +308,17 @@
 
 .sah-quiz-nav {
   display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
   justify-content: space-between;
   align-items: center;
   padding: var(--space-md, 16px) var(--space-lg, 24px);
   border-top: 1px solid var(--color-border, #e5e7eb);
   background: var(--color-bg-subtle, #f9fafb);
+}
+
+.sah-quiz-nav .sah-btn {
+  width: 100%;
 }
 
 /* ─── Result ─── */
@@ -495,26 +504,26 @@
 .sah-mine { width: 100%; }
 
 /* ─── Responsive ─── */
-@media (max-width: 600px) {
+@media (min-width: 600px) {
   .sah-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   }
 
   .sah-card {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .sah-card-btn {
-    width: 100%;
-    text-align: center;
+    width: auto;
+    text-align: left;
   }
 
   .sah-quiz-nav {
-    flex-direction: column-reverse;
-    gap: 8px;
+    flex-direction: row;
+    gap: 0;
   }
 
   .sah-quiz-nav .sah-btn {
-    width: 100%;
+    width: auto;
   }
 }

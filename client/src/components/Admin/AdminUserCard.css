@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 0;
   animation: aucFade 0.15s ease;
 }
 
@@ -26,6 +26,11 @@
   width: 95vw;
   max-width: 920px;
   max-height: 92vh;
+  background: #fff;
+  border-radius: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -81,11 +86,16 @@
 /* ── Profile header ── */
 .auc-header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
   gap: 1.25rem;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-primary);
+  gap: 0.875rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
   flex-shrink: 0;
 }
 
@@ -139,9 +149,11 @@
 /* ── Quick stats ── */
 .auc-header-stats {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 170px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: unset;
+  width: 100%;
   flex-shrink: 0;
 }
 
@@ -153,6 +165,8 @@
   background: var(--color-bg-subtle);
   border-radius: 8px;
   gap: 0.5rem;
+  flex: 1;
+  min-width: 80px;
 }
 
 .auc-stat--highlight { background: var(--color-primary-light); }
@@ -229,7 +243,7 @@
 .auc-body {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -268,7 +282,7 @@
 /* ── Two-column layout ── */
 .auc-two-col {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
@@ -309,7 +323,7 @@ select.auc-input { cursor: pointer; }
 /* ── Grant grid ── */
 .auc-grant-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.75rem;
 }
 
@@ -443,7 +457,7 @@ select.auc-input { cursor: pointer; }
 
 .auc-adj-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
@@ -646,38 +660,39 @@ select.auc-input { cursor: pointer; }
   font-size: 0.9rem;
 }
 
-/* ── Mobile ── */
-@media (max-width: 640px) {
-  .auc-overlay { padding: 0; }
+/* ── Tablet+ ── */
+@media (min-width: 640px) {
+  .auc-overlay { padding: 1rem; }
 
   .auc-card {
-    width: 100%;
-    max-width: 100%;
-    max-height: 100dvh;
-    border-radius: 0;
+    width: 95vw;
+    max-width: 920px;
+    max-height: 92vh;
+    border-radius: 18px;
   }
 
   .auc-header {
-    flex-direction: column;
-    padding: 1rem;
-    gap: 0.875rem;
+    flex-direction: row;
+    padding: 1.25rem 1.5rem;
+    gap: 1.25rem;
   }
 
   .auc-header-stats {
-    flex-direction: row;
-    flex-wrap: wrap;
-    min-width: unset;
-    width: 100%;
-    gap: 4px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    min-width: 170px;
+    width: auto;
+    gap: 6px;
   }
 
-  .auc-stat { flex: 1; min-width: 80px; }
+  .auc-stat { flex: none; min-width: auto; }
 
   .auc-two-col,
   .auc-grant-grid,
   .auc-adj-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
-  .auc-body { padding: 1rem; }
+  .auc-body { padding: 1.5rem; }
 }
+

@@ -1,4 +1,4 @@
-/* -- Service Details — Mobile-first ----------------------------- */
+/* -- Service Details ï¿½ Mobile-first ----------------------------- */
 .service-details-page { width: 100%; max-width: 1100px; margin: 0 auto; padding: var(--space-lg) var(--container-padding); padding-top: var(--space-lg); }
 .service-details-page .service-header { margin-bottom: var(--space-xl); }
 .service-details-page .service-header h1 { font-size: var(--font-size-xl); font-weight: 700; color: #1a1a2e; margin: 0 0 var(--space-md); line-height: var(--line-height-tight); }
@@ -6,7 +6,7 @@
 .service-details-page .tag { background: var(--color-bg-muted); padding: var(--space-xs) var(--space-md); border-radius: 20px; font-size: var(--font-size-xs); font-weight: 500; }
 .service-details-page .tag.primary { background: var(--color-primary-light); color: var(--color-primary); font-weight: 600; }
 
-/* Grid — single column on mobile */
+/* Grid ï¿½ single column on mobile */
 .service-content-grid { display: flex; flex-direction: column; gap: var(--space-xl); }
 .service-details-page .service-main { display: flex; flex-direction: column; gap: var(--space-xl); }
 
@@ -37,7 +37,7 @@
 .portfolio-link { color: var(--color-primary); text-decoration: none; font-size: var(--font-size-sm); font-weight: 500; }
 .portfolio-link:hover { text-decoration: underline; }
 
-/* Package selector — stacked on mobile */
+/* Package selector ï¿½ stacked on mobile */
 .package-selector { display: flex; flex-direction: column; gap: 2px; background: var(--color-bg-muted); border-radius: 8px; padding: 3px; margin-bottom: var(--space-lg); }
 .package-btn { flex: 1; padding: var(--space-sm); border: none; border-radius: 6px; background: transparent; font-size: var(--font-size-sm); font-weight: 500; color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; min-height: 44px; }
 .package-btn:hover { color: var(--color-primary); }
@@ -171,7 +171,7 @@
 
 .bundles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
 
@@ -212,6 +212,6 @@
 .bundle-card-per      { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
 .bundle-card-expiry   { font-size: var(--text-xs); color: var(--warning); margin-top: 6px; }
 
-@media (max-width: 480px) {
-  .bundles-grid { grid-template-columns: 1fr 1fr; }
+@media (min-width: 480px) {
+  .bundles-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
