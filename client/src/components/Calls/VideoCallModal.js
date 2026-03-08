@@ -416,9 +416,16 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     };
   }, [socket, callId, finalizeAndClose]);
 
-  // Auto-start for caller
+  // Auto-start for caller — fire on 'connecting' NOT 'ringing'
+  // Rationale: sending the offer on 'ringing' creates a race condition where the offer
+  // arrives before the callee's VideoCallModal is mounted (callee is still on IncomingCallOverlay).
+  // The window event fires with no listener, the offer is lost, and no answer is ever sent.
+  // By waiting for 'connecting' (triggered when server confirms callee accepted via call:state),
+  // the callee's modal is guaranteed to be mounted and listening for the offer.
+  const hasStartedCallRef = useRef(false);
   useEffect(() => {
-    if (!isIncoming && callStatus === 'ringing') {
+    if (!isIncoming && callStatus === 'connecting' && !hasStartedCallRef.current) {
+      hasStartedCallRef.current = true;
       startCall();
     }
   }, [isIncoming, callStatus, startCall]);
