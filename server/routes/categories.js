@@ -34,7 +34,9 @@ router.get('/:id/overview', async (req, res) => {
     const category = getCategoryById(catId);
 
     // Use a regex for partial-match on open-ended categories too
-    const catFilter = { $regex: new RegExp(`^${catId}$`, 'i') };
+    // Escape user-supplied input to prevent ReDoS
+    const escapedCatId = catId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const catFilter = { $regex: new RegExp(`^${escapedCatId}$`, 'i') };
 
     const [jobs, services, freelancers, jobCount, serviceCount] = await Promise.all([
       // Latest 6 open jobs in this category
@@ -57,8 +59,8 @@ router.get('/:id/overview', async (req, res) => {
         isActive: true,
         'modes.freelancer': true,
         $or: [
-          { skills: { $regex: new RegExp(catId.replace(/_/g, '.'), 'i') } },
-          { 'profile.title': { $regex: new RegExp(catId.replace(/_/g, ' '), 'i') } },
+          { skills: { $regex: new RegExp(escapedCatId.replace(/_/g, '\\.'), 'i') } },
+          { 'profile.title': { $regex: new RegExp(escapedCatId.replace(/_/g, ' '), 'i') } },
         ]
       })
         .sort({ rating: -1 })

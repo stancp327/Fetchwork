@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const passport = require('passport');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const { validateRegister, validateLogin } = require('../middleware/validation');
@@ -10,6 +11,14 @@ const { body } = require('express-validator');
 const { ADMIN_EMAILS, JWT_SECRET, CLIENT_URL } = require('../config/env');
 const { applyReferral } = require('./referrals');
 const { trackEvent } = require('../middleware/analytics');
+
+const recoverAdminLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many recovery attempts. Try again in 1 hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const { assignDefaultPlan } = require('../utils/billingUtils');
 const { canonicalizeEmail } = require('../utils/authIdentity');
 
@@ -368,7 +377,7 @@ router.post('/reset-password', [
 });
 
 // ── Admin Recovery ──────────────────────────────────────────────
-router.post('/recover-admin', async (req, res) => {
+router.post('/recover-admin', recoverAdminLimiter, async (req, res) => {
   try {
     const { email, recoveryKey } = req.body;
     const emailCanonical = canonicalizeEmail(email);

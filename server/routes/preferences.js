@@ -32,7 +32,7 @@ router.put('/', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/unsubscribe', async (req, res) => {
+router.post('/unsubscribe', authenticateToken, async (req, res) => {
   try {
     const { email, type = 'all' } = req.body;
     const user = await User.findOne({ email });

@@ -337,7 +337,13 @@ router.post('/:id/orders/:orderId/confirm', authenticateToken, async (req, res) 
     order.status = 'in_progress';
     await service.save();
 
-    // Create Payment record
+    // Create Payment record — use fee engine so plan-based rates and waivers apply
+    const confirmFeeBreakdown = await computeServiceFeeBreakdown({
+      clientUserId: req.user._id,
+      freelancerUserId: service.freelancer._id,
+      listedPrice: order.price,
+      feesIncluded: service.feesIncluded === true,
+    });
     await Payment.create({
       job:         null,
       client:      req.user._id,
@@ -348,7 +354,7 @@ router.post('/:id/orders/:orderId/confirm', authenticateToken, async (req, res) 
       paymentMethod: 'stripe',
       stripePaymentIntentId: order.stripePaymentIntentId,
       transactionId: order.stripePaymentIntentId,
-      platformFee: Math.round(order.price * 0.10 * 100) / 100,
+      platformFee: confirmFeeBreakdown.totalPlatformFee,
     });
 
     // Create/find conversation + send system message
@@ -457,8 +463,15 @@ router.put('/:id/orders/:orderId/complete', authenticateToken, async (req, res) 
       });
     }
 
-    const platformFee = Math.round(order.price * 0.10 * 100) / 100;
-    const payoutAmt   = order.price - platformFee;
+    // Use fee engine so plan-based rates and waivers apply correctly
+    const completeFeeBreakdown = await computeServiceFeeBreakdown({
+      clientUserId: String(order.client),
+      freelancerUserId: service.freelancer._id,
+      listedPrice: order.price,
+      feesIncluded: service.feesIncluded === true,
+    });
+    const platformFee = completeFeeBreakdown.totalPlatformFee;
+    const payoutAmt   = completeFeeBreakdown.freelancerPayout;
 
     // Release payment to freelancer
     const transfer = await stripeService.releasePayment(
