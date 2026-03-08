@@ -178,15 +178,26 @@ router.post('/', authenticateToken, disputeFileLimit, async (req, res) => {
 // ── Get User's Disputes ─────────────────────────────────────────
 router.get('/user', authenticateToken, async (req, res) => {
   try {
-    const disputes = await Dispute.find({
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip  = (page - 1) * limit;
+
+    const baseQuery = {
       $or: [
         { client: req.user.userId },
         { freelancer: req.user.userId }
       ]
-    })
-    .populate('job', 'title budget status')
-    .populate('client freelancer filedBy', 'firstName lastName email profilePicture')
-    .sort({ createdAt: -1 });
+    };
+
+    const [disputes, total] = await Promise.all([
+      Dispute.find(baseQuery)
+        .populate('job', 'title budget status')
+        .populate('client freelancer filedBy', 'firstName lastName email profilePicture')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Dispute.countDocuments(baseQuery),
+    ]);
 
     // Strip admin-only data
     const sanitized = disputes.map(d => {
@@ -208,7 +219,10 @@ router.get('/user', authenticateToken, async (req, res) => {
       return obj;
     });
 
-    res.json({ disputes: sanitized });
+    res.json({
+      disputes: sanitized,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     console.error('Error fetching user disputes:', error);
     res.status(500).json({ error: 'Failed to fetch disputes' });

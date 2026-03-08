@@ -12,7 +12,8 @@ router.get('/', authenticateToken, async (req, res) => {
     .populate('members.user', 'firstName lastName profilePicture')
     .populate('createdBy', 'firstName lastName profilePicture')
     .populate('job', 'title')
-    .sort({ lastActivity: -1 });
+    .sort({ lastActivity: -1 })
+    .limit(100);
     
     res.json({ chatrooms: rooms });
   } catch (error) {
