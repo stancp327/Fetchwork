@@ -1,4 +1,4 @@
-/* -- Home — Mobile-first --------------------------------------- */
+/* -- Home ï¿½ Mobile-first --------------------------------------- */
 .home { min-height: 100vh; }
 
 /* -- Hero ------------------------------------------------------ */
@@ -483,8 +483,7 @@
   transition: all 0.15s;
 }
 .btn-large { padding: var(--space-md) var(--space-2xl); width: 100%; max-width: 280px; }
-.btn-primary { background: var(--color-primary); color: white; border-color: var(--color-primary); }
-.btn-primary:hover { background: var(--color-primary-dark); transform: translateY(-1px); }
+.btn-primary:hover { transform: translateY(-1px); }
 .btn-ghost { background: rgba(255,255,255,0.12); color: white; border-color: rgba(255,255,255,0.25); }
 .btn-ghost:hover { background: rgba(255,255,255,0.2); }
 .btn-white { background: white; color: var(--color-text-heading); border-color: white; }
