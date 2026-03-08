@@ -251,24 +251,27 @@
 .ffp-submit-btn.revoke { background: var(--danger, #dc2626); color: white; }
 .ffp-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Tier groups */
-.ffp-tier-group { margin-bottom: var(--space-4); }
-.ffp-tier-header { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md) var(--radius-md) 0 0; border: 1px solid; border-bottom: none; }
-.ffp-tier-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); flex: 1; }
-.ffp-tier-count { font-size: var(--text-xs); font-weight: 700; }
+/* Tier columns — horizontal Kanban-style layout */
+.ffp-tier-columns { display: flex; flex-direction: row; gap: 0; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 100%; }
+.ffp-tier-col { flex: 1; min-width: 120px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); }
+.ffp-tier-col:last-child { border-right: none; }
+.ffp-tier-col-header { padding: var(--space-2) var(--space-3); border-bottom: 1px solid; text-align: center; }
+.ffp-tier-col-name { display: block; font-size: var(--text-xs); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.ffp-tier-col-count { display: block; font-size: 10px; font-weight: 600; margin-top: 1px; opacity: 0.8; }
+.ffp-tier-col-body { flex: 1; display: flex; flex-direction: column; }
 
-/* Resolved access grid */
-.ffp-resolved-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border-color); border: 1px solid var(--border-color); border-radius: 0 0 var(--radius-md) var(--radius-md); overflow: hidden; }
-.ffp-resolved-item { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); background: var(--bg-card); transition: background 0.1s; }
-.ffp-resolved-item.has  { background: var(--bg-card); }
-.ffp-resolved-item.no   { background: var(--bg-secondary); opacity: 0.65; }
-.ffp-resolved-item.override { outline: 2px solid #fbbf24; outline-offset: -2px; }
-.ffp-resolved-check { flex-shrink: 0; width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; margin-top: 1px; }
-.ffp-resolved-body { flex: 1; min-width: 0; }
-.ffp-resolved-top { display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; margin-bottom: 2px; }
-.ffp-resolved-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-primary); line-height: 1.3; }
-.ffp-override-pill { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 5px; border-radius: 999px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; flex-shrink: 0; }
-.ffp-resolved-desc { display: block; font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+/* Feature rows within each column */
+.ffp-feat-row { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-color); }
+.ffp-feat-row:last-child { border-bottom: none; }
+.ffp-feat-row.has  { background: var(--bg-card); }
+.ffp-feat-row.no   { background: var(--bg-secondary); opacity: 0.6; }
+.ffp-feat-row.override { outline: 2px solid #fbbf24; outline-offset: -2px; }
+.ffp-feat-check { flex-shrink: 0; width: 16px; height: 16px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; margin-top: 1px; }
+.ffp-feat-info { flex: 1; min-width: 0; }
+.ffp-feat-name { display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.ffp-feat-desc { display: block; font-size: 10px; color: var(--text-muted); line-height: 1.3; margin-top: 1px; }
+
+.ffp-override-pill { display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 5px; border-radius: 999px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; margin-top: 2px; }
 
 @media (min-width: 480px) {
   .ffp-form-row { flex-direction: row; flex-wrap: wrap; }

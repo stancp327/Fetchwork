@@ -239,48 +239,46 @@ export default function FeatureFlagsPanel({ userId }) {
           </span>
         </div>
 
-        {sortedTiers.map(tier => {
-          const items = byTier[tier];
-          const meta0 = items[0]?.meta;
-          const tierColor = meta0?.tierColor || 'gray';
-          const c = TIER_COLORS[tierColor] || TIER_COLORS.gray;
-          const grantedCount = items.filter(i => i.access).length;
+        <div className="ffp-tier-columns">
+          {sortedTiers.map(tier => {
+            const items = byTier[tier];
+            const meta0 = items[0]?.meta;
+            const tierColor = meta0?.tierColor || 'gray';
+            const c = TIER_COLORS[tierColor] || TIER_COLORS.gray;
+            const grantedCount = items.filter(i => i.access).length;
 
-          return (
-            <div key={tier} className="ffp-tier-group">
-              <div className="ffp-tier-header" style={{ borderColor: c.border, background: c.bg }}>
-                <TierBadge tier={tier} tierColor={tierColor} />
-                <span className="ffp-tier-label">{tier} features</span>
-                <span className="ffp-tier-count" style={{ color: c.text }}>
-                  {grantedCount}/{items.length} active
-                </span>
-              </div>
-              <div className="ffp-resolved-grid">
-                {items.map(({ feature, access, meta }) => {
-                  const isOverridden = !!grantedFeatures[feature];
-                  return (
-                    <div key={feature} className={`ffp-resolved-item ${access ? 'has' : 'no'} ${isOverridden ? 'override' : ''}`}>
-                      <span className="ffp-resolved-check" style={{
-                        background: access ? c.bg : 'var(--bg-secondary)',
-                        border: `2px solid ${access ? c.border : 'var(--border-color)'}`,
-                        color: access ? c.text : 'var(--text-muted)',
-                      }}>
-                        {access ? '✓' : ''}
-                      </span>
-                      <div className="ffp-resolved-body">
-                        <div className="ffp-resolved-top">
-                          <span className="ffp-resolved-name">{meta?.label || feature}</span>
+            return (
+              <div key={tier} className="ffp-tier-col">
+                {/* Column header */}
+                <div className="ffp-tier-col-header" style={{ background: c.bg, borderColor: c.border, color: c.text }}>
+                  <span className="ffp-tier-col-name">{tier}</span>
+                  <span className="ffp-tier-col-count">{grantedCount}/{items.length}</span>
+                </div>
+
+                {/* Feature rows */}
+                <div className="ffp-tier-col-body">
+                  {items.map(({ feature, access, meta }) => {
+                    const isOverridden = !!grantedFeatures[feature];
+                    return (
+                      <div key={feature} className={`ffp-feat-row ${access ? 'has' : 'no'} ${isOverridden ? 'override' : ''}`}>
+                        <span className="ffp-feat-check" style={{
+                          background: access ? c.bg : 'transparent',
+                          border: `2px solid ${access ? c.border : 'var(--border-color)'}`,
+                          color: access ? c.text : 'transparent',
+                        }}>✓</span>
+                        <div className="ffp-feat-info">
+                          <span className="ffp-feat-name">{meta?.label || feature}</span>
                           {isOverridden && <span className="ffp-override-pill">override</span>}
+                          <span className="ffp-feat-desc">{meta?.desc || ''}</span>
                         </div>
-                        <span className="ffp-resolved-desc">{meta?.desc || feature}</span>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
