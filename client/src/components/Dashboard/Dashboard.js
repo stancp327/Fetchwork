@@ -308,6 +308,13 @@ const Dashboard = () => {
 
         {/* Sidebar */}
         <div className="dash-sidebar">
+          {/* Profile Completion — compact card, only when incomplete */}
+          {shouldShowOnboarding && (
+            <div className="dash-card dash-profile-card">
+              <ProfileCompletion showInDashboard={true} />
+            </div>
+          )}
+
           {/* Quick Actions */}
           <div className="dash-card">
             <h3 className="dash-card-title">Quick Actions</h3>
@@ -348,69 +355,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Recommendations */}
-          <div className="dash-card">
-            <h3 className="dash-card-title">Recommended Next</h3>
-            <div className="dash-recommendations">
-              {shouldShowOnboarding && (
-                <Link to="/profile" className="recommendation-item">
-                  <span className="rec-icon">👤</span>
-                  <div>
-                    <div className="rec-title">Complete your profile</div>
-                    <div className="rec-desc">A complete profile increases visibility</div>
-                  </div>
-                </Link>
-              )}
-              {isFreelancerMode && (
-                <Link to="/create-service" className="recommendation-item">
-                  <span className="rec-icon">🎯</span>
-                  <div>
-                    <div className="rec-title">Create a service listing</div>
-                    <div className="rec-desc">Let clients find and hire you directly</div>
-                  </div>
-                </Link>
-              )}
-              {isClientMode && (
-                <Link to="/freelancers" className="recommendation-item">
-                  <span className="rec-icon">🌟</span>
-                  <div>
-                    <div className="rec-title">Discover top freelancers</div>
-                    <div className="rec-desc">Browse skilled professionals in your area</div>
-                  </div>
-                </Link>
-              )}
-              <Link to="/browse-services" className="recommendation-item">
-                <span className="rec-icon">🛍️</span>
-                <div>
-                  <div className="rec-title">Explore services</div>
-                  <div className="rec-desc">Find ready-made solutions for your needs</div>
-                </div>
-              </Link>
-              <Link to="/analytics" className="recommendation-item">
-                <span className="rec-icon">📊</span>
-                <div>
-                  <div className="rec-title">View your analytics</div>
-                  <div className="rec-desc">Earnings, win rate, spend & more</div>
-                </div>
-              </Link>
-              {isClientMode && (
-                <Link to="/spend" className="recommendation-item">
-                  <span className="rec-icon">💸</span>
-                  <div>
-                    <div className="rec-title">Track spend insights</div>
-                    <div className="rec-desc">See where budget is going across jobs</div>
-                  </div>
-                </Link>
-              )}
-              <Link to="/security" className="recommendation-item">
-                <span className="rec-icon">🔐</span>
-                <div>
-                  <div className="rec-title">Review account security</div>
-                  <div className="rec-desc">Update password and security settings</div>
-                </div>
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
 

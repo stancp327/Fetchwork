@@ -30,11 +30,11 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   background: linear-gradient(135deg, var(--color-primary-light) 0%, #f5f3ff 100%);
   border-radius: var(--radius-xl);
-  margin-bottom: var(--space-xl);
-  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  gap: var(--space-md);
 }
 
 .dash-welcome h1 {
@@ -132,18 +132,18 @@
 .dash-stats-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-md);
-  margin-bottom: var(--space-xl);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
 .dash-stat-card {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: var(--space-lg);
+  border-radius: 12px;
+  padding: var(--space-md);
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -191,8 +191,8 @@
 .dash-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
-  margin-bottom: var(--space-2xl);
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
 }
 
 .dash-sidebar { order: -1; }
@@ -230,8 +230,8 @@
 .activity-item {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-lg);
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
   text-decoration: none;
   color: inherit;
   border-bottom: 1px solid var(--color-bg-muted);
@@ -319,31 +319,63 @@
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
-  padding: var(--space-lg);
-  margin-bottom: var(--space-xl);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
 }
 
 .dash-card-title {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-darker);
-  margin: 0 0 var(--space-lg);
+  margin: 0 0 var(--space-md);
 }
+
+/* -- Profile card in sidebar — compact overrides --------------- */
+.dash-profile-card { padding: var(--space-sm) var(--space-md); }
+
+.dash-profile-card .completion-progress-wrapper {
+  max-width: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.dash-profile-card .completion-header { margin-bottom: var(--space-sm); }
+.dash-profile-card .user-details h3 { font-size: var(--font-size-sm); }
+.dash-profile-card .user-role { font-size: var(--font-size-xs); }
+.dash-profile-card .completion-progress { margin-bottom: var(--space-sm); }
+.dash-profile-card .progress-label { font-size: var(--font-size-xs); }
+
+.dash-profile-card .completion-steps {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  margin-bottom: var(--space-sm);
+}
+
+.dash-profile-card .completion-step { padding: 0.2rem 0; gap: 0.4rem; }
+.dash-profile-card .completion-step:hover { padding-left: 0.25rem; padding-right: 0.25rem; }
+.dash-profile-card .step-icon { width: 16px; height: 16px; font-size: 0.65rem; }
+.dash-profile-card .step-label { font-size: 0.72rem; }
+.dash-profile-card .completion-actions { text-align: left; }
+.dash-profile-card .edit-profile-btn { padding: 0.4rem 1rem; font-size: var(--font-size-xs); }
 
 /* Quick Actions */
 .quick-actions-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-sm);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
 }
 
 .quick-action {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-md);
-  border-radius: 12px;
+  gap: 3px;
+  padding: var(--space-sm) var(--space-xs);
+  border-radius: 10px;
   text-decoration: none;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
@@ -356,8 +388,8 @@
 .quick-action.primary { background: var(--color-primary); border-color: var(--color-primary); color: white; }
 .quick-action.primary:hover { background: var(--color-primary-dark); }
 .quick-action.primary .quick-action-label { color: white; }
-.quick-action-icon { font-size: 1.3rem; }
-.quick-action-label { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text); }
+.quick-action-icon { font-size: 1.1rem; }
+.quick-action-label { font-size: 0.68rem; font-weight: 600; color: var(--color-text); line-height: 1.2; }
 
 /* Recommendations */
 .dash-recommendations { display: flex; flex-direction: column; gap: var(--space-sm); }
@@ -410,7 +442,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-xl) var(--space-2xl);
+    padding: var(--space-lg) var(--space-xl);
   }
 
   .dash-context-actions {
@@ -424,8 +456,8 @@
   .dash-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .dash-skeleton-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-  .dash-stat-icon { width: 48px; height: 48px; font-size: 1.3rem; }
-  .dash-stat-value { font-size: var(--font-size-2xl); }
+  .dash-stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+  .dash-stat-value { font-size: var(--font-size-xl); }
 
   .dash-sidebar { order: 0; }
 
