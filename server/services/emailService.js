@@ -10,7 +10,7 @@ class EmailService {
       console.warn('⚠️ RESEND_API_KEY not set — email service disabled');
       this.resend = null;
     }
-    this.fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.com';
+    this.fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.net';
     this.brandColors = {
       primary: '#4285f4',
       success: '#27ae60',

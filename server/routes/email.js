@@ -82,7 +82,7 @@ router.post('/broadcast', authenticateAdmin, async (req, res) => {
 router.get('/status', authenticateAdmin, async (req, res) => {
   try {
     const hasApiKey = !!process.env.RESEND_API_KEY;
-    const fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.com';
+    const fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.net';
     
     res.json({
       configured: hasApiKey,

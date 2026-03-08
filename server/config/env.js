@@ -49,7 +49,10 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
 
 console.log('✅ All critical environment variables present');
 
-const ADMIN_EMAILS = ['admin@fetchwork.com', 'stancp327@gmail.com'];
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'admin@fetchwork.com,stancp327@gmail.com')
+  .split(',')
+  .map(e => e.trim())
+  .filter(Boolean);
 
 // Optional — AI features degrade gracefully without it
 if (!process.env.OPENAI_API_KEY) {
