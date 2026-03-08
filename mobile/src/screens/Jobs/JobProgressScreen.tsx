@@ -206,6 +206,30 @@ export default function JobProgressScreen({ route, navigation }: Props) {
           />
         )}
 
+        {/* Leave a Review */}
+        {isJobComplete && (
+          <Button
+            label="Leave a Review"
+            onPress={() =>
+              navigation.getParent()?.getParent()?.navigate('Profile', {
+                screen: 'WriteReview',
+                params: {
+                  jobId,
+                  targetName: job.title,
+                  targetId: isClient
+                    ? (job.freelancer as unknown as { _id: string })?._id ?? ''
+                    : (job.client as unknown as { _id: string })?._id ?? '',
+                },
+              })
+            }
+            variant="secondary"
+            fullWidth
+            size="lg"
+            leftIcon="star-outline"
+            style={styles.releaseBtn}
+          />
+        )}
+
         <View style={{ height: spacing.xl }} />
       </ScrollView>
     </SafeAreaView>
