@@ -1,0 +1,104 @@
+/* Team Channels — tc- prefix */
+
+.tc-root {
+  display: flex;
+  height: 100%;
+  min-height: 500px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-bg-primary, #fff);
+}
+
+/* Sidebar */
+.tc-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--color-bg-secondary, #f9fafb);
+  border-right: 1px solid var(--color-border, #e5e7eb);
+  display: flex;
+  flex-direction: column;
+}
+
+.tc-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.tc-sidebar-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.tc-create-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--color-text-muted, #6b7280); font-size: 18px; line-height: 1;
+  padding: 2px 4px; border-radius: 4px;
+}
+.tc-create-btn:hover { background: var(--color-border, #e5e7eb); color: var(--color-text-primary, #111827); }
+
+.tc-loading, .tc-empty {
+  padding: 16px; font-size: 13px; color: var(--color-text-muted, #6b7280); text-align: center;
+}
+.tc-empty-link { background: none; border: none; color: var(--color-primary, #2563eb); cursor: pointer; font-size: 13px; }
+
+.tc-channel-list { list-style: none; margin: 0; padding: 6px 0; overflow-y: auto; flex: 1; }
+
+.tc-channel-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; cursor: pointer; border-radius: 6px; margin: 1px 6px;
+  transition: background 0.1s;
+}
+.tc-channel-item:hover { background: var(--color-border, #e5e7eb); }
+.tc-channel-item.active { background: var(--color-primary, #2563eb); }
+.tc-channel-item.active .tc-channel-hash,
+.tc-channel-item.active .tc-channel-name { color: white; }
+
+.tc-channel-hash { font-size: 15px; color: var(--color-text-muted, #6b7280); flex-shrink: 0; }
+.tc-channel-info { flex: 1; min-width: 0; }
+.tc-channel-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary, #111827); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-channel-preview { font-size: 11px; color: var(--color-text-muted, #9ca3af); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.tc-unread-badge { background: var(--color-primary, #2563eb); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
+
+/* Main */
+.tc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tc-no-selection { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted, #6b7280); font-size: 14px; }
+
+/* Modal */
+.tc-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.tc-modal {
+  background: var(--color-bg-primary, #fff); border-radius: 12px;
+  width: 100%; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,0.16);
+}
+.tc-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+.tc-modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.tc-modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--color-text-muted, #6b7280); }
+.tc-modal-form { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.tc-label { font-size: 12px; font-weight: 600; color: var(--color-text-secondary, #374151); }
+.tc-input {
+  border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px;
+  padding: 8px 12px; font-size: 14px; outline: none; width: 100%; box-sizing: border-box;
+}
+.tc-input:focus { border-color: var(--color-primary, #2563eb); }
+.tc-member-list { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; }
+.tc-member-row { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.tc-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.tc-btn-cancel { background: none; border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+.tc-btn-primary { background: var(--color-primary, #2563eb); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.tc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (min-width: 640px) {
+  .tc-sidebar { width: 240px; }
+}

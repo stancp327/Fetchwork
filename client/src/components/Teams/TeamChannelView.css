@@ -1,0 +1,92 @@
+/* Team Channel View — tcv- prefix */
+
+.tcv-root {
+  display: flex; flex-direction: column; height: 100%;
+}
+
+/* Header */
+.tcv-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-bg-primary, #fff);
+  flex-shrink: 0;
+}
+.tcv-header-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tcv-hash { font-size: 18px; color: var(--color-text-muted, #6b7280); }
+.tcv-channel-name { font-size: 15px; font-weight: 700; color: var(--color-text-primary, #111827); }
+.tcv-channel-desc { font-size: 12px; color: var(--color-text-muted, #6b7280); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tcv-members-toggle {
+  background: none; border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 20px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+  color: var(--color-text-secondary, #374151); white-space: nowrap; flex-shrink: 0;
+}
+.tcv-members-toggle.active { background: var(--color-primary, #2563eb); color: white; border-color: var(--color-primary, #2563eb); }
+
+/* Body */
+.tcv-body { flex: 1; display: flex; overflow: hidden; }
+
+/* Messages */
+.tcv-messages {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.tcv-loading { color: var(--color-text-muted, #6b7280); font-size: 13px; text-align: center; padding: 24px; }
+.tcv-empty { text-align: center; padding: 40px 20px; color: var(--color-text-secondary, #374151); }
+.tcv-empty-icon { font-size: 40px; color: var(--color-border, #e5e7eb); margin-bottom: 8px; }
+.tcv-empty-hint { font-size: 12px; color: var(--color-text-muted, #6b7280); margin-top: 4px; }
+
+/* Message rows */
+.tcv-msg {
+  display: flex; gap: 10px; padding: 4px 0;
+}
+.tcv-msg--grouped { margin-top: 0; }
+.tcv-msg-spacer { width: 32px; flex-shrink: 0; }
+
+.tcv-avatar {
+  border-radius: 50%; object-fit: cover; flex-shrink: 0; align-self: flex-start;
+  margin-top: 2px;
+}
+.tcv-avatar-initials {
+  background: var(--color-primary, #2563eb); color: white; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+}
+
+.tcv-msg-body { flex: 1; min-width: 0; }
+.tcv-msg-meta { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.tcv-msg-name { font-size: 13px; font-weight: 700; color: var(--color-text-primary, #111827); }
+.tcv-msg-time { font-size: 11px; color: var(--color-text-muted, #9ca3af); }
+.tcv-msg-content { font-size: 14px; color: var(--color-text-primary, #111827); line-height: 1.5; margin: 0; white-space: pre-wrap; word-break: break-word; }
+
+/* Members panel */
+.tcv-members-panel {
+  width: 200px; flex-shrink: 0; border-left: 1px solid var(--color-border, #e5e7eb);
+  padding: 12px; overflow-y: auto; background: var(--color-bg-secondary, #f9fafb);
+}
+.tcv-members-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--color-text-muted, #6b7280); margin: 0 0 10px; }
+.tcv-member-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.tcv-member-name { font-size: 13px; color: var(--color-text-primary, #111827); display: block; }
+.tcv-member-role { font-size: 10px; color: var(--color-text-muted, #6b7280); text-transform: capitalize; }
+
+/* Input bar */
+.tcv-input-bar {
+  display: flex; align-items: flex-end; gap: 8px;
+  padding: 12px 16px; border-top: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-bg-primary, #fff); flex-shrink: 0;
+}
+.tcv-input {
+  flex: 1; border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px;
+  padding: 10px 12px; font-size: 14px; outline: none; resize: none; font-family: inherit;
+  max-height: 120px; overflow-y: auto; line-height: 1.5;
+}
+.tcv-input:focus { border-color: var(--color-primary, #2563eb); }
+.tcv-send-btn {
+  background: var(--color-primary, #2563eb); color: white; border: none;
+  border-radius: 8px; width: 38px; height: 38px; font-size: 16px; cursor: pointer;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+.tcv-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tcv-send-btn:not(:disabled):hover { opacity: 0.85; }
+
+@media (min-width: 768px) {
+  .tcv-members-panel { width: 220px; }
+}
