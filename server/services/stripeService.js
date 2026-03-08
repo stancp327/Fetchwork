@@ -472,4 +472,6 @@ class StripeService {
   }
 }
 
-module.exports = new StripeService();
+const instance = new StripeService();
+instance.stripe = stripe; // expose raw stripe client for direct API calls (refunds, transfers)
+module.exports = instance;

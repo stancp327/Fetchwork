@@ -27,6 +27,8 @@ const AuditLog = require('../models/AuditLog');
 const Job = require('../models/Job');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const stripeService = require('../services/stripeService');
+const Payment = require('../models/Payment');
 
 // ── Helper: send notification + email ───────────────────────────
 const notifyUser = async (recipientId, type, title, message, link, refs = {}) => {
@@ -713,7 +715,63 @@ router.post('/admin/:id/resolve', authenticateAdmin, requirePermission('dispute_
       resolvedBy: req.admin._id
     };
 
-    // Record financial action
+    // ── Execute Stripe financial actions ────────────────────────
+    const ikey = idempotencyKey || `resolve_${dispute._id}_${Date.now()}`;
+    let stripeRefundId = null;
+    let stripeTransferId = null;
+    let stripeError = null;
+
+    try {
+      if (resolutionType === 'refund_to_client' || resolutionType === 'split') {
+        // Refund to client via Stripe
+        const refundAmountCents = Math.round((amountToClient || 0) * 100);
+        if (refundAmountCents > 0 && dispute.stripePaymentIntentId) {
+          const refund = await stripeService.stripe.refunds.create({
+            payment_intent: dispute.stripePaymentIntentId,
+            amount: refundAmountCents,
+          }, { idempotencyKey: `${ikey}_refund` });
+          stripeRefundId = refund.id;
+          dispute.stripeRefundId = refund.id;
+          // Update Payment record
+          await Payment.findOneAndUpdate(
+            { stripePaymentIntentId: dispute.stripePaymentIntentId },
+            { status: refundAmountCents >= dispute.escrowAmount * 100 ? 'refunded' : 'partial_refund', refundedAt: new Date() }
+          );
+          console.log(`✅ Dispute ${dispute._id}: refunded $${amountToClient} to client (${refund.id})`);
+        }
+      }
+
+      if (resolutionType === 'release_to_freelancer' || resolutionType === 'split') {
+        // Transfer to freelancer's Stripe Connect account
+        const freelancerAmountCents = Math.round((amountToFreelancer || 0) * 100);
+        if (freelancerAmountCents > 0) {
+          const freelancer = await User.findById(dispute.freelancer).select('stripeAccountId');
+          if (freelancer?.stripeAccountId) {
+            const transfer = await stripeService.stripe.transfers.create({
+              amount: freelancerAmountCents,
+              currency: 'usd',
+              destination: freelancer.stripeAccountId,
+              transfer_group: `dispute_${dispute._id}`,
+            }, { idempotencyKey: `${ikey}_transfer` });
+            stripeTransferId = transfer.id;
+            dispute.stripeTransferId = transfer.id;
+            await Payment.findOneAndUpdate(
+              { stripePaymentIntentId: dispute.stripePaymentIntentId },
+              { status: 'completed', paidOutAt: new Date() }
+            );
+            console.log(`✅ Dispute ${dispute._id}: transferred $${amountToFreelancer} to freelancer (${transfer.id})`);
+          } else {
+            console.warn(`⚠️ Dispute ${dispute._id}: freelancer has no Stripe account — transfer skipped`);
+          }
+        }
+      }
+    } catch (stripeErr) {
+      stripeError = stripeErr.message;
+      console.error(`❌ Dispute ${dispute._id}: Stripe action failed:`, stripeErr.message);
+      // Don't block resolution — log the error and mark action as failed
+    }
+
+    // Record financial action with actual Stripe result
     const financialAction = {
       type: resolutionType === 'refund_to_client' ? 'refund' :
             resolutionType === 'release_to_freelancer' ? 'release' :
@@ -722,8 +780,11 @@ router.post('/admin/:id/resolve', authenticateAdmin, requirePermission('dispute_
       amountToFreelancer: amountToFreelancer || 0,
       amountToClient: amountToClient || 0,
       adminFee: adminFee || 0,
-      idempotencyKey: idempotencyKey || `resolve_${dispute._id}_${Date.now()}`,
-      status: 'pending',  // TODO Phase 4: execute Stripe action, then mark completed
+      idempotencyKey: ikey,
+      status: stripeError ? 'failed' : 'completed',
+      stripeRefundId,
+      stripeTransferId,
+      errorMessage: stripeError || null,
       notes: summary
     };
     dispute.financialActions.push(financialAction);
