@@ -3,6 +3,7 @@ import { apiRequest } from '../../../utils/api';
 import FileUpload from '../../common/FileUpload';
 import { getLocationDisplay } from '../../../utils/location';
 import PortfolioWizard from '../../Portfolio/PortfolioWizard';
+import { useZipLookup } from '../../../hooks/useZipLookup';
 import CategoryCombobox from '../../common/CategoryCombobox';
 import StripeConnect from '../../Payments/StripeConnect';
 import PaymentMethods from '../../Payments/PaymentMethods';
@@ -135,7 +136,9 @@ const TabOverview = ({ data, completion, onTabChange }) => {
 };
 
 // ── Tab: About ──────────────────────────────────────────────────
-const TabAbout = ({ data, onChange, onFileSelect }) => (
+const TabAbout = ({ data, onChange, onFileSelect }) => {
+  const { lookupZip, zipLoading, zipError } = useZipLookup();
+  return (
   <div className="tab-content">
     <h2>About You</h2>
     <div className="prof-field">
@@ -177,7 +180,22 @@ const TabAbout = ({ data, onChange, onFileSelect }) => (
       </div>
       <div className="prof-field">
         <label>Zip Code</label>
-        <input type="text" value={data.location?.zipCode || ''} onChange={e => onChange('location', { ...(typeof data.location === 'object' ? data.location : {}), locationType: data.location?.locationType || 'remote', zipCode: e.target.value })} placeholder="Zip" maxLength={10} />
+        <input
+          type="text"
+          value={data.location?.zipCode || ''}
+          onChange={e => {
+            const zip = e.target.value;
+            const loc = { ...(typeof data.location === 'object' ? data.location : {}), locationType: data.location?.locationType || 'remote', zipCode: zip };
+            onChange('location', loc);
+            lookupZip(zip, ({ city, stateCode }) => {
+              onChange('location', { ...loc, city: city || loc.city, state: stateCode || loc.state });
+            });
+          }}
+          placeholder="Zip"
+          maxLength={10}
+        />
+        {zipLoading && <span style={{ fontSize: '12px', color: '#888' }}>Looking up...</span>}
+        {zipError && <span style={{ fontSize: '12px', color: '#e74c3c' }}>{zipError}</span>}
       </div>
       <div className="prof-field">
         <label>Availability Status</label>
@@ -198,7 +216,8 @@ const TabAbout = ({ data, onChange, onFileSelect }) => (
       <input type="text" value={data.languages || ''} onChange={e => onChange('languages', e.target.value)} placeholder="English, Spanish (comma separated)" />
     </div>
   </div>
-);
+  );
+};
 
 // ── Tab: Skills ─────────────────────────────────────────────────
 const TabSkills = ({ data, onChange }) => {

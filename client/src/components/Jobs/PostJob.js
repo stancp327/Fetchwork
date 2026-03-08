@@ -9,12 +9,14 @@ import SEO from '../common/SEO';
 import { validateFormData, buildJobPayload } from './postJobUtils';
 import { aiApi } from '../../api/ai';
 import PricingInsightWidget from '../Skills/PricingInsightWidget';
+import { useZipLookup } from '../../hooks/useZipLookup';
 
 const PostJob = () => {
   const navigate = useNavigate();
   const { hasFeature } = useFeatures();
   const canTemplates      = hasFeature('job_templates');
   const canAIDescription  = hasFeature('ai_job_description');
+  const { lookupZip, zipLoading, zipError } = useZipLookup();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -588,10 +590,21 @@ const PostJob = () => {
                       id="zipCode"
                       name="zipCode"
                       value={formData.zipCode}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        lookupZip(e.target.value, ({ city, stateCode }) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            city: city || prev.city,
+                            state: stateCode || prev.state,
+                          }));
+                        });
+                      }}
                       placeholder="94520"
                       maxLength={10}
                     />
+                    {zipLoading && <span className="zip-loading">Looking up...</span>}
+                    {zipError && <span className="zip-error">{zipError}</span>}
                   </div>
                 </div>
               </>
