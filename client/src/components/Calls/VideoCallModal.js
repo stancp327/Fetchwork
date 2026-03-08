@@ -351,6 +351,12 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
         pendingOfferRef.current = { fromUserId, offer };
         return;
       }
+      // Guard: only process offer if PC is in a state that can accept a remote offer
+      const sigState = pcRef.current.signalingState;
+      if (sigState !== 'stable' && sigState !== 'have-local-offer') {
+        console.warn('[WebRTC] handleOffer: ignoring offer in signalingState:', sigState);
+        return;
+      }
       try {
         console.log('[WebRTC] handleOffer: setting remote description');
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
@@ -382,6 +388,11 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     const handleAnswer = async (detail) => {
       if (detail?.callId && detail.callId !== callId) return;
       if (!pcRef.current) return;
+      // Guard: only apply answer if PC is awaiting one
+      if (pcRef.current.signalingState !== 'have-local-offer') {
+        console.warn('[WebRTC] handleAnswer: ignoring answer in signalingState:', pcRef.current.signalingState);
+        return;
+      }
       try {
         console.log('[WebRTC] handleAnswer: setting remote description');
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(detail?.answer ?? detail));
