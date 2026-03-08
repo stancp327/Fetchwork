@@ -85,6 +85,7 @@ const BackgroundCheckPage  = React.lazy(() => import('./components/Verification/
 const DiscoverySettings    = React.lazy(() => import('./components/Settings/DiscoverySettings'));
 const JobAlertsPage        = React.lazy(() => import('./components/JobAlerts/JobAlertsPage'));
 const ReferralPage         = React.lazy(() => import('./components/Referrals/ReferralPage'));
+const PresentationView     = React.lazy(() => import('./components/Teams/PresentationView'));
 
 class AuthErrorBoundary extends React.Component {
   constructor(props) {
@@ -377,6 +378,7 @@ function AppContent() {
           <Route path="/discovery-settings"   element={<ProtectedRoute><DiscoverySettings /></ProtectedRoute>} />
           <Route path="/job-alerts"            element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
           <Route path="/referrals"             element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
+          <Route path="/presentation/:slug"    element={<PresentationView />} />
           <Route path="/" element={<Home />} />
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>

@@ -312,6 +312,7 @@ app.use('/api/ai',               require('./routes/ai-discovery'));   // semanti
 app.use('/api/ai',               require('./routes/ai-workflow'));    // proposal ranker, milestones, contracts, disputes, red flags
 app.use('/api/ai',               require('./routes/ai-assistant'));   // earnings forecast, meeting notes, translator, fake reviews
 app.use('/api/skills',           require('./routes/skills'));
+app.use('/api/presentations',   require('./routes/presentations'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {
