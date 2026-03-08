@@ -234,7 +234,7 @@ const WalletPage = () => {
           <div className="wp-wallet-card-title">History</div>
           <div className="wp-wallet-credit-list">
             {history.map(c => (
-              <div key={c._id} className={`wp-wallet-credit-row wallet-credit-${c.status}`}>
+              <div key={c._id} className={`wp-wallet-credit-row wp-wallet-credit-${c.status}`}>
                 <div className="wp-wallet-credit-info">
                   <span className="wp-wallet-credit-reason">{c.reason}</span>
                   <span className="wp-wallet-credit-date">{new Date(c.updatedAt || c.createdAt).toLocaleDateString()}</span>
