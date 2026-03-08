@@ -24,6 +24,7 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [aiDrafting, setAiDrafting] = useState(false);
+  const [offPlatformWarning, setOffPlatformWarning] = useState('');
   const [attachFiles, setAttachFiles] = useState([]);
   const fileInputRef = React.useRef(null);
   const [loading, setLoading] = useState(true);
@@ -327,8 +328,15 @@ const Messages = () => {
       }
     } catch (err) {
       console.error('[Messages] send failed', err);
-      setError(err?.data?.error || err?.message || 'Failed to send message');
-      setMessages(prev => prev.filter(m => m._id !== optimistic._id));
+      // Off-platform blocked message
+      if (err?.status === 422 || err?.error === 'off_platform_detected') {
+        setOffPlatformWarning(err?.message || 'Message blocked: off-platform contact info detected.');
+        setMessages(prev => prev.filter(m => m._id !== optimistic._id));
+        setNewMessage(content); // restore draft so user can edit
+      } else {
+        setError(err?.data?.error || err?.message || 'Failed to send message');
+        setMessages(prev => prev.filter(m => m._id !== optimistic._id));
+      }
     } finally {
       setSending(false);
     }
@@ -542,6 +550,14 @@ const Messages = () => {
                   ))}
                 </div>
               )}
+              {/* Off-platform warning banner */}
+              {offPlatformWarning && (
+                <div className="chat-offplatform-warning">
+                  <span>⚠️ {offPlatformWarning}</span>
+                  <button onClick={() => setOffPlatformWarning('')}>✕</button>
+                </div>
+              )}
+
               {/* AI Draft Response */}
               <div className="chat-ai-draft-wrap">
                 <button

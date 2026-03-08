@@ -6,7 +6,7 @@ const { Message, Conversation, ChatRoom, ReceiptCursor } = require('../models/Me
 const User = require('../models/User');
 const { authenticateToken, authenticateAdmin, requirePermission } = require('../middleware/auth');
 const { validateMessage, validateQueryParams, validateConversationIdParam } = require('../middleware/validation');
-const { detectOffPlatform } = require('../services/offPlatformDetector');
+const { detectOffPlatform, getWarningMessage } = require('../services/offPlatformDetector');
 const ModerationEvent = require('../models/ModerationEvent');
 
 const getCorrelationId = (req) => req.headers['x-correlation-id'] || req.headers['x-request-id'] || crypto.randomUUID();
@@ -223,9 +223,18 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
         })).filter((a) => a.assetId)
       : [];
 
-    const safeContent = content || (normalizedAssetRefs.length > 0 ? `📎 Sent ${normalizedAssetRefs.length} file${normalizedAssetRefs.length > 1 ? 's' : ''}` : '');
+    const safeContent = content || (normalizedAssetRefs.length > 0 ? `Ã°Å¸â€œÅ½ Sent ${normalizedAssetRefs.length} file${normalizedAssetRefs.length > 1 ? 's' : ''}` : '');
     const safety = detectOffPlatform(safeContent);
 
+    // Off-platform enforcement
+    if (safety.action === 'block') {
+      await recordModerationEvent({ conversationId: conversation._id, messageId: null, userId: req.user._id, safety, source: 'rest-blocked' });
+      return res.status(422).json({
+        error: 'off_platform_detected',
+        message: getWarningMessage(safety),
+        safety,
+      });
+    }
     const updatedConversation = await Conversation.findByIdAndUpdate(
       conversation._id,
       { $inc: { seq: 1 }, $set: { lastActivity: new Date() } },
@@ -267,7 +276,8 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
     res.status(201).json({
       message: 'Message sent successfully',
       data: populatedMessage,
-      conversationId: conversation._id
+      conversationId: conversation._id,
+      ...(safety.action === 'warn' ? { warning: getWarningMessage(safety), safety } : {}),
     });
   } catch (error) {
     logRouteError(req, 'create_conversation_and_send', error);
@@ -310,9 +320,18 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
 
     const attachments = [...fileAttachments, ...refAttachments];
 
-    const safeContent = content || (attachments.length > 0 ? `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : '');
+    const safeContent = content || (attachments.length > 0 ? `Ã°Å¸â€œÅ½ Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : '');
     const safety = detectOffPlatform(safeContent);
 
+    // Off-platform enforcement
+    if (safety.action === 'block') {
+      await recordModerationEvent({ conversationId: conversation._id, messageId: null, userId: req.user._id, safety, source: 'rest-blocked' });
+      return res.status(422).json({
+        error: 'off_platform_detected',
+        message: getWarningMessage(safety),
+        safety,
+      });
+    }
     const updatedConversation = await Conversation.findByIdAndUpdate(
       conversation._id,
       { $inc: { seq: 1 }, $set: { lastActivity: new Date() } },
@@ -353,7 +372,8 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
 
     res.status(201).json({
       message: 'Message sent successfully',
-      data: populatedMessage
+      data: populatedMessage,
+      ...(safety.action === 'warn' ? { warning: getWarningMessage(safety), safety } : {}),
     });
   } catch (error) {
     logRouteError(req, 'send_to_existing_conversation', error);
@@ -385,9 +405,18 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
       ? await watermarkAttachments(req.files, req.files.map(f => f.filename))
       : [];
 
-    const safeContent = content || `📎 Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}`;
+    const safeContent = content || `Ã°Å¸â€œÅ½ Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}`;
     const safety = detectOffPlatform(safeContent);
 
+    // Off-platform enforcement
+    if (safety.action === 'block') {
+      await recordModerationEvent({ conversationId: conversation._id, messageId: null, userId: req.user._id, safety, source: 'rest-blocked' });
+      return res.status(422).json({
+        error: 'off_platform_detected',
+        message: getWarningMessage(safety),
+        safety,
+      });
+    }
     const updatedConversation = await Conversation.findByIdAndUpdate(
       conversation._id,
       { $inc: { seq: 1 }, $set: { lastActivity: new Date() } },
@@ -426,7 +455,7 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
       recipientId,
     });
 
-    res.status(201).json({ message: 'Message sent', data: populatedMessage });
+    res.status(201).json({ message: 'Message sent', data: populatedMessage, ...(safety.action === 'warn' ? { warning: getWarningMessage(safety), safety } : {}) });
   } catch (error) {
     logRouteError(req, 'send_upload_message', error);
     res.status(500).json({ error: 'Failed to send message', correlationId: req.correlationId });
