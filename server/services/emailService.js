@@ -10,7 +10,7 @@ class EmailService {
       console.warn('⚠️ RESEND_API_KEY not set — email service disabled');
       this.resend = null;
     }
-    this.fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.net';
+    this.fromEmail = process.env.FROM_EMAIL || 'noreply@fetchwork.com';
     this.brandColors = {
       primary: '#4285f4',
       success: '#27ae60',
@@ -66,29 +66,47 @@ class EmailService {
     return this.sendEmail(user.email, 'Welcome to FetchWork!', content, 'Welcome to FetchWork!');
   }
 
-  async sendEmail(to, subject, content, title, color) {
+  async sendEmail(to, subject, content, title, color, { maxRetries = 2 } = {}) {
     if (!this.resend) {
       console.log(`[Email disabled] Would send "${subject}" to ${to}`);
       return { success: false, error: 'Email service not configured' };
     }
-    try {
-      const { data, error } = await this.resend.emails.send({
-        from: this.fromEmail,
-        to: [to],
-        subject,
-        html: this.getEmailTemplate(content, title, color)
-      });
 
-      if (error) {
-        console.error(`Error sending email to ${to}:`, error);
-        return { success: false, error };
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        const { data, error } = await this.resend.emails.send({
+          from: this.fromEmail,
+          to: [to],
+          subject,
+          html: this.getEmailTemplate(content, title, color)
+        });
+
+        if (error) {
+          // Domain not verified or validation errors — don't retry
+          if (error.statusCode === 403 || error.statusCode === 422) {
+            console.error(`❌ Email to ${to} failed (non-retryable):`, error);
+            return { success: false, error };
+          }
+          if (attempt <= maxRetries) {
+            console.warn(`⚠️ Email to ${to} failed (attempt ${attempt}/${maxRetries + 1}), retrying...`);
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+            continue;
+          }
+          console.error(`❌ Email to ${to} failed after ${attempt} attempts:`, error);
+          return { success: false, error };
+        }
+
+        console.log(`✅ Email sent to ${to} (attempt ${attempt}):`, data?.id);
+        return { success: true, data };
+      } catch (error) {
+        if (attempt <= maxRetries) {
+          console.warn(`⚠️ Email to ${to} exception (attempt ${attempt}/${maxRetries + 1}):`, error.message);
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        console.error(`❌ Email to ${to} failed after ${attempt} attempts:`, error.message);
+        return { success: false, error: error.message };
       }
-
-      console.log(`Email sent successfully to ${to}:`, data);
-      return { success: true, data };
-    } catch (error) {
-      console.error(`Error sending email to ${to}:`, error);
-      return { success: false, error: error.message };
     }
   }
 
@@ -354,29 +372,26 @@ class EmailService {
   }
 
   async sendAdminBroadcast(recipients, subject, message) {
+    if (!this.resend) {
+      console.log(`[Email disabled] Would broadcast "${subject}" to ${recipients.length} recipients`);
+      return { success: false, error: 'Email service not configured' };
+    }
     try {
-      const emailPromises = recipients.map(email => 
-        this.resend.emails.send({
-          from: this.fromEmail,
-          to: [email],
-          subject: `[FetchWork] ${subject}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h1 style="color: #4285f4;">Message from FetchWork Team</h1>
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                ${message.replace(/\n/g, '<br>')}
-              </div>
-              <p style="color: #666; font-size: 14px;">
-                This message was sent by the FetchWork administration team.
-              </p>
-            </div>
-          `
-        })
+      const content = `
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          ${message.replace(/\n/g, '<br>')}
+        </div>
+        <p style="color: #666; font-size: 14px;">
+          This message was sent by the FetchWork administration team.
+        </p>
+      `;
+      const emailPromises = recipients.map(email =>
+        this.sendEmail(email, `[FetchWork] ${subject}`, content, 'Message from FetchWork Team')
       );
 
       const results = await Promise.allSettled(emailPromises);
-      const successful = results.filter(result => result.status === 'fulfilled').length;
-      const failed = results.filter(result => result.status === 'rejected').length;
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
+      const failed = results.length - successful;
 
       return {
         success: true,

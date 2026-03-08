@@ -56,10 +56,13 @@ router.post('/register', validateRegister, async (req, res) => {
     try {
       const emailService = require('../services/emailService');
       const emailWorkflowService = require('../services/emailWorkflowService');
-      await emailService.sendEmailVerification(user, user.emailVerificationToken);
+      const emailResult = await emailService.sendEmailVerification(user, user.emailVerificationToken);
+      if (!emailResult.success) {
+        console.error(`❌ Verification email FAILED for ${user.email}:`, emailResult.error);
+      }
       setTimeout(() => emailWorkflowService.sendOnboardingSequence(user._id), 60000);
     } catch (emailError) {
-      console.warn('Warning: Could not send verification email:', emailError.message);
+      console.error(`❌ Verification email EXCEPTION for ${user.email}:`, emailError.message);
     }
     
     trackEvent('signups');
@@ -264,8 +267,13 @@ router.post('/resend-verification', async (req, res) => {
 
     try {
       const emailService = require('../services/emailService');
-      await emailService.sendEmailVerification(user, token);
-    } catch (e) {}
+      const result = await emailService.sendEmailVerification(user, token);
+      if (!result.success) {
+        console.error(`❌ Resend verification email FAILED for ${user.email}:`, result.error);
+      }
+    } catch (e) {
+      console.error(`❌ Resend verification email EXCEPTION for ${user.email}:`, e.message);
+    }
 
     ipArr.push(now);
     req.app.locals._resendIp.set(ipKey, ipArr);
