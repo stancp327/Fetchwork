@@ -117,7 +117,7 @@
 
 /* ── Role toggle ── */
 .role-toggle {
-  display: flex;
+  display: none; /* hidden on mobile — lives in mobile drawer instead */
   background: var(--color-bg-muted, #f3f4f6);
   border-radius: 8px;
   padding: 3px;
@@ -726,6 +726,7 @@
 
   .nav-primary-links { display: flex; }
   .mobile-menu-toggle { display: none !important; }
+  .role-toggle { display: flex; }
 }
 
 /* ── Tablet (768–1023px) ── */
@@ -733,7 +734,7 @@
   /* Show primary links but smaller */
   .nav-primary-links { display: flex; }
   .mobile-menu-toggle { display: flex !important; }
-  .nav-actions .role-toggle { display: none; }
+  /* role-toggle already hidden by default on mobile/tablet — shown only at 1024px+ */
   .nav-create-btn { display: none; }
 }
 
