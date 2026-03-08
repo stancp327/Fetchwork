@@ -237,13 +237,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ── Onboarding Card ────────────────────────────────────── */}
-      {shouldShowOnboarding && (
-        <div className="dash-onboarding">
-          <ProfileCompletion showInDashboard={true} />
-        </div>
-      )}
-
       {/* ── Stats Row ──────────────────────────────────────────── */}
       <div className="dash-stats-row">
         {isClientMode ? (
