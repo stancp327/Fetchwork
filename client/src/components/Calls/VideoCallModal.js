@@ -15,8 +15,10 @@ const toUiStatus = (state, fallback = 'connecting') => {
     case 'ringing': return 'ringing';
     case 'accepted':
     case 'connecting': return 'connecting';
-    case 'connected':
     case 'active': return 'active';
+    // server 'connected' = answer relayed, NOT ICE connected — stay in 'connecting'
+    // UI flips to 'active' only when ICE iceConnectionState reaches 'connected'
+    case 'connected': return 'connecting';
     case 'declined':
     case 'missed':
     case 'ended':
@@ -231,6 +233,14 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       const state = pc.iceConnectionState;
       console.log(`[WebRTC] ICE state: ${state}`);
 
+      // Set call active only when ICE actually confirms connectivity
+      if (state === 'connected' || state === 'completed') {
+        setCallStatus('active');
+        if (!durationIntervalRef.current) {
+          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+        }
+      }
+
       if (state === 'failed') {
         // Try ICE restart before giving up
         if (typeof pc.restartIce === 'function') {
@@ -321,16 +331,13 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
         console.log('[WebRTC] acceptCall: creating answer');
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        console.log('[WebRTC] acceptCall: sending answer');
+        console.log('[WebRTC] acceptCall: sending answer — waiting for ICE to confirm connectivity');
         socket.emit('call:answer', {
           callId,
           targetUserId: fromUserId,
           answer: pc.localDescription,
         });
-        setCallStatus('active');
-        if (!durationIntervalRef.current) {
-          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
-        }
+        // callStatus stays 'connecting' — flips to 'active' via oniceconnectionstatechange
       } catch (err) {
         console.error('[WebRTC] acceptCall: failed to process offer/create answer:', err);
       }
@@ -370,16 +377,13 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
         console.log('[WebRTC] handleOffer: creating answer');
         const answer = await pcRef.current.createAnswer();
         await pcRef.current.setLocalDescription(answer);
-        console.log('[WebRTC] handleOffer: sending answer');
+        console.log('[WebRTC] handleOffer: sending answer — waiting for ICE to confirm connectivity');
         socket.emit('call:answer', {
           callId,
           targetUserId: fromUserId,
           answer: pcRef.current.localDescription,
         });
-        setCallStatus('active');
-        if (!durationIntervalRef.current) {
-          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
-        }
+        // callStatus stays 'connecting' — flips to 'active' via oniceconnectionstatechange
       } catch (err) {
         console.error('[WebRTC] handleOffer: failed:', err);
       }
@@ -396,11 +400,8 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       try {
         console.log('[WebRTC] handleAnswer: setting remote description');
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(detail?.answer ?? detail));
-        console.log('[WebRTC] handleAnswer: remote description set — ICE checks should begin');
-        setCallStatus('active');
-        if (!durationIntervalRef.current) {
-          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
-        }
+        console.log('[WebRTC] handleAnswer: remote description set — ICE checks beginning, waiting for connected');
+        // callStatus stays 'connecting' — flips to 'active' via oniceconnectionstatechange
       } catch (err) {
         console.error('[WebRTC] handleAnswer: failed:', err);
       }
