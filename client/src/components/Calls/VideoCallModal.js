@@ -189,13 +189,35 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     });
 
     pc.onicecandidate = (e) => {
-      if (e.candidate && socket) {
-        socket.emit('call:ice-candidate', {
-          callId,
-          targetUserId: remoteUser._id,
-          candidate: e.candidate,
-        });
+      if (e.candidate) {
+        const t = e.candidate.type || 'unknown';
+        const proto = e.candidate.protocol || '?';
+        console.log(`[WebRTC] ICE candidate gathered: ${t} (${proto}) — ${e.candidate.candidate?.split(' ')[4] || ''}`);
+        if (socket) {
+          socket.emit('call:ice-candidate', {
+            callId,
+            targetUserId: remoteUser._id,
+            candidate: e.candidate,
+          });
+        }
+      } else {
+        console.log('[WebRTC] ICE gathering complete (null candidate = end-of-candidates)');
       }
+    };
+
+    pc.onicegatheringstatechange = () => {
+      console.log(`[WebRTC] ICE gathering state: ${pc.iceGatheringState}`);
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log(`[WebRTC] Connection state: ${pc.connectionState}`);
+      if (pc.connectionState === 'connected') {
+        console.log('[WebRTC] ✅ Peer connection established!');
+      }
+    };
+
+    pc.onicecandidateerror = (e) => {
+      console.warn(`[WebRTC] ICE candidate error: code=${e.errorCode} url=${e.url} text="${e.errorText}"`);
     };
 
     pc.ontrack = (e) => {
