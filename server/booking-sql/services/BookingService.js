@@ -52,6 +52,26 @@ class BookingService {
       };
     }
 
+    // ── Booking throttle checks (pre-transaction — read-only) ─────────────────
+    if (service.maxPerDay !== null || service.maxPerWeek !== null || service.maxConcurrent !== null) {
+      const [dayCount, weekCount, concurrentCount] = await Promise.all([
+        service.maxPerDay    !== null ? this.bookingRepo.countBookingsForFreelancerOnDay({ freelancerId, localDate: body.date }) : Promise.resolve(0),
+        service.maxPerWeek   !== null ? this.bookingRepo.countBookingsForFreelancerInWeek({ freelancerId, weekStart: body.date }) : Promise.resolve(0),
+        service.maxConcurrent !== null ? this.bookingRepo.countConcurrentActiveBookings({ freelancerId }) : Promise.resolve(0),
+      ]);
+
+      if (service.maxPerDay !== null && dayCount >= service.maxPerDay) {
+        return { replayed: false, statusCode: 409, response: { error: 'This service is fully booked for the day', code: 'THROTTLE_MAX_PER_DAY' } };
+      }
+      if (service.maxPerWeek !== null && weekCount >= service.maxPerWeek) {
+        return { replayed: false, statusCode: 409, response: { error: 'This service is fully booked for the week', code: 'THROTTLE_MAX_PER_WEEK' } };
+      }
+      if (service.maxConcurrent !== null && concurrentCount >= service.maxConcurrent) {
+        return { replayed: false, statusCode: 409, response: { error: 'Freelancer has reached maximum concurrent bookings', code: 'THROTTLE_MAX_CONCURRENT' } };
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const response = await withTx(async (tx) => {
       const localStartWallclock = `${body.date}T${body.startTime}`;
       const localEndWallclock = `${body.date}T${body.endTime}`;

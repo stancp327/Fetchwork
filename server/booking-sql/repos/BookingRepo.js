@@ -29,6 +29,43 @@ class BookingRepo {
     });
   }
 
+  // Count active bookings for a freelancer's service on a given calendar day (local date string YYYY-MM-DD)
+  async countBookingsForFreelancerOnDay({ freelancerId, localDate }, tx = null) {
+    const db = tx || getPrisma();
+    return db.bookingOccurrence.count({
+      where: {
+        freelancerId: String(freelancerId),
+        localStartWallclock: { startsWith: localDate },
+        status: { in: ['held', 'confirmed', 'in_progress'] },
+      },
+    });
+  }
+
+  // Count active bookings for a freelancer's service in a 7-day window starting from weekStart (YYYY-MM-DD)
+  async countBookingsForFreelancerInWeek({ freelancerId, weekStart }, tx = null) {
+    const db = tx || getPrisma();
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    return db.bookingOccurrence.count({
+      where: {
+        freelancerId: String(freelancerId),
+        startAtUtc: { gte: new Date(weekStart), lt: weekEnd },
+        status: { in: ['held', 'confirmed', 'in_progress'] },
+      },
+    });
+  }
+
+  // Count concurrent active bookings for a freelancer across all services
+  async countConcurrentActiveBookings({ freelancerId }, tx = null) {
+    const db = tx || getPrisma();
+    return db.booking.count({
+      where: {
+        freelancerId: String(freelancerId),
+        currentState: { in: ['held', 'confirmed', 'in_progress'] },
+      },
+    });
+  }
+
   async countConflictsAtLocalStart({ freelancerId, localStartWallclock, excludeBookingId = null }, tx = null) {
     const db = tx || getPrisma();
     return db.bookingOccurrence.count({
