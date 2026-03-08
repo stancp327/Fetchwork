@@ -9,6 +9,7 @@ import { servicesApi } from '../../api/endpoints/servicesApi';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import { colors, spacing, typography } from '../../theme';
 
@@ -97,8 +98,16 @@ export default function MyServicesScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Services</Text>
-        <Text style={styles.headerCount}>{services.length} total</Text>
+        <View>
+          <Text style={styles.headerTitle}>My Services</Text>
+          <Text style={styles.headerCount}>{services.length} total</Text>
+        </View>
+        <Button
+          label="Create Service"
+          onPress={() => navigation.navigate('CreateService')}
+          size="sm"
+          leftIcon="add-circle-outline"
+        />
       </View>
 
       {isLoading ? (
@@ -115,6 +124,8 @@ export default function MyServicesScreen({ navigation }: any) {
               emoji="📦"
               title="No services yet"
               subtitle="Create your first service to start earning"
+              actionLabel="Create Service"
+              onAction={() => navigation.navigate('CreateService')}
             />
           }
         />
