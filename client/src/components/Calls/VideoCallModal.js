@@ -149,11 +149,19 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     try {
       const data = await apiRequest(`/api/calls/${callId}/relay-credentials`, { method: 'POST' });
       if (Array.isArray(data?.iceServers) && data.iceServers.length > 0) {
+        const hasTurn = data.iceServers.some(s =>
+          (Array.isArray(s.urls) ? s.urls : [s.urls]).some(u => u?.startsWith('turn:') || u?.startsWith('turns:'))
+        );
+        if (!hasTurn) {
+          console.warn('[WebRTC] Server returned ICE config with no TURN servers — calls will fail on mobile carrier NAT');
+        } else {
+          console.log('[WebRTC] TURN credentials received ✓');
+        }
         iceServersRef.current = data.iceServers;
         return data.iceServers;
       }
     } catch (err) {
-      console.warn('Using fallback ICE servers:', err?.message || err);
+      console.warn('[WebRTC] TURN credential fetch failed — falling back to STUN-only (will fail on mobile data):', err?.message || err);
     }
 
     iceServersRef.current = FALLBACK_ICE_SERVERS;
@@ -182,8 +190,25 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     };
 
     pc.oniceconnectionstatechange = () => {
-      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-        handleEndCall();
+      const state = pc.iceConnectionState;
+      console.log(`[WebRTC] ICE state: ${state}`);
+
+      if (state === 'failed') {
+        // Try ICE restart before giving up
+        if (typeof pc.restartIce === 'function') {
+          console.log('[WebRTC] ICE failed — attempting restart...');
+          pc.restartIce();
+        } else {
+          handleEndCall();
+        }
+      } else if (state === 'disconnected') {
+        // Give 5s grace period — brief network blip shouldn't end the call
+        setTimeout(() => {
+          if (pcRef.current?.iceConnectionState === 'disconnected') {
+            console.warn('[WebRTC] ICE still disconnected after 5s — ending call');
+            handleEndCall();
+          }
+        }, 5000);
       }
     };
 
