@@ -612,6 +612,26 @@ const Messages = () => {
                 </div>
               )}
 
+              {/* Dispute risk result banner */}
+              {disputeRisk && (
+                <div className={`msg-ai-risk-banner ${disputeRisk.riskLevel}`}>
+                  <div className="msg-ai-risk-header">
+                    <span className="msg-ai-risk-level">
+                      {disputeRisk.riskLevel === 'low' ? '✅' : disputeRisk.riskLevel === 'medium' ? '⚠️' : '🚨'} {disputeRisk.riskLevel} risk
+                    </span>
+                    <button className="msg-ai-risk-close" onClick={() => setDisputeRisk(null)}>✕</button>
+                  </div>
+                  {disputeRisk.indicators?.length > 0 && (
+                    <ul className="msg-ai-risk-indicators">
+                      {disputeRisk.indicators.map((ind, i) => <li key={i}>{ind}</li>)}
+                    </ul>
+                  )}
+                  {disputeRisk.recommendation && (
+                    <p className="msg-ai-risk-rec">{disputeRisk.recommendation}</p>
+                  )}
+                </div>
+              )}
+
               {/* AI Draft Response */}
               <div className="chat-ai-draft-wrap">
                 <button
@@ -676,6 +696,28 @@ const Messages = () => {
                 )}
                 <button className="quick-act">💳 Request Payment</button>
                 <button className="quick-act">📅 Schedule</button>
+                <button
+                  className="quick-act msg-ai-risk-btn"
+                  disabled={disputeRiskLoading || messages.length === 0}
+                  onClick={async () => {
+                    setDisputeRiskLoading(true);
+                    try {
+                      const last20 = messages.slice(-20).map(m => ({
+                        content: m.content || '',
+                        role: idEq(m.sender?._id || m.sender, userId) ? 'client' : 'freelancer',
+                      }));
+                      const data = await apiRequest('/api/ai/check-dispute-risk', {
+                        method: 'POST',
+                        body: JSON.stringify({ messages: last20 }),
+                      });
+                      setDisputeRisk(data);
+                    } catch (err) {
+                      if (err.status === 403) alert('Dispute Risk Check is a Pro feature.');
+                    } finally { setDisputeRiskLoading(false); }
+                  }}
+                >
+                  {disputeRiskLoading ? '🛡️ Checking…' : '🛡️ Risk Check'}
+                </button>
               </div>
             </>
           ) : (
