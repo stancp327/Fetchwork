@@ -51,6 +51,9 @@ export type ProfileStackParamList = {
   GroupSlots:        { serviceId: string };
   EscrowConfirm:     { jobId?: string; orderId?: string; amount: number; freelancerName: string; title: string };
   TipScreen:         { jobId: string; freelancerName: string; freelancerId: string };
+  Disputes:          undefined;
+  DisputeDetail:     { disputeId: string };
+  FileDispute:       { jobId?: string; orderId?: string };
 };
 
 export type MoreStackParamList = {

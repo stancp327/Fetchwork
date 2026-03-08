@@ -114,6 +114,7 @@ export default function MyProfileScreen({ navigation }: Props) {
             { label: '💼 Wallet',                  onPress: () => navigation.navigate('Wallet') },
             { label: '💳 Payments',                onPress: () => navigation.navigate('Payments') },
             { label: '📄 Contracts',               onPress: () => navigation.navigate('Contracts') },
+            { label: '⚖️ Disputes',               onPress: () => navigation.navigate('Disputes') },
             { label: '🔒 Verification & Badges',  onPress: () => navigation.navigate('Verification') },
             { label: '⚙️ Account Settings',        onPress: () => navigation.navigate('Settings') },
           ].map(item => (
