@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
@@ -163,6 +163,9 @@ const JobProposals = () => {
   const [acting,  setActing]  = useState(false);
   const [compareIds, setCompareIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [showAiSummary, setShowAiSummary] = useState(false);
 
   const fetchJob = useCallback(async () => {
     try {
@@ -197,6 +200,24 @@ const JobProposals = () => {
     } catch (err) {
       alert(err.message || 'Failed to accept proposal');
     } finally { setActing(false); }
+  };
+
+  const handleAiSummary = async () => {
+    if (aiSummary) { setShowAiSummary(s => !s); return; }
+    setAiSummaryLoading(true);
+    setShowAiSummary(true);
+    try {
+      const data = await apiRequest(`/api/ai/summarize-proposals/${id}`, { method: 'POST' });
+      setAiSummary(data.summary || 'No summary available.');
+    } catch (err) {
+      if (err.status === 403) {
+        setAiSummary('✨ AI Proposal Summarizer is a Plus+ feature. Upgrade to instantly summarize all proposals.');
+      } else {
+        setAiSummary('Could not generate summary — try again shortly.');
+      }
+    } finally {
+      setAiSummaryLoading(false);
+    }
   };
 
   const handleDecline = async (proposalId) => {
@@ -261,6 +282,23 @@ const JobProposals = () => {
           )}
         </div>
       </div>
+
+      {/* AI Proposal Summarizer */}
+      {proposals.length >= 2 && (
+        <div className="jp-ai-summary-wrap">
+          <button className="jp-ai-summarize-btn" onClick={handleAiSummary} disabled={aiSummaryLoading}>
+            {aiSummaryLoading ? '✨ Summarizing…' : showAiSummary ? '✨ Hide AI Summary' : `✨ AI Summary (${proposals.length} proposals)`}
+          </button>
+          {showAiSummary && (
+            <div className="jp-ai-summary-panel">
+              {aiSummaryLoading
+                ? <div className="jp-ai-summary-loading">Analyzing proposals…</div>
+                : <pre className="jp-ai-summary-text">{aiSummary}</pre>
+              }
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filter */}
       {proposals.length > 0 && (

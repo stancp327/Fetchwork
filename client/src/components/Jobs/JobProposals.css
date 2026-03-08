@@ -306,3 +306,41 @@
 .jp-ct-row:last-child { border-bottom: none; }
 .jp-ct-label { padding: var(--space-2) var(--space-3); font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); display: flex; align-items: center; }
 .jp-ct-cell { padding: var(--space-2) var(--space-3); font-size: var(--text-sm); display: flex; align-items: center; border-left: 1px solid var(--border-color); }
+
+/* AI Proposal Summarizer */
+.jp-ai-summary-wrap { margin: 0 0 var(--space-4, 16px); }
+
+.jp-ai-summarize-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.jp-ai-summarize-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.jp-ai-summarize-btn:not(:disabled):hover { opacity: 0.85; }
+
+.jp-ai-summary-panel {
+  margin-top: var(--space-3, 12px);
+  background: var(--color-bg-secondary, #f8faff);
+  border: 1px solid var(--color-primary-light, #dbeafe);
+  border-radius: 10px;
+  padding: var(--space-4, 16px);
+}
+.jp-ai-summary-loading {
+  color: var(--color-text-muted, #6b7280);
+  font-size: 13px;
+  font-style: italic;
+}
+.jp-ai-summary-text {
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-text-primary, #111827);
+  font-family: inherit;
+  margin: 0;
+}

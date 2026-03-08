@@ -30,6 +30,8 @@ const PostJob = () => {
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiMsg, setAiMsg] = useState('');
+  const [budgetEstimate, setBudgetEstimate] = useState(null);
+  const [budgetEstimateLoading, setBudgetEstimateLoading] = useState(false);
 
   const handleGenerateDescription = async () => {
     if (!canAIDescription) {
@@ -428,6 +430,49 @@ const PostJob = () => {
                   step="0.01"
                 />
                 {errors.budgetAmount && <div className="error-text">{errors.budgetAmount}</div>}
+              </div>
+
+              {/* AI Budget Estimator */}
+              <div className="pj-ai-budget-wrap">
+                <button
+                  type="button"
+                  className="pj-ai-budget-btn"
+                  disabled={budgetEstimateLoading || (!formData.category && !formData.description)}
+                  onClick={async () => {
+                    setBudgetEstimateLoading(true);
+                    setBudgetEstimate(null);
+                    try {
+                      const params = new URLSearchParams();
+                      if (formData.category) params.set('category', formData.category);
+                      if (formData.description) params.set('description', formData.description.slice(0, 400));
+                      const data = await apiRequest(`/api/ai/budget-estimate?${params}`);
+                      setBudgetEstimate(data.estimate);
+                    } catch { setBudgetEstimate(null); }
+                    finally { setBudgetEstimateLoading(false); }
+                  }}
+                >
+                  {budgetEstimateLoading ? '✨ Estimating…' : '✨ AI Budget Estimate'}
+                </button>
+                {budgetEstimate && (
+                  <div className="pj-ai-budget-result">
+                    <span className="pj-ai-budget-range">
+                      ${budgetEstimate.low?.toLocaleString()} – ${budgetEstimate.high?.toLocaleString()} {budgetEstimate.type === 'hourly' ? '/hr' : 'total'}
+                    </span>
+                    <span className="pj-ai-budget-mid">Typical: ${budgetEstimate.mid?.toLocaleString()}</span>
+                    {budgetEstimate.rationale && <p className="pj-ai-budget-note">{budgetEstimate.rationale}</p>}
+                    <button
+                      type="button"
+                      className="pj-ai-budget-apply"
+                      onClick={() => {
+                        if (budgetEstimate.mid) {
+                          setFormData(prev => ({ ...prev, budgetAmount: String(budgetEstimate.mid) }));
+                        }
+                      }}
+                    >
+                      Use ${budgetEstimate.mid?.toLocaleString()}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {formData.budgetType === 'range' && (

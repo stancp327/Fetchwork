@@ -4,6 +4,46 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../common/Toast';
 import './QuickApply.css';
 
+const AiWriteButton = ({ job, user, onDraft }) => {
+  const [loading, setLoading] = useState(false);
+  const { addToast } = useToast();
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    try {
+      const data = await apiRequest('/api/ai/write-proposal', {
+        method: 'POST',
+        body: JSON.stringify({
+          jobTitle: job.title,
+          jobDescription: job.description,
+          jobBudget: job.budget?.amount,
+          jobCategory: job.category,
+          userBio: user.bio,
+          userSkills: user.skills,
+        }),
+      });
+      if (data.draft) {
+        onDraft(data.draft);
+        addToast('AI draft generated — edit it to make it yours!', 'success');
+      }
+    } catch (err) {
+      if (err.status === 403) {
+        addToast('AI Proposal Writer is a Plus+ feature — upgrade to use it.', 'warning');
+      } else {
+        addToast('Could not generate draft — try again.', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button type="button" className="qa-ai-btn" onClick={handleGenerate} disabled={loading}>
+      {loading ? '✨ Writing…' : '✨ AI Draft'}
+    </button>
+  );
+};
+
 const QuickApply = ({ job, onClose, onSuccess }) => {
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -44,7 +84,10 @@ const QuickApply = ({ job, onClose, onSuccess }) => {
         <p className="qa-job-title">{job.title}</p>
         <form onSubmit={handleSubmit}>
           <div className="qa-field">
-            <label>Cover Letter *</label>
+            <div className="qa-field-header">
+              <label>Cover Letter *</label>
+              <AiWriteButton job={job} user={user} onDraft={draft => setCoverLetter(draft)} />
+            </div>
             <textarea
               value={coverLetter}
               onChange={e => setCoverLetter(e.target.value)}

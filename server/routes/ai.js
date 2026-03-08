@@ -299,4 +299,172 @@ router.post('/support-chat', supportChatLimiter, async (req, res) => {
   }
 });
 
+// ── POST /api/ai/write-proposal ────────────────────────────────────────────
+// Freelancer tool: given a job + their profile, draft a cover letter.
+// Gated: Plus+ and above.
+router.post('/write-proposal', authenticateToken, aiLimiter, async (req, res) => {
+  try {
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_JOB_DESCRIPTION); // reuse Plus+ gate
+    if (!allowed) return res.status(403).json({ error: 'upgrade_required', plan: 'Plus+' });
+
+    const { jobTitle, jobDescription, jobBudget, jobCategory, userBio, userSkills } = req.body;
+    if (!jobTitle || !jobDescription) return res.status(400).json({ error: 'jobTitle and jobDescription required' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `Write a compelling freelance proposal cover letter for the following job.`,
+      ``,
+      `JOB TITLE: ${jobTitle}`,
+      `JOB DESCRIPTION: ${jobDescription.slice(0, 800)}`,
+      jobCategory ? `CATEGORY: ${jobCategory}` : '',
+      jobBudget   ? `CLIENT BUDGET: $${jobBudget}` : '',
+      ``,
+      `FREELANCER BACKGROUND:`,
+      userBio    ? `Bio: ${userBio.slice(0, 400)}` : '',
+      userSkills ? `Skills: ${Array.isArray(userSkills) ? userSkills.join(', ') : userSkills}` : '',
+      ``,
+      `Instructions:`,
+      `- 150-250 words, professional but warm tone`,
+      `- Open with a specific hook related to the job (not generic)`,
+      `- Highlight 2-3 relevant skills or experiences`,
+      `- Show you understand what the client needs`,
+      `- End with a clear call to action`,
+      `- Do NOT include a subject line or salutation — just the body`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 400,
+      temperature: 0.75,
+    });
+
+    const draft = completion.choices[0]?.message?.content?.trim() || '';
+    return res.json({ draft });
+  } catch (err) {
+    console.error('[AI] write-proposal error:', err.message);
+    return res.status(500).json({ error: 'Failed to generate proposal' });
+  }
+});
+
+// ── POST /api/ai/summarize-proposals ───────────────────────────────────────
+// Client tool: summarize all proposals on a job so client can decide faster.
+// Gated: Plus+ and above (client plans).
+router.post('/summarize-proposals/:jobId', authenticateToken, validateMongoId, aiLimiter, async (req, res) => {
+  try {
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_JOB_DESCRIPTION); // reuse Plus+ gate
+    if (!allowed) return res.status(403).json({ error: 'upgrade_required', plan: 'Plus+' });
+
+    const job = await Job.findById(req.params.jobId)
+      .select('title description clientId proposals')
+      .populate('proposals.freelancerId', 'name title skills');
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (String(job.clientId) !== String(req.user.id)) return res.status(403).json({ error: 'Not your job' });
+
+    const proposals = (job.proposals || []).filter(p => p.status !== 'withdrawn').slice(0, 15);
+    if (proposals.length === 0) return res.json({ summary: 'No proposals to summarize yet.' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const proposalList = proposals.map((p, i) => {
+      const name = p.freelancerId?.name || 'Freelancer';
+      const skills = p.freelancerId?.skills?.join(', ') || '';
+      const letter = (p.coverLetter || '').slice(0, 300);
+      const bid = p.proposedBudget ? `$${p.proposedBudget}` : 'no bid';
+      return `${i + 1}. ${name} (${bid})${skills ? ` — Skills: ${skills}` : ''}\n   "${letter}"`;
+    }).join('\n\n');
+
+    const prompt = [
+      `Summarize these ${proposals.length} freelance proposals for the job: "${job.title}"`,
+      ``,
+      proposalList,
+      ``,
+      `Provide:`,
+      `1. A 2-sentence overall summary of the applicant pool`,
+      `2. Top 3 standout candidates with one sentence on why each is notable`,
+      `3. Any red flags or patterns to be aware of`,
+      `4. A recommended next step`,
+      `Keep it concise and actionable — the client is busy.`,
+    ].join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 500,
+      temperature: 0.4,
+    });
+
+    const summary = completion.choices[0]?.message?.content?.trim() || '';
+    return res.json({ summary, count: proposals.length });
+  } catch (err) {
+    console.error('[AI] summarize-proposals error:', err.message);
+    return res.status(500).json({ error: 'Failed to summarize proposals' });
+  }
+});
+
+// ── GET /api/ai/budget-estimate ────────────────────────────────────────────
+// Free tool: helps clients understand what a job should cost.
+// No auth required — convert more users.
+const budgetEstimateLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 15,
+  message: { error: 'Too many requests — try again in a minute' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.get('/budget-estimate', budgetEstimateLimiter, async (req, res) => {
+  try {
+    const { category, description } = req.query;
+    if (!category && !description) return res.status(400).json({ error: 'category or description required' });
+
+    if (!hasAI()) return res.json({
+      estimate: null,
+      message: 'AI estimate unavailable — check market rates on similar job listings.',
+    });
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `A client is posting a freelance job on Fetchwork. Estimate a reasonable budget range.`,
+      category    ? `Category: ${category}` : '',
+      description ? `Job description: ${description.slice(0, 500)}` : '',
+      ``,
+      `Respond with ONLY valid JSON in this exact format (no markdown):`,
+      `{`,
+      `  "low": <number>,`,
+      `  "mid": <number>,`,
+      `  "high": <number>,`,
+      `  "type": "fixed" or "hourly",`,
+      `  "rationale": "<one sentence explaining the range>"`,
+      `}`,
+      `Base estimates on typical US freelance market rates.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 150,
+      temperature: 0.3,
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() || '{}';
+    let estimate;
+    try { estimate = JSON.parse(raw); } catch { estimate = null; }
+
+    return res.json({ estimate });
+  } catch (err) {
+    console.error('[AI] budget-estimate error:', err.message);
+    return res.status(500).json({ error: 'Failed to generate estimate' });
+  }
+});
+
 module.exports = router;
