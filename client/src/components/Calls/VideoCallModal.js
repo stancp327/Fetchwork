@@ -308,82 +308,123 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     if (pendingOfferRef.current) {
       const { fromUserId, offer } = pendingOfferRef.current;
       pendingOfferRef.current = null;
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit('call:answer', {
-        callId,
-        targetUserId: fromUserId,
-        answer: pc.localDescription,
-      });
-      setCallStatus('active');
-      if (!durationIntervalRef.current) {
-        durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
-      }
-    }
-
-    if (pendingIceCandidatesRef.current.length > 0) {
-      const queued = [...pendingIceCandidatesRef.current];
-      pendingIceCandidatesRef.current = [];
-      for (const c of queued) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(c));
-        } catch (err) {
-          console.error('Queued ICE candidate error:', err);
+      try {
+        console.log('[WebRTC] acceptCall: setting remote description from pending offer');
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        // Flush ICE candidates queued before remoteDescription was set
+        const queued = [...pendingIceCandidatesRef.current];
+        pendingIceCandidatesRef.current = [];
+        for (const c of queued) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(c)); }
+          catch (e) { console.warn('[WebRTC] Queued ICE candidate error after setRemoteDescription:', e); }
         }
+        console.log('[WebRTC] acceptCall: creating answer');
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        console.log('[WebRTC] acceptCall: sending answer');
+        socket.emit('call:answer', {
+          callId,
+          targetUserId: fromUserId,
+          answer: pc.localDescription,
+        });
+        setCallStatus('active');
+        if (!durationIntervalRef.current) {
+          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+        }
+      } catch (err) {
+        console.error('[WebRTC] acceptCall: failed to process offer/create answer:', err);
       }
     }
+    // Note: ICE candidates that arrived before the offer are flushed above after setRemoteDescription.
+    // Candidates that arrive after will be added live via handleIceCandidate (which now guards on remoteDescription).
   }, [callId, createPeerConnection, getLocalMedia, socket]);
 
   // Handle incoming offer
   useEffect(() => {
     if (!socket) return;
 
-    const handleOffer = async ({ fromUserId, offer }) => {
+    const handleOffer = async (detail) => {
+      // Fix: filter stale events from other call instances
+      if (detail?.callId && detail.callId !== callId) return;
+      const { fromUserId, offer } = detail || {};
       if (!pcRef.current) {
         pendingOfferRef.current = { fromUserId, offer };
         return;
       }
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pcRef.current.createAnswer();
-      await pcRef.current.setLocalDescription(answer);
-      socket.emit('call:answer', {
-        callId,
-        targetUserId: fromUserId,
-        answer: pcRef.current.localDescription,
-      });
-      setCallStatus('active');
-      durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+      try {
+        console.log('[WebRTC] handleOffer: setting remote description');
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+        // Flush any ICE candidates that arrived before remoteDescription was set
+        const queued = [...pendingIceCandidatesRef.current];
+        pendingIceCandidatesRef.current = [];
+        for (const c of queued) {
+          try { await pcRef.current.addIceCandidate(new RTCIceCandidate(c)); }
+          catch (e) { console.warn('[WebRTC] Queued ICE flush error:', e); }
+        }
+        console.log('[WebRTC] handleOffer: creating answer');
+        const answer = await pcRef.current.createAnswer();
+        await pcRef.current.setLocalDescription(answer);
+        console.log('[WebRTC] handleOffer: sending answer');
+        socket.emit('call:answer', {
+          callId,
+          targetUserId: fromUserId,
+          answer: pcRef.current.localDescription,
+        });
+        setCallStatus('active');
+        if (!durationIntervalRef.current) {
+          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+        }
+      } catch (err) {
+        console.error('[WebRTC] handleOffer: failed:', err);
+      }
     };
 
-    const handleAnswer = async ({ answer }) => {
+    const handleAnswer = async (detail) => {
+      if (detail?.callId && detail.callId !== callId) return;
       if (!pcRef.current) return;
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      setCallStatus('active');
-      durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+      try {
+        console.log('[WebRTC] handleAnswer: setting remote description');
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(detail?.answer ?? detail));
+        console.log('[WebRTC] handleAnswer: remote description set — ICE checks should begin');
+        setCallStatus('active');
+        if (!durationIntervalRef.current) {
+          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+        }
+      } catch (err) {
+        console.error('[WebRTC] handleAnswer: failed:', err);
+      }
     };
 
-    const handleIceCandidate = async ({ candidate }) => {
-      if (!pcRef.current) {
+    const handleIceCandidate = async (detail) => {
+      if (detail?.callId && detail.callId !== callId) return;
+      const { candidate } = detail || {};
+      // Fix: queue if PC doesn't exist OR if remoteDescription not yet set
+      // Adding ICE candidates before setRemoteDescription throws and discards them forever
+      if (!pcRef.current || !pcRef.current.remoteDescription) {
         pendingIceCandidatesRef.current.push(candidate);
         return;
       }
       try {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (err) {
-        console.error('ICE candidate error:', err);
+        console.warn('[WebRTC] ICE candidate error:', err);
       }
     };
 
-    const handleCallEnded = async () => {
+    const handleCallEnded = async (detail) => {
+      if (detail?.callId && detail.callId !== callId) return;
       await finalizeAndClose('ended');
     };
 
-    const handleMediaToggle = ({ kind, enabled }) => {
+    const handleMediaToggle = (detail) => {
+      if (detail?.callId && detail.callId !== callId) return;
+      const { kind, enabled } = detail || {};
       setRemoteMediaState(prev => ({ ...prev, [kind]: enabled }));
     };
 
-    const handleCallState = ({ state } = {}) => {
+    const handleCallState = (detail = {}) => {
+      if (detail?.callId && detail.callId !== callId) return;
+      const { state } = detail;
       const next = toUiStatus(state, 'connecting');
       if (next === 'ended') {
         finalizeAndClose('ended').catch(() => {});
