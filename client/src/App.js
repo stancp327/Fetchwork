@@ -14,6 +14,7 @@ import usePageTracker from './hooks/usePageTracker';
 import Navigation from './components/Navigation/Navigation';
 import Footer from './components/common/Footer';
 import ChatBot from './components/ChatBot/ChatBot';
+import FeedbackWidget from './components/common/FeedbackWidget';
 import NotificationListener from './components/common/NotificationListener';
 import MessagePreview from './components/common/MessagePreview';
 import IncomingCallOverlay from './components/Calls/IncomingCallOverlay';
@@ -193,6 +194,7 @@ function AppContent() {
       <ScrollToTop />
       <Navigation />
       <ChatBot />
+      <FeedbackWidget />
       <NotificationListener />
       <MessagePreview />
       <IncomingCallOverlay />

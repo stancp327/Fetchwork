@@ -740,6 +740,8 @@ router.post('/expand-scope', budgetEstimateLimiter, async (req, res) => {
 
 // ── POST /api/ai/dispute-assistant ────────────────────────────────────────
 // Help a user write a clear, compelling dispute description.
+// NOTE: AI only improves the user's text. It does NOT touch dispute status,
+// take any resolution action, or make binding decisions. Admin must review.
 // Gated: Pro.
 router.post('/dispute-assistant', authenticateToken, aiLimiter, async (req, res) => {
   try {
@@ -775,9 +777,110 @@ router.post('/dispute-assistant', authenticateToken, aiLimiter, async (req, res)
 
     const improved = completion.choices[0]?.message?.content?.trim() || '';
     return res.json({ improved });
+    // ⚠️ No dispute status changes here — AI is writing-only
   } catch (err) {
     console.error('[AI] dispute-assistant error:', err.message);
     return res.status(500).json({ error: 'Failed to improve dispute description' });
+  }
+});
+
+// ── POST /api/ai/analyze-dispute/:disputeId ────────────────────────────────
+// ADMIN ONLY — analyze a dispute and save findings to the dispute record.
+// AI NEVER changes dispute status or takes any action.
+// Admin must review AI notes and manually decide the outcome.
+router.post('/analyze-dispute/:disputeId', authenticateToken, validateMongoId, aiLimiter, async (req, res) => {
+  try {
+    // Admin gate
+    if (!req.user?.isAdmin && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const Dispute = require('../models/Dispute');
+    const dispute = await Dispute.findById(req.params.disputeId)
+      .populate('client', 'name firstName lastName')
+      .populate('freelancer', 'name firstName lastName')
+      .lean();
+    if (!dispute) return res.status(404).json({ error: 'Dispute not found' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const clientName = `${dispute.client?.firstName || ''} ${dispute.client?.lastName || ''}`.trim() || 'Client';
+    const freelancerName = `${dispute.freelancer?.firstName || ''} ${dispute.freelancer?.lastName || ''}`.trim() || 'Freelancer';
+    const messages = (dispute.messages || []).slice(-10).map(m =>
+      `[${m.sender === dispute.client?._id?.toString() ? clientName : freelancerName}]: ${(m.content || '').slice(0, 300)}`
+    ).join('\n');
+
+    const prompt = [
+      `You are assisting a human admin at Fetchwork (a freelance marketplace) to review a dispute.`,
+      `YOUR ROLE: Provide analysis and suggestions ONLY. You have NO authority to resolve, close, or take any action on this dispute.`,
+      ``,
+      `DISPUTE DETAILS:`,
+      `Reason: ${dispute.reason || 'Not specified'}`,
+      `Status: ${dispute.status}`,
+      `Description: ${(dispute.description || '').slice(0, 600)}`,
+      messages ? `Recent messages:\n${messages}` : '',
+      ``,
+      `Provide a JSON response:`,
+      `{`,
+      `  "summary": "2-3 sentence neutral summary of the dispute",`,
+      `  "riskLevel": "low|medium|high",`,
+      `  "keyFindings": ["finding 1", "finding 2", "finding 3"],`,
+      `  "suggestedAction": "one suggested next step for the admin to CONSIDER (e.g. request more evidence, mediate, etc.)",`,
+      `  "redFlags": ["any concerning patterns, if any"],`,
+      `  "adminNote": "brief note to add to the dispute for context"`,
+      `}`,
+      `Remember: the human admin makes all final decisions.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 500,
+      temperature: 0.3,
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() || '{}';
+    let analysis;
+    try {
+      const jsonStr = raw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      analysis = JSON.parse(jsonStr);
+    } catch { analysis = { summary: raw, riskLevel: 'medium', keyFindings: [], suggestedAction: '', redFlags: [] }; }
+
+    // Save to dispute — READ ONLY fields, no status change
+    await Dispute.findByIdAndUpdate(req.params.disputeId, {
+      aiAnalysis: {
+        summary:         analysis.summary || '',
+        riskLevel:       analysis.riskLevel || 'medium',
+        suggestedAction: analysis.suggestedAction || '',
+        keyFindings:     analysis.keyFindings || [],
+        analyzedAt:      new Date(),
+        model:           'gpt-4o-mini',
+        requiresAdminReview: true, // always — AI never acts
+      }
+    });
+
+    // Also add as an admin note so it appears in the timeline
+    if (analysis.adminNote) {
+      await Dispute.findByIdAndUpdate(req.params.disputeId, {
+        $push: {
+          adminNotes: {
+            author: req.user._id || req.user.userId,
+            content: `🤖 AI Analysis: ${analysis.adminNote}\n\n⚠️ This is an AI suggestion only. Admin review and action required.`,
+          }
+        }
+      });
+    }
+
+    return res.json({
+      analysis,
+      message: 'Analysis saved to dispute. Admin review required before any action.',
+      requiresAdminReview: true,
+    });
+  } catch (err) {
+    console.error('[AI] analyze-dispute error:', err.message);
+    return res.status(500).json({ error: 'Failed to analyze dispute' });
   }
 });
 

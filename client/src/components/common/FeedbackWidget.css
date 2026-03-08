@@ -1,0 +1,118 @@
+/* Feedback Widget — fbw- prefix */
+
+.fbw-root {
+  position: fixed;
+  bottom: var(--space-5, 20px);
+  left: var(--space-5, 20px);
+  z-index: 9990;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3, 12px);
+}
+
+/* Trigger tab */
+.fbw-trigger {
+  background: var(--color-primary, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+.fbw-trigger:hover { transform: translateY(-1px); opacity: 0.9; }
+
+/* Panel */
+.fbw-panel {
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  background: var(--color-bg-primary, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  animation: fbw-slide-up 0.2s ease;
+}
+
+@keyframes fbw-slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fbw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--color-primary, #2563eb);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+.fbw-close {
+  background: none; border: none; color: white; font-size: 16px;
+  cursor: pointer; opacity: 0.8; padding: 2px;
+}
+.fbw-close:hover { opacity: 1; }
+
+/* Success state */
+.fbw-success {
+  padding: var(--space-5, 20px);
+  text-align: center;
+}
+.fbw-success-icon { font-size: 36px; margin-bottom: 8px; }
+.fbw-success p { font-size: 14px; color: var(--color-text-primary, #111827); line-height: 1.5; margin: 0; }
+
+/* Form */
+.fbw-form { padding: var(--space-4, 16px); display: flex; flex-direction: column; gap: 12px; }
+
+.fbw-categories { display: flex; flex-wrap: wrap; gap: 6px; }
+.fbw-cat-btn {
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 16px; padding: 4px 10px;
+  font-size: 12px; cursor: pointer; color: var(--color-text-secondary, #374151);
+  transition: all 0.15s; white-space: nowrap;
+}
+.fbw-cat-btn.active {
+  background: var(--color-primary, #2563eb); color: white; border-color: var(--color-primary, #2563eb);
+}
+.fbw-cat-btn:not(.active):hover { border-color: var(--color-primary, #2563eb); }
+
+.fbw-textarea {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px; padding: 10px 12px;
+  font-size: 13px; resize: none; outline: none;
+  background: var(--color-bg-secondary, #f9fafb);
+  color: var(--color-text-primary, #111827);
+  line-height: 1.5; font-family: inherit;
+}
+.fbw-textarea:focus { border-color: var(--color-primary, #2563eb); background: white; }
+
+.fbw-email {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px; padding: 8px 12px;
+  font-size: 13px; outline: none;
+  background: var(--color-bg-secondary, #f9fafb);
+  color: var(--color-text-primary, #111827);
+}
+.fbw-email:focus { border-color: var(--color-primary, #2563eb); background: white; }
+
+.fbw-submit-btn {
+  background: var(--color-primary, #2563eb); color: white; border: none;
+  border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.fbw-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fbw-submit-btn:not(:disabled):hover { opacity: 0.85; }
+
+.fbw-privacy { font-size: 11px; color: var(--color-text-muted, #9ca3af); text-align: center; margin: 0; }
+
+@media (min-width: 480px) {
+  .fbw-panel { width: 340px; }
+}

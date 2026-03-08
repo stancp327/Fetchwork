@@ -208,6 +208,17 @@ const disputeSchema = new mongoose.Schema({
   financialActions: [financialActionSchema],
   adminNotes: [adminNoteSchema],
 
+  // ── AI Analysis (read-only, admin review required before any action) ──
+  aiAnalysis: {
+    summary:        String,        // AI-generated summary of the dispute
+    riskLevel:      { type: String, enum: ['low', 'medium', 'high'] },
+    suggestedAction: String,       // Suggestion ONLY — admin must approve
+    keyFindings:    [String],
+    analyzedAt:     Date,
+    model:          { type: String, default: 'gpt-4o-mini' },
+    requiresAdminReview: { type: Boolean, default: true }, // always true — AI never acts
+  },
+
   // ── Timers ──────────────────────────────────────────────────
   deadline: {
     type: Date,
