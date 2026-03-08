@@ -20,6 +20,8 @@ import BookingDetailScreen from '../screens/Bookings/BookingDetailScreen';
 import GroupSlotsScreen    from '../screens/Bookings/GroupSlotsScreen';
 import EscrowConfirmScreen from '../screens/Payments/EscrowConfirmScreen';
 import TipScreen           from '../screens/Payments/TipScreen';
+import BoostsScreen        from '../screens/Boosts/BoostsScreen';
+import AnalyticsScreen     from '../screens/Analytics/AnalyticsScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -51,6 +53,8 @@ export default function ProfileStackNavigator() {
       <Stack.Screen name="GroupSlots"        component={GroupSlotsScreen}         options={{ title: 'Available Sessions' }} />
       <Stack.Screen name="EscrowConfirm"    component={EscrowConfirmScreen}      options={{ title: 'Confirm Payment' }} />
       <Stack.Screen name="TipScreen"        component={TipScreen}               options={{ title: 'Send Tip' }} />
+      <Stack.Screen name="Boosts"          component={BoostsScreen}            options={{ title: 'Boost Listings' }} />
+      <Stack.Screen name="Analytics"       component={AnalyticsScreen}         options={{ title: 'My Analytics' }} />
     </Stack.Navigator>
   );
 }
