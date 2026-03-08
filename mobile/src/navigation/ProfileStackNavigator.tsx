@@ -25,6 +25,8 @@ import ReviewListScreen    from '../screens/Reviews/ReviewListScreen';
 import DisputeListScreen   from '../screens/Disputes/DisputeListScreen';
 import DisputeDetailScreen from '../screens/Disputes/DisputeDetailScreen';
 import FileDisputeScreen   from '../screens/Disputes/FileDisputeScreen';
+import BoostsScreen        from '../screens/Boosts/BoostsScreen';
+import AnalyticsScreen     from '../screens/Analytics/AnalyticsScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -61,7 +63,10 @@ export default function ProfileStackNavigator() {
       <Stack.Screen name="Disputes"        component={DisputeListScreen}       options={{ title: 'My Disputes' }} />
       <Stack.Screen name="DisputeDetail"   component={DisputeDetailScreen}     options={{ title: 'Dispute Details' }} />
       <Stack.Screen name="FileDispute"     component={FileDisputeScreen}       options={{ title: 'File a Dispute' }} />
+      <Stack.Screen name="Boosts"          component={BoostsScreen}            options={{ title: 'Boost Listings' }} />
+      <Stack.Screen name="Analytics"       component={AnalyticsScreen}         options={{ title: 'My Analytics' }} />
     </Stack.Navigator>
   );
 }
+
 

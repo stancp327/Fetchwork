@@ -59,6 +59,8 @@ export type ProfileStackParamList = {
   Disputes:          undefined;
   DisputeDetail:     { disputeId: string };
   FileDispute:       { jobId?: string; orderId?: string };
+  Boosts:            undefined;
+  Analytics:         undefined;
 };
 
 export type MoreStackParamList = {
@@ -85,4 +87,5 @@ export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
 };
+
 

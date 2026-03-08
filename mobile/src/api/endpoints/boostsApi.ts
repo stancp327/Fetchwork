@@ -1,27 +1,29 @@
 import api from '../client';
 
+export type BoostTier = 'standard' | 'premium' | 'featured';
+
+export interface BoostCredits {
+  credits: number;
+  freeCreditsUsed: number;
+  plan: string;
+}
+
+export interface Boost {
+  tier: BoostTier;
+  expiresAt: string;
+  cost: number;
+}
+
 export const boostsApi = {
-  credits: async () => {
-    const { data } = await api.get('/api/boosts/credits');
-    return data;
-  },
-  options: async () => {
-    const { data } = await api.get('/api/boosts/options');
-    return data;
-  },
-  boostJob: async (jobId: string, plan = '7day', useCredit = false) => {
-    const { data } = await api.post(`/api/boosts/job/${jobId}`, { plan, useCredit });
-    return data;
-  },
-  boostService: async (serviceId: string, plan = '7day', useCredit = false) => {
-    const { data } = await api.post(`/api/boosts/service/${serviceId}`, { plan, useCredit });
-    return data;
-  },
-  analytics: async () => {
-    const { data } = await api.get('/api/boosts/analytics');
-    return data;
-  },
-  trackClick: async (targetType: string, targetId: string) => {
-    await api.post('/api/boosts/track/click', { targetType, targetId });
-  },
+  getCredits: (): Promise<BoostCredits> =>
+    api.get('/api/boosts/credits').then(r => r.data),
+
+  boostJob: (id: string, tier: BoostTier): Promise<{ boost: Boost }> =>
+    api.post(`/api/boosts/job/${id}`, { tier }).then(r => r.data),
+
+  boostService: (id: string, tier: BoostTier): Promise<{ boost: Boost }> =>
+    api.post(`/api/boosts/service/${id}`, { tier }).then(r => r.data),
+
+  getAnalytics: (): Promise<{ impressions: number; clicks: number; applications: number }> =>
+    api.get('/api/boosts/analytics').then(r => r.data),
 };
