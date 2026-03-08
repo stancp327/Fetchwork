@@ -1,3 +1,7 @@
+/* IncomingCallOverlay.css
+ * Prefix: ico-
+ * Scope: Fixed toast overlay for incoming call notifications with accept/reject actions
+ */
 .incoming-call-toast {
   position: fixed;
   top: 1rem;

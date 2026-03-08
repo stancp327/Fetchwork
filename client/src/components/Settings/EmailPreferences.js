@@ -70,7 +70,7 @@ const EmailPreferences = () => {
     updatePreferences(newPreferences);
   };
 
-  if (loading) return <div className="loading">Loading preferences...</div>;
+  if (loading) return <div className="ep-loading">Loading preferences...</div>;
 
   return (
     <div className="email-preferences">

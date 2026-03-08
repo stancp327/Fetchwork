@@ -1,3 +1,7 @@
+/* VideoCallModal.css
+ * Prefix: vcm-
+ * Scope: Full-screen video call UI with local PiP, controls, and remote video
+ */
 .videocall-overlay {
   position: fixed;
   inset: 0;

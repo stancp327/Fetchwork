@@ -41,7 +41,7 @@ const reasonLabels = {
 // ── Empty State ─────────────────────────────────────────────────
 const EmptyState = ({ filter }) => (
   <div className="disputes-empty">
-    <div className="empty-icon">⚖️</div>
+    <div className="dc-empty-icon">⚖️</div>
     <h3>{filter === 'all' ? 'No Disputes Yet' : `No ${filter.replace('_', ' ')} Disputes`}</h3>
     <p>
       {filter === 'all'
@@ -219,12 +219,12 @@ const DisputeCenter = () => {
           {['all', 'opened', 'needs_info', 'under_review', 'escalated', 'proposed_resolution', 'resolved', 'closed'].map(status => (
             <button
               key={status}
-              className={`filter-tab ${statusFilter === status ? 'active' : ''}`}
+              className={`dc-filter-tab ${statusFilter === status ? 'active' : ''}`}
               onClick={() => setFilter(status)}
             >
               {status === 'all' ? 'All' : (status.charAt(0).toUpperCase() + status.slice(1)).replace(/_/g, ' ')}
               {statusCounts[status] > 0 && (
-                <span className="filter-count">{statusCounts[status]}</span>
+                <span className="dc-filter-count">{statusCounts[status]}</span>
               )}
             </button>
           ))}
@@ -240,7 +240,7 @@ const DisputeCenter = () => {
       {/* Content */}
       {loading ? (
         <div className="disputes-loading">
-          <div className="spinner"></div>
+          <div className="dc-spinner"></div>
           <p>Loading disputes...</p>
         </div>
       ) : error ? (

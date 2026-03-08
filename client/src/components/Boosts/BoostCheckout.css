@@ -1,3 +1,7 @@
+/* BoostCheckout.css
+ * Prefix: bc-
+ * Scope: Boost purchase checkout flow with payment and success/error states
+ */
 .boost-checkout-container {
   min-height: 100vh;
   background: var(--bg-secondary, #f8f9fa);

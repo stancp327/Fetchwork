@@ -1,3 +1,7 @@
+/* OnboardingMilestone.css
+ * Prefix: om-
+ * Scope: Onboarding progress tracker with milestone steps and CTA
+ */
 .milestone-tracker {
   background: var(--color-bg-primary);
   border-radius: var(--radius-xl);

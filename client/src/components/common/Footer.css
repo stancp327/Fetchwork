@@ -1,4 +1,8 @@
-.footer {
+/* Footer.css
+ * Prefix: ft-
+ * Scope: Site-wide footer with links and branding
+ */
+.ft-footer {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
   margin-top: auto;

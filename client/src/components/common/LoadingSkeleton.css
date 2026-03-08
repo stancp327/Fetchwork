@@ -1,3 +1,7 @@
+/* LoadingSkeleton.css
+ * Prefix: ls-
+ * Scope: Animated shimmer skeletons for loading states across the app
+ */
 /* Enhanced Loading skeleton styles */
 .loading-skeleton {
   background: linear-gradient(90deg, 

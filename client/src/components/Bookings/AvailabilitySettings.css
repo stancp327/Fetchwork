@@ -1,3 +1,7 @@
+/* AvailabilitySettings.css
+ * Prefix: as-
+ * Scope: Weekly schedule, time windows, and blackout date exceptions
+ */
 /* ── AvailabilitySettings ─────────────────────────────────────────────── */
 .avail-settings {
   max-width: 800px;

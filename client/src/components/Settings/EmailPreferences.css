@@ -1,3 +1,7 @@
+/* EmailPreferences.css
+ * Prefix: ep-
+ * Scope: Email and notification preference settings
+ */
 .email-preferences {
   max-width: 600px;
   margin: 0 auto;
@@ -53,7 +57,7 @@
   background: var(--color-bg-primary);
 }
 
-.loading {
+.ep-loading {
   text-align: center;
   padding: 40px;
   color: #666;

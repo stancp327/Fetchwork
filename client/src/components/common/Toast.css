@@ -1,3 +1,7 @@
+/* Toast.css
+ * Prefix: toast-
+ * Scope: Fixed toast notification container with info/success/error/warning variants
+ */
 /* ── Toast Notifications — Mobile-first ──────────────────────── */
 .toast-container {
   position: fixed;

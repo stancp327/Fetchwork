@@ -1,3 +1,7 @@
+/* DisputeCenter.css
+ * Prefix: dc-
+ * Scope: Dispute listing, filtering, and status management
+ */
 .dispute-center {
   max-width: 1000px;
   margin: 0 auto;
@@ -39,7 +43,7 @@
   flex-wrap: wrap;
 }
 
-.filter-tab {
+.dc-filter-tab {
   padding: 0.5rem 1rem;
   border: 1px solid var(--color-border-medium);
   border-radius: 20px;
@@ -54,18 +58,18 @@
   gap: 0.4rem;
 }
 
-.filter-tab:hover {
+.dc-filter-tab:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
-.filter-tab.active {
+.dc-filter-tab.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
 }
 
-.filter-count {
+.dc-filter-count {
   background: rgba(255, 255, 255, 0.25);
   border-radius: 10px;
   padding: 0.1rem 0.45rem;
@@ -73,7 +77,7 @@
   font-weight: 600;
 }
 
-.filter-tab:not(.active) .filter-count {
+.dc-filter-tab:not(.active) .dc-filter-count {
   background: var(--color-bg-muted);
   color: var(--color-text-secondary);
 }
@@ -217,7 +221,7 @@
   padding: 4rem 2rem;
 }
 
-.spinner {
+.dc-spinner {
   width: 40px;
   height: 40px;
   border: 3px solid var(--color-border-medium);
@@ -229,7 +233,7 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.disputes-empty .empty-icon {
+.disputes-empty .dc-empty-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
 }
@@ -258,7 +262,7 @@
 /* Mobile base */
 .dispute-filters { flex-direction: column; align-items: flex-start; }
 .dispute-filter-tabs { overflow-x: auto; flex-wrap: nowrap; width: 100%; -webkit-overflow-scrolling: touch; }
-.filter-tab { flex-shrink: 0; min-height: 44px; }
+.dc-filter-tab { flex-shrink: 0; min-height: 44px; }
 
 @media (min-width: 768px) {
   .dispute-filters { flex-direction: row; align-items: center; }

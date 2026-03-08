@@ -1,3 +1,7 @@
+/* WalletPage.css
+ * Prefix: wp-
+ * Scope: Wallet balance, credit management, and top-up flow
+ */
 /* ── WalletPage ───────────────────────────────────────────────── */
 .wallet-wrap {
   max-width: 600px;

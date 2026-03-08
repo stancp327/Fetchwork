@@ -1,3 +1,7 @@
+/* UniversalSearch.css
+ * Prefix: us-
+ * Scope: Universal search with suggestions dropdown, filters, and paginated results
+ */
 .search-container {
   max-width: 900px;
   margin: 0 auto;

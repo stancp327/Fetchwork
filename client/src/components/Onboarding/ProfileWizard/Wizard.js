@@ -173,12 +173,12 @@ const Wizard = () => {
     <div className="wizard-container">
       <div className="wizard-header">
         <h1>Set up your profile</h1>
-        <div className="progress-bar">
-          <div className="progress" style={{ width: `${stepProgress}%` }} />
+        <div className="wiz-progress-bar">
+          <div className="wiz-progress" style={{ width: `${stepProgress}%` }} />
         </div>
-        <div className="steps">
+        <div className="wiz-steps">
           {steps.map((s, i) => (
-            <div key={s.key} className={`step ${i === stepIdx ? 'active' : ''}`}>{s.title}</div>
+            <div key={s.key} className={`wiz-step ${i === stepIdx ? 'active' : ''}`}>{s.title}</div>
           ))}
         </div>
         <div className="completion-meter">
@@ -188,21 +188,21 @@ const Wizard = () => {
 
       <div className="wizard-content">
         {steps[stepIdx].key === 'basic' && (
-          <div className="section">
-            <div className="row">
+          <div className="wiz-section">
+            <div className="wiz-row">
               <label>First name</label>
               <input value={data.firstName} onChange={e => setData(d => ({ ...d, firstName: e.target.value }))} />
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Last name</label>
               <input value={data.lastName} onChange={e => setData(d => ({ ...d, lastName: e.target.value }))} />
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Headline</label>
               <input placeholder="e.g., Full-Stack Web Developer" value={data.headline} onChange={e => setData(d => ({ ...d, headline: e.target.value }))} />
               <small>Tip: A strong headline: "Certified Web Developer | React &amp; Node.js Expert"</small>
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Tagline</label>
               <input placeholder="Short pitch" value={data.tagline} onChange={e => setData(d => ({ ...d, tagline: e.target.value }))} />
             </div>
@@ -210,8 +210,8 @@ const Wizard = () => {
         )}
 
         {steps[stepIdx].key === 'skills' && (
-          <div className="section">
-            <div className="row">
+          <div className="wiz-section">
+            <div className="wiz-row">
               <label>Skills</label>
               <div className="skills-input">
                 <input value={newSkill} onChange={e => setNewSkill(e.target.value)} placeholder="Add a skill..." onKeyDown={e => e.key==='Enter' && (e.preventDefault(), addSkill())} />
@@ -225,7 +225,7 @@ const Wizard = () => {
                   </span>
                 ))}
               </div>
-              <div className="row">
+              <div className="wiz-row">
                 <label>Languages</label>
                 <div>
                   {(data.languages || []).map((lan, i) => (
@@ -249,8 +249,8 @@ const Wizard = () => {
         )}
 
         {steps[stepIdx].key === 'experience' && (
-          <div className="section">
-            <div className="row">
+          <div className="wiz-section">
+            <div className="wiz-row">
               <label>Experience</label>
               <div>
                 {(data.experience || []).map((it, i) => (
@@ -268,7 +268,7 @@ const Wizard = () => {
                 <button type="button" onClick={() => addArrayItem('experience', { ...emptyExperience })}>Add experience</button>
               </div>
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Education</label>
               <div>
                 {(data.education || []).map((it, i) => (
@@ -285,7 +285,7 @@ const Wizard = () => {
                 <button type="button" onClick={() => addArrayItem('education', { ...emptyEducation })}>Add education</button>
               </div>
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Certifications</label>
               <div>
                 {(data.certifications || []).map((it, i) => (
@@ -304,12 +304,12 @@ const Wizard = () => {
         )}
 
         {steps[stepIdx].key === 'portfolio' && (
-          <div className="section">
+          <div className="wiz-section">
             <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', color: '#1e40af', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>💡 Portfolio is optional — you can add items later from your profile.</span>
               <button type="button" onClick={onNext} style={{ background: 'none', border: 'none', color: '#2563eb', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>Skip →</button>
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Upload portfolio files</label>
               <input type="file" multiple onChange={async (e) => {
                 const files = Array.from(e.target.files || []);
@@ -368,8 +368,8 @@ const Wizard = () => {
         )}
 
         {steps[stepIdx].key === 'rates' && (
-          <div className="section">
-            <div className="row">
+          <div className="wiz-section">
+            <div className="wiz-row">
               <label>Rate type</label>
               <select value={data.preferencesExtended?.rateType || 'hourly'} onChange={e => setData(d => ({ ...d, preferencesExtended: { ...d.preferencesExtended, rateType: e.target.value } }))}>
                 <option value="hourly">Hourly</option>
@@ -377,17 +377,17 @@ const Wizard = () => {
               </select>
             </div>
             {data.preferencesExtended?.rateType === 'hourly' && (
-              <div className="row">
+              <div className="wiz-row">
                 <label>Hourly rate (USD)</label>
                 <input type="number" min="0" value={data.hourlyRate} onChange={e => setData(d => ({ ...d, hourlyRate: Number(e.target.value || 0) }))} />
                 <small>Freelancers like you typically charge $25–40/hr.</small>
               </div>
             )}
-            <div className="row">
+            <div className="wiz-row">
               <label>Availability hours</label>
               <input placeholder="e.g., 9am–5pm" value={data.preferencesExtended?.availabilityHours || ''} onChange={e => setData(d => ({ ...d, preferencesExtended: { ...d.preferencesExtended, availabilityHours: e.target.value } }))} />
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Work preference</label>
               <div className="two">
                 <label><input type="checkbox" checked={!!data.preferencesExtended?.remote} onChange={e => setData(d => ({ ...d, preferencesExtended: { ...d.preferencesExtended, remote: e.target.checked } }))} /> Remote</label>
@@ -398,8 +398,8 @@ const Wizard = () => {
         )}
 
         {steps[stepIdx].key === 'branding' && (
-          <div className="section">
-            <div className="row">
+          <div className="wiz-section">
+            <div className="wiz-row">
               <label>Custom URL</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span>fetchwork.com/freelancer/</span>
@@ -425,15 +425,15 @@ const Wizard = () => {
               </div>
               <small>Your public profile will be at /freelancer/username</small>
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Show email publicly</label>
               <input type="checkbox" checked={!!data.visibility?.showEmail} onChange={e => setData(d => ({ ...d, visibility: { ...d.visibility, showEmail: e.target.checked } }))} />
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Show phone publicly</label>
               <input type="checkbox" checked={!!data.visibility?.showPhone} onChange={e => setData(d => ({ ...d, visibility: { ...d.visibility, showPhone: e.target.checked } }))} />
             </div>
-            <div className="row">
+            <div className="wiz-row">
               <label>Mode</label>
               <select value={data.modes?.freelancer ? 'freelancer' : data.modes?.client ? 'client' : 'both'} onChange={e => {
                 const v = e.target.value;
@@ -448,13 +448,13 @@ const Wizard = () => {
         )}
 
         {steps[stepIdx].key === 'social' && (
-          <div className="section">
+          <div className="wiz-section">
             <p>Social proof features are coming soon. You can publish your profile now and add testimonials later.</p>
           </div>
         )}
 
         {steps[stepIdx].key === 'review' && (
-          <div className="section">
+          <div className="wiz-section">
             <h2>Review</h2>
             <p>Profile strength: {completion}%</p>
             <ul>
@@ -469,7 +469,7 @@ const Wizard = () => {
       </div>
 
       <div className="wizard-actions">
-        {msg && <div className="info">{msg}</div>}
+        {msg && <div className="wiz-info">{msg}</div>}
         <button onClick={onBack} disabled={stepIdx === 0 || saving}>Back</button>
         <button onClick={onNext} disabled={saving || (steps[stepIdx].key === 'review' && !data.username)}>{steps[stepIdx].key === 'review' ? 'Publish' : 'Save & Next'}</button>
       </div>

@@ -1,3 +1,7 @@
+/* SavedItems.css
+ * Prefix: si-
+ * Scope: Saved jobs and freelancers list with filter tabs and remove action
+ */
 /* ── Saved Items — Mobile-first ──────────────────────────────── */
 .saved-page {
   max-width: 900px;

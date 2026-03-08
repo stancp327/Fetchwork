@@ -1,3 +1,7 @@
+/* DisputeTimeline.css
+ * Prefix: dt-
+ * Scope: Step-by-step dispute resolution timeline with progress indicators
+ */
 .dispute-timeline {
   background: var(--color-bg-primary);
   border-radius: var(--radius-xl);

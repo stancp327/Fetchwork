@@ -1,3 +1,7 @@
+/* OnlineStatus.css
+ * Prefix: os-
+ * Scope: Online/offline dot indicator and avatar badge
+ */
 .online-status {
   display: inline-flex;
   align-items: center;
