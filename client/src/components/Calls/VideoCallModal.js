@@ -183,6 +183,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     // Debug: set localStorage.debug_turn_relay=1 in browser console to force relay-only (Q7 diagnostic)
     const forceRelay = localStorage.getItem('debug_turn_relay') === '1';
     if (forceRelay) console.warn('[WebRTC] debug_turn_relay=1: using iceTransportPolicy:relay (TURN-only mode)');
+    console.log('[WebRTC] Creating PC with ICE servers:', JSON.stringify(dynamicIceServers));
     const pc = new RTCPeerConnection({
       iceServers: dynamicIceServers,
       ...(forceRelay && { iceTransportPolicy: 'relay' }),
