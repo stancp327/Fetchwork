@@ -27,7 +27,7 @@ const toUiStatus = (state, fallback = 'connecting') => {
   }
 };
 
-const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false, onClose }) => {
+const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false, autoAccept = false, onClose }) => {
   const socket = window.__fetchworkSocket;
   const [callStatus, setCallStatus] = useState(() => {
     if (!hasWebRTC) return 'failed';
@@ -415,6 +415,19 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       window.removeEventListener('socket:call:state', wrapState);
     };
   }, [socket, callId, finalizeAndClose]);
+
+  // Auto-accept for callee when overlay already confirmed acceptance
+  // Runs AFTER socket handlers useEffect (defined above) so socket:call:offer
+  // listener is guaranteed registered before call:accept is emitted to server.
+  const hasAutoAcceptedRef = useRef(false);
+  useEffect(() => {
+    if (autoAccept && isIncoming && callStatus === 'incoming' && !hasAutoAcceptedRef.current) {
+      hasAutoAcceptedRef.current = true;
+      acceptCall();
+    }
+  // acceptCall is stable (useCallback); callStatus triggers once on 'incoming'
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAccept, isIncoming, callStatus]);
 
   // Auto-start for caller — fire on 'connecting' NOT 'ringing'
   // Rationale: sending the offer on 'ringing' creates a race condition where the offer

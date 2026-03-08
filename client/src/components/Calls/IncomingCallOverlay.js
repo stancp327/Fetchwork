@@ -51,12 +51,15 @@ const IncomingCallOverlay = () => {
   }, []);
 
   const acceptCall = () => {
-    socketRef.current?.emit('call:accept', { callId: incomingCall.callId });
+    // Do NOT emit call:accept here — VideoCallModal will emit it after mounting
+    // and registering its socket:call:offer handler, eliminating the race condition
+    // where the offer arrives before the handler is registered.
     setActiveCall({
       callId: incomingCall.callId,
       remoteUser: incomingCall.caller,
       type: incomingCall.type,
       isIncoming: true,
+      autoAccept: true,
     });
     setIncomingCall(null);
   };
@@ -95,6 +98,7 @@ const IncomingCallOverlay = () => {
           remoteUser={activeCall.remoteUser}
           type={activeCall.type}
           isIncoming={activeCall.isIncoming}
+          autoAccept={activeCall.autoAccept}
           onClose={() => setActiveCall(null)}
         />
       )}
