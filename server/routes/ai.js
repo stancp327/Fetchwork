@@ -220,4 +220,83 @@ router.get('/match-freelancers/:id', authenticateToken, validateMongoId, aiLimit
   }
 });
 
+// ── POST /api/ai/support-chat ──────────────────────────────────────────────
+// Public-ish endpoint (no auth required — support chat is for everyone).
+// Rate-limited to prevent abuse.
+const supportChatLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  message: { error: 'Too many messages — slow down a bit!' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const SUPPORT_SYSTEM_PROMPT = `You are the Fetchwork support assistant — friendly, concise, and helpful.
+Fetchwork is a freelance marketplace that connects clients with skilled freelancers across categories like web development, design, writing, photography, fitness coaching, tutoring, cooking, and more.
+
+Key platform facts:
+- Clients post jobs or browse services; freelancers apply with proposals or offer services directly
+- Plans: Freelancer Free / Plus+ / Pro | Client Free / Plus+ / Business
+- Payments handled via Stripe; freelancers need Stripe Connect to receive payouts
+- Services support one-time bookings, recurring subscriptions, and prepaid bundles
+- Video/audio calls, messaging, contracts, and dispute resolution all built-in
+- Boosts let freelancers promote their services/jobs for more visibility
+- Booking calendar with availability management available on Plus+ and above
+
+How to respond:
+- Keep answers short and practical
+- If you don't know something specific, say so and suggest contacting support@fetchwork.net
+- Never make up pricing, policies, or features you're unsure about
+- For billing/payment issues, direct to the Billing section in their account settings
+- Be warm but efficient — freelancers and clients are busy people`;
+
+router.post('/support-chat', supportChatLimiter, async (req, res) => {
+  try {
+    const { messages } = req.body;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'messages array required' });
+    }
+
+    // Cap history to last 10 messages to keep costs low
+    const history = messages.slice(-10).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: String(m.content).slice(0, 1000), // cap per message
+    }));
+
+    // Use the same internal client pattern as the rest of aiService
+    const { hasAI } = require('../services/aiService');
+    if (!hasAI()) {
+      return res.json({
+        reply: "I'm not available right now. For help, please email support@fetchwork.net and we'll get back to you shortly.",
+      });
+    }
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    if (!openai) {
+      return res.json({
+        reply: "I'm not available right now. For help, please email support@fetchwork.net and we'll get back to you shortly.",
+      });
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SUPPORT_SYSTEM_PROMPT },
+        ...history,
+      ],
+      max_tokens: 400,
+      temperature: 0.5,
+    });
+
+    const reply = completion.choices[0]?.message?.content?.trim() || "I'm not sure about that — please email support@fetchwork.net for help.";
+    return res.json({ reply });
+  } catch (err) {
+    console.error('[AI] support-chat error:', err.message);
+    return res.json({
+      reply: "I'm having trouble right now. Please email support@fetchwork.net and we'll help you out.",
+    });
+  }
+});
+
 module.exports = router;
