@@ -148,7 +148,7 @@
 
 /* ── Create button ── */
 .nav-create-btn {
-  display: inline-flex;
+  display: none;
   align-items: center;
   padding: 0.375rem 0.875rem;
   background: var(--color-primary, #2563eb);
@@ -667,9 +667,9 @@
   color: #fff;
 }
 
-/* ── Unauthenticated desktop buttons ── */
+/* ── Unauthenticated desktop buttons (hidden on mobile, live in drawer) ── */
 .nav-login-btn {
-  display: inline-flex;
+  display: none;
   align-items: center;
   padding: 0.375rem 0.875rem;
   color: var(--color-text-medium, #374151);
@@ -688,7 +688,7 @@
 }
 
 .nav-cta-btn {
-  display: inline-flex;
+  display: none;
   align-items: center;
   padding: 0.375rem 1.125rem;
   background: var(--color-primary, #2563eb);
@@ -727,6 +727,9 @@
   .nav-primary-links { display: flex; }
   .mobile-menu-toggle { display: none !important; }
   .role-toggle { display: flex; }
+  .nav-login-btn { display: inline-flex; }
+  .nav-cta-btn { display: inline-flex; }
+  .nav-create-btn { display: inline-flex; }
 }
 
 /* ── Tablet (768–1023px) ── */
