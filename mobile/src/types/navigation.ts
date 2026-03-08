@@ -16,12 +16,13 @@ export type JobsStackParamList = {
 };
 
 export type ServicesStackParamList = {
-  BrowseServices:      undefined;
-  ServiceDetail:       { id: string };
-  BookService:         { serviceId: string; pkg: 'basic' | 'standard' | 'premium' };
-  MyServices:          undefined;
-  MyBundles:           undefined;
-  AvailabilityManager: { serviceId: string };
+  BrowseServices:        undefined;
+  ServiceDetail:         { id: string };
+  BookService:           { serviceId: string; pkg: 'basic' | 'standard' | 'premium' };
+  MyServices:            undefined;
+  MyBundles:             undefined;
+  AvailabilityManager:   { serviceId: string };
+  ServiceOrderProgress:  { serviceId: string; orderId: string; serviceTitle?: string };
 };
 
 export type MessagesStackParamList = {
@@ -46,6 +47,8 @@ export type ProfileStackParamList = {
   Bookings:          undefined;
   BookingDetail:     { id: string };
   GroupSlots:        { serviceId: string };
+  EscrowConfirm:     { jobId?: string; orderId?: string; amount: number; freelancerName: string; title: string };
+  TipScreen:         { jobId: string; freelancerName: string; freelancerId: string };
 };
 
 export type MoreStackParamList = {

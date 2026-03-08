@@ -66,6 +66,30 @@ export default function MyServicesScreen({ navigation }: any) {
           <Ionicons name="calendar-outline" size={14} color={colors.primary} />
           <Text style={styles.actionBtnText}>Availability</Text>
         </Pressable>
+        {item.orders?.some((o: { status: string }) =>
+          ['in_progress', 'delivered', 'revision_requested'].includes(o.status),
+        ) && (() => {
+          const activeOrder = item.orders.find((o: { status: string }) =>
+            ['in_progress', 'delivered', 'revision_requested'].includes(o.status),
+          ) as { _id: string } | undefined;
+          if (!activeOrder) return null;
+          return (
+            <Pressable
+              style={styles.actionBtn}
+              onPress={e => {
+                e.stopPropagation?.();
+                navigation.navigate('ServiceOrderProgress', {
+                  serviceId: item._id,
+                  orderId: activeOrder._id,
+                  serviceTitle: item.title,
+                });
+              }}
+            >
+              <Ionicons name="document-text-outline" size={14} color={colors.primary} />
+              <Text style={styles.actionBtnText}>View Order</Text>
+            </Pressable>
+          );
+        })()}
       </View>
     </Card>
   );

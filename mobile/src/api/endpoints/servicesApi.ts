@@ -34,4 +34,36 @@ export const servicesApi = {
 
   myServices: () =>
     client.get('/api/services/me').then(r => r.data),
+
+  getOrder: (serviceId: string, orderId: string): Promise<{
+    order: {
+      _id: string;
+      client: string;
+      package: string;
+      status: string;
+      orderDate: string;
+      deliveryDate?: string;
+      completedDate?: string;
+      price: number;
+      requirements?: string;
+      escrowAmount: number;
+      revisionCount: number;
+      deliveryNote?: string;
+    };
+    service: {
+      _id: string;
+      title: string;
+      freelancer: { _id: string; firstName: string; lastName: string };
+    };
+  }> =>
+    client.get(`/api/services/${serviceId}/orders/${orderId}`).then(r => r.data),
+
+  deliverOrder: (serviceId: string, orderId: string, deliveryNote?: string) =>
+    client.put(`/api/services/${serviceId}/orders/${orderId}/deliver`, { deliveryNote }).then(r => r.data),
+
+  approveOrder: (serviceId: string, orderId: string) =>
+    client.put(`/api/services/${serviceId}/orders/${orderId}/complete`).then(r => r.data),
+
+  requestRevision: (serviceId: string, orderId: string, note?: string) =>
+    client.put(`/api/services/${serviceId}/orders/${orderId}/revision`, { note }).then(r => r.data),
 };
