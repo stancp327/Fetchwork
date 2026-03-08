@@ -826,7 +826,7 @@ router.webhookHandler = async (req, res) => {
         const charge = event.data.object;
         await Payment.findOneAndUpdate(
           { stripePaymentIntentId: charge.payment_intent },
-          { status: 'failed' }  // mark as refunded/failed
+          { status: 'refunded', refundedAt: new Date() }
         );
         console.log('↩️ charge.refunded:', charge.id);
         break;

@@ -272,7 +272,7 @@ router.post('/:id/messages', authenticateToken, disputeMessageLimit, async (req,
 
     const userId = req.user.userId;
     const role = getRole(dispute, userId);
-    const isAdmin = req.user.isAdmin || req.user.role === 'admin';
+    const isAdmin = req.user.role === 'admin'; // use role from JWT (set at login from DB)
 
     if (!role && !isAdmin) return res.status(403).json({ error: 'Not authorized' });
 
@@ -853,7 +853,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     const userId = req.user.userId;
     const isParticipant = getRole(dispute, userId) !== null;
-    const isAdmin = req.user.isAdmin || req.user.role === 'admin';
+    const isAdmin = req.user.role === 'admin'; // use role from JWT (set at login from DB)
 
     if (!isParticipant && !isAdmin) {
       return res.status(403).json({ error: 'Not authorized to view this dispute' });

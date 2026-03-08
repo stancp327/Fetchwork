@@ -104,7 +104,7 @@ router.get('/', validateQueryParams, async (req, res) => {
 
     try {
       freelancers = await User.find(queryFilters)
-        .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
+        .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit);
@@ -118,7 +118,7 @@ router.get('/', validateQueryParams, async (req, res) => {
         delete queryFilters['location.coordinates'];
 
         freelancers = await User.find(queryFilters)
-          .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
+          .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
           .sort(sortOptions)
           .skip(skip)
           .limit(limit);
@@ -183,7 +183,7 @@ router.get('/:id/similar', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId');
+      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId');
 
     if (!user || !user.isActive || user.isSuspended) {
       return res.status(404).json({ error: 'Freelancer not found' });
@@ -230,3 +230,4 @@ router.get('/:id', async (req, res) => {
 });
 
 module.exports = router;
+

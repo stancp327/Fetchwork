@@ -167,12 +167,8 @@ const userSchema = new mongoose.Schema({
     portfolio: String,
     twitter: String
   },
-  bankAccount: {
-    accountNumber: String,
-    routingNumber: String,
-    accountHolderName: String,
-    bankName: String
-  },
+  // bankAccount fields removed — raw bank data is a compliance liability.
+  // All payouts go through Stripe Connect (stripeAccountId). Do not re-add.
   paypalEmail: String,
   stripeAccountId:  String,           // Connect account (freelancer payouts)
 

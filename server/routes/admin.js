@@ -208,7 +208,7 @@ router.get('/users', authenticateAdmin, requirePermission('user_management'), va
     }
 
     const users = await User.find(query)
-      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
+      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
       .sort({ [sortBy]: sortOrder })
       .limit(limit)
       .skip((page - 1) * limit);
@@ -2249,3 +2249,4 @@ router.get('/teams', authenticateAdmin, async (req, res) => {
 });
 
 module.exports = router;
+

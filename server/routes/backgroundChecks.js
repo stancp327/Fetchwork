@@ -3,7 +3,7 @@ const router = express.Router();
 const BackgroundCheck = require('../models/BackgroundCheck');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 
 const CHECK_TIERS = {
   basic:    { price: 999,  label: 'Basic Check',    description: 'Identity verification + sex offender registry' },
@@ -225,8 +225,7 @@ router.get('/:userId/status', async (req, res) => {
 // ── Admin routes ────────────────────────────────────────────────
 
 // GET /api/background-checks/admin/pending — list checks needing review
-router.get('/admin/pending', authenticateToken, async (req, res) => {
-  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin only' });
+router.get('/admin/pending', authenticateAdmin, async (req, res) => {
 
   try {
     const checks = await BackgroundCheck.find({ status: { $in: ['processing', 'completed'] } })
@@ -240,8 +239,7 @@ router.get('/admin/pending', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/background-checks/admin/:id/review — admin reviews a check
-router.put('/admin/:id/review', authenticateToken, async (req, res) => {
-  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin only' });
+router.put('/admin/:id/review', authenticateAdmin, async (req, res) => {
 
   try {
     const { overall, notes } = req.body;
