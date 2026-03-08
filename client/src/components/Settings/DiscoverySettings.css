@@ -35,7 +35,7 @@
 .ds-radio p { font-size: var(--text-sm); color: var(--text-secondary); margin: 2px 0 0; }
 
 /* Category grid */
-.ds-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-2); }
+.ds-cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
 .ds-cat-btn { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-card); cursor: pointer; transition: 0.15s; font-size: var(--text-sm); min-height: 44px; }
 .ds-cat-btn:hover { border-color: var(--primary); }
 .ds-cat-btn.selected { border-color: var(--primary); background: var(--primary-ghost, rgba(79,70,229,0.06)); color: var(--primary); font-weight: 600; }
@@ -52,7 +52,7 @@
 .ds-save-btn:hover { opacity: 0.9; }
 .ds-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Mobile */
-@media (max-width: 480px) {
-  .ds-cat-grid { grid-template-columns: repeat(2, 1fr); }
+/* Tablet+ */
+@media (min-width: 480px) {
+  .ds-cat-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }

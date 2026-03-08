@@ -756,20 +756,22 @@
 
 .bundle-draft-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-3);
   align-items: flex-end;
 }
 
 .bundle-draft-row .wiz-field {
   flex: 1;
-  min-width: 120px;
+  min-width: unset;
+  max-width: unset !important;
 }
 
 /* ── Fees Toggle ───────────────────────────────────────────── */
 .fees-toggle-card {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
   margin-top: var(--space-6);
@@ -826,10 +828,10 @@
 .toggle-switch input:checked + .toggle-slider { background: var(--primary); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
 
-@media (max-width: 480px) {
-  .bundle-draft-row { flex-direction: column; }
-  .bundle-draft-row .wiz-field { min-width: unset; max-width: unset !important; }
-  .fees-toggle-card { flex-direction: column; align-items: flex-start; }
+@media (min-width: 480px) {
+  .bundle-draft-row { flex-direction: row; flex-wrap: wrap; }
+  .bundle-draft-row .wiz-field { min-width: 120px; max-width: none; }
+  .fees-toggle-card { flex-direction: row; align-items: center; }
 }
 
 /* ── Feature gate styles ───────────────────────────────────── */

@@ -9,7 +9,7 @@
 .sd-gate-tier { font-size: var(--text-base); color: var(--text-primary); }
 
 /* Header */
-.sd-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3); }
+.sd-header { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3); }
 .sd-title { font-size: var(--text-xl); font-weight: 700; margin: 0; }
 .sd-subtitle { font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-1) 0 0; }
 .sd-range { display: flex; gap: var(--space-1); }
@@ -17,7 +17,7 @@
 .sd-range-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
 /* Summary cards */
-.sd-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
+.sd-summary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-6); }
 .sd-card { padding: var(--space-4); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); text-align: center; }
 .sd-card-icon { font-size: 1.5rem; }
 .sd-card-value { font-size: var(--text-xl); font-weight: 700; margin: var(--space-1) 0; }
@@ -46,8 +46,8 @@
 
 /* Budget vs Actual */
 .sd-bva-list { display: flex; flex-direction: column; gap: var(--space-3); }
-.sd-bva-row { display: flex; align-items: center; gap: var(--space-3); }
-.sd-bva-cat { width: 100px; font-size: var(--text-sm); font-weight: 600; flex-shrink: 0; }
+.sd-bva-row { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+.sd-bva-cat { width: auto; font-size: var(--text-sm); font-weight: 600; flex-shrink: 0; }
 .sd-bva-bars { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .sd-bva-bar { padding: 4px 8px; border-radius: var(--radius-sm); font-size: var(--text-xs); color: white; min-width: 40px; }
 .sd-bva-bar.budgeted { background: var(--primary); opacity: 0.6; }
@@ -64,9 +64,9 @@
 .sd-stat { font-size: var(--text-sm); }
 .sd-stat strong { display: block; font-size: var(--text-lg); }
 
-@media (max-width: 480px) {
-  .sd-header { flex-direction: column; }
-  .sd-summary { grid-template-columns: 1fr 1fr; }
-  .sd-bva-row { flex-direction: column; align-items: flex-start; }
-  .sd-bva-cat { width: auto; }
+@media (min-width: 480px) {
+  .sd-header { flex-direction: row; }
+  .sd-summary { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .sd-bva-row { flex-direction: row; align-items: center; }
+  .sd-bva-cat { width: 100px; }
 }
