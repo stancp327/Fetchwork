@@ -7,7 +7,7 @@ const FALLBACK_ICE_SERVERS = [
   { urls: 'stun:stun1.l.google.com:19302' },
 ];
 
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent); // Android Chrome supports getDisplayMedia; iOS Safari does not
 const hasWebRTC = !!(navigator.mediaDevices?.getUserMedia && window.RTCPeerConnection);
 
 const toUiStatus = (state, fallback = 'connecting') => {
@@ -692,7 +692,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
                   {isCameraOff ? '📷' : '🎥'}
                 </button>
               )}
-              {type === 'video' && callStatus === 'active' && !isMobile && navigator.mediaDevices?.getDisplayMedia && (
+              {type === 'video' && callStatus === 'active' && !isIOS && navigator.mediaDevices?.getDisplayMedia && (
                 <button className={`vcm-videocall-btn ${isScreenSharing ? 'active' : ''}`} onClick={toggleScreenShare} title="Screen share">
                   🖥️
                 </button>

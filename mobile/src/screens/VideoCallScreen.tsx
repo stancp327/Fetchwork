@@ -79,6 +79,8 @@ export default function VideoCallScreen({
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(callType === 'audio');
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const [isSpeakerOn, setIsSpeakerOn] = useState(callType === 'video');
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -134,6 +136,10 @@ export default function VideoCallScreen({
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
+    }
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
     }
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(t => t.stop());
@@ -344,6 +350,49 @@ export default function VideoCallScreen({
     }
   }, [callId, remoteUser._id]);
 
+  const toggleScreenShare = useCallback(async () => {
+    if (Platform.OS !== 'android') return; // iOS requires broadcast extension — not supported yet
+    const pc = pcRef.current;
+    if (!pc) return;
+
+    if (isScreenSharing) {
+      // Stop screen share — restore camera
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+      const camStream = localStreamRef.current;
+      const camTrack = camStream?.getVideoTracks()[0];
+      if (camTrack) {
+        const sender = pc.getSenders().find((s: any) => s.track?.kind === 'video');
+        if (sender) await sender.replaceTrack(camTrack);
+      }
+      setIsScreenSharing(false);
+    } else {
+      try {
+        // @ts-ignore — getDisplayMedia supported on Android in react-native-webrtc v124+
+        const screenStream: MediaStream = await mediaDevices.getDisplayMedia({ video: true });
+        screenStreamRef.current = screenStream;
+        const screenTrack = screenStream.getVideoTracks()[0];
+        const sender = pc.getSenders().find((s: any) => s.track?.kind === 'video');
+        if (sender) await sender.replaceTrack(screenTrack);
+        // Auto-stop when user dismisses the system screen share picker
+        // @ts-ignore — onended exists at runtime in react-native-webrtc but isn't typed
+        (screenTrack as any).onended = () => {
+          setIsScreenSharing(false);
+          screenStreamRef.current = null;
+          const camTrack2 = localStreamRef.current?.getVideoTracks()[0];
+          if (camTrack2) {
+            const s = pc.getSenders().find((s: any) => s.track?.kind === 'video');
+            s?.replaceTrack(camTrack2);
+          }
+        };
+        setIsScreenSharing(true);
+      } catch (err) {
+        console.warn('[VideoCallScreen] Screen share failed:', err);
+        Alert.alert('Screen Share', 'Could not start screen sharing. Please try again.');
+      }
+    }
+  }, [isScreenSharing]);
+
   const toggleSpeaker = useCallback(() => setIsSpeakerOn(prev => !prev), []);
 
   // ── Socket event handlers ─────────────────────────────────────────────────
@@ -501,6 +550,16 @@ export default function VideoCallScreen({
         {callType === 'video' && (
           <TouchableOpacity style={[styles.controlBtn, isCameraOff && styles.controlBtnActive]} onPress={toggleCamera} accessibilityLabel={isCameraOff ? 'Camera on' : 'Camera off'}>
             <Ionicons name={isCameraOff ? 'videocam-off' : 'videocam'} size={24} color={colors.white} />
+          </TouchableOpacity>
+        )}
+
+        {callType === 'video' && Platform.OS === 'android' && callStatus === 'active' && (
+          <TouchableOpacity
+            style={[styles.controlBtn, isScreenSharing && styles.controlBtnActive]}
+            onPress={toggleScreenShare}
+            accessibilityLabel={isScreenSharing ? 'Stop screen share' : 'Share screen'}
+          >
+            <Ionicons name={isScreenSharing ? 'stop-circle' : 'tv'} size={24} color={colors.white} />
           </TouchableOpacity>
         )}
 
