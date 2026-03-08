@@ -402,12 +402,13 @@ router.post('/reset-password', [
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
     
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await User.updateOne({ _id: user._id }, {
-      $set: { password: hashedPassword },
-      $unset: { resetPasswordToken: '', resetPasswordExpires: '' }
-    });
+    // Use model save() to go through pre-save hook (14 bcrypt rounds) — fixes H5
+    // Increment tokenVersion to invalidate all existing JWTs — fixes H2
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    await user.save();
     
     res.json({ message: 'Password reset successfully' });
   } catch (error) {
