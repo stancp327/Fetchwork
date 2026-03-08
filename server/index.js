@@ -98,6 +98,30 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// ── Global default rate limiter ─────────────────────────────────
+// Applies to all routes not already rate-limited. Prevents abuse and
+// enumeration attacks on unprotected endpoints. Route-level limiters
+// (auth, payments, search) take precedence via their own middleware.
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120,            // 120 req/min per IP — generous for normal use
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip webhooks — they come from Stripe servers with valid sigs
+    if (req.path.includes('/webhook')) return true;
+    // Skip health checks
+    if (req.path === '/health' || req.path === '/') return true;
+    return false;
+  },
+  message: { error: 'Too many requests. Please slow down.' },
+  keyGenerator: (req) => {
+    // Use forwarded IP (Render proxy) falling back to socket IP
+    return req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+  },
+});
+app.use(globalLimiter);
+
 // ── Stripe Webhooks (MUST be before express.json() — needs raw body for signature verification)
 app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), require('./routes/payments').webhookHandler);
 app.post('/api/billing/webhook',  express.raw({ type: 'application/json' }), require('./routes/billing').webhookHandler);

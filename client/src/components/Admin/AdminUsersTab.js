@@ -82,7 +82,7 @@ const AdminUsersTab = ({
                       <td>
                         <div className="action-buttons" onClick={e => e.stopPropagation()}>
                           {u.isSuspended ? (
-                            <button className="action-btn unsuspend" onClick={() => unsuspendUser(u._id)}>Unsuspend</button>
+                            <button className="action-btn unsuspend" onClick={() => { if (window.confirm(`Unsuspend ${u.firstName} ${u.lastName}?`)) unsuspendUser(u._id); }}>Unsuspend</button>
                           ) : (
                             <button className="action-btn suspend" onClick={() => {
                               const reason = prompt('Reason:');
@@ -90,13 +90,13 @@ const AdminUsersTab = ({
                             }}>Suspend</button>
                           )}
                           {u.role === 'moderator' ? (
-                            <button className="action-btn demote" onClick={() => removeModerator(u._id)}>Remove Mod</button>
+                            <button className="action-btn demote" onClick={() => { if (window.confirm(`Remove moderator role from ${u.firstName} ${u.lastName}?`)) removeModerator(u._id); }}>Remove Mod</button>
                           ) : u.isAdminPromoted ? (
-                            <button className="action-btn demote" onClick={() => demoteUser(u._id)}>Remove Admin</button>
+                            <button className="action-btn demote" onClick={() => { if (window.confirm(`⚠️ Remove admin role from ${u.firstName} ${u.lastName}?`)) demoteUser(u._id); }}>Remove Admin</button>
                           ) : (
                             <>
-                              <button className="action-btn promote" onClick={() => promoteUser(u._id)}>Make Admin</button>
-                              <button className="action-btn moderator" onClick={() => makeModerator(u._id)}>Make Moderator</button>
+                              <button className="action-btn promote" onClick={() => { if (window.confirm(`⚠️ Grant ADMIN access to ${u.firstName} ${u.lastName}? This gives full platform control.`)) promoteUser(u._id); }}>Make Admin</button>
+                              <button className="action-btn moderator" onClick={() => { if (window.confirm(`Make ${u.firstName} ${u.lastName} a moderator?`)) makeModerator(u._id); }}>Make Moderator</button>
                             </>
                           )}
                         </div>

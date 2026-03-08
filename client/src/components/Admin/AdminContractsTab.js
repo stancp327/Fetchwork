@@ -36,8 +36,9 @@ const AdminContractsTab = () => {
   };
 
   const voidContract = async (id) => {
-    const reason = window.prompt('Reason for voiding:');
-    if (!reason) return;
+    if (!window.confirm('⚠️ Void this contract? This cannot be undone.')) return;
+    const reason = window.prompt('Reason for voiding (required):');
+    if (!reason || !reason.trim()) return;
     try {
       await apiRequest(`/api/admin/contracts/${id}/void`, {
         method: 'PATCH',
