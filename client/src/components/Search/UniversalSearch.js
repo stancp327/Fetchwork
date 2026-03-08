@@ -110,6 +110,7 @@ const UniversalSearch = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [aiRanked, setAiRanked] = useState(false);
 
   // ── Fetch suggestions ─────────────────────────────────────────
   const fetchSuggestions = useCallback(async (q) => {
@@ -161,11 +162,34 @@ const UniversalSearch = () => {
       const jobs = data.jobs || data || [];
 
       setResults(jobs);
+      setAiRanked(false);
       setPagination({
         total: data.total || jobs.length,
         page: data.page || page,
         pages: data.pages || Math.ceil((data.total || jobs.length) / 20),
       });
+
+      // AI semantic re-rank
+      if (jobs.length > 0 && query.length > 3) {
+        try {
+          const aiData = await apiRequest('/api/ai/semantic-search', {
+            method: 'POST',
+            body: JSON.stringify({
+              query,
+              results: jobs.map(j => ({
+                _id: j._id, title: j.title, name: j.name,
+                bio: j.bio, skills: j.skills, category: j.category,
+              })),
+            }),
+          });
+          if (aiData.ranked?.length) {
+            const scoreMap = Object.fromEntries(aiData.ranked.map(r => [r._id, r.score]));
+            const sorted = [...jobs].sort((a, b) => (scoreMap[b._id] || 0) - (scoreMap[a._id] || 0));
+            setResults(sorted);
+            setAiRanked(true);
+          }
+        } catch { /* silent — keep original order */ }
+      }
 
       // Update URL
       const urlParams = new URLSearchParams();
@@ -383,6 +407,7 @@ const UniversalSearch = () => {
         <div className="us-search-results-header">
           <span className="us-results-count">
             {loading ? 'Searching...' : `${pagination.total} job${pagination.total !== 1 ? 's' : ''} found`}
+            {aiRanked && <span className="us-ai-pill">✨ AI-ranked</span>}
           </span>
           <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setTimeout(() => search(1), 50); }}>
             {SORT_OPTIONS.map((s) => (

@@ -14,6 +14,9 @@ const ContractDetail = () => {
   const [signName, setSignName] = useState('');
   const [signing, setSigning] = useState(false);
   const [sending, setSending] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiSumLoading, setAiSumLoading] = useState(false);
+  const [showAiSummary, setShowAiSummary] = useState(false);
 
   const userId = user?._id || user?.id;
 
@@ -64,6 +67,30 @@ const ContractDetail = () => {
     }
   };
 
+  const handleAiSummary = async () => {
+    if (aiSummary) { setShowAiSummary(s => !s); return; }
+    setAiSumLoading(true);
+    setShowAiSummary(true);
+    try {
+      const data = await apiRequest('/api/ai/summarize-contract', {
+        method: 'POST',
+        body: JSON.stringify({
+          terms: contract.content || '',
+          scope: contract.terms?.scope || '',
+          totalAmount: contract.terms?.compensation || 0,
+          deliverables: contract.terms?.scope || '',
+        }),
+      });
+      setAiSummary(data);
+    } catch (err) {
+      if (err.status === 403) {
+        setAiSummary({ summary: 'Contract Summary is a Pro feature. Upgrade to unlock.', keyPoints: [], warnings: [] });
+      } else {
+        setAiSummary({ summary: 'Could not generate summary — try again shortly.', keyPoints: [], warnings: [] });
+      }
+    } finally { setAiSumLoading(false); }
+  };
+
   if (loading) return <div className="contracts-container"><div className="contracts-loading">Loading...</div></div>;
   if (!contract) return null;
 
@@ -104,6 +131,30 @@ const ContractDetail = () => {
         <div className="contract-content" dangerouslySetInnerHTML={{
           __html: contract.content?.replace(/\n/g, '<br>').replace(/^# (.*)/gm, '<h2>$1</h2>').replace(/^## (.*)/gm, '<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         }} />
+
+        {/* AI Plain English Summary */}
+        <div className="cd-ai-sum-wrap">
+          <button className="cd-ai-sum-btn" onClick={handleAiSummary} disabled={aiSumLoading}>
+            {aiSumLoading ? '✨ Summarizing…' : showAiSummary ? '✨ Hide Summary' : '✨ Plain English'}
+          </button>
+          {showAiSummary && aiSummary && (
+            <div className="cd-ai-sum-panel">
+              <p className="cd-ai-sum-text">{aiSummary.summary}</p>
+              {aiSummary.keyPoints?.length > 0 && (
+                <div className="cd-ai-sum-section">
+                  <strong>Key Points</strong>
+                  <ul>{aiSummary.keyPoints.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                </div>
+              )}
+              {aiSummary.warnings?.length > 0 && (
+                <div className="cd-ai-sum-warnings">
+                  <strong>⚠️ Warnings</strong>
+                  <ul>{aiSummary.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Signatures */}
         <div className="contract-signatures">

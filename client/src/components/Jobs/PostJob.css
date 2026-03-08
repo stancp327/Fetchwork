@@ -273,3 +273,33 @@
 
 /* AI button group (Write for me + Expand scope side by side) */
 .pj-ai-btn-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* AI Skills Suggest */
+.pj-ai-skills-wrap { margin-top: 8px; }
+.pj-ai-skills-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white; border: none; border-radius: 6px; padding: 5px 12px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.pj-ai-skills-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.pj-ai-skills-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pj-ai-skills-chip {
+  background: var(--color-bg-secondary, #f3f4f6); border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 16px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+  color: var(--color-text-primary, #1f2937); transition: background 0.15s;
+}
+.pj-ai-skills-chip:hover { background: var(--color-primary, #2563eb); color: white; border-color: transparent; }
+
+/* AI Category Detect */
+.pj-ai-cat-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pj-ai-cat-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white; border: none; border-radius: 6px; padding: 5px 12px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.pj-ai-cat-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.pj-ai-cat-banner {
+  background: var(--color-bg-secondary, #f0fdf4); border: 1px solid var(--color-border, #bbf7d0);
+  border-radius: 6px; padding: 6px 12px; font-size: 13px; margin-bottom: 6px;
+  color: var(--color-text-primary, #166534);
+}

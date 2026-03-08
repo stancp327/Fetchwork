@@ -330,3 +330,17 @@
   .us-result-card-header { flex-direction: row; }
   .us-result-card-meta { flex-direction: row; }
 }
+
+/* AI ranked pill */
+.us-ai-pill {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+  vertical-align: middle;
+}

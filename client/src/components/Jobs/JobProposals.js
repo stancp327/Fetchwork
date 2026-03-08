@@ -17,7 +17,7 @@ const FILTERS = [
 ];
 
 // ── Single proposal card ─────────────────────────────────────────
-const ProposalCard = ({ proposal, jobId, jobStatus, onAccept, onDecline }) => {
+const ProposalCard = ({ proposal, jobId, jobStatus, onAccept, onDecline, ranking, onCheckFlag, flagResult, flagLoading }) => {
   const [acting, setActing] = useState(false);
   const fl = proposal.freelancer || {};
   const initials = `${(fl.firstName || '?')[0]}${(fl.lastName || '')[0] || ''}`.toUpperCase();
@@ -37,8 +37,24 @@ const ProposalCard = ({ proposal, jobId, jobStatus, onAccept, onDecline }) => {
     finally { setActing(false); }
   };
 
+  const scoreColor = ranking?.score >= 8 ? '#16a34a' : ranking?.score >= 5 ? '#ca8a04' : ranking?.score ? '#dc2626' : null;
+
   return (
     <div className={`jp-proposal-card ${proposal.status}`}>
+      {/* AI Score badge */}
+      {ranking && (
+        <div className="jp-ai-rank-badge" style={{ background: scoreColor, color: '#fff' }}>
+          <span className="jp-ai-rank-score">{ranking.score}/10</span>
+          <span className="jp-ai-rank-label">AI Score</span>
+        </div>
+      )}
+      {ranking?.strengths && (
+        <div className="jp-ai-rank-detail">
+          <span className="jp-ai-rank-strengths">Strengths: {ranking.strengths}</span>
+          {ranking.concerns && <span className="jp-ai-rank-concerns">Concerns: {ranking.concerns}</span>}
+        </div>
+      )}
+
       {/* Freelancer identity */}
       <div className="jp-freelancer-row">
         <div className="jp-avatar">
@@ -140,10 +156,35 @@ const ProposalCard = ({ proposal, jobId, jobStatus, onAccept, onDecline }) => {
           💬 Message
         </Link>
 
+        <button
+          className="jp-ai-flag-btn"
+          disabled={flagLoading}
+          onClick={() => onCheckFlag(proposal)}
+        >
+          {flagLoading ? '🚩 Checking…' : '🚩 Check'}
+        </button>
+
         {isAccepted && (
           <span className="jp-accepted-note">✅ Hired — job is in progress</span>
         )}
       </div>
+
+      {/* Red flag result */}
+      {flagResult && (
+        <div className={`jp-ai-flag-result ${flagResult.flagged ? 'flagged' : 'clean'}`}>
+          {flagResult.flagged ? (
+            <>
+              <span className="jp-ai-flag-severity" data-severity={flagResult.severity}>⚠️ {flagResult.severity} risk</span>
+              <p className="jp-ai-flag-summary">{flagResult.summary}</p>
+              <ul className="jp-ai-flag-list">
+                {flagResult.flags?.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </>
+          ) : (
+            <span className="jp-ai-flag-clean">✅ No red flags detected</span>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -166,6 +207,10 @@ const JobProposals = () => {
   const [aiSummary, setAiSummary] = useState('');
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(false);
+  const [rankings, setRankings] = useState({});
+  const [rankLoading, setRankLoading] = useState(false);
+  const [flagResults, setFlagResults] = useState({});
+  const [flagLoadingId, setFlagLoadingId] = useState(null);
 
   const fetchJob = useCallback(async () => {
     try {
@@ -220,6 +265,39 @@ const JobProposals = () => {
     }
   };
 
+  const handleAiRank = async () => {
+    setRankLoading(true);
+    try {
+      const data = await apiRequest(`/api/ai/rank-proposals/${id}`, { method: 'POST' });
+      const map = {};
+      (data.rankings || []).forEach(r => { map[r.proposalId] = r; });
+      setRankings(map);
+    } catch (err) {
+      if (err.status === 403) alert('AI Proposal Ranking is a Plus+ feature.');
+      else alert('Could not rank proposals — try again shortly.');
+    } finally { setRankLoading(false); }
+  };
+
+  const handleCheckFlag = async (proposal) => {
+    const pid = proposal._id;
+    setFlagLoadingId(pid);
+    try {
+      const data = await apiRequest('/api/ai/detect-proposal-redflag', {
+        method: 'POST',
+        body: JSON.stringify({
+          proposalId: pid,
+          coverLetter: proposal.coverLetter,
+          proposedBudget: proposal.proposedBudget,
+          freelancerName: `${proposal.freelancer?.firstName || ''} ${proposal.freelancer?.lastName || ''}`.trim(),
+          jobBudget: job?.budget?.max || job?.budget?.min || 0,
+        }),
+      });
+      setFlagResults(prev => ({ ...prev, [pid]: data }));
+    } catch (err) {
+      if (err.status === 403) alert('Red Flag Detection is a Plus+ feature.');
+    } finally { setFlagLoadingId(null); }
+  };
+
   const handleDecline = async (proposalId) => {
     try {
       await apiRequest(`/api/jobs/${id}/proposals/${proposalId}/decline`, { method: 'POST' });
@@ -250,7 +328,11 @@ const JobProposals = () => {
   if (!job) return null;
 
   const proposals   = job.proposals || [];
-  const filtered    = filter === 'all' ? proposals : proposals.filter(p => p.status === filter);
+  const hasRankings = Object.keys(rankings).length > 0;
+  const sorted      = hasRankings
+    ? [...proposals].sort((a, b) => (rankings[b._id]?.score || 0) - (rankings[a._id]?.score || 0))
+    : proposals;
+  const filtered    = filter === 'all' ? sorted : sorted.filter(p => p.status === filter);
   const counts      = {
     all:      proposals.length,
     pending:  proposals.filter(p => p.status === 'pending').length,
@@ -283,12 +365,17 @@ const JobProposals = () => {
         </div>
       </div>
 
-      {/* AI Proposal Summarizer */}
+      {/* AI Proposal Summarizer + Ranker */}
       {proposals.length >= 2 && (
         <div className="jp-ai-summary-wrap">
-          <button className="jp-ai-summarize-btn" onClick={handleAiSummary} disabled={aiSummaryLoading}>
-            {aiSummaryLoading ? '✨ Summarizing…' : showAiSummary ? '✨ Hide AI Summary' : `✨ AI Summary (${proposals.length} proposals)`}
-          </button>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button className="jp-ai-summarize-btn" onClick={handleAiSummary} disabled={aiSummaryLoading}>
+              {aiSummaryLoading ? '✨ Summarizing…' : showAiSummary ? '✨ Hide AI Summary' : `✨ AI Summary (${proposals.length} proposals)`}
+            </button>
+            <button className="jp-ai-rank-btn" onClick={handleAiRank} disabled={rankLoading}>
+              {rankLoading ? '✨ Ranking…' : '✨ AI Rank All'}
+            </button>
+          </div>
           {showAiSummary && (
             <div className="jp-ai-summary-panel">
               {aiSummaryLoading
@@ -406,6 +493,10 @@ const JobProposals = () => {
               jobStatus={job.status}
               onAccept={handleAccept}
               onDecline={handleDecline}
+              ranking={rankings[proposal._id]}
+              onCheckFlag={handleCheckFlag}
+              flagResult={flagResults[proposal._id]}
+              flagLoading={flagLoadingId === proposal._id}
             />
           </div>
         ))

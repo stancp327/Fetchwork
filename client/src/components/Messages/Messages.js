@@ -24,6 +24,8 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [aiDrafting, setAiDrafting] = useState(false);
+  const [disputeRisk, setDisputeRisk] = useState(null);
+  const [disputeRiskLoading, setDisputeRiskLoading] = useState(false);
   const [offPlatformWarning, setOffPlatformWarning] = useState('');
   const [attachFiles, setAttachFiles] = useState([]);
   const fileInputRef = React.useRef(null);
@@ -38,6 +40,9 @@ const Messages = () => {
   const [showContext, setShowContext] = useState(false);
   const [mobileView, setMobileView] = useState('inbox');
   const [onlineUsers, setOnlineUsers] = useState({}); // userId → { isOnline, lastSeen }
+  const [translations, setTranslations] = useState({}); // msgId → { translated, detectedLanguage, targetLanguage }
+  const [translatingId, setTranslatingId] = useState(null); // msgId currently translating
+  const [showLangPicker, setShowLangPicker] = useState(null); // msgId with lang picker open
   const messagesEndRef = useRef(null);
   const chatMessagesRef = useRef(null);
   const shouldAutoScrollRef = useRef(true);
@@ -384,6 +389,27 @@ const Messages = () => {
     }
   }, [locationSearch, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const translateLanguages = [
+    { code: 'es', label: 'Spanish' }, { code: 'fr', label: 'French' },
+    { code: 'de', label: 'German' }, { code: 'zh', label: 'Chinese' },
+    { code: 'ja', label: 'Japanese' }, { code: 'pt', label: 'Portuguese' },
+    { code: 'ar', label: 'Arabic' }, { code: 'hi', label: 'Hindi' },
+  ];
+
+  const handleTranslate = async (msgId, text, langCode) => {
+    setShowLangPicker(null);
+    setTranslatingId(msgId);
+    try {
+      const data = await apiRequest('/api/ai/translate-message', {
+        method: 'POST',
+        body: JSON.stringify({ text, targetLanguage: langCode }),
+      });
+      setTranslations(prev => ({ ...prev, [msgId]: data }));
+    } catch {
+      alert('Failed to translate message.');
+    } finally { setTranslatingId(null); }
+  };
+
   const otherParticipant = selectedConvo?.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
 
   // Filter conversations
@@ -521,15 +547,43 @@ const Messages = () => {
                 {messages.length === 0 ? (
                   <div className="chat-empty"><p>No messages yet. Start the conversation!</p></div>
                 ) : (
-                  messages.map(msg => (
-                    <MsgBubble
-                      key={msg._id} msg={msg}
-                      isMine={idEq(msg.sender?._id || msg.sender, userId)}
-                      deliveryStatus={deliveryStatus}
-                      userId={userId}
-                      onProposalAction={() => fetchMessages(selectedConvo)}
-                    />
-                  ))
+                  messages.map(msg => {
+                    const isMine = idEq(msg.sender?._id || msg.sender, userId);
+                    return (
+                      <div key={msg._id} className="msg-ai-tr-wrap">
+                        <MsgBubble
+                          msg={msg}
+                          isMine={isMine}
+                          deliveryStatus={deliveryStatus}
+                          userId={userId}
+                          onProposalAction={() => fetchMessages(selectedConvo)}
+                        />
+                        {!isMine && msg.content && (
+                          <div className="msg-ai-tr-row">
+                            <button
+                              className="msg-ai-tr-btn"
+                              title="Translate"
+                              onClick={() => setShowLangPicker(showLangPicker === msg._id ? null : msg._id)}
+                            >🌐</button>
+                            {showLangPicker === msg._id && (
+                              <div className="msg-ai-tr-picker">
+                                {translateLanguages.map(l => (
+                                  <button key={l.code} className="msg-ai-tr-lang" onClick={() => handleTranslate(msg._id, msg.content, l.code)}>{l.label}</button>
+                                ))}
+                              </div>
+                            )}
+                            {translatingId === msg._id && <span className="msg-ai-tr-loading">Translating…</span>}
+                          </div>
+                        )}
+                        {translations[msg._id] && (
+                          <div className="msg-ai-tr-result">
+                            <em>{translations[msg._id].translated}</em>
+                            <span className="msg-ai-tr-lang-tag">{translations[msg._id].detectedLanguage} → {translations[msg._id].targetLanguage}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
                 {typingUsers.size > 0 && (
                   <div className="typing-indicator">

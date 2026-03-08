@@ -147,3 +147,81 @@
   .contract-form-row { grid-template-columns: 1fr 1fr; }
   .contracts-header { flex-direction: row; }
 }
+
+/* -- AI Contract Summary ---------------------------------------- */
+.cd-ai-sum-wrap { margin: 16px 0; }
+.cd-ai-sum-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cd-ai-sum-btn:disabled { opacity: .55; cursor: not-allowed; }
+.cd-ai-sum-panel {
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--color-bg-secondary, #f9fafb);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-primary, #111827);
+}
+.cd-ai-sum-text { margin: 0 0 10px; }
+.cd-ai-sum-section { margin-bottom: 10px; }
+.cd-ai-sum-section ul, .cd-ai-sum-warnings ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.cd-ai-sum-warnings {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--color-text-primary, #111827);
+}
+
+/* -- AI Suggest Milestones -------------------------------------- */
+.cc-ai-ms-wrap { margin: 10px 0 16px; }
+.cc-ai-ms-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cc-ai-ms-btn:disabled { opacity: .55; cursor: not-allowed; }
+.cc-ai-ms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.cc-ai-ms-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--color-bg-secondary, #f9fafb);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-text-primary, #111827);
+}
+.cc-ai-ms-card.selected {
+  border-color: var(--color-primary, #2563eb);
+  background: #eff6ff;
+}
+.cc-ai-ms-card input[type="checkbox"] { margin-top: 3px; }
+.cc-ai-ms-info { flex: 1; }
+.cc-ai-ms-title { font-weight: 600; }
+.cc-ai-ms-desc { color: var(--color-text-muted, #6b7280); font-size: 12px; margin-top: 2px; }
+.cc-ai-ms-meta { display: flex; gap: 12px; margin-top: 4px; font-size: 12px; color: var(--color-text-muted, #6b7280); }

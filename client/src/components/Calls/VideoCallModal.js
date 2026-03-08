@@ -49,6 +49,9 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   const [remoteMediaState, setRemoteMediaState] = useState({ audio: true, video: type === 'video' });
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [debugInfo, setDebugInfo] = useState({ iceState: 'new', candidateType: '—', turnStatus: '—' });
+  const [showNotesPrompt, setShowNotesPrompt] = useState(false);
+  const [notes, setNotes] = useState(null);
+  const [notesLoading, setNotesLoading] = useState(false);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -60,6 +63,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   const pendingOfferRef = useRef(null);
   const pendingIceCandidatesRef = useRef([]);
   const finalizedRef = useRef(false); // guard against double-finalize from dual call:ended + call:state events
+  const durationRef = useRef(0);
 
   const cleanup = useCallback(() => {
     if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
@@ -158,7 +162,12 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     setCallStatus(nextStatus);
     cleanup();
     uploadQualitySummary().catch(() => {});
-    setTimeout(() => onClose?.(), 800);
+    // Show meeting notes prompt if call lasted > 60 seconds
+    if (nextStatus === 'ended' && durationRef.current > 60) {
+      setShowNotesPrompt(true);
+    } else {
+      setTimeout(() => onClose?.(), 800);
+    }
   }, [cleanup, onClose, uploadQualitySummary]);
 
   const getIceServers = useCallback(async () => {
@@ -244,7 +253,7 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
       if (state === 'connected' || state === 'completed') {
         setCallStatus('active');
         if (!durationIntervalRef.current) {
-          durationIntervalRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+          durationIntervalRef.current = setInterval(() => setDuration(d => { durationRef.current = d + 1; return d + 1; }), 1000);
         }
       }
 
@@ -703,6 +712,70 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
             </>
           )}
         </div>
+
+        {/* Meeting Notes Prompt */}
+        {showNotesPrompt && !notes && (
+          <div className="vcm-ai-notes-prompt">
+            <span>📋 Generate meeting notes for this call?</span>
+            <div className="vcm-ai-notes-prompt-btns">
+              <button
+                className="vcm-ai-notes-gen-btn"
+                disabled={notesLoading}
+                onClick={async () => {
+                  setNotesLoading(true);
+                  try {
+                    const data = await apiRequest('/api/ai/meeting-notes', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        callDurationSeconds: durationRef.current,
+                        otherPartyName: `${remoteUser.firstName || ''} ${remoteUser.lastName || ''}`.trim(),
+                        jobTitle: '',
+                      }),
+                    });
+                    setNotes(data);
+                  } catch (err) {
+                    if (err.status === 403) alert('Meeting Notes is a Pro feature.');
+                    else alert('Failed to generate meeting notes.');
+                  } finally { setNotesLoading(false); }
+                }}
+              >
+                {notesLoading ? '⏳ Generating…' : 'Generate'}
+              </button>
+              <button className="vcm-ai-notes-skip-btn" onClick={() => { setShowNotesPrompt(false); onClose?.(); }}>Skip</button>
+            </div>
+          </div>
+        )}
+
+        {/* Meeting Notes Display */}
+        {notes && (
+          <div className="vcm-ai-notes-panel">
+            <div className="vcm-ai-notes-header">
+              <h4>📋 Meeting Notes</h4>
+              <button className="vcm-ai-notes-close" onClick={() => { setNotes(null); setShowNotesPrompt(false); onClose?.(); }}>×</button>
+            </div>
+            <div className="vcm-ai-notes-content">
+              <pre className="vcm-ai-notes-text">{notes.notes}</pre>
+              {notes.actionItems?.length > 0 && (
+                <div className="vcm-ai-notes-actions">
+                  <strong>Action Items:</strong>
+                  <ul>{notes.actionItems.map((item, i) => <li key={i}>{item}</li>)}</ul>
+                </div>
+              )}
+              {notes.followUpSuggested && (
+                <p className="vcm-ai-notes-followup"><strong>Follow-up:</strong> {notes.followUpSuggested}</p>
+              )}
+            </div>
+            <button
+              className="vcm-ai-notes-copy-btn"
+              onClick={() => {
+                const text = [notes.notes, notes.actionItems?.length ? '\nAction Items:\n' + notes.actionItems.map(a => '- ' + a).join('\n') : '', notes.followUpSuggested ? '\nFollow-up: ' + notes.followUpSuggested : ''].filter(Boolean).join('\n');
+                navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
+              }}
+            >
+              📋 Copy to Clipboard
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

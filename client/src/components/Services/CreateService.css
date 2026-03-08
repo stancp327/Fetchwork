@@ -909,3 +909,47 @@
 .pfb-input { width: 80px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); text-align: center; }
 .pfb-label-sm { font-size: var(--text-sm); font-weight: 500; min-width: 100px; }
 .pfb-check { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; }
+
+/* AI SEO Tips */
+.cs-ai-seo-wrap { margin-bottom: 16px; }
+.cs-ai-seo-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white; border: none; border-radius: 6px; padding: 5px 12px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.cs-ai-seo-btn.locked { opacity: 0.7; }
+.cs-ai-seo-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.cs-ai-seo-upgrade, .cs-ai-seo-error {
+  font-size: 12px; margin-top: 6px; padding: 6px 10px; border-radius: 6px;
+}
+.cs-ai-seo-upgrade { color: var(--color-text-muted, #6b7280); background: var(--color-bg-secondary, #f9fafb); }
+.cs-ai-seo-error { color: #dc2626; }
+.cs-ai-seo-results {
+  margin-top: 10px; padding: 12px; border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px; background: var(--color-bg-secondary, #f9fafb);
+}
+.cs-ai-seo-section { margin-bottom: 12px; }
+.cs-ai-seo-section strong { display: block; font-size: 13px; margin-bottom: 4px; color: var(--color-text-primary, #1f2937); }
+.cs-ai-seo-suggestion { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cs-ai-seo-apply {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white; border: none; border-radius: 5px; padding: 3px 10px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+}
+.cs-ai-seo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cs-ai-seo-chip {
+  background: var(--color-bg-primary, #fff); border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 16px; padding: 3px 10px; font-size: 12px; color: var(--color-text-primary, #374151);
+}
+.cs-ai-seo-tag-btn {
+  background: var(--color-bg-primary, #fff); border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 16px; padding: 3px 10px; font-size: 12px; cursor: pointer;
+  color: var(--color-text-primary, #374151); transition: background 0.15s;
+}
+.cs-ai-seo-tag-btn:hover { background: var(--color-primary, #2563eb); color: white; border-color: transparent; }
+.cs-ai-seo-tips-list { margin: 4px 0 0 16px; font-size: 13px; color: var(--color-text-primary, #374151); }
+.cs-ai-seo-tips-list li { margin-bottom: 3px; }
+.cs-ai-seo-dismiss {
+  background: none; border: 1px solid var(--color-border, #e5e7eb); border-radius: 5px;
+  padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--color-text-muted, #6b7280); margin-top: 8px;
+}

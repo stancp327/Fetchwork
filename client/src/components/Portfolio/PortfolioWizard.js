@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { useFeatures } from '../../hooks/useFeatures';
 import { useToast } from '../common/Toast';
 import './PortfolioWizard.css';
 
@@ -8,9 +9,12 @@ const STEPS = ['Basics', 'Media', 'Details', 'Review'];
 
 const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
   const { user } = useAuth();
+  const { hasFeature } = useFeatures();
+  const canAI = hasFeature('ai_job_description');
   const { addToast } = useToast();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [aiWriting, setAiWriting] = useState(false);
   const [item, setItem] = useState(editItem || {
     title: '',
     description: '',
@@ -167,7 +171,35 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
             <div className="pw-step-content">
               <h3>Tell the story</h3>
               <div className="pw-field">
-                <label>Description</label>
+                <div className="pw-ai-label-row">
+                  <label>Description</label>
+                  {item.title && (
+                    <button
+                      type="button"
+                      className={`pw-ai-btn ${!canAI ? 'locked' : ''}`}
+                      disabled={aiWriting}
+                      onClick={async () => {
+                        if (!canAI) { addToast('Upgrade to Plus to unlock AI writing', 'info'); return; }
+                        setAiWriting(true);
+                        try {
+                          const data = await apiRequest('/api/ai/write-portfolio-description', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              title: item.title, category: item.mediaType,
+                              skills: item.tags?.join(', '), projectContext: item.description,
+                            }),
+                          });
+                          if (data.description) updateField('description', data.description);
+                        } catch (err) {
+                          addToast(err.data?.message || 'Failed to generate', 'error');
+                        } finally { setAiWriting(false); }
+                      }}
+                      title={!canAI ? 'Available on Plus and above' : undefined}
+                    >
+                      {aiWriting ? '✨ Writing…' : canAI ? '✨ AI Write' : '🔒 AI Write · Plus'}
+                    </button>
+                  )}
+                </div>
                 <textarea
                   value={item.description}
                   onChange={e => updateField('description', e.target.value)}

@@ -344,3 +344,81 @@
   font-family: inherit;
   margin: 0;
 }
+
+/* -- AI Rank All button ---------------------------------------- */
+.jp-ai-rank-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jp-ai-rank-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* -- AI Score badge on proposal card ----------------------------- */
+.jp-ai-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.jp-ai-rank-score { font-size: 14px; }
+.jp-ai-rank-label { opacity: .85; font-weight: 500; }
+
+.jp-ai-rank-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted, #6b7280);
+}
+.jp-ai-rank-concerns { color: #dc2626; }
+
+/* -- Red-flag check button & result ------------------------------ */
+.jp-ai-flag-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jp-ai-flag-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.jp-ai-flag-result {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.jp-ai-flag-result.flagged {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: var(--color-text-primary, #111827);
+}
+.jp-ai-flag-result.clean {
+  background: #f0fdf4;
+  border: 1px solid #22c55e;
+  color: var(--color-text-primary, #111827);
+}
+.jp-ai-flag-severity {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.jp-ai-flag-summary { margin: 4px 0 6px; }
+.jp-ai-flag-list {
+  margin: 0;
+  padding-left: 18px;
+}
+.jp-ai-flag-list li { margin-bottom: 2px; }
+.jp-ai-flag-clean { font-weight: 600; color: #16a34a; }

@@ -22,6 +22,9 @@ const CreateContract = () => {
     jurisdiction: '', terminationClause: ''
   });
   const [creating, setCreating] = useState(false);
+  const [aiMilestones, setAiMilestones] = useState([]);
+  const [aiMsLoading, setAiMsLoading] = useState(false);
+  const [selectedMs, setSelectedMs] = useState(new Set());
 
   useEffect(() => {
     apiRequest('/api/contracts/templates').then(d => setTemplates(d.templates || [])).catch(() => {});
@@ -37,6 +40,29 @@ const CreateContract = () => {
     }, 300);
     return () => clearTimeout(timeout);
   }, [freelancerSearch]);
+
+  const handleSuggestMilestones = async () => {
+    setAiMsLoading(true);
+    try {
+      const data = await apiRequest('/api/ai/suggest-milestones', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: title || 'Service Agreement',
+          description: terms.scope,
+          budget: Number(terms.compensation) || 0,
+          duration: terms.endDate && terms.startDate
+            ? `${Math.ceil((new Date(terms.endDate) - new Date(terms.startDate)) / 86400000)} days`
+            : undefined,
+          category: selectedTemplate,
+        }),
+      });
+      setAiMilestones(data.milestones || []);
+      setSelectedMs(new Set(data.milestones?.map((_, i) => i) || []));
+    } catch (err) {
+      if (err.status === 403) alert('AI Milestone Suggestions is a Pro feature.');
+      else alert('Could not suggest milestones — try again shortly.');
+    } finally { setAiMsLoading(false); }
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -114,6 +140,36 @@ const CreateContract = () => {
           <label>Scope of Work</label>
           <textarea value={terms.scope} onChange={e => setTerms(p => ({ ...p, scope: e.target.value }))}
             placeholder="Describe the work to be performed..." className="contract-textarea" rows={3} />
+
+          <div className="cc-ai-ms-wrap">
+            <button type="button" className="cc-ai-ms-btn" onClick={handleSuggestMilestones} disabled={aiMsLoading}>
+              {aiMsLoading ? '✨ Generating…' : '✨ Suggest Milestones'}
+            </button>
+            {aiMilestones.length > 0 && (
+              <div className="cc-ai-ms-list">
+                {aiMilestones.map((ms, i) => (
+                  <label key={i} className={`cc-ai-ms-card ${selectedMs.has(i) ? 'selected' : ''}`}>
+                    <input
+                      type="checkbox" checked={selectedMs.has(i)}
+                      onChange={() => setSelectedMs(prev => {
+                        const next = new Set(prev);
+                        next.has(i) ? next.delete(i) : next.add(i);
+                        return next;
+                      })}
+                    />
+                    <div className="cc-ai-ms-info">
+                      <div className="cc-ai-ms-title">{ms.title}</div>
+                      <div className="cc-ai-ms-desc">{ms.description}</div>
+                      <div className="cc-ai-ms-meta">
+                        <span>{ms.percentage}% of budget</span>
+                        <span>~{ms.estimatedDays} days</span>
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="contract-form-row">
             <div>
