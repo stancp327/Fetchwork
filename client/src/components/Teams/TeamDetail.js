@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import './TeamsPage.css';
+import './TeamDetail.css';
 
 const TeamDetail = () => {
   const { id } = useParams();
@@ -471,8 +472,8 @@ const TeamDetail = () => {
       <div className="teams-page">
         <div className="teams-empty">
           <h3>Couldn’t load team</h3>
-          <p style={{ marginBottom: '0.75rem' }}>{loadError}</p>
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+          <p className="td-error-msg">{loadError}</p>
+          <div className="td-error-actions">
             <button className="btn btn-primary btn-sm" onClick={fetchTeam}>Retry</button>
             <button className="btn btn-ghost btn-sm" onClick={() => navigate('/teams')}>Back to Teams</button>
           </div>
@@ -483,27 +484,27 @@ const TeamDetail = () => {
 
   return (
     <div className="teams-page">
-      <button className="btn btn-ghost btn-sm" onClick={() => navigate('/teams')} style={{ marginBottom: '1rem' }}>← Back to Teams</button>
+      <button className="btn btn-ghost btn-sm td-back-btn" onClick={() => navigate('/teams')}>← Back to Teams</button>
 
       {/* Header */}
       <div className="team-detail-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="td-header-info">
           {team.logo ? (
-            <img src={team.logo} alt="" className="team-logo" style={{ width: 64, height: 64 }} />
+            <img src={team.logo} alt="" className="team-logo td-header-logo" />
           ) : (
-            <div className="team-logo-placeholder" style={{ width: 64, height: 64, fontSize: '2rem' }}>{team.name[0]}</div>
+            <div className="team-logo-placeholder td-header-logo-placeholder">{team.name[0]}</div>
           )}
           <div>
-            <h1 style={{ margin: 0 }}>{team.name}</h1>
-            <span className="team-type-badge" style={{ marginTop: '0.25rem', display: 'inline-block' }}>
+            <h1 className="td-team-name">{team.name}</h1>
+            <span className="team-type-badge td-type-badge-wrap">
               {team.type === 'agency' ? '🏢 Agency' : '👥 Client Team'} · {activeMembers.length} members
             </span>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem' }}>
+            <div className="td-access-label">
               Access: {isOwner ? 'Owner' : isAdmin ? 'Admin' : 'Member'}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="td-header-actions">
           {canManageMembers && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(!editing)}>
               {editing ? 'Cancel' : '⚙️ Settings'}
@@ -520,11 +521,11 @@ const TeamDetail = () => {
         </div>
       </div>
 
-      {team.description && !editing && <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>{team.description}</p>}
+      {team.description && !editing && <p className="td-description">{team.description}</p>}
 
       {/* Settings */}
       {editing && isOwnerOrAdmin && (
-        <div className="teams-create-form" style={{ marginTop: '1rem' }}>
+        <div className="teams-create-form td-settings-wrap">
           <h3>Team Settings</h3>
           <div className="form-group">
             <label>Team Name</label>
@@ -538,7 +539,7 @@ const TeamDetail = () => {
             <label>Approval Threshold ($) — orders above this need manager approval (0 = no approval)</label>
             <input type="number" min="0" value={editForm.approvalThreshold || 0} onChange={e => setEditForm({ ...editForm, approvalThreshold: Number(e.target.value) })} />
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="td-header-actions">
             <button className="btn btn-primary btn-sm" onClick={saveSettings}>Save</button>
             {isOwner && (
               <button className="btn btn-danger btn-sm" onClick={deleteTeam}>Delete Team</button>
@@ -548,7 +549,7 @@ const TeamDetail = () => {
       )}
 
       {/* Tabs */}
-      <div className="team-detail-tabs" style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+      <div className="team-detail-tabs td-tabs">
         {['members', 'billing', 'assignments', 'activity', ...(isOwnerOrAdmin ? ['approvals'] : []), ...(isOwner ? ['controls'] : []), ...(isOwnerOrAdmin ? ['audit'] : [])].map(tab => (
           <button
             key={tab}
@@ -581,16 +582,16 @@ const TeamDetail = () => {
 
       {/* Members tab */}
       {activeTab === 'members' && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className="td-tab-content">
           {/* Invite form */}
           {canManageMembers && (
-            <form onSubmit={inviteMember} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <form onSubmit={inviteMember} className="td-invite-form">
               <input
                 type="email" required placeholder="Email address"
                 value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                style={{ flex: 1, minWidth: 0, width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '8px' }}
+                className="td-invite-input"
               />
-              <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '8px' }}>
+              <select value={inviteRole} onChange={e => setInviteRole(e.target.value)} className="td-invite-select">
                 <option value="member">Member</option>
                 <option value="manager">Manager</option>
                 {isOwner && <option value="admin">Admin</option>}
@@ -603,16 +604,16 @@ const TeamDetail = () => {
 
           {/* Ownership transfer */}
           {isOwner && activeMembers.filter(m => m.role !== 'owner').length > 0 && (
-            <div style={{ marginBottom: '1rem', padding: '0.75rem', border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 10 }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Transfer Ownership</div>
-              <p style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '0.85rem', color: '#92400e' }}>
+            <div className="td-transfer-box">
+              <div className="td-transfer-title">Transfer Ownership</div>
+              <p className="td-transfer-desc">
                 Transfer owner privileges to another active member.
               </p>
-              <div className="team-detail-transfer-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="team-detail-transfer-actions td-transfer-actions">
                 <select
                   value={transferTargetUserId}
                   onChange={(e) => setTransferTargetUserId(e.target.value)}
-                  style={{ minWidth: 0, width: '100%', padding: '0.4rem 0.5rem', border: '1px solid #f59e0b', borderRadius: 8 }}
+                  className="td-transfer-select"
                 >
                   <option value="">Select new owner…</option>
                   {activeMembers
@@ -635,35 +636,29 @@ const TeamDetail = () => {
           )}
 
           {/* Member list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className="td-member-list">
             {team.members.filter(m => m.status !== 'removed').map(m => {
               const u = m.user || {};
               return (
-                <div key={m._id} className="team-detail-member-row" style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: '50%', background: roleColors[m.role],
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700
-                    }}>
-                      {u.profileImage ? <img src={u.profileImage} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : (u.firstName?.[0] || '?')}
+                <div key={m._id} className="team-detail-member-row td-member-row">
+                  <div className="td-member-info">
+                    <div className="td-member-avatar" style={{ background: roleColors[m.role] }}>
+                      {u.profileImage ? <img src={u.profileImage} alt="" className="td-member-avatar-img" /> : (u.firstName?.[0] || '?')}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 600 }}>{u.firstName} {u.lastName}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                      <div className="td-member-name">{u.firstName} {u.lastName}</div>
+                      <div className="td-member-role-text">
                         {roleIcons[m.role]} {m.role}{m.title ? ` · ${m.title}` : ''}
-                        {m.status === 'invited' && <span style={{ marginLeft: '0.5rem', color: '#f59e0b' }}>⏳ Pending</span>}
+                        {m.status === 'invited' && <span className="td-pending-badge">⏳ Pending</span>}
                       </div>
                     </div>
                   </div>
                   {canManageMembers && m.role !== 'owner' && m.status === 'active' && (
-                    <div className="team-detail-member-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="team-detail-member-actions td-member-actions">
                       <select
                         value={m.role}
                         onChange={e => updateRole(u._id, e.target.value)}
-                        style={{ padding: '0.25rem 0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.8rem' }}
+                        className="td-role-select"
                       >
                         <option value="member">Member</option>
                         <option value="manager">Manager</option>
@@ -673,7 +668,7 @@ const TeamDetail = () => {
                         <select
                           value={m.customRoleName || ''}
                           onChange={e => assignMemberCustomRole(u._id, e.target.value)}
-                          style={{ padding: '0.25rem 0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.8rem' }}
+                          className="td-role-select"
                         >
                           <option value="">No custom role</option>
                           {customRoles.map((r) => (
@@ -681,7 +676,7 @@ const TeamDetail = () => {
                           ))}
                         </select>
                       )}
-                      <button onClick={() => removeMember(u._id)} className="btn btn-danger btn-sm" style={{ fontSize: '0.75rem' }}>Remove</button>
+                      <button onClick={() => removeMember(u._id)} className="btn btn-danger btn-sm td-btn-remove">Remove</button>
                     </div>
                   )}
                 </div>
@@ -693,7 +688,7 @@ const TeamDetail = () => {
 
       {/* Billing tab */}
       {activeTab === 'billing' && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className="td-tab-content">
           {isOwnerOrAdmin && analytics && (
             <div className="team-analytics-summary">
               <div className="team-analytics-card">
@@ -728,7 +723,7 @@ const TeamDetail = () => {
 
       {/* Assignments tab */}
       {activeTab === 'assignments' && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className="td-tab-content">
           <AssignmentsSection
             teamId={id}
             canAssign={Boolean(isOwnerOrAdmin || myMember?.permissions?.includes('assign_work'))}
@@ -738,23 +733,23 @@ const TeamDetail = () => {
 
       {/* Activity tab */}
       {activeTab === 'activity' && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className="td-tab-content">
           <ActivitySection teamId={id} />
         </div>
       )}
 
       {/* Approvals tab */}
       {activeTab === 'approvals' && isOwnerOrAdmin && (
-        <div style={{ marginTop: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h3 style={{ margin: 0 }}>Approval Requests</h3>
+        <div className="td-tab-content">
+          <div className="td-section-header">
+            <h3 className="td-heading-flush">Approval Requests</h3>
             <button className="btn btn-primary btn-sm" onClick={() => setShowApprovalForm(!showApprovalForm)}>
               {showApprovalForm ? 'Cancel' : '+ Request Approval'}
             </button>
           </div>
 
           {showApprovalForm && (
-            <form onSubmit={createApproval} className="team-controls-form" style={{ marginBottom: '1rem' }}>
+            <form onSubmit={createApproval} className="team-controls-form td-approval-form-wrap">
               <div className="team-controls-row">
                 <label>Action</label>
                 <select value={approvalForm.action} onChange={e => setApprovalForm({ ...approvalForm, action: e.target.value })}>
@@ -778,7 +773,7 @@ const TeamDetail = () => {
             </form>
           )}
 
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <div className="td-filter-bar">
             {['', 'pending', 'approved', 'rejected'].map(s => (
               <button
                 key={s}
@@ -794,27 +789,27 @@ const TeamDetail = () => {
           {approvalsLoading ? <p>Loading approvals...</p> : (
             <div className="team-approvals-list">
               {approvals.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>No approval requests found.</div>
+                <div className="td-empty-state">No approval requests found.</div>
               ) : approvals.map(a => {
                 const requesterId = String(a.requestedBy?._id || a.requestedBy);
                 const isMyRequest = requesterId === currentUserId;
                 const statusColors = { pending: '#f59e0b', approved: '#16a34a', rejected: '#dc2626', expired: '#6b7280', cancelled: '#9ca3af' };
                 return (
                   <div key={a._id} className="team-approval-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div className="td-approval-header">
                       <div>
-                        <div style={{ fontWeight: 600, textTransform: 'capitalize' }}>{(a.action || '').replace('_', ' ')}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                        <div className="td-approval-action">{(a.action || '').replace('_', ' ')}</div>
+                        <div className="td-text-secondary-sm">
                           By {a.requestedBy?.firstName || 'User'} {a.requestedBy?.lastName || ''}
                           {a.amount ? ` · $${Number(a.amount).toFixed(2)}` : ''}
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: `${statusColors[a.status]}20`, color: statusColors[a.status] }}>
+                      <span className="td-approval-status" style={{ background: `${statusColors[a.status]}20`, color: statusColors[a.status] }}>
                         {a.status}
                       </span>
                     </div>
                     {a.status === 'pending' && a.expiresAt && (
-                      <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                      <div className="td-expires-label">
                         Expires: {new Date(a.expiresAt).toLocaleString()}
                       </div>
                     )}
@@ -841,7 +836,7 @@ const TeamDetail = () => {
 
       {/* Controls tab */}
       {activeTab === 'controls' && isOwner && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className="td-tab-content">
           {controlsLoading ? <p>Loading controls...</p> : (
             <div>
               <div className="team-controls-section">
@@ -868,7 +863,7 @@ const TeamDetail = () => {
                 </div>
               </div>
 
-              <div className="team-controls-section" style={{ marginTop: '1.5rem' }}>
+              <div className="team-controls-section td-section-gap">
                 <h3>Approval Thresholds</h3>
                 <div className="team-controls-form">
                   <div className="team-controls-row">
@@ -892,9 +887,9 @@ const TeamDetail = () => {
                 </div>
               </div>
 
-              <div className="team-controls-section" style={{ marginTop: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3 style={{ margin: 0 }}>Custom Roles</h3>
+              <div className="team-controls-section td-section-gap">
+                <div className="td-section-header-compact">
+                  <h3 className="td-heading-flush">Custom Roles</h3>
                   <button className="btn btn-ghost btn-sm" onClick={() => { setShowAddRole(!showAddRole); setEditingRoleId(''); setRoleForm({ name: '', permissions: [] }); }}>
                     {showAddRole ? 'Cancel' : '+ Add Role'}
                   </button>
@@ -907,14 +902,14 @@ const TeamDetail = () => {
                       return (
                         <div key={role._id} className="custom-role-row">
                           <div>
-                            <div style={{ fontWeight: 600 }}>{role.name}</div>
-                            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.35rem' }}>
+                            <div className="td-fw-semibold">{role.name}</div>
+                            <div className="td-permissions-list">
                               {(role.permissions || []).map((perm) => (
                                 <span key={perm} className="permission-badge">{permissionLabel(perm)}</span>
                               ))}
                             </div>
                           </div>
-                          <div style={{ display: 'flex', gap: '0.35rem' }}>
+                          <div className="td-role-actions">
                             <button className="btn btn-ghost btn-sm" onClick={() => startEditRole(role)}>Edit</button>
                             <button className="btn btn-danger btn-sm" disabled={inUse} title={inUse ? 'Role is assigned to active members' : ''} onClick={() => deleteCustomRole(role)}>Delete</button>
                           </div>
@@ -925,14 +920,14 @@ const TeamDetail = () => {
                 )}
 
                 {showAddRole && (
-                  <form onSubmit={submitCustomRole} className="custom-role-form" style={{ marginTop: '0.75rem' }}>
+                  <form onSubmit={submitCustomRole} className="custom-role-form td-custom-role-form-gap">
                     <div className="team-controls-row">
                       <label>Role Name</label>
                       <input value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} placeholder="e.g. Finance Reviewer" required />
                     </div>
                     <div className="permission-checkbox-grid">
                       {permissionOptions.map((p) => (
-                        <label key={p.value} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <label key={p.value} className="td-permission-label">
                           <input
                             type="checkbox"
                             checked={roleForm.permissions.includes(p.value)}
@@ -942,23 +937,23 @@ const TeamDetail = () => {
                         </label>
                       ))}
                     </div>
-                    <button type="submit" className="btn btn-primary btn-sm" style={{ marginTop: '0.75rem' }}>
+                    <button type="submit" className="btn btn-primary btn-sm td-submit-gap">
                       {editingRoleId ? 'Update Role' : 'Create Role'}
                     </button>
                   </form>
                 )}
               </div>
 
-              <div className="team-controls-section" style={{ marginTop: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3 style={{ margin: 0 }}>Linked Clients</h3>
+              <div className="team-controls-section td-section-gap">
+                <div className="td-section-header-compact">
+                  <h3 className="td-heading-flush">Linked Clients</h3>
                   <button className="btn btn-ghost btn-sm" onClick={() => setShowAddClient(!showAddClient)}>
                     {showAddClient ? 'Cancel' : '+ Add Client'}
                   </button>
                 </div>
 
                 {showAddClient && (
-                  <form onSubmit={submitLinkedClient} className="custom-role-form" style={{ marginBottom: '0.75rem' }}>
+                  <form onSubmit={submitLinkedClient} className="custom-role-form td-client-form-gap">
                     <div className="team-controls-row">
                       <label>Client User ID</label>
                       <input value={clientForm.clientUserId} onChange={(e) => setClientForm({ ...clientForm, clientUserId: e.target.value })} placeholder="Paste client user id" required />
@@ -981,18 +976,18 @@ const TeamDetail = () => {
 
                 {clientsLoading ? <p>Loading linked clients...</p> : (
                   <div className="linked-clients-list">
-                    {clients.length === 0 && <p style={{ color: '#6b7280' }}>No linked clients yet.</p>}
+                    {clients.length === 0 && <p className="td-text-secondary">No linked clients yet.</p>}
                     {clients.map((c) => {
                       const cid = String(c.client?._id || c.client || c._id);
                       const label = c.accessLevel || 'view_assigned';
                       return (
                         <div key={c._id || cid} className="linked-client-row">
                           <div>
-                            <div style={{ fontWeight: 600 }}>{`${c.client?.firstName || ''} ${c.client?.lastName || ''}`.trim() || c.client?.email || cid}</div>
-                            <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{c.client?.email || ''}</div>
+                            <div className="td-fw-semibold">{`${c.client?.firstName || ''} ${c.client?.lastName || ''}`.trim() || c.client?.email || cid}</div>
+                            <div className="td-text-secondary-sm">{c.client?.email || ''}</div>
                           </div>
                           <span className={`access-level-badge access-${label}`}>{label}</span>
-                          <div style={{ fontSize: '0.85rem', color: '#4b5563' }}>{c.projectLabel || '—'}</div>
+                          <div className="td-project-label">{c.projectLabel || '—'}</div>
                           <button className="btn btn-danger btn-sm" onClick={() => removeLinkedClient(cid)}>Remove</button>
                         </div>
                       );
@@ -1001,7 +996,7 @@ const TeamDetail = () => {
                 )}
               </div>
 
-              <button className="btn btn-primary" onClick={saveControls} disabled={savingControls} style={{ marginTop: '1rem' }}>
+              <button className="btn btn-primary td-save-controls-btn" onClick={saveControls} disabled={savingControls}>
                 {savingControls ? 'Saving...' : 'Save Controls'}
               </button>
             </div>
@@ -1011,7 +1006,7 @@ const TeamDetail = () => {
 
       {/* Audit tab */}
       {activeTab === 'audit' && isOwnerOrAdmin && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className="td-tab-content">
           <AuditSection
             logs={auditLogs}
             loading={auditLoading}
@@ -1021,9 +1016,9 @@ const TeamDetail = () => {
         </div>
       )}
 
-      <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #fee2e2' }}>
-        <h4 style={{ marginBottom: '0.5rem', color: '#b91c1c' }}>Danger Zone</h4>
-        <p style={{ marginTop: 0, marginBottom: '0.75rem', color: '#7f1d1d', fontSize: '0.9rem' }}>
+      <div className="td-danger-zone">
+        <h4 className="td-danger-title">Danger Zone</h4>
+        <p className="td-danger-desc">
           Deleting a team is permanent and cannot be undone.
         </p>
         <button
@@ -1069,15 +1064,15 @@ const BillingSection = ({ teamId, canManage }) => {
 
   return (
     <div>
-      <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Team Wallet Balance</div>
-        <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#16a34a' }}>${billing?.balance?.toFixed(2) || '0.00'}</div>
+      <div className="td-wallet-card">
+        <div className="td-wallet-label">Team Wallet Balance</div>
+        <div className="td-wallet-balance">${billing?.balance?.toFixed(2) || '0.00'}</div>
       </div>
       {canManage && (
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <div className="td-add-funds-row">
           <input type="number" min="5" max="500" step="5" placeholder="Amount ($5–$500)" value={addAmount}
             onChange={e => setAddAmount(e.target.value)}
-            style={{ flex: 1, padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: 8 }} />
+            className="td-funds-input" />
           <button className="btn btn-primary btn-sm" onClick={addFunds}>Add Funds</button>
         </div>
       )}
@@ -1085,9 +1080,9 @@ const BillingSection = ({ teamId, canManage }) => {
         <div>
           <h4>Transaction History</h4>
           {billing.credits.slice(0, 20).map((c, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
+            <div key={i} className="td-transaction-row">
               <span>{c.reason || 'Credit'}</span>
-              <span style={{ fontWeight: 600, color: c.remaining > 0 ? '#16a34a' : '#6b7280' }}>${c.amount?.toFixed(2)}</span>
+              <span className="td-transaction-amount" style={{ color: c.remaining > 0 ? '#16a34a' : '#6b7280' }}>${c.amount?.toFixed(2)}</span>
             </div>
           ))}
         </div>
@@ -1113,24 +1108,24 @@ const AssignmentsSection = ({ teamId, canAssign }) => {
   return (
     <div>
       {assignments.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
+        <div className="td-empty-state-lg">
           <p>No active work assignments</p>
-          {canAssign && <p style={{ fontSize: '0.85rem' }}>Use the "Assign" feature on jobs to distribute work to team members.</p>}
+          {canAssign && <p className="td-empty-hint">Use the "Assign" feature on jobs to distribute work to team members.</p>}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="td-card-list">
           {assignments.map(a => (
-            <div key={a._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+            <div key={a._id} className="td-card-row">
               <div>
-                <div style={{ fontWeight: 600 }}>{a.title}</div>
-                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                <div className="td-fw-semibold">{a.title}</div>
+                <div className="td-text-secondary-sm">
                   Client: {a.client?.firstName} {a.client?.lastName} · {a.status}
                 </div>
-                {a.assignmentNote && <div style={{ fontSize: '0.8rem', color: '#3b82f6', marginTop: '0.25rem' }}>📝 {a.assignmentNote}</div>}
+                {a.assignmentNote && <div className="td-assignment-note">📝 {a.assignmentNote}</div>}
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{a.assignedTo?.firstName} {a.assignedTo?.lastName}</div>
-                <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{a.assignedAt ? new Date(a.assignedAt).toLocaleDateString() : ''}</div>
+              <div className="td-text-right">
+                <div className="td-assignee-name">{a.assignedTo?.firstName} {a.assignedTo?.lastName}</div>
+                <div className="td-date-label">{a.assignedAt ? new Date(a.assignedAt).toLocaleDateString() : ''}</div>
               </div>
             </div>
           ))}
@@ -1155,18 +1150,18 @@ const ActivitySection = ({ teamId }) => {
 
   if (!activity.length) {
     return (
-      <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+      <div className="td-empty-state">
         <p>No recent team activity yet</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div className="td-card-list">
       {activity.map((item, idx) => (
-        <div key={`${item.type}-${item.at}-${idx}`} style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-          <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>{item.message}</div>
-          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{new Date(item.at).toLocaleString()}</div>
+        <div key={`${item.type}-${item.at}-${idx}`} className="td-card">
+          <div className="td-card-title">{item.message}</div>
+          <div className="td-timestamp">{new Date(item.at).toLocaleString()}</div>
         </div>
       ))}
     </div>
@@ -1178,23 +1173,23 @@ const AuditSection = ({ logs, loading, error, onRefresh }) => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <h4 style={{ margin: 0 }}>Audit Trail</h4>
+      <div className="td-section-header-compact">
+        <h4 className="td-heading-flush">Audit Trail</h4>
         <button className="btn btn-ghost btn-sm" onClick={onRefresh}>Refresh</button>
       </div>
-      {error && <p style={{ color: '#b91c1c', marginTop: 0 }}>{error}</p>}
+      {error && <p className="td-error-text">{error}</p>}
       {!logs?.length ? (
-        <div style={{ textAlign: 'center', padding: '1.5rem', color: '#9ca3af' }}>No audit events yet.</div>
+        <div className="td-empty-state">No audit events yet.</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="td-card-list">
           {logs.map((log) => (
-            <div key={log._id} style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-              <div style={{ fontWeight: 600 }}>{(log.action || '').replaceAll('_', ' ')}</div>
-              <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>
+            <div key={log._id} className="td-card">
+              <div className="td-fw-semibold">{(log.action || '').replaceAll('_', ' ')}</div>
+              <div className="td-audit-actor">
                 By {log.actor?.firstName || 'User'} {log.actor?.lastName || ''} • {new Date(log.createdAt).toLocaleString()}
               </div>
               {log.targetUser && (
-                <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.2rem' }}>
+                <div className="td-audit-target">
                   Target: {log.targetUser?.firstName || ''} {log.targetUser?.lastName || ''}
                 </div>
               )}
