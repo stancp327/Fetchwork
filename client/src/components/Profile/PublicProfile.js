@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { getLocationDisplay } from '../../utils/location';
@@ -35,6 +35,8 @@ const PublicProfile = () => {
   const [error, setError] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showBooking,    setShowBooking]    = useState(false);
+  const [reviewSummary, setReviewSummary]   = useState(null);
+  const [reviewSummaryLoading, setReviewSummaryLoading] = useState(false);
   const [messagingLoading, setMessagingLoading] = useState(false);
   const [skillBadges, setSkillBadges] = useState([]);
 
@@ -415,6 +417,33 @@ const PublicProfile = () => {
         {/* Reviews Tab */}
         {activeSection === 'reviews' && (
           <div>
+            {/* AI Review Summary */}
+            {reviews.length >= 3 && (
+              <div className="pp-ai-summary-wrap">
+                {reviewSummary ? (
+                  <div className="pp-ai-summary-card">
+                    <span className="pp-ai-summary-label">✨ AI Summary</span>
+                    <p className="pp-ai-summary-text">{reviewSummary}</p>
+                  </div>
+                ) : (
+                  <button
+                    className="pp-ai-summary-btn"
+                    disabled={reviewSummaryLoading}
+                    onClick={async () => {
+                      setReviewSummaryLoading(true);
+                      try {
+                        const userId = data?.user?._id || data?.user?.id;
+                        const res = await apiRequest(`/api/ai/summarize-reviews/${userId}`);
+                        if (res.summary) setReviewSummary(res.summary);
+                      } catch { /* silent */ }
+                      finally { setReviewSummaryLoading(false); }
+                    }}
+                  >
+                    {reviewSummaryLoading ? '✨ Summarizing…' : `✨ Summarize ${reviews.length} reviews`}
+                  </button>
+                )}
+              </div>
+            )}
             {reviews.length > 0 ? (
               <div className="pp-reviews">
                 {reviews.map((r, i) => (

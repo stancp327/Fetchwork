@@ -316,3 +316,43 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* AI Review Summarizer */
+.pp-ai-summary-wrap { margin-bottom: var(--space-4, 16px); }
+.pp-ai-summary-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  width: 100%;
+}
+.pp-ai-summary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.pp-ai-summary-btn:not(:disabled):hover { opacity: 0.85; }
+
+.pp-ai-summary-card {
+  background: var(--color-bg-secondary, #f8faff);
+  border: 1px solid var(--color-primary-light, #dbeafe);
+  border-radius: 10px;
+  padding: var(--space-4, 16px);
+}
+.pp-ai-summary-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary, #2563eb);
+  margin-bottom: 6px;
+}
+.pp-ai-summary-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-primary, #111827);
+  margin: 0;
+  font-style: italic;
+}

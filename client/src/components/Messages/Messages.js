@@ -23,6 +23,7 @@ const Messages = () => {
   const [selectedConvo, setSelectedConvo] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [aiDrafting, setAiDrafting] = useState(false);
   const [attachFiles, setAttachFiles] = useState([]);
   const fileInputRef = React.useRef(null);
   const [loading, setLoading] = useState(true);
@@ -541,6 +542,35 @@ const Messages = () => {
                   ))}
                 </div>
               )}
+              {/* AI Draft Response */}
+              <div className="chat-ai-draft-wrap">
+                <button
+                  type="button"
+                  className="chat-ai-draft-btn"
+                  disabled={aiDrafting || messages.length === 0}
+                  onClick={async () => {
+                    const lastMsg = [...messages].reverse().find(m => m.sender?._id !== (user?._id || user?.id));
+                    if (!lastMsg) return;
+                    setAiDrafting(true);
+                    try {
+                      const otherParty = selectedConvo?.otherParty;
+                      const data = await apiRequest('/api/ai/draft-response', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          lastMessage: lastMsg.content,
+                          senderName: `${otherParty?.firstName || ''} ${otherParty?.lastName || ''}`.trim(),
+                          context: selectedConvo?.job?.title ? `Job: ${selectedConvo.job.title}` : '',
+                        }),
+                      });
+                      if (data.draft) setNewMessage(data.draft);
+                    } catch (err) {
+                      if (err.status === 403) alert('AI Response Drafter is a Plus+ feature.');
+                    } finally { setAiDrafting(false); }
+                  }}
+                >
+                  {aiDrafting ? '✨ Drafting…' : '✨ AI Draft'}
+                </button>
+              </div>
               <form className="chat-composer" onSubmit={sendMessage}>
                 <input
                   type="file" ref={fileInputRef} multiple hidden

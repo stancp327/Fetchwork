@@ -467,4 +467,318 @@ router.get('/budget-estimate', budgetEstimateLimiter, async (req, res) => {
   }
 });
 
+// ── POST /api/ai/optimize-profile ─────────────────────────────────────────
+// Freelancer: analyze their profile and return actionable improvement suggestions.
+// Free (limited) — upsell hook; result nudges upgrade.
+router.post('/optimize-profile', authenticateToken, aiLimiter, async (req, res) => {
+  try {
+    const { bio, headline, skills, hourlyRate, category, completionScore } = req.body;
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `Analyze this freelancer profile on Fetchwork and give 4-5 specific, actionable improvement suggestions.`,
+      bio        ? `Bio: "${bio.slice(0, 600)}"` : 'Bio: (empty)',
+      headline   ? `Headline: "${headline}"` : 'Headline: (empty)',
+      skills?.length ? `Skills: ${skills.slice(0, 15).join(', ')}` : 'Skills: (none listed)',
+      hourlyRate ? `Hourly rate: $${hourlyRate}/hr` : 'Rate: not set',
+      category   ? `Category: ${category}` : '',
+      completionScore != null ? `Profile completion: ${completionScore}%` : '',
+      ``,
+      `Format your response as a JSON array of objects: [{ "title": "...", "suggestion": "...", "impact": "high|medium|low" }]`,
+      `Be specific — reference their actual content. No generic tips.`,
+      `Focus on: missing info, weak bio, vague headline, pricing signals, skill gaps.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 600,
+      temperature: 0.5,
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() || '[]';
+    let suggestions;
+    try {
+      const jsonStr = raw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      suggestions = JSON.parse(jsonStr);
+    } catch { suggestions = []; }
+
+    return res.json({ suggestions });
+  } catch (err) {
+    console.error('[AI] optimize-profile error:', err.message);
+    return res.status(500).json({ error: 'Failed to analyze profile' });
+  }
+});
+
+// ── GET /api/ai/summarize-reviews/:userId ──────────────────────────────────
+// Public: summarize a freelancer's reviews for clients browsing their profile.
+// Free — makes the platform feel smarter for everyone.
+const reviewSummaryLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  message: { error: 'Too many requests' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.get('/summarize-reviews/:userId', reviewSummaryLimiter, validateMongoId, async (req, res) => {
+  try {
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const Review = require('../models/Review');
+    const reviews = await Review.find({ reviewedId: req.params.userId, rating: { $gte: 1 } })
+      .select('rating comment')
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    if (reviews.length < 3) return res.json({ summary: null }); // not enough data
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const avgRating = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+    const reviewText = reviews.map((r, i) =>
+      `${i + 1}. [${r.rating}★] "${(r.comment || '').slice(0, 200)}"`
+    ).join('\n');
+
+    const prompt = [
+      `Summarize these ${reviews.length} client reviews for a freelancer (avg rating: ${avgRating}★).`,
+      ``,
+      reviewText,
+      ``,
+      `Write 2-3 sentences max. Highlight recurring strengths, any consistent praise, and one note of caution if relevant.`,
+      `Start with "Clients consistently..." or similar. Be honest and specific.`,
+    ].join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 120,
+      temperature: 0.4,
+    });
+
+    const summary = completion.choices[0]?.message?.content?.trim() || null;
+    return res.json({ summary, reviewCount: reviews.length, avgRating: parseFloat(avgRating) });
+  } catch (err) {
+    console.error('[AI] summarize-reviews error:', err.message);
+    return res.status(500).json({ error: 'Failed to summarize reviews' });
+  }
+});
+
+// ── POST /api/ai/draft-response ────────────────────────────────────────────
+// Draft a professional reply to a message in context.
+// Gated: Plus+ (clients + freelancers).
+router.post('/draft-response', authenticateToken, aiLimiter, async (req, res) => {
+  try {
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_JOB_DESCRIPTION);
+    if (!allowed) return res.status(403).json({ error: 'upgrade_required', plan: 'Plus+' });
+
+    const { lastMessage, senderName, context } = req.body;
+    if (!lastMessage) return res.status(400).json({ error: 'lastMessage required' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `Draft a brief, professional reply to this message on Fetchwork (a freelance marketplace).`,
+      senderName ? `Message from: ${senderName}` : '',
+      context    ? `Context: ${context.slice(0, 200)}` : '',
+      ``,
+      `Their message: "${lastMessage.slice(0, 600)}"`,
+      ``,
+      `Write 2-4 sentences. Sound human, not corporate. Don't start with "I hope this message finds you well."`,
+      `Don't include a subject line or sign-off — just the reply body.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 200,
+      temperature: 0.7,
+    });
+
+    const draft = completion.choices[0]?.message?.content?.trim() || '';
+    return res.json({ draft });
+  } catch (err) {
+    console.error('[AI] draft-response error:', err.message);
+    return res.status(500).json({ error: 'Failed to draft response' });
+  }
+});
+
+// ── POST /api/ai/rate-advice ───────────────────────────────────────────────
+// Tell a freelancer if their rate is above/below market and what to charge.
+// Gated: Plus+.
+router.post('/rate-advice', authenticateToken, aiLimiter, async (req, res) => {
+  try {
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_JOB_DESCRIPTION);
+    if (!allowed) return res.status(403).json({ error: 'upgrade_required', plan: 'Plus+' });
+
+    const { hourlyRate, skills, category, bio, location } = req.body;
+    if (!category && !skills?.length) return res.status(400).json({ error: 'category or skills required' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `A freelancer on Fetchwork wants rate advice. Analyze their profile and tell them if they're priced right.`,
+      hourlyRate ? `Current rate: $${hourlyRate}/hr` : 'Current rate: not set',
+      category   ? `Category: ${category}` : '',
+      skills?.length ? `Skills: ${skills.slice(0, 10).join(', ')}` : '',
+      location   ? `Location: ${location}` : '',
+      bio        ? `Bio excerpt: "${bio.slice(0, 300)}"` : '',
+      ``,
+      `Respond as JSON: { "marketLow": <num>, "marketMid": <num>, "marketHigh": <num>, "verdict": "underpriced|fair|overpriced", "advice": "<2-3 sentence specific advice>", "positioning": "<one sentence on how to justify the rate>" }`,
+      `Base on US freelance market rates. Be honest — if they're underpricing, say so clearly.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 250,
+      temperature: 0.4,
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() || '{}';
+    let advice;
+    try {
+      const jsonStr = raw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      advice = JSON.parse(jsonStr);
+    } catch { advice = null; }
+
+    return res.json({ advice });
+  } catch (err) {
+    console.error('[AI] rate-advice error:', err.message);
+    return res.status(500).json({ error: 'Failed to generate rate advice' });
+  }
+});
+
+// ── POST /api/ai/fix-job-title ─────────────────────────────────────────────
+// Improve a vague job title so it attracts better applicants.
+// Free — helps job quality on the platform.
+router.post('/fix-job-title', budgetEstimateLimiter, async (req, res) => {
+  try {
+    const { title, description, category } = req.body;
+    if (!title) return res.status(400).json({ error: 'title required' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `Improve this freelance job title so it attracts more relevant applicants on Fetchwork.`,
+      `Current title: "${title}"`,
+      category    ? `Category: ${category}` : '',
+      description ? `Description excerpt: "${description.slice(0, 300)}"` : '',
+      ``,
+      `Respond as JSON: { "improved": "<better title>", "reason": "<one sentence why it's better>" }`,
+      `Rules: under 70 chars, specific, searchable, no hype words like "ninja" or "rockstar".`,
+      `If the title is already good, return the original with reason "Title looks good already."`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 120,
+      temperature: 0.5,
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() || '{}';
+    let result;
+    try {
+      const jsonStr = raw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      result = JSON.parse(jsonStr);
+    } catch { result = { improved: title, reason: '' }; }
+
+    return res.json(result);
+  } catch (err) {
+    console.error('[AI] fix-job-title error:', err.message);
+    return res.status(500).json({ error: 'Failed to improve title' });
+  }
+});
+
+// ── POST /api/ai/expand-scope ──────────────────────────────────────────────
+// Turn a short job description into a full detailed scope.
+// Free — improves job quality for the whole platform.
+router.post('/expand-scope', budgetEstimateLimiter, async (req, res) => {
+  try {
+    const { description, title, category } = req.body;
+    if (!description) return res.status(400).json({ error: 'description required' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `Expand this brief job description into a well-structured, detailed scope document for a freelance project on Fetchwork.`,
+      title       ? `Job title: "${title}"` : '',
+      category    ? `Category: ${category}` : '',
+      `Current description: "${description.slice(0, 600)}"`,
+      ``,
+      `Write 150-250 words. Include: overview, key deliverables (bullet list), what freelancer needs to know, preferred timeline note.`,
+      `Write it as if the client wrote it themselves — first person "I need..." or "We're looking for..."`,
+      `Do NOT add requirements the client didn't mention. Expand what's there, don't invent scope.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 400,
+      temperature: 0.6,
+    });
+
+    const expanded = completion.choices[0]?.message?.content?.trim() || '';
+    return res.json({ expanded });
+  } catch (err) {
+    console.error('[AI] expand-scope error:', err.message);
+    return res.status(500).json({ error: 'Failed to expand scope' });
+  }
+});
+
+// ── POST /api/ai/dispute-assistant ────────────────────────────────────────
+// Help a user write a clear, compelling dispute description.
+// Gated: Pro.
+router.post('/dispute-assistant', authenticateToken, aiLimiter, async (req, res) => {
+  try {
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_MATCHING);
+    if (!allowed) return res.status(403).json({ error: 'upgrade_required', plan: 'Pro' });
+
+    const { reason, description, role } = req.body; // role: 'client' | 'freelancer'
+    if (!reason || !description) return res.status(400).json({ error: 'reason and description required' });
+
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `A ${role || 'user'} is filing a dispute on Fetchwork (a freelance marketplace). Help them write a clear, professional, factual dispute description.`,
+      `Dispute reason: ${reason}`,
+      `Their current description: "${description.slice(0, 800)}"`,
+      ``,
+      `Rewrite it to be more compelling and clear. Include:`,
+      `- What was agreed upon (infer from their text)`,
+      `- What actually happened`,
+      `- The specific harm or issue`,
+      `- What resolution they're seeking`,
+      `Keep it factual, not emotional. 150-200 words.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 350,
+      temperature: 0.5,
+    });
+
+    const improved = completion.choices[0]?.message?.content?.trim() || '';
+    return res.json({ improved });
+  } catch (err) {
+    console.error('[AI] dispute-assistant error:', err.message);
+    return res.status(500).json({ error: 'Failed to improve dispute description' });
+  }
+});
+
 module.exports = router;

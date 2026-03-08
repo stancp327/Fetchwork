@@ -719,3 +719,23 @@
   background: rgba(0,0,0,0.6); color: #fff; font-size: 0.7rem;
   padding: 2px 8px; border-radius: 4px; font-weight: 500;
 }
+
+/* AI Response Drafter */
+.chat-ai-draft-wrap {
+  padding: 4px var(--space-3, 12px) 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.chat-ai-draft-btn {
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.chat-ai-draft-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-ai-draft-btn:not(:disabled):hover { opacity: 0.85; }

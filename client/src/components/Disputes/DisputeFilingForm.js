@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiRequest } from '../../utils/api';
 import FileUpload from '../common/FileUpload';
 import './DisputeFilingForm.css';
 import { apiRequest } from '../../utils/api';
@@ -12,6 +13,7 @@ const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
   });
   const [selectedEvidence, setSelectedEvidence] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [aiImproving, setAiImproving] = useState(false);
 
   const reasons = [
     { value: 'non_delivery', label: 'Work was not delivered' },
@@ -129,6 +131,27 @@ const DisputeFilingForm = ({ jobId, onClose, onSubmit }) => {
                 onChange={(e) => setDisputeData({...disputeData, description: e.target.value})}
                 rows={6}
               />
+              {disputeData.description.length >= 50 && (
+                <button
+                  type="button"
+                  className="dispute-ai-improve-btn"
+                  disabled={aiImproving}
+                  onClick={async () => {
+                    setAiImproving(true);
+                    try {
+                      const data = await apiRequest('/api/ai/dispute-assistant', {
+                        method: 'POST',
+                        body: JSON.stringify({ reason: disputeData.reason, description: disputeData.description, role: 'user' }),
+                      });
+                      if (data.improved) setDisputeData(prev => ({ ...prev, description: data.improved }));
+                    } catch (err) {
+                      if (err.status === 403) alert('AI Dispute Assistant is a Pro feature. Upgrade to use it.');
+                    } finally { setAiImproving(false); }
+                  }}
+                >
+                  {aiImproving ? '✨ Improving…' : '✨ AI: Strengthen my case'}
+                </button>
+              )}
               <div className="char-count">
                 {disputeData.description.length}/2000 characters
                 {disputeData.description.length < 50 && (

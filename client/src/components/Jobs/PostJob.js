@@ -32,6 +32,9 @@ const PostJob = () => {
   const [aiMsg, setAiMsg] = useState('');
   const [budgetEstimate, setBudgetEstimate] = useState(null);
   const [budgetEstimateLoading, setBudgetEstimateLoading] = useState(false);
+  const [titleSuggestion, setTitleSuggestion] = useState(null);
+  const [titleFixLoading, setTitleFixLoading] = useState(false);
+  const [scopeExpanding, setScopeExpanding] = useState(false);
 
   const handleGenerateDescription = async () => {
     if (!canAIDescription) {
@@ -319,20 +322,74 @@ const PostJob = () => {
                 maxLength={100}
               />
               {errors.title && <div className="error-text">{errors.title}</div>}
+              {/* AI Title Fixer */}
+              {formData.title.length >= 5 && (
+                <div className="pj-ai-title-wrap">
+                  {titleSuggestion ? (
+                    <div className="pj-ai-title-suggestion">
+                      <span className="pj-ai-title-improved">✨ {titleSuggestion.improved}</span>
+                      <span className="pj-ai-title-reason">{titleSuggestion.reason}</span>
+                      <div className="pj-ai-title-actions">
+                        <button type="button" className="pj-ai-title-apply" onClick={() => {
+                          setFormData(prev => ({ ...prev, title: titleSuggestion.improved }));
+                          setTitleSuggestion(null);
+                        }}>Use this</button>
+                        <button type="button" className="pj-ai-title-dismiss" onClick={() => setTitleSuggestion(null)}>Dismiss</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button type="button" className="pj-ai-inline-btn" disabled={titleFixLoading} onClick={async () => {
+                      setTitleFixLoading(true);
+                      try {
+                        const data = await apiRequest('/api/ai/fix-job-title', {
+                          method: 'POST',
+                          body: JSON.stringify({ title: formData.title, description: formData.description, category: formData.category }),
+                        });
+                        setTitleSuggestion(data);
+                      } catch { /* silent fail */ }
+                      finally { setTitleFixLoading(false); }
+                    }}>
+                      {titleFixLoading ? '✨ Checking…' : '✨ Improve title'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="form-group">
               <div className="pj-label-row">
                 <label htmlFor="description">Job Description *</label>
-                <button
-                  type="button"
-                  className={`pj-ai-btn ${!canAIDescription ? 'locked' : ''} ${aiGenerating ? 'loading' : ''}`}
-                  onClick={handleGenerateDescription}
-                  disabled={aiGenerating}
-                  title={!canAIDescription ? 'Available on Plus and above' : undefined}
-                >
-                  {aiGenerating ? '⏳ Generating…' : canAIDescription ? '✨ Write for me' : '🔒 Write for me · Plus'}
-                </button>
+                <div className="pj-ai-btn-group">
+                  <button
+                    type="button"
+                    className={`pj-ai-btn ${!canAIDescription ? 'locked' : ''} ${aiGenerating ? 'loading' : ''}`}
+                    onClick={handleGenerateDescription}
+                    disabled={aiGenerating}
+                    title={!canAIDescription ? 'Available on Plus and above' : undefined}
+                  >
+                    {aiGenerating ? '⏳ Generating…' : canAIDescription ? '✨ Write for me' : '🔒 Write for me · Plus'}
+                  </button>
+                  {formData.description.trim().length >= 20 && (
+                    <button
+                      type="button"
+                      className="pj-ai-inline-btn"
+                      disabled={scopeExpanding}
+                      onClick={async () => {
+                        setScopeExpanding(true);
+                        try {
+                          const data = await apiRequest('/api/ai/expand-scope', {
+                            method: 'POST',
+                            body: JSON.stringify({ description: formData.description, title: formData.title, category: formData.category }),
+                          });
+                          if (data.expanded) setFormData(prev => ({ ...prev, description: data.expanded }));
+                        } catch { /* silent fail */ }
+                        finally { setScopeExpanding(false); }
+                      }}
+                    >
+                      {scopeExpanding ? '✨ Expanding…' : '✨ Expand scope'}
+                    </button>
+                  )}
+                </div>
               </div>
               {aiMsg === 'upgrade_required'
                 ? <UpgradePrompt

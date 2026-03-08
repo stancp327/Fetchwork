@@ -308,3 +308,20 @@
   .step-number { width: 32px; height: 32px; font-size: 0.8rem; }
   .footer-buttons { flex-direction: row; }
 }
+
+/* AI Dispute Assistant */
+.dispute-ai-improve-btn {
+  display: block;
+  margin-top: 8px;
+  background: linear-gradient(135deg, var(--color-primary, #2563eb), #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.dispute-ai-improve-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.dispute-ai-improve-btn:not(:disabled):hover { opacity: 0.85; }

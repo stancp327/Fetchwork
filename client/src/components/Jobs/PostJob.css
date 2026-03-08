@@ -231,3 +231,45 @@
   transition: opacity 0.15s;
 }
 .pj-ai-budget-apply:hover { opacity: 0.85; }
+
+/* AI Title Fixer */
+.pj-ai-title-wrap { margin-top: 6px; }
+.pj-ai-inline-btn {
+  background: none;
+  border: 1px solid var(--color-primary, #2563eb);
+  color: var(--color-primary, #2563eb);
+  border-radius: 5px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.pj-ai-inline-btn:hover { background: var(--color-primary, #2563eb); color: white; }
+.pj-ai-inline-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.pj-ai-title-suggestion {
+  background: var(--color-bg-secondary, #f8faff);
+  border: 1px solid var(--color-primary-light, #dbeafe);
+  border-radius: 8px;
+  padding: var(--space-3, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pj-ai-title-improved { font-weight: 600; color: var(--color-primary, #2563eb); font-size: 14px; }
+.pj-ai-title-reason { font-size: 12px; color: var(--color-text-muted, #6b7280); font-style: italic; }
+.pj-ai-title-actions { display: flex; gap: 8px; margin-top: 4px; }
+.pj-ai-title-apply {
+  background: var(--color-primary, #2563eb); color: white; border: none;
+  border-radius: 5px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.pj-ai-title-apply:hover { opacity: 0.85; }
+.pj-ai-title-dismiss {
+  background: none; border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 5px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* AI button group (Write for me + Expand scope side by side) */
+.pj-ai-btn-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

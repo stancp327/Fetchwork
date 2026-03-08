@@ -15,6 +15,11 @@ const Profile = () => {
   const [success, setSuccess] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [aiSuggestionsLoading, setAiSuggestionsLoading] = useState(false);
+  const [rateAdvice, setRateAdvice] = useState(null);
+  const [rateAdviceLoading, setRateAdviceLoading] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
   const [data, setData] = useState({
     firstName: '', lastName: '', bio: '', headline: '', skills: [],
     hourlyRate: 0, location: '', phone: '', profilePicture: '',
@@ -143,6 +148,9 @@ const Profile = () => {
           <div className="profile-completion-badge">{completion}% complete</div>
         </div>
         <div className="profile-page-header-right">
+          <button className="prf-ai-tools-btn" onClick={() => setShowAiPanel(p => !p)}>
+            ✨ AI Tools
+          </button>
           <a href={`/freelancers/${user?._id || user?.userId}`} className="btn-preview" target="_blank" rel="noopener noreferrer">
             👁️ Public Preview
           </a>
@@ -151,6 +159,82 @@ const Profile = () => {
           </button>
         </div>
       </div>
+
+      {/* AI Tools Panel */}
+      {showAiPanel && (
+        <div className="prf-ai-panel">
+          <div className="prf-ai-panel-header">
+            <span>✨ AI Profile Tools</span>
+            <button className="prf-ai-panel-close" onClick={() => setShowAiPanel(false)}>✕</button>
+          </div>
+
+          {/* Profile Optimizer */}
+          <div className="prf-ai-section">
+            <div className="prf-ai-section-title">Profile Optimizer</div>
+            <p className="prf-ai-section-desc">Get specific suggestions to improve your profile and win more clients.</p>
+            {aiSuggestions ? (
+              <div className="prf-ai-suggestions">
+                {aiSuggestions.map((s, i) => (
+                  <div key={i} className={`prf-ai-suggestion prf-ai-impact-${s.impact}`}>
+                    <div className="prf-ai-suggestion-title">{s.title}
+                      <span className={`prf-ai-impact-badge ${s.impact}`}>{s.impact}</span>
+                    </div>
+                    <div className="prf-ai-suggestion-text">{s.suggestion}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <button className="prf-ai-run-btn" disabled={aiSuggestionsLoading} onClick={async () => {
+                setAiSuggestionsLoading(true);
+                try {
+                  const res = await apiRequest('/api/ai/optimize-profile', {
+                    method: 'POST',
+                    body: JSON.stringify({ bio: data.bio, headline: data.headline, skills: data.skills, hourlyRate: data.hourlyRate, category: data.primaryCategory, completionScore: completion }),
+                  });
+                  setAiSuggestions(res.suggestions);
+                } catch { /* silent */ }
+                finally { setAiSuggestionsLoading(false); }
+              }}>
+                {aiSuggestionsLoading ? '✨ Analyzing…' : '✨ Analyze My Profile'}
+              </button>
+            )}
+          </div>
+
+          {/* Rate Advisor */}
+          <div className="prf-ai-section">
+            <div className="prf-ai-section-title">Rate Advisor</div>
+            <p className="prf-ai-section-desc">See how your rate compares to market rates for your skills.</p>
+            {rateAdvice ? (
+              <div className="prf-ai-rate-result">
+                <div className={`prf-ai-rate-verdict ${rateAdvice.verdict}`}>
+                  {rateAdvice.verdict === 'underpriced' ? '📉 Underpriced' : rateAdvice.verdict === 'overpriced' ? '📈 Overpriced' : '✅ Fairly Priced'}
+                </div>
+                <div className="prf-ai-rate-range">
+                  Market: ${rateAdvice.marketLow}–${rateAdvice.marketHigh}/hr · Typical: ${rateAdvice.marketMid}/hr
+                </div>
+                <p className="prf-ai-rate-advice">{rateAdvice.advice}</p>
+                {rateAdvice.positioning && <p className="prf-ai-rate-positioning">💡 {rateAdvice.positioning}</p>}
+              </div>
+            ) : (
+              <button className="prf-ai-run-btn" disabled={rateAdviceLoading} onClick={async () => {
+                setRateAdviceLoading(true);
+                try {
+                  const res = await apiRequest('/api/ai/rate-advice', {
+                    method: 'POST',
+                    body: JSON.stringify({ hourlyRate: data.hourlyRate, skills: data.skills, category: data.primaryCategory, bio: data.bio, location: data.location }),
+                  });
+                  if (res.advice) setRateAdvice(res.advice);
+                } catch (err) {
+                  if (err.status === 403) alert('Rate Advisor is a Plus+ feature.');
+                }
+                finally { setRateAdviceLoading(false); }
+              }}>
+                {rateAdviceLoading ? '✨ Analyzing…' : '✨ Check My Rate'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="profile-tabs">
