@@ -1,4 +1,4 @@
-﻿/* ── Job Progress — Mobile-first ──────────────────────────────── */
+/* ── Job Progress — Mobile-first ──────────────────────────────── */
 .jp-container { width: 100%; max-width: 1100px; margin: 0 auto; padding: var(--space-lg) var(--container-padding); }
 .jp-loading, .jp-error { text-align: center; padding: var(--space-3xl); color: var(--color-text-secondary); }
 .jp-back { color: var(--color-primary); text-decoration: none; font-size: var(--font-size-sm); min-height: 44px; display: inline-flex; align-items: center; }
@@ -48,7 +48,7 @@
 .jp-release-msg { font-weight: 600 !important; margin-top: 0.4rem !important; }
 
 /* Progress Card */
-.jp-progress-card { background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: var(--space-lg); margin: var(--space-xl) 0; }
+.jp-progress-card { background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 12px; padding: var(--space-lg); margin: var(--space-xl) 0; }
 .jp-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); }
 .jp-progress-header h2 { margin: 0; font-size: var(--font-size-base); }
 .jp-progress-pct { font-size: var(--font-size-2xl); font-weight: 700; color: var(--color-primary); }
@@ -63,7 +63,7 @@
 .jp-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-sm); }
 .jp-panel-header h2 { margin: 0; font-size: var(--font-size-lg); }
 .jp-milestones-list { display: flex; flex-direction: column; gap: var(--space-md); }
-.jp-milestone-card { background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-lg); }
+.jp-milestone-card { background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-lg); }
 .jp-milestone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); flex-wrap: wrap; gap: var(--space-xs); }
 .jp-milestone-num { color: var(--color-text-secondary); font-size: var(--font-size-xs); }
 .jp-milestone-badge { padding: 0.15rem 0.5rem; border-radius: 12px; font-size: var(--font-size-xs); font-weight: 600; }
@@ -83,8 +83,8 @@
 .jp-timeline { position: relative; padding-left: 2rem; }
 .jp-timeline::before { content: ''; position: absolute; left: 0.75rem; top: 0; bottom: 0; width: 2px; background: var(--color-border); }
 .jp-timeline-item { position: relative; margin-bottom: var(--space-lg); }
-.jp-timeline-dot { position: absolute; left: -2rem; top: 0; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid var(--color-border); border-radius: 50%; font-size: 0.7rem; z-index: 1; }
-.jp-timeline-content { background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-md) var(--space-lg); }
+.jp-timeline-dot { position: absolute; left: -2rem; top: 0; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--color-bg-primary); border: 2px solid var(--color-border); border-radius: 50%; font-size: 0.7rem; z-index: 1; }
+.jp-timeline-content { background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-md) var(--space-lg); }
 .jp-timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); flex-wrap: wrap; gap: var(--space-xs); }
 .jp-timeline-header strong { font-size: var(--font-size-sm); }
 .jp-timeline-time { font-size: var(--font-size-xs); color: var(--color-text-muted); }
@@ -93,13 +93,13 @@
 .jp-attachment { padding: var(--space-xs) var(--space-sm); background: var(--color-bg-muted); border-radius: 4px; font-size: var(--font-size-xs); color: var(--color-primary); text-decoration: none; }
 
 /* Buttons */
-.jp-btn-sm { padding: 0 var(--space-md); border: 1px solid var(--color-border-medium); border-radius: 6px; font-size: var(--font-size-xs); font-weight: 500; cursor: pointer; background: white; color: var(--color-text); min-height: 44px; }
+.jp-btn-sm { padding: 0 var(--space-md); border: 1px solid var(--color-border-medium); border-radius: 6px; font-size: var(--font-size-xs); font-weight: 500; cursor: pointer; background: var(--color-bg-primary); color: var(--color-text); min-height: 44px; }
 .jp-btn-sm.primary { background: var(--color-primary); color: white; border-color: var(--color-primary); }
 .jp-btn-sm.success { background: var(--color-success); color: white; border-color: var(--color-success); }
 .jp-btn-sm.warning { background: var(--color-warning); color: white; border-color: var(--color-warning); }
 .jp-btn-primary { padding: var(--space-sm) var(--space-lg); border: none; border-radius: 8px; background: var(--color-primary); color: white; font-size: var(--font-size-sm); font-weight: 500; cursor: pointer; min-height: 44px; }
 .jp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.jp-btn-ghost { padding: var(--space-sm) var(--space-lg); border: 1px solid var(--color-border-medium); border-radius: 8px; background: white; color: var(--color-text); font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; }
+.jp-btn-ghost { padding: var(--space-sm) var(--space-lg); border: 1px solid var(--color-border-medium); border-radius: 8px; background: var(--color-bg-primary); color: var(--color-text); font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; }
 .jp-empty { padding: var(--space-2xl); text-align: center; color: var(--color-text-muted); font-size: var(--font-size-sm); }
 
 /* Tablet+ */

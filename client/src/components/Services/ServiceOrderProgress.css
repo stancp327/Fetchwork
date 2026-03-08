@@ -1,4 +1,4 @@
-﻿.sop-container {
+.sop-container {
   max-width: 900px;
   margin: 0 auto;
   padding: 1.25rem 1rem;
@@ -64,7 +64,7 @@
   margin-bottom: 2rem;
   overflow-x: auto;
   padding: 1rem 0.5rem;
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
 }
@@ -138,7 +138,7 @@
 
 /* ── Cards ──────────────────────────────────────────────────── */
 .sop-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1rem 1.1rem;

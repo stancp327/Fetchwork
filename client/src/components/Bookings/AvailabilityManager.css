@@ -1,4 +1,4 @@
-/* ── AvailabilityManager ── */
+/* â”€â”€ AvailabilityManager â”€â”€ */
 
 /* Page */
 .am-page {
@@ -17,7 +17,7 @@
   font-size: var(--font-size-sm);
 }
 
-/* ── Header ── */
+/* â”€â”€ Header â”€â”€ */
 .am-header {
   display: flex;
   flex-direction: column;
@@ -55,7 +55,7 @@
   margin: 0;
 }
 
-/* ── Alerts ── */
+/* â”€â”€ Alerts â”€â”€ */
 .am-error {
   padding: var(--space-md) var(--space-lg);
   background: var(--color-danger-subtle);
@@ -93,7 +93,7 @@
   font-size: var(--font-size-sm);
 }
 
-/* ── Cards ── */
+/* â”€â”€ Cards â”€â”€ */
 .am-card {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
@@ -119,7 +119,7 @@
   margin: 0;
 }
 
-/* ── Location Mode Picker ── */
+/* â”€â”€ Location Mode Picker â”€â”€ */
 .am-location-modes {
   display: grid;
   grid-template-columns: 1fr;
@@ -163,7 +163,7 @@
   color: var(--color-text-secondary);
 }
 
-/* ── Form Fields ── */
+/* â”€â”€ Form Fields â”€â”€ */
 .am-field {
   display: flex;
   flex-direction: column;
@@ -208,7 +208,7 @@
   margin-top: var(--space-lg);
 }
 
-/* ── Override Toggle ── */
+/* â”€â”€ Override Toggle â”€â”€ */
 .am-override-toggle {
   display: flex;
   justify-content: space-between;
@@ -242,7 +242,7 @@
   left: 3px;
   width: 22px;
   height: 22px;
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 50%;
   transition: transform var(--transition-fast);
   box-shadow: var(--shadow-sm);
@@ -264,7 +264,7 @@
 
 .am-resolved-summary p { margin: 0; }
 
-/* ── Weekly Schedule ── */
+/* â”€â”€ Weekly Schedule â”€â”€ */
 .am-days {
   display: flex;
   flex-direction: column;
@@ -327,7 +327,7 @@
   left: 2px;
   width: 18px;
   height: 18px;
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 50%;
   transition: transform var(--transition-fast);
   box-shadow: var(--shadow-sm);
@@ -412,7 +412,7 @@
   border-color: var(--color-primary-disabled);
 }
 
-/* ── Actions / Save ── */
+/* â”€â”€ Actions / Save â”€â”€ */
 .am-actions {
   padding-bottom: var(--space-2xl);
 }
@@ -442,7 +442,7 @@
   cursor: not-allowed;
 }
 
-/* ── Responsive ── */
+/* â”€â”€ Responsive â”€â”€ */
 @media (min-width: 480px) {
   .am-location-modes {
     grid-template-columns: 1fr 1fr;

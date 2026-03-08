@@ -1,4 +1,4 @@
-﻿/* Proposal Wizard Modal Styles */
+/* Proposal Wizard Modal Styles */
 .modal-proposal-overlay {
   position: fixed;
   top: 0;
@@ -15,7 +15,7 @@
 }
 
 .modal-proposal-wrapper {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 600px;
@@ -269,7 +269,7 @@
 }
 
 .btn-secondary {
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text-secondary);
   border: 2px solid #ddd;
   font-weight: 500;

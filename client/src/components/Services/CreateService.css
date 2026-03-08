@@ -1,4 +1,4 @@
-﻿/* ── Wizard Container ─────────────────────────────────────────── */
+/* ── Wizard Container ─────────────────────────────────────────── */
 .wizard-container {
   width: 100%;
   max-width: 1200px;
@@ -23,7 +23,7 @@
   padding: 0.5rem 1rem;
   border: 1px solid var(--color-border-medium);
   border-radius: 8px;
-  background: white;
+  background: var(--color-bg-primary);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -144,7 +144,7 @@
   font-size: 0.9rem;
   font-family: inherit;
   transition: border-color 0.15s;
-  background: white;
+  background: var(--color-bg-primary);
 }
 
 .wiz-field input:focus,
@@ -171,7 +171,7 @@
 
 /* ── Pricing Card ─────────────────────────────────────────────── */
 .pricing-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 1.5rem;
@@ -308,7 +308,7 @@
 }
 
 .review-section {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 1.25rem;
@@ -341,7 +341,7 @@
 }
 
 .wizard-preview {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 1.25rem;
@@ -415,7 +415,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--color-bg-primary);
   border-top: 1px solid var(--color-border);
   padding: 1rem 2rem;
   display: flex;
@@ -441,7 +441,7 @@
 }
 
 .wiz-btn.secondary {
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text);
   border: 1px solid var(--color-border-medium);
 }
@@ -495,7 +495,7 @@
   padding: 1rem 1.25rem;
   border: 2px solid var(--color-border-medium);
   border-radius: 12px;
-  background: white;
+  background: var(--color-bg-primary);
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
@@ -642,7 +642,7 @@
   top: 3px;
   width: 18px;
   height: 18px;
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 50%;
   transition: transform 0.2s;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
@@ -820,7 +820,7 @@
   height: 20px;
   left: 3px;
   top: 3px;
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 50%;
   transition: transform 0.2s;
 }
@@ -865,7 +865,7 @@
 .ife-toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
 .ife-toggle input { opacity: 0; width: 0; height: 0; }
 .ife-toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 24px; cursor: pointer; transition: 0.2s; }
-.ife-toggle-slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+.ife-toggle-slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: var(--color-bg-primary); border-radius: 50%; transition: 0.2s; }
 .ife-toggle input:checked + .ife-toggle-slider { background: var(--primary); }
 .ife-toggle input:checked + .ife-toggle-slider::before { transform: translateX(20px); }
 .ife-fields { display: flex; flex-direction: column; gap: var(--space-3); }

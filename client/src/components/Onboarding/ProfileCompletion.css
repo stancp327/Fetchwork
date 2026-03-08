@@ -1,6 +1,6 @@
-﻿/* Profile Completion Progress Bar Styles */
+/* Profile Completion Progress Bar Styles */
 .completion-progress-wrapper {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

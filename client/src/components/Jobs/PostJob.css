@@ -1,4 +1,4 @@
-/* -- Post Job — Mobile-first ------------------------------------ */
+/* -- Post Job â€” Mobile-first ------------------------------------ */
 .post-job-page {
   width: 100%;
   max-width: 800px;
@@ -12,7 +12,7 @@
 .post-job-header p { color: var(--color-text-secondary); font-size: var(--font-size-sm); margin: 0; }
 
 .post-job-form {
-  background: white; border-radius: 12px; padding: var(--space-lg);
+  background: var(--color-bg-primary); border-radius: 12px; padding: var(--space-lg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); border: 1px solid var(--color-border);
 }
 
@@ -39,7 +39,7 @@
 .post-job-form .error-text { color: var(--color-danger); font-size: var(--font-size-xs); margin-top: var(--space-xs); }
 .post-job-form .error-banner { background: var(--color-danger-subtle); border: 1px solid var(--color-danger-light); color: var(--color-danger); padding: var(--space-md) var(--space-lg); border-radius: 8px; font-size: var(--font-size-sm); margin-bottom: var(--space-lg); }
 
-/* Grids — single column on mobile */
+/* Grids â€” single column on mobile */
 .post-job-grid-3, .post-job-grid-location { display: grid; grid-template-columns: 1fr; gap: var(--space-lg); }
 
 /* Checkbox */
@@ -47,16 +47,16 @@
 .post-job-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--color-primary); }
 .post-job-checkbox label { margin: 0; font-weight: 500; cursor: pointer; }
 
-/* Actions — stacked on mobile */
+/* Actions â€” stacked on mobile */
 .post-job-actions { display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-2xl); padding-top: var(--space-xl); border-top: 1px solid var(--color-bg-muted); }
 .post-job-actions .btn-primary { background: var(--color-primary); color: white; border: none; padding: var(--space-md) var(--space-2xl); border-radius: 8px; font-weight: 600; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
 .post-job-actions .btn-primary:hover { background: var(--color-primary-dark); }
 .post-job-actions .btn-primary:disabled { background: var(--color-primary-disabled); cursor: not-allowed; }
-.post-job-actions .btn-secondary { background: white; color: var(--color-text); border: 1px solid var(--color-border-medium); padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 500; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
+.post-job-actions .btn-secondary { background: var(--color-bg-primary); color: var(--color-text); border: 1px solid var(--color-border-medium); padding: var(--space-md) var(--space-xl); border-radius: 8px; font-weight: 500; font-size: var(--font-size-sm); cursor: pointer; min-height: 44px; text-align: center; }
 .post-job-actions .btn-secondary:hover { background: var(--color-bg-subtle); }
 
 /* Success */
-.post-job-success { text-align: center; padding: var(--space-3xl) var(--space-xl); background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); max-width: 500px; margin: 3rem auto 0; }
+.post-job-success { text-align: center; padding: var(--space-3xl) var(--space-xl); background: var(--color-bg-primary); border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); max-width: 500px; margin: 3rem auto 0; }
 .post-job-success h3 { color: var(--color-success-dark); font-size: var(--font-size-xl); margin: 0 0 var(--space-sm); }
 .post-job-success p { color: var(--color-text-secondary); margin: 0; }
 
@@ -81,7 +81,7 @@
 .work-type-card {
   display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
   padding: var(--space-md); border: 2px solid var(--color-border); border-radius: 10px;
-  background: white; cursor: pointer; text-align: left; transition: all 0.15s;
+  background: var(--color-bg-primary); cursor: pointer; text-align: left; transition: all 0.15s;
   min-height: 44px; width: 100%;
 }
 .work-type-card:hover { border-color: var(--color-primary-disabled); background: #f8faff; }
@@ -107,7 +107,7 @@
 .cancellation-card {
   display: flex; flex-direction: column; gap: 2px;
   padding: var(--space-sm) var(--space-md); border: 2px solid var(--color-border); border-radius: 8px;
-  background: white; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%;
+  background: var(--color-bg-primary); cursor: pointer; text-align: left; transition: all 0.15s; width: 100%;
   min-height: 44px;
 }
 .cancellation-card:hover { border-color: var(--color-border-medium); background: var(--color-bg-subtle); }

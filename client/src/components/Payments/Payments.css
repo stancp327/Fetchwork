@@ -1,4 +1,4 @@
-﻿/* ── Payments — Mobile-first ─────────────────────────────────── */
+/* ── Payments — Mobile-first ─────────────────────────────────── */
 
 /* ── Stripe Connect ──────────────────────────────────────────── */
 .sc-loading { color: var(--color-text-secondary); font-size: 0.85rem; padding: 0.5rem 0; }
@@ -10,7 +10,7 @@
   padding: 1.25rem;
   border-radius: 12px;
   border: 1px solid var(--color-border);
-  background: white;
+  background: var(--color-bg-primary);
 }
 .sc-card.connected  { border-color: #a7f3d0; background: #f0fdf4; }
 .sc-card.incomplete { border-color: var(--color-warning-light); background: #fefce8; }
@@ -48,7 +48,7 @@
   padding: 1rem;
 }
 .escrow-modal {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 16px;
   width: 100%;
   max-width: 500px;

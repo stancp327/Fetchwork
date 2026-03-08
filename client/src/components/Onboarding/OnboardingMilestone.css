@@ -1,5 +1,5 @@
-﻿.milestone-tracker {
-  background: white;
+.milestone-tracker {
+  background: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);

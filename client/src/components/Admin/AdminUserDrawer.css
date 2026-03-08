@@ -1,11 +1,11 @@
-﻿/* ── Admin User Drawer — Mobile-first ────────────────────────── */
+/* ── Admin User Drawer — Mobile-first ────────────────────────── */
 .aud-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000;
   display: flex; justify-content: flex-end;
 }
 .aud-drawer {
   width: 100%; max-width: 100vw; height: 100vh; height: 100dvh;
-  background: white; overflow-y: auto; display: flex; flex-direction: column;
+  background: var(--color-bg-primary); overflow-y: auto; display: flex; flex-direction: column;
   animation: aud-slide-in 0.2s ease-out;
 }
 @keyframes aud-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -14,7 +14,7 @@
 .aud-drawer-header {
   display: flex; justify-content: space-between; align-items: center;
   padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border);
-  position: sticky; top: 0; background: white; z-index: 2; min-height: 48px;
+  position: sticky; top: 0; background: var(--color-bg-primary); z-index: 2; min-height: 48px;
 }
 .aud-back {
   background: none; border: none; font-size: var(--font-size-sm); color: var(--color-primary);
@@ -59,7 +59,7 @@
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px;
   background: var(--color-border); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);
 }
-.aud-mini-stat { background: white; text-align: center; padding: var(--space-sm) var(--space-xs); }
+.aud-mini-stat { background: var(--color-bg-primary); text-align: center; padding: var(--space-sm) var(--space-xs); }
 .aud-mini-stat strong { display: block; font-size: var(--font-size-sm); color: var(--color-text-heading); }
 .aud-mini-stat span { font-size: 0.55rem; color: var(--color-text-muted); text-transform: uppercase; }
 
@@ -67,7 +67,7 @@
 .aud-section-tabs {
   display: flex; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid var(--color-border); padding: 0;
-  gap: 0; position: sticky; top: 48px; background: white; z-index: 1;
+  gap: 0; position: sticky; top: 48px; background: var(--color-bg-primary); z-index: 1;
   scrollbar-width: none;
 }
 .aud-section-tabs::-webkit-scrollbar { display: none; }
@@ -113,7 +113,7 @@
 /* Portfolio */
 .aud-portfolio { display: flex; flex-direction: column; gap: var(--space-sm); }
 .aud-portfolio-card {
-  border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; background: white;
+  border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; background: var(--color-bg-primary);
 }
 .aud-portfolio-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
 .aud-portfolio-body { padding: var(--space-sm); }
@@ -129,7 +129,7 @@
 .aud-action-btn {
   display: flex; align-items: center; justify-content: center;
   padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border-medium); border-radius: 8px;
-  background: white; font-size: var(--font-size-sm); font-weight: 500;
+  background: var(--color-bg-primary); font-size: var(--font-size-sm); font-weight: 500;
   cursor: pointer; min-height: 44px; text-decoration: none; color: var(--color-text);
   transition: all 0.15s;
 }

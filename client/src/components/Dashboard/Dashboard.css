@@ -1,4 +1,4 @@
-/* -- Dashboard — Mobile-first ----------------------------------- */
+/* -- Dashboard â€” Mobile-first ----------------------------------- */
 .dash-container {
   width: 100%;
   min-width: 0;
@@ -60,7 +60,7 @@
 
 .dash-mode-toggle {
   display: flex;
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
@@ -111,7 +111,7 @@
 .btn-dash-primary:hover { background: var(--color-primary-dark); }
 
 .btn-dash-secondary {
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text);
   padding: var(--space-md) var(--space-xl);
   border-radius: 10px;
@@ -137,7 +137,7 @@
 }
 
 .dash-stat-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: var(--space-lg);
@@ -221,7 +221,7 @@
 
 /* -- Activity List ---------------------------------------------- */
 .activity-list {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   overflow: hidden;
@@ -304,7 +304,7 @@
 .dash-empty {
   text-align: center;
   padding: var(--space-2xl) var(--space-lg);
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
 }
@@ -316,7 +316,7 @@
 
 /* -- Sidebar Cards ---------------------------------------------- */
 .dash-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: var(--space-lg);

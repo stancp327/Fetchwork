@@ -1,4 +1,4 @@
-﻿.modal-dispute-overlay {
+.modal-dispute-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -13,7 +13,7 @@
 }
 
 .modal-dispute-wrapper {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 600px;
@@ -133,7 +133,7 @@
 }
 
 .dispute-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid #ffebee;
   border-left: 4px solid var(--color-danger);
   border-radius: var(--radius-lg);

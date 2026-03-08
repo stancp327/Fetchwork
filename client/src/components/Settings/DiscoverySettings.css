@@ -16,7 +16,7 @@
 .ds-toggle { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
 .ds-toggle input { opacity: 0; width: 0; height: 0; }
 .ds-toggle-slider { position: absolute; inset: 0; background: var(--border-color); border-radius: 28px; cursor: pointer; transition: 0.2s; }
-.ds-toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; background: white; border-radius: 50%; transition: 0.2s; }
+.ds-toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; background: var(--color-bg-primary); border-radius: 50%; transition: 0.2s; }
 .ds-toggle input:checked + .ds-toggle-slider { background: var(--primary); }
 .ds-toggle input:checked + .ds-toggle-slider::before { transform: translateX(20px); }
 

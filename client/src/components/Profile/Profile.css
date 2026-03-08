@@ -53,7 +53,7 @@
   padding: 0.5rem 1rem;
   border: 1px solid var(--color-border-medium);
   border-radius: 8px;
-  background: white;
+  background: var(--color-bg-primary);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -102,7 +102,7 @@
   font-weight: 600;
 }
 
-/* -- Content Layout � mobile: single column --------------------- */
+/* -- Content Layout ï¿½ mobile: single column --------------------- */
 .profile-content {
   display: grid;
   grid-template-columns: 1fr;
@@ -112,7 +112,7 @@
 
 /* -- Summary Card ----------------------------------------------- */
 .profile-summary-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 1.5rem;
@@ -174,7 +174,7 @@
 .prof-field label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--color-text); margin-bottom: 0.4rem; }
 .prof-field input, .prof-field select, .prof-field textarea {
   width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--color-border-medium);
-  border-radius: 10px; font-size: 0.9rem; transition: border-color 0.15s; background: white; font-family: inherit;
+  border-radius: 10px; font-size: 0.9rem; transition: border-color 0.15s; background: var(--color-bg-primary); font-family: inherit;
   min-height: 44px; box-sizing: border-box;
 }
 .prof-field input:focus, .prof-field select:focus, .prof-field textarea:focus {
@@ -200,7 +200,7 @@
 .todo-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .todo-item {
   display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem;
-  background: white; border: 1px solid var(--color-border); border-radius: 10px;
+  background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 10px;
   cursor: pointer; font-size: 0.85rem; text-align: left; width: 100%;
   transition: border-color 0.15s; min-height: 44px;
 }
@@ -213,7 +213,7 @@
 }
 .overview-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .overview-card {
-  background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem;
+  background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 12px; padding: 1rem;
 }
 .overview-card h4 { font-size: 0.85rem; font-weight: 600; color: var(--color-text-secondary); margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
 .overview-card p { font-size: 0.9rem; color: var(--color-text-darker); margin: 0; }
@@ -245,7 +245,7 @@
 /* -- Portfolio Tab ---------------------------------------------- */
 .portfolio-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .portfolio-tile {
-  border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; background: white;
+  border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; background: var(--color-bg-primary);
 }
 .portfolio-tile img { width: 100%; height: 140px; object-fit: cover; }
 .portfolio-tile-body { padding: 0.75rem; }
@@ -339,7 +339,7 @@
 .verify-list { display: flex; flex-direction: column; gap: 0.75rem; }
 .verify-item {
   display: flex; align-items: center; gap: 1rem; padding: 1rem;
-  background: white; border: 1px solid var(--color-border); border-radius: 12px;
+  background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 12px;
 }
 .verify-item.verified { border-color: #a7f3d0; background: #f0fdf4; }
 .verify-icon { font-size: 1.3rem; }
@@ -349,7 +349,7 @@
 /* -- ID Verification Section ----------------------------------- */
 .verify-id-section {
   margin-top: 1.5rem;
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.25rem;
@@ -416,7 +416,7 @@
 /* -- Sticky Actions --------------------------------------------- */
 .profile-sticky-actions {
   position: fixed; bottom: 0; left: 0; right: 0;
-  background: white; border-top: 1px solid var(--color-border);
+  background: var(--color-bg-primary); border-top: 1px solid var(--color-border);
   padding: 0.75rem 1rem; display: flex; align-items: center; gap: 1rem;
   z-index: 100; box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06); flex-wrap: wrap;
 }
@@ -425,7 +425,7 @@
 .sticky-btns { display: flex; gap: 0.5rem; margin-left: auto; }
 
 .btn-cancel {
-  padding: 0.5rem 1.25rem; background: white; color: var(--color-text);
+  padding: 0.5rem 1.25rem; background: var(--color-bg-primary); color: var(--color-text);
   border: 1px solid var(--color-border-medium); border-radius: 8px; cursor: pointer; font-weight: 500;
   min-height: 44px;
 }
@@ -440,7 +440,7 @@
 .sticky-error { color: var(--color-danger); font-size: 0.8rem; }
 .sticky-success { color: var(--color-success-dark); font-size: 0.8rem; }
 
-/* ── Summary Badges (sidebar) ──────────────────────────────────── */
+/* â”€â”€ Summary Badges (sidebar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .summary-badges {
   display: flex;
   flex-wrap: wrap;
@@ -449,9 +449,9 @@
   margin: 0.5rem 0 0.25rem;
 }
 
-/* ── Badge Showcase (Verification tab) ─────────────────────────── */
+/* â”€â”€ Badge Showcase (Verification tab) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .badge-showcase {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 1.5rem;
@@ -528,7 +528,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: white;
+  background: var(--color-bg-primary);
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   margin-bottom: 0.25rem;
 }

@@ -1,4 +1,4 @@
-﻿/* ── Admin Email Panel — Mobile-first ────────────────────────── */
+/* ── Admin Email Panel — Mobile-first ────────────────────────── */
 .admin-email-panel {
   padding: 0;
   overflow: hidden;
@@ -44,7 +44,7 @@
 
 .broadcast-section,
 .test-section {
-  background: white;
+  background: var(--color-bg-primary);
   padding: 20px;
   border-radius: var(--radius-lg);
   box-shadow: 0 2px 4px rgba(0,0,0,0.08);
@@ -76,7 +76,7 @@
   border-radius: 6px;
   font-size: var(--font-size-sm);
   box-sizing: border-box;
-  background: white;
+  background: var(--color-bg-primary);
 }
 .admin-email-panel .form-group textarea {
   width: 100%;

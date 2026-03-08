@@ -1,4 +1,4 @@
-/* -- My Offers Page — Mobile-first ---------------------------- */
+/* -- My Offers Page â€” Mobile-first ---------------------------- */
 .my-offers-container {
   width: 100%;
   min-width: 0;
@@ -46,7 +46,7 @@
   padding: 0.45rem 0.85rem;
   border-radius: 20px;
   border: 1px solid var(--color-border-medium);
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text);
   font-size: 0.82rem;
   font-weight: 500;

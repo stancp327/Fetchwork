@@ -1,4 +1,4 @@
-﻿/* ── Saved Items — Mobile-first ──────────────────────────────── */
+/* ── Saved Items — Mobile-first ──────────────────────────────── */
 .saved-page {
   max-width: 900px;
   margin: 0 auto;
@@ -25,7 +25,7 @@
   height: 44px;
   border-radius: 22px;
   border: 1px solid var(--color-border-medium);
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text);
   font-size: 0.85rem;
   font-weight: 500;
@@ -52,7 +52,7 @@
 }
 
 .saved-item {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   display: flex;

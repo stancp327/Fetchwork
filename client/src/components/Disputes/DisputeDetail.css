@@ -1,4 +1,4 @@
-﻿.dispute-detail {
+.dispute-detail {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
@@ -90,7 +90,7 @@
 
 /* ── Messages Panel ──────────────────────────────────────────── */
 .dispute-messages-panel {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   display: flex;
@@ -318,7 +318,7 @@
 }
 
 .dispute-info-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: 1.25rem;

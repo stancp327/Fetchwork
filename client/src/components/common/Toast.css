@@ -1,4 +1,4 @@
-﻿/* ── Toast Notifications — Mobile-first ──────────────────────── */
+/* ── Toast Notifications — Mobile-first ──────────────────────── */
 .toast-container {
   position: fixed;
   top: 70px;
@@ -18,7 +18,7 @@
   gap: var(--space-sm, 0.5rem);
   padding: var(--space-md, 0.75rem) var(--space-lg, 1rem);
   border-radius: 10px;
-  background: white;
+  background: var(--color-bg-primary);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border-left: 4px solid var(--color-text-secondary);
   animation: toast-slide-in 0.3s ease-out;

@@ -1,11 +1,11 @@
-﻿/* ── Admin Analytics — Mobile-first ─────────────────────────── */
+/* ── Admin Analytics — Mobile-first ─────────────────────────── */
 .admin-analytics { padding: 0; overflow: hidden; max-width: 100%; }
 
 .aa-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-lg); }
 .aa-header h2 { margin: 0; font-size: var(--font-size-lg); }
 .aa-period-btns { display: flex; gap: var(--space-xs); }
 .aa-period-btn {
-  background: white; border: 1px solid var(--color-border-medium); border-radius: 6px; padding: 0 var(--space-md);
+  background: var(--color-bg-primary); border: 1px solid var(--color-border-medium); border-radius: 6px; padding: 0 var(--space-md);
   font-size: var(--font-size-xs); cursor: pointer; min-height: 44px; font-weight: 500;
 }
 .aa-period-btn.active { background: var(--color-primary); color: white; border-color: var(--color-primary); }
@@ -19,7 +19,7 @@
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm);
 }
 .aa-stat-card {
-  background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-md);
+  background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-md);
   text-align: center;
 }
 .aa-stat-card.highlight { border-color: #bfdbfe; background: var(--color-primary-light); }
@@ -29,7 +29,7 @@
 /* Chart */
 .aa-chart {
   display: flex; align-items: flex-end; gap: 2px; height: 120px;
-  background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-md);
+  background: var(--color-bg-primary); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-md);
   overflow-x: auto;
 }
 .aa-bar-col { flex: 1; min-width: 6px; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }

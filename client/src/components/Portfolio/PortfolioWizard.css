@@ -1,10 +1,10 @@
-﻿/* ── Portfolio Wizard — Mobile-first ─────────────────────────── */
+/* ── Portfolio Wizard — Mobile-first ─────────────────────────── */
 .pw-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
   z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
 }
 .pw-modal {
-  background: white; border-radius: 16px 16px 0 0; width: 100%;
+  background: var(--color-bg-primary); border-radius: 16px 16px 0 0; width: 100%;
   max-height: 90vh; display: flex; flex-direction: column;
   animation: pw-slide-up 0.25s ease-out;
 }

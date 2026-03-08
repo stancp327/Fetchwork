@@ -41,7 +41,7 @@
 
 .job-posted { color: var(--color-text-muted); font-size: 0.85rem; }
 
-/* -- Layout — mobile: single column ---------------------------- */
+/* -- Layout â€” mobile: single column ---------------------------- */
 .job-content-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -51,7 +51,7 @@
 
 /* -- Main column ------------------------------------------------ */
 .job-main-card {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -169,7 +169,7 @@
 }
 
 .sidebar-card {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -260,11 +260,11 @@
 
 .btn-primary-jd { background: var(--color-primary); color: white; }
 .btn-primary-jd:hover { background: var(--color-primary-dark); }
-.btn-secondary-jd { background: white; color: var(--color-text); border: 1px solid var(--color-border-medium); }
+.btn-secondary-jd { background: var(--color-bg-primary); color: var(--color-text); border: 1px solid var(--color-border-medium); }
 .btn-secondary-jd:hover { background: var(--color-bg-subtle); }
 .btn-success-jd { background: var(--color-success-dark); color: white; }
 .btn-success-jd:hover { background: #047857; }
-.btn-danger-jd { background: white; color: var(--color-danger); border: 1px solid var(--color-danger-light); }
+.btn-danger-jd { background: var(--color-bg-primary); color: var(--color-danger); border: 1px solid var(--color-danger-light); }
 .btn-danger-jd:hover { background: var(--color-danger-subtle); }
 
 .custom-offer-divider {
@@ -296,7 +296,7 @@
   margin: 3rem auto 0;
   padding: 2rem 1rem;
   text-align: center;
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }

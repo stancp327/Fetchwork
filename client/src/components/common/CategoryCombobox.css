@@ -1,4 +1,4 @@
-﻿/* ── CategoryCombobox — Mobile-first ─────────────────────────── */
+/* ── CategoryCombobox — Mobile-first ─────────────────────────── */
 .cat-combo { width: 100%; }
 
 .cat-combo-select {
@@ -8,7 +8,7 @@
   border-radius: 8px;
   font-size: 1rem;          /* 16px — prevents iOS zoom */
   min-height: 44px;
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text-darker);
   cursor: pointer;
   box-sizing: border-box;

@@ -1,4 +1,4 @@
-﻿/* ── Modal Overlay ────────────────────────────────────────────── */
+/* ── Modal Overlay ────────────────────────────────────────────── */
 .offer-modal-overlay {
   position: fixed;
   inset: 0;
@@ -11,7 +11,7 @@
 }
 
 .offer-modal {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 16px;
   max-width: 560px;
   width: 100%;
@@ -123,7 +123,7 @@
   min-height: 44px;
   border: 1px solid var(--color-border-medium);
   border-radius: 8px;
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text);
   font-size: 0.9rem;
   cursor: pointer;
@@ -156,7 +156,7 @@
 
 /* ── Offer Card (for listing) ────────────────────────────────── */
 .offer-card {
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 1.25rem;

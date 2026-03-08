@@ -1,6 +1,6 @@
-﻿/* ── Admin Dispute Panel — Mobile-first ──────────────────────── */
+/* ── Admin Dispute Panel — Mobile-first ──────────────────────── */
 .disputes-management {
-  background: white;
+  background: var(--color-bg-primary);
   padding: 0;
   border-radius: 10px;
   overflow: hidden;
@@ -23,7 +23,7 @@
   border: 1px solid var(--color-border-medium);
   border-radius: 6px;
   font-size: var(--font-size-sm);
-  background: white;
+  background: var(--color-bg-primary);
   box-sizing: border-box;
 }
 
@@ -33,7 +33,7 @@
 .admin-panel-table table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--color-bg-primary);
 }
 
 /* Mobile: hide thead, render each row as a card */

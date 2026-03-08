@@ -1,4 +1,4 @@
-/* -- Home � Mobile-first --------------------------------------- */
+/* -- Home ï¿½ Mobile-first --------------------------------------- */
 .home { min-height: 100vh; }
 
 /* -- Hero ------------------------------------------------------ */
@@ -74,7 +74,7 @@
   transition: all 0.15s;
 }
 .hero-tab.active {
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text-heading);
   font-weight: 600;
 }
@@ -95,7 +95,7 @@
   border-radius: 12px;
   font-size: 16px;
   outline: none;
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text-heading);
   min-height: 52px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
@@ -155,7 +155,7 @@
   gap: var(--space-xl);
   flex-wrap: wrap;
   padding: var(--space-xl) var(--container-padding);
-  background: white;
+  background: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
 }
 .stat-item { text-align: center; }
@@ -191,7 +191,7 @@
 /* -- How It Works ---------------------------------------------- */
 .how-it-works {
   padding: var(--space-3xl) var(--container-padding);
-  background: white;
+  background: var(--color-bg-primary);
 }
 
 .hiw-tabs {
@@ -204,7 +204,7 @@
 .hiw-tab {
   padding: var(--space-sm) var(--space-xl);
   border: 2px solid var(--color-border);
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text-secondary);
   border-radius: 8px;
   font-size: var(--font-size-sm);
@@ -270,7 +270,7 @@
 .cat-filter-btn {
   padding: var(--space-sm) var(--space-lg);
   border: 2px solid var(--color-border);
-  background: white;
+  background: var(--color-bg-primary);
   color: var(--color-text-secondary);
   border-radius: 8px;
   font-size: var(--font-size-sm);
@@ -299,7 +299,7 @@
   align-items: center;
   gap: var(--space-xs);
   padding: var(--space-lg);
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   text-decoration: none;
@@ -326,7 +326,7 @@
 /* -- Features / Trust ------------------------------------------ */
 .features {
   padding: var(--space-3xl) var(--container-padding);
-  background: white;
+  background: var(--color-bg-primary);
 }
 .features-grid {
   display: grid;
@@ -360,7 +360,7 @@
 .fs-card {
   display: flex;
   flex-direction: column;
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
@@ -397,7 +397,7 @@
 /* -- Testimonials ---------------------------------------------- */
 .testimonials {
   padding: var(--space-3xl) var(--container-padding);
-  background: white;
+  background: var(--color-bg-primary);
 }
 .testimonial-carousel { max-width: 600px; margin: 0 auto; }
 .testimonial-card {
@@ -486,7 +486,7 @@
 .btn-primary:hover { transform: translateY(-1px); }
 .btn-ghost { background: rgba(255,255,255,0.12); color: white; border-color: rgba(255,255,255,0.25); }
 .btn-ghost:hover { background: rgba(255,255,255,0.2); }
-.btn-white { background: white; color: var(--color-text-heading); border-color: white; }
+.btn-white { background: var(--color-bg-primary); color: var(--color-text-heading); border-color: white; }
 .btn-white:hover { background: var(--color-bg-muted); transform: translateY(-1px); }
 .btn-outline { background: transparent; color: var(--color-primary); border-color: var(--color-primary); }
 .btn-outline:hover { background: var(--color-primary); color: white; }
