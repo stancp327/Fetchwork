@@ -1,0 +1,51 @@
+/* AI Preferences — aip- prefix */
+
+.aip-root { padding: var(--space-4, 16px) 0; }
+.aip-loading { color: var(--color-text-muted, #6b7280); font-size: 13px; padding: 20px 0; }
+
+.aip-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-3, 12px); margin-bottom: var(--space-3, 12px); flex-wrap: wrap;
+}
+.aip-title { font-size: 17px; font-weight: 700; margin: 0 0 2px; }
+.aip-subtitle { font-size: 12px; color: var(--color-text-muted, #6b7280); margin: 0; }
+.aip-desc { font-size: 13px; color: var(--color-text-muted, #6b7280); margin: 0 0 var(--space-4, 16px); line-height: 1.5; }
+
+.aip-save-btn {
+  background: var(--color-primary, #2563eb); color: white; border: none;
+  border-radius: 7px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s; flex-shrink: 0;
+}
+.aip-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.aip-save-btn:not(:disabled):hover { opacity: 0.85; }
+
+.aip-list { display: flex; flex-direction: column; gap: 10px; }
+
+.aip-item {
+  display: flex; align-items: center; gap: var(--space-3, 12px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px; background: var(--color-bg-primary, #fff);
+  transition: opacity 0.2s;
+}
+.aip-item.off { opacity: 0.55; }
+.aip-item.on { border-color: var(--color-primary-light, #dbeafe); }
+
+.aip-item-info { flex: 1; min-width: 0; }
+.aip-item-name { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+.aip-item-desc { font-size: 12px; color: var(--color-text-muted, #6b7280); line-height: 1.4; }
+.aip-item-location { font-size: 11px; color: var(--color-text-muted, #6b7280); margin-top: 3px; }
+
+/* Toggle switch */
+.aip-toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+.aip-toggle input { opacity: 0; width: 0; height: 0; }
+.aip-toggle-slider {
+  position: absolute; inset: 0; background: var(--color-border, #e5e7eb);
+  border-radius: 22px; cursor: pointer; transition: background 0.2s;
+}
+.aip-toggle-slider::before {
+  content: ''; position: absolute; width: 16px; height: 16px;
+  left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform 0.2s;
+}
+.aip-toggle input:checked + .aip-toggle-slider { background: var(--color-primary, #2563eb); }
+.aip-toggle input:checked + .aip-toggle-slider::before { transform: translateX(18px); }

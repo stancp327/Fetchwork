@@ -304,6 +304,7 @@ app.use('/api/referrals',    require('./routes/referrals'));
 app.use('/api/contracts',          require('./routes/contracts'));
 app.use('/api/background-checks', require('./routes/backgroundChecks'));
 app.use('/api/ai',               require('./routes/ai'));
+app.use('/api/ai-settings',      require('./routes/aiSettings'));
 app.use('/api/ai',               require('./routes/ai-discovery'));   // semantic search, skills, SEO, portfolio, category
 app.use('/api/ai',               require('./routes/ai-workflow'));    // proposal ranker, milestones, contracts, disputes, red flags
 app.use('/api/ai',               require('./routes/ai-assistant'));   // earnings forecast, meeting notes, translator, fake reviews

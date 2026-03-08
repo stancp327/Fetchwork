@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import AIPreferences from '../../Settings/AIPreferences';
 import { apiRequest } from '../../../utils/api';
 import FileUpload from '../../common/FileUpload';
 import { getLocationDisplay } from '../../../utils/location';
@@ -643,6 +644,10 @@ const TabSettings = ({ data, onChange }) => (
         <label>Twitter</label>
         <input type="url" value={data.socialLinks?.twitter || ''} onChange={e => onChange('socialLinks.twitter', e.target.value)} placeholder="https://twitter.com/..." />
       </div>
+    </div>
+
+    <div style={{ marginTop: '2rem', borderTop: '1px solid var(--color-border, #e5e7eb)', paddingTop: '1.5rem' }}>
+      <AIPreferences userRole={data.role || 'both'} />
     </div>
   </div>
 );

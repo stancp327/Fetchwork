@@ -161,6 +161,9 @@ const userSchema = new mongoose.Schema({
       blockedProviders:  [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
       frequency:         { type: String, enum: ['realtime', 'daily', 'weekly'], default: 'daily' },
     },
+    // AI feature opt-outs (keyed by feature key, true=enabled, false=user disabled it)
+    // Empty = all features enabled (default). Only overrides when explicitly set to false.
+    aiFeatures: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   // User interests (for discovery algorithm)
   interests: [{ type: String, trim: true }],  // e.g. ['cooking', 'fitness', 'web design']
