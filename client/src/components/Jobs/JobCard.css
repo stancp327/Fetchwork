@@ -212,6 +212,38 @@
   }
 }
 
+/* ── Team Badge ──────────────────────────────────────────────── */
+.jc-team-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.jc-team-badge-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.jc-team-badge-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* --- Featured tag --- */
 .tag-featured {
   display: inline-flex;

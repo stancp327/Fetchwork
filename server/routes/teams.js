@@ -9,6 +9,19 @@ const TeamAuditLog = require('../models/TeamAuditLog');
 const TeamApproval = require('../models/TeamApproval');
 const TeamClient = require('../models/TeamClient');
 const emailService = require('../services/emailService');
+const { hasFeature, FEATURES } = require('../services/entitlementEngine');
+const { getUserSubscription } = require('../utils/billingUtils');
+
+const PLAN_LIMITS = { free: { teams: 0 }, pro: { teams: 1, members: 5 }, business: { teams: 3, members: 10 }, default: { teams: 1, members: 5 } };
+
+async function getUserPlanName(userId) {
+  try {
+    const sub = await getUserSubscription(userId);
+    return sub?.plan?.name?.toLowerCase() || 'free';
+  } catch {
+    return 'free';
+  }
+}
 
 // All routes require auth
 router.use(authenticateToken);
@@ -195,10 +208,22 @@ router.post('/', async (req, res) => {
     if (!name?.trim()) return res.status(400).json({ error: 'Team name is required' });
 
     const userObjectId = req.user._id;
+    const userId = req.user.userId || req.user._id || req.user.id;
+
+    // Plan-based team access check
+    const canUseTeams = await hasFeature(userId, FEATURES.TEAM_ACCOUNTS);
+    if (!canUseTeams) {
+      return res.status(403).json({ error: 'Teams require a paid plan.', upgrade_required: true });
+    }
+
+    const planName = await getUserPlanName(userId);
+    const limits = PLAN_LIMITS[planName] || PLAN_LIMITS.default;
 
     // Check user doesn't already own too many teams
     const existing = await Team.countDocuments({ owner: userObjectId, isActive: true });
-    if (existing >= 5) return res.status(400).json({ error: 'Maximum 5 teams per user' });
+    if (existing >= limits.teams) {
+      return res.status(403).json({ error: 'team_limit_reached', limit: limits.teams, plan: planName });
+    }
 
     const team = await Team.create({
       name: name.trim(),
@@ -316,9 +341,13 @@ router.post('/:id/invite', async (req, res) => {
       }
     }
 
-    // Max 50 members
-    if (team.members.filter(m => m.status !== 'removed').length >= 50) {
-      return res.status(400).json({ error: 'Maximum 50 members per team' });
+    // Plan-based member limit
+    const inviterPlanName = await getUserPlanName(requesterId);
+    const inviterLimits = PLAN_LIMITS[inviterPlanName] || PLAN_LIMITS.default;
+    const memberLimit = inviterLimits.members || 50;
+    const activeMemberCount = team.members.filter(m => m.status !== 'removed').length;
+    if (activeMemberCount >= memberLimit) {
+      return res.status(403).json({ error: 'member_limit_reached', limit: memberLimit });
     }
 
     const safeRole = VALID_ROLES.includes(role) && role !== 'owner' ? role : 'member';
