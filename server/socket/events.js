@@ -10,6 +10,8 @@ const activeUsers = new Map(); // userId -> Set of socketIds
 const socketToUser = new Map(); // socketId -> userId
 
 module.exports = (io) => {
+  // Expose isUserOnline so REST routes can check presence without importing socket state
+  io.isUserOnline = (userId) => activeUsers.has(String(userId));
   io.on('connection', (socket) => {
     const senderId = String(socket.user?.userId || socket.user?.id || socket.user?._id || '');
     if (!senderId) {
