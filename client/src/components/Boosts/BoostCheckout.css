@@ -2,7 +2,7 @@
  * Prefix: bc-
  * Scope: Boost purchase checkout flow with payment and success/error states
  */
-.boost-checkout-container {
+.bc-boost-checkout-container {
   min-height: 100vh;
   background: var(--bg-secondary, #f8f9fa);
   display: flex;
@@ -11,7 +11,7 @@
   padding: 1rem 0.5rem;
 }
 
-.boost-checkout-card {
+.bc-boost-checkout-card {
   background: var(--bg-primary, #fff);
   border-radius: 12px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
@@ -20,37 +20,37 @@
   overflow: hidden;
 }
 
-.boost-checkout-header {
+.bc-boost-checkout-header {
   text-align: center;
   padding: 1.5rem 1rem 0.75rem;
 }
 
-.boost-header-icon {
+.bc-boost-header-icon {
   font-size: 2.5rem;
   display: block;
   margin-bottom: 0.5rem;
 }
 
-.boost-checkout-header h1 {
+.bc-boost-checkout-header h1 {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary, #111827);
   margin: 0 0 0.25rem;
 }
 
-.boost-item-title {
+.bc-boost-item-title {
   font-size: 0.9rem;
   color: var(--text-secondary, #6b7280);
   margin: 0;
   font-style: italic;
 }
 
-.boost-checkout-details {
+.bc-boost-checkout-details {
   padding: 0 1rem 1rem;
   border-bottom: 1px solid var(--border-color, #e5e7eb);
 }
 
-.boost-detail-row {
+.bc-boost-detail-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -59,49 +59,49 @@
   color: var(--text-primary, #111827);
 }
 
-.boost-detail-row span:first-child {
+.bc-boost-detail-row span:first-child {
   color: var(--text-secondary, #6b7280);
 }
 
-.boost-detail-row strong {
+.bc-boost-detail-row strong {
   font-weight: 600;
 }
 
-.boost-benefits {
+.bc-boost-benefits {
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.boost-benefits ul {
+.bc-boost-benefits ul {
   list-style: none;
   padding: 0;
   margin: 0.5rem 0 0;
 }
 
-.boost-benefits li {
+.bc-boost-benefits li {
   padding: 0.3rem 0;
   font-size: 0.88rem;
   color: var(--text-secondary, #6b7280);
 }
 
-.boost-checkout-payment {
+.bc-boost-checkout-payment {
   padding: 1.5rem 1rem;
 }
 
-.boost-checkout-payment h3 {
+.bc-boost-checkout-payment h3 {
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 1rem;
   color: var(--text-primary, #111827);
 }
 
-.boost-checkout-form {
+.bc-boost-checkout-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.boost-checkout-pay-btn {
+.bc-boost-checkout-pay-btn {
   background: var(--primary, #2563eb);
   color: #fff;
   border: none;
@@ -114,16 +114,16 @@
   min-height: 48px;
 }
 
-.boost-checkout-pay-btn:hover:not(:disabled) {
+.bc-boost-checkout-pay-btn:hover:not(:disabled) {
   background: var(--primary-dark, #1d4ed8);
 }
 
-.boost-checkout-pay-btn:disabled {
+.bc-boost-checkout-pay-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.boost-checkout-error {
+.bc-boost-checkout-error {
   background: #fef2f2;
   color: #dc2626;
   padding: 0.75rem;
@@ -131,50 +131,50 @@
   font-size: 0.88rem;
 }
 
-.boost-checkout-footer {
+.bc-boost-checkout-footer {
   text-align: center;
   padding: 1rem 1.5rem 1.5rem;
 }
 
-.boost-cancel-link {
+.bc-boost-cancel-link {
   color: var(--text-secondary, #6b7280);
   text-decoration: none;
   font-size: 0.9rem;
 }
 
-.boost-cancel-link:hover {
+.bc-boost-cancel-link:hover {
   color: var(--text-primary, #111827);
 }
 
 /* Success / Error states */
-.boost-success-state,
-.boost-checkout-error-state {
+.bc-boost-success-state,
+.bc-boost-checkout-error-state {
   text-align: center;
   padding: 3rem 1.5rem;
 }
 
-.boost-success-icon,
-.boost-error-icon {
+.bc-boost-success-icon,
+.bc-boost-error-icon {
   font-size: 3rem;
   display: block;
   margin-bottom: 1rem;
 }
 
-.boost-success-state h2,
-.boost-checkout-error-state h2 {
+.bc-boost-success-state h2,
+.bc-boost-checkout-error-state h2 {
   font-size: 1.4rem;
   margin: 0 0 0.5rem;
   color: var(--text-primary, #111827);
 }
 
-.boost-success-state p,
-.boost-checkout-error-state p {
+.bc-boost-success-state p,
+.bc-boost-checkout-error-state p {
   color: var(--text-secondary, #6b7280);
   margin: 0 0 1.5rem;
   line-height: 1.5;
 }
 
-.boost-back-btn {
+.bc-boost-back-btn {
   background: var(--primary, #2563eb);
   color: #fff;
   border: none;
@@ -185,7 +185,7 @@
   cursor: pointer;
 }
 
-.boost-back-link {
+.bc-boost-back-link {
   color: var(--primary, #2563eb);
   text-decoration: none;
   font-weight: 500;
@@ -193,20 +193,20 @@
 
 /* Tablet+ */
 @media (min-width: 480px) {
-  .boost-checkout-container {
+  .bc-boost-checkout-container {
     padding: 2rem 1rem;
   }
 
-  .boost-checkout-card {
+  .bc-boost-checkout-card {
     border-radius: 16px;
   }
 
-  .boost-checkout-header {
+  .bc-boost-checkout-header {
     padding: 2rem 1.5rem 1rem;
   }
 
-  .boost-checkout-details,
-  .boost-checkout-payment {
+  .bc-boost-checkout-details,
+  .bc-boost-checkout-payment {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }

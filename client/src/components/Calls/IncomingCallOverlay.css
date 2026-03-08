@@ -2,7 +2,7 @@
  * Prefix: ico-
  * Scope: Fixed toast overlay for incoming call notifications with accept/reject actions
  */
-.incoming-call-toast {
+.ico-incoming-call-toast {
   position: fixed;
   top: 1rem;
   left: 50%;
@@ -26,14 +26,14 @@
   to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
-.incoming-call-info {
+.ico-incoming-call-info {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   flex: 1;
 }
 
-.incoming-call-avatar {
+.ico-incoming-call-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -47,30 +47,30 @@
   flex-shrink: 0;
 }
 
-.incoming-call-avatar img {
+.ico-incoming-call-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.incoming-call-name {
+.ico-incoming-call-name {
   font-weight: 600;
   font-size: 0.95rem;
 }
 
-.incoming-call-type {
+.ico-incoming-call-type {
   font-size: 0.8rem;
   color: #94a3b8;
   animation: pulse 2s ease-in-out infinite;
 }
 
-.incoming-call-actions {
+.ico-incoming-call-actions {
   display: flex;
   gap: 0.5rem;
   flex-shrink: 0;
 }
 
-.incoming-btn {
+.ico-incoming-btn {
   padding: 0.5rem 1rem;
   border-radius: 8px;
   border: none;
@@ -80,20 +80,20 @@
   min-width: 70px;
 }
 
-.incoming-btn.accept {
+.ico-incoming-btn.accept {
   background: #22c55e;
   color: #fff;
 }
 
-.incoming-btn.accept:hover {
+.ico-incoming-btn.accept:hover {
   background: #16a34a;
 }
 
-.incoming-btn.reject {
+.ico-incoming-btn.reject {
   background: #ef4444;
   color: #fff;
 }
 
-.incoming-btn.reject:hover {
+.ico-incoming-btn.reject:hover {
   background: #dc2626;
 }

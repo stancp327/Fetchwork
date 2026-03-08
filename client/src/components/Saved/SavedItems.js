@@ -56,14 +56,14 @@ const SavedItems = () => {
   };
 
   return (
-    <div className="saved-page">
+    <div className="si-saved-page">
       <h1>❤️ Saved Items</h1>
 
-      <div className="saved-filters">
+      <div className="si-saved-filters">
         {FILTERS.map(f => (
           <button
             key={f.key}
-            className={`saved-filter-btn${filter === f.key ? ' active' : ''}`}
+            className={`si-saved-filter-btn${filter === f.key ? ' active' : ''}`}
             onClick={() => setFilter(f.key)}
           >
             {f.label}
@@ -74,29 +74,29 @@ const SavedItems = () => {
       {loading ? (
         <p style={{ color: '#6b7280' }}>Loading...</p>
       ) : items.length === 0 ? (
-        <div className="saved-empty">
-          <div className="saved-empty-icon">❤️</div>
+        <div className="si-saved-empty">
+          <div className="si-saved-empty-icon">❤️</div>
           <p>No saved items yet</p>
-          <p className="saved-empty-sub">Browse freelancers, jobs, and services to start saving</p>
+          <p className="si-saved-empty-sub">Browse freelancers, jobs, and services to start saving</p>
         </div>
       ) : (
-        <div className="saved-list">
+        <div className="si-saved-list">
           {items.map(s => {
             const item = s.item;
             if (!item) return null;
             return (
-              <div key={s._id} className="saved-item">
-                <Link to={getItemLink(s)} className="saved-item-link">
-                  <span className="saved-item-icon">{ICONS[s.itemType] || '📌'}</span>
-                  <div className="saved-item-body">
-                    <div className="saved-item-title">
+              <div key={s._id} className="si-saved-item">
+                <Link to={getItemLink(s)} className="si-saved-item-link">
+                  <span className="si-saved-item-icon">{ICONS[s.itemType] || '📌'}</span>
+                  <div className="si-saved-item-body">
+                    <div className="si-saved-item-title">
                       {item.title || `${item.firstName} ${item.lastName}`}
                     </div>
-                    <div className="saved-item-meta">{getItemMeta(s)}</div>
+                    <div className="si-saved-item-meta">{getItemMeta(s)}</div>
                   </div>
                 </Link>
                 <button
-                  className="saved-item-remove"
+                  className="si-saved-item-remove"
                   onClick={() => unsave(item._id)}
                   title="Remove from saved"
                 >

@@ -2,7 +2,7 @@
  * Prefix: om-
  * Scope: Onboarding progress tracker with milestone steps and CTA
  */
-.milestone-tracker {
+.om-milestone-tracker {
   background: var(--color-bg-primary);
   border-radius: var(--radius-xl);
   padding: 1.5rem;
@@ -12,31 +12,31 @@
   max-width: 400px;
 }
 
-.milestone-header {
+.om-milestone-header {
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
-.milestone-header h3 {
+.om-milestone-header h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.3rem;
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
-.milestone-header p {
+.om-milestone-header p {
   margin: 0 0 1rem 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-base);
   line-height: 1.4;
 }
 
-.milestone-progress {
+.om-milestone-progress {
   display: flex;
   justify-content: center;
 }
 
-.progress-text {
+.om-progress-text {
   font-size: 0.85rem;
   color: var(--color-primary);
   font-weight: 500;
@@ -45,11 +45,11 @@
   border-radius: var(--radius-xl);
 }
 
-.milestone-list {
+.om-milestone-list {
   margin-bottom: 1.5rem;
 }
 
-.milestone-item {
+.om-milestone-item {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
@@ -57,22 +57,22 @@
   padding: 0.75rem 0;
 }
 
-.milestone-item:first-child {
+.om-milestone-item:first-child {
   padding-top: 0;
 }
 
-.milestone-item:last-child {
+.om-milestone-item:last-child {
   padding-bottom: 0;
 }
 
-.milestone-indicator {
+.om-milestone-indicator {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
 }
 
-.milestone-circle {
+.om-milestone-circle {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -87,13 +87,13 @@
   transition: all 0.3s ease;
 }
 
-.milestone-circle.completed {
+.om-milestone-circle.completed {
   background: var(--color-success);
   color: white;
   border-color: var(--color-success);
 }
 
-.milestone-line {
+.om-milestone-line {
   width: 2px;
   height: 40px;
   background: #ddd;
@@ -101,43 +101,43 @@
   transition: all 0.3s ease;
 }
 
-.milestone-line.completed {
+.om-milestone-line.completed {
   background: var(--color-success);
 }
 
-.milestone-content {
+.om-milestone-content {
   flex: 1;
   padding-top: 0.25rem;
 }
 
-.milestone-title {
+.om-milestone-title {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--color-text-primary);
   margin-bottom: 0.25rem;
 }
 
-.milestone-item.completed .milestone-title {
+.om-milestone-item.completed .om-milestone-title {
   color: var(--color-success);
 }
 
-.milestone-description {
+.om-milestone-description {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
   margin-bottom: 0.25rem;
 }
 
-.milestone-date {
+.om-milestone-date {
   font-size: 0.75rem;
   color: var(--color-success);
   font-weight: 500;
 }
 
-.milestone-actions {
+.om-milestone-actions {
   text-align: center;
 }
 
-.milestone-cta {
+.om-milestone-cta {
   background: linear-gradient(135deg, var(--color-primary) 0%, #1976d2 100%);
   color: white;
   border: none;
@@ -149,29 +149,29 @@
   font-size: var(--font-size-base);
 }
 
-.milestone-cta:hover {
+.om-milestone-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
 }
 
 /* Mobile base */
-.milestone-circle { width: 28px; height: 28px; font-size: 0.8rem; }
-.dashboard-milestone-tracker { grid-column: span 1; }
+.om-milestone-circle { width: 28px; height: 28px; font-size: 0.8rem; }
+.om-dashboard-milestone-tracker { grid-column: span 1; }
 
 @media (min-width: 768px) {
-  .milestone-circle { width: 36px; height: 36px; font-size: 0.9rem; }
+  .om-milestone-circle { width: 36px; height: 36px; font-size: 0.9rem; }
 }
 
 @media (min-width: 1024px) {
-  .dashboard-milestone-tracker { grid-column: span 2; }
+  .om-dashboard-milestone-tracker { grid-column: span 2; }
 }
 
-.milestone-skip {
+.om-milestone-skip {
   text-align: center;
   margin-top: 1rem;
 }
 
-.milestone-skip button {
+.om-milestone-skip button {
   background: none;
   border: none;
   color: var(--color-text-secondary);
@@ -180,6 +180,6 @@
   text-decoration: underline;
 }
 
-.milestone-skip button:hover {
+.om-milestone-skip button:hover {
   color: var(--color-text-primary);
 }

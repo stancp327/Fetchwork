@@ -3,28 +3,28 @@
  * Scope: Saved jobs and freelancers list with filter tabs and remove action
  */
 /* ── Saved Items — Mobile-first ──────────────────────────────── */
-.saved-page {
+.si-saved-page {
   max-width: 900px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
   box-sizing: border-box;
 }
 
-.saved-page h1 {
+.si-saved-page h1 {
   margin: 0 0 1.25rem;
   font-size: 1.35rem;
   font-weight: 700;
 }
 
 /* Filter tabs */
-.saved-filters {
+.si-saved-filters {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-bottom: 1.25rem;
 }
 
-.saved-filter-btn {
+.si-saved-filter-btn {
   padding: 0 1rem;
   height: 44px;
   border-radius: 22px;
@@ -38,24 +38,24 @@
   white-space: nowrap;
 }
 
-.saved-filter-btn.active {
+.si-saved-filter-btn.active {
   border-color: var(--color-primary);
   background: var(--color-primary-light);
   color: var(--color-primary);
 }
 
-.saved-filter-btn:hover:not(.active) {
+.si-saved-filter-btn:hover:not(.active) {
   border-color: var(--color-text-muted);
 }
 
 /* Item list */
-.saved-list {
+.si-saved-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.saved-item {
+.si-saved-item {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -66,11 +66,11 @@
   transition: border-color 0.15s;
 }
 
-.saved-item:hover {
+.si-saved-item:hover {
   border-color: var(--color-border-medium);
 }
 
-.saved-item-link {
+.si-saved-item-link {
   flex: 1;
   display: flex;
   align-items: center;
@@ -81,16 +81,16 @@
   min-width: 0;
 }
 
-.saved-item-icon {
+.si-saved-item-icon {
   font-size: 1.25rem;
   flex-shrink: 0;
 }
 
-.saved-item-body {
+.si-saved-item-body {
   min-width: 0;
 }
 
-.saved-item-title {
+.si-saved-item-title {
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--color-text-darker);
@@ -99,7 +99,7 @@
   text-overflow: ellipsis;
 }
 
-.saved-item-meta {
+.si-saved-item-meta {
   font-size: 0.78rem;
   color: var(--color-text-secondary);
   margin-top: 2px;
@@ -109,7 +109,7 @@
 }
 
 /* Remove button */
-.saved-item-remove {
+.si-saved-item-remove {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
@@ -125,26 +125,26 @@
   margin-right: 0.25rem;
 }
 
-.saved-item-remove:hover {
+.si-saved-item-remove:hover {
   color: var(--color-danger);
 }
 
 /* Empty state */
-.saved-empty {
+.si-saved-empty {
   text-align: center;
   padding: 3rem 1rem;
   color: var(--color-text-secondary);
 }
 
-.saved-empty-icon {
+.si-saved-empty-icon {
   font-size: 2.5rem;
   margin-bottom: 0.75rem;
 }
 
-.saved-empty p { margin: 0.35rem 0; }
-.saved-empty .saved-empty-sub { font-size: 0.85rem; color: var(--color-text-muted); }
+.si-saved-empty p { margin: 0.35rem 0; }
+.si-saved-empty .si-saved-empty-sub { font-size: 0.85rem; color: var(--color-text-muted); }
 
 @media (min-width: 480px) {
-  .saved-page { padding: 2rem 1.5rem; }
-  .saved-page h1 { font-size: 1.5rem; }
+  .si-saved-page { padding: 2rem 1.5rem; }
+  .si-saved-page h1 { font-size: 1.5rem; }
 }

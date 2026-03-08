@@ -88,35 +88,35 @@ const OnboardingMilestone = ({ showInDashboard = false }) => {
   }
 
   return (
-    <div className="milestone-tracker">
-      <div className="milestone-header">
+    <div className="om-milestone-tracker">
+      <div className="om-milestone-header">
         <h3>Let's get started!</h3>
         <p>Complete these steps to make the most of FetchWork.</p>
-        <div className="milestone-progress">
-          <span className="progress-text">{completedCount} of {totalCount} completed</span>
+        <div className="om-milestone-progress">
+          <span className="om-progress-text">{completedCount} of {totalCount} completed</span>
         </div>
       </div>
 
-      <div className="milestone-list">
+      <div className="om-milestone-list">
         {milestones.map((milestone, index) => (
           <div 
             key={milestone.id}
-            className={`milestone-item ${milestone.completed ? 'completed' : ''}`}
+            className={`om-milestone-item ${milestone.completed ? 'completed' : ''}`}
           >
-            <div className="milestone-indicator">
-              <div className={`milestone-circle ${milestone.completed ? 'completed' : ''}`}>
+            <div className="om-milestone-indicator">
+              <div className={`om-milestone-circle ${milestone.completed ? 'completed' : ''}`}>
                 {milestone.completed ? '✓' : index + 1}
               </div>
               {index < milestones.length - 1 && (
-                <div className={`milestone-line ${milestone.completed ? 'completed' : ''}`}></div>
+                <div className={`om-milestone-line ${milestone.completed ? 'completed' : ''}`}></div>
               )}
             </div>
             
-            <div className="milestone-content">
-              <div className="milestone-title">{milestone.title}</div>
-              <div className="milestone-description">{milestone.description}</div>
+            <div className="om-milestone-content">
+              <div className="om-milestone-title">{milestone.title}</div>
+              <div className="om-milestone-description">{milestone.description}</div>
               {milestone.completed && milestone.completedDate && (
-                <div className="milestone-date">{formatDate(milestone.completedDate)}</div>
+                <div className="om-milestone-date">{formatDate(milestone.completedDate)}</div>
               )}
             </div>
           </div>
@@ -124,8 +124,8 @@ const OnboardingMilestone = ({ showInDashboard = false }) => {
       </div>
 
       {completedCount < totalCount && (
-        <div className="milestone-actions">
-          <button className="milestone-cta">
+        <div className="om-milestone-actions">
+          <button className="om-milestone-cta">
             {completedCount === 0 ? 'Get Started' : 'Continue'}
           </button>
         </div>

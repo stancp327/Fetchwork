@@ -2,7 +2,7 @@
  * Prefix: vcm-
  * Scope: Full-screen video call UI with local PiP, controls, and remote video
  */
-.videocall-overlay {
+.vcm-videocall-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -12,7 +12,7 @@
   justify-content: center;
 }
 
-.videocall-modal {
+.vcm-videocall-modal {
   width: 100%;
   height: 100%;
   position: relative;
@@ -21,20 +21,20 @@
 }
 
 /* Remote video */
-.videocall-remote {
+.vcm-videocall-remote {
   flex: 1;
   position: relative;
   background: #1a1a2e;
   overflow: hidden;
 }
 
-.videocall-remote-video {
+.vcm-videocall-remote-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.videocall-remote-placeholder {
+.vcm-videocall-remote-placeholder {
   position: absolute;
   inset: 0;
   display: flex;
@@ -45,7 +45,7 @@
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
 
-.videocall-avatar {
+.vcm-videocall-avatar {
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -59,19 +59,19 @@
   overflow: hidden;
 }
 
-.videocall-avatar img {
+.vcm-videocall-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.videocall-remote-name {
+.vcm-videocall-remote-name {
   font-size: 1.5rem;
   font-weight: 600;
   color: #fff;
 }
 
-.videocall-status {
+.vcm-videocall-status {
   font-size: 1rem;
   color: #94a3b8;
   animation: pulse 2s ease-in-out infinite;
@@ -82,7 +82,7 @@
   50% { opacity: 0.5; }
 }
 
-.videocall-muted-badge {
+.vcm-videocall-muted-badge {
   position: absolute;
   top: 1rem;
   left: 1rem;
@@ -94,7 +94,7 @@
 }
 
 /* Local video (PiP) */
-.videocall-local {
+.vcm-videocall-local {
   position: absolute;
   bottom: 100px;
   right: 1rem;
@@ -107,14 +107,14 @@
   z-index: 2;
 }
 
-.videocall-local-video {
+.vcm-videocall-local-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
 }
 
-.videocall-local-off {
+.vcm-videocall-local-off {
   position: absolute;
   inset: 0;
   display: flex;
@@ -126,7 +126,7 @@
 }
 
 /* Duration */
-.videocall-duration {
+.vcm-videocall-duration {
   position: absolute;
   top: 1rem;
   left: 50%;
@@ -141,7 +141,7 @@
 }
 
 /* Controls */
-.videocall-controls {
+.vcm-videocall-controls {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -154,7 +154,7 @@
   z-index: 3;
 }
 
-.videocall-btn {
+.vcm-videocall-btn {
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -170,38 +170,38 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.videocall-btn:hover {
+.vcm-videocall-btn:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
-.videocall-btn:active {
+.vcm-videocall-btn:active {
   transform: scale(0.95);
 }
 
-.videocall-btn.active {
+.vcm-videocall-btn.active {
   background: rgba(239, 68, 68, 0.6);
 }
 
-.videocall-btn.end {
+.vcm-videocall-btn.end {
   background: #ef4444;
 }
 
-.videocall-btn.end:hover {
+.vcm-videocall-btn.end:hover {
   background: #dc2626;
 }
 
-.videocall-btn.accept {
+.vcm-videocall-btn.accept {
   background: #22c55e;
   width: 64px;
   height: 64px;
   font-size: 1.75rem;
 }
 
-.videocall-btn.accept:hover {
+.vcm-videocall-btn.accept:hover {
   background: #16a34a;
 }
 
-.videocall-btn.reject {
+.vcm-videocall-btn.reject {
   background: #ef4444;
   width: 64px;
   height: 64px;
@@ -209,7 +209,7 @@
 }
 
 /* Debug panel */
-.videocall-debug-toggle {
+.vcm-videocall-debug-toggle {
   position: absolute;
   top: 1rem;
   right: 1rem;
@@ -223,11 +223,11 @@
   cursor: pointer;
 }
 
-.videocall-debug-toggle:hover {
+.vcm-videocall-debug-toggle:hover {
   background: rgba(0, 0, 0, 0.8);
 }
 
-.videocall-debug-panel {
+.vcm-videocall-debug-panel {
   position: absolute;
   top: 3rem;
   right: 1rem;
@@ -243,21 +243,21 @@
   backdrop-filter: blur(8px);
 }
 
-.videocall-debug-panel strong {
+.vcm-videocall-debug-panel strong {
   color: #94a3b8;
   margin-right: 0.25rem;
 }
 
 /* Mobile responsive */
 @media (min-width: 768px) {
-  .videocall-local {
+  .vcm-videocall-local {
     width: 200px;
     height: 260px;
     bottom: 120px;
     right: 2rem;
   }
 
-  .videocall-btn {
+  .vcm-videocall-btn {
     width: 64px;
     height: 64px;
     font-size: 1.75rem;

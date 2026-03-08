@@ -122,46 +122,46 @@ const AvailabilitySettings = ({ onSaved }) => {
   };
 
   return (
-    <div className="avail-settings">
-      <h2 className="avail-title">Availability Settings</h2>
-      <p className="avail-subtitle">Set when clients can book sessions with you.</p>
+    <div className="as-avail-settings">
+      <h2 className="as-avail-title">Availability Settings</h2>
+      <p className="as-avail-subtitle">Set when clients can book sessions with you.</p>
 
       {/* ── General settings ── */}
-      <div className="avail-card">
+      <div className="as-avail-card">
         <h3>General</h3>
-        <div className="avail-row">
-          <div className="avail-field">
+        <div className="as-avail-row">
+          <div className="as-avail-field">
             <label>Timezone</label>
             <select value={timezone} onChange={e => setTimezone(e.target.value)}>
               {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
             </select>
           </div>
-          <div className="avail-field">
+          <div className="as-avail-field">
             <label>Session Duration</label>
             <select value={slotDuration} onChange={e => setSlotDuration(Number(e.target.value))}>
               {SLOT_DURATIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
             </select>
           </div>
-          <div className="avail-field">
+          <div className="as-avail-field">
             <label>Buffer Between Sessions</label>
             <select value={bufferTime} onChange={e => setBufferTime(Number(e.target.value))}>
               {BUFFERS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
             </select>
           </div>
         </div>
-        <div className="avail-row">
-          <div className="avail-field">
-            <label>Max Slots Per Session <span className="avail-hint">(1 = individual, &gt;1 = group)</span></label>
+        <div className="as-avail-row">
+          <div className="as-avail-field">
+            <label>Max Slots Per Session <span className="as-avail-hint">(1 = individual, &gt;1 = group)</span></label>
             <input type="number" min="1" max="100" value={capacity}
               onChange={e => setCapacity(Number(e.target.value))} />
           </div>
-          <div className="avail-field">
-            <label>Minimum Notice <span className="avail-hint">(hours)</span></label>
+          <div className="as-avail-field">
+            <label>Minimum Notice <span className="as-avail-hint">(hours)</span></label>
             <input type="number" min="0" max="168" value={minNotice}
               onChange={e => setMinNotice(Number(e.target.value))} />
           </div>
-          <div className="avail-field">
-            <label>Book Up To <span className="avail-hint">(days in advance)</span></label>
+          <div className="as-avail-field">
+            <label>Book Up To <span className="as-avail-hint">(days in advance)</span></label>
             <input type="number" min="1" max="365" value={maxAdvance}
               onChange={e => setMaxAdvance(Number(e.target.value))} />
           </div>
@@ -169,44 +169,44 @@ const AvailabilitySettings = ({ onSaved }) => {
       </div>
 
       {/* ── Weekly schedule ── */}
-      <div className="avail-card">
+      <div className="as-avail-card">
         <h3>Weekly Schedule</h3>
-        <p className="avail-hint-block">Toggle days on/off. Add multiple time windows per day for split availability.</p>
-        <div className="avail-days">
+        <p className="as-avail-hint-block">Toggle days on/off. Add multiple time windows per day for split availability.</p>
+        <div className="as-avail-days">
           {schedule.map((day, dayIdx) => (
-            <div key={day.dayOfWeek} className={`avail-day ${day.enabled ? 'enabled' : ''}`}>
-              <div className="avail-day-header">
+            <div key={day.dayOfWeek} className={`as-avail-day ${day.enabled ? 'enabled' : ''}`}>
+              <div className="as-avail-day-header">
                 <button
                   type="button"
-                  className={`avail-day-toggle ${day.enabled ? 'on' : 'off'}`}
+                  className={`as-avail-day-toggle ${day.enabled ? 'on' : 'off'}`}
                   onClick={() => toggleDay(dayIdx)}
                 >
-                  <span className="avail-day-toggle-dot" />
+                  <span className="as-avail-day-toggle-dot" />
                 </button>
-                <span className="avail-day-name">{DAYS[day.dayOfWeek]}</span>
-                {!day.enabled && <span className="avail-unavail">Unavailable</span>}
+                <span className="as-avail-day-name">{DAYS[day.dayOfWeek]}</span>
+                {!day.enabled && <span className="as-avail-unavail">Unavailable</span>}
               </div>
 
               {day.enabled && (
-                <div className="avail-windows">
+                <div className="as-avail-windows">
                   {day.windows.map((win, winIdx) => (
-                    <div key={winIdx} className="avail-window-row">
+                    <div key={winIdx} className="as-avail-window-row">
                       <input
                         type="time" value={win.startTime}
                         onChange={e => updateWindow(dayIdx, winIdx, 'startTime', e.target.value)}
                       />
-                      <span className="avail-dash">–</span>
+                      <span className="as-avail-dash">–</span>
                       <input
                         type="time" value={win.endTime}
                         onChange={e => updateWindow(dayIdx, winIdx, 'endTime', e.target.value)}
                       />
                       {day.windows.length > 1 && (
-                        <button type="button" className="avail-win-remove"
+                        <button type="button" className="as-avail-win-remove"
                           onClick={() => removeWindow(dayIdx, winIdx)}>×</button>
                       )}
                     </div>
                   ))}
-                  <button type="button" className="avail-add-window"
+                  <button type="button" className="as-avail-add-window"
                     onClick={() => addWindow(dayIdx)}>
                     + Add hours
                   </button>
@@ -218,23 +218,23 @@ const AvailabilitySettings = ({ onSaved }) => {
       </div>
 
       {/* ── Exceptions / days off ── */}
-      <div className="avail-card">
+      <div className="as-avail-card">
         <h3>Days Off &amp; Exceptions</h3>
-        <p className="avail-hint-block">Block out specific dates (vacation, holidays, etc.).</p>
+        <p className="as-avail-hint-block">Block out specific dates (vacation, holidays, etc.).</p>
 
-        <div className="avail-exception-add">
+        <div className="as-avail-exception-add">
           <input type="date" value={newException.date}
             onChange={e => setNewException(x => ({ ...x, date: e.target.value }))} />
-          <button type="button" className="avail-add-exc-btn" onClick={addException}
+          <button type="button" className="as-avail-add-exc-btn" onClick={addException}
             disabled={!newException.date}>
             Block This Date
           </button>
         </div>
 
         {exceptions.length > 0 && (
-          <div className="avail-exceptions-list">
+          <div className="as-avail-exceptions-list">
             {exceptions.sort((a, b) => a.date.localeCompare(b.date)).map(exc => (
-              <div key={exc.date} className="avail-exc-row">
+              <div key={exc.date} className="as-avail-exc-row">
                 <span>📵 {exc.date}</span>
                 <button type="button" onClick={() => removeException(exc.date)}>Remove</button>
               </div>
@@ -243,12 +243,12 @@ const AvailabilitySettings = ({ onSaved }) => {
         )}
       </div>
 
-      {error  && <p className="avail-error">{error}</p>}
-      {saved  && <p className="avail-success">✅ Availability saved!</p>}
+      {error  && <p className="as-avail-error">{error}</p>}
+      {saved  && <p className="as-avail-success">✅ Availability saved!</p>}
 
       <button
         type="button"
-        className="avail-save-btn"
+        className="as-avail-save-btn"
         onClick={handleSave}
         disabled={loading}
       >

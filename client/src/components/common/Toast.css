@@ -16,7 +16,7 @@
   pointer-events: none;
 }
 
-.toast {
+.toast-toast {
   display: flex;
   align-items: center;
   gap: var(--space-sm, 0.5rem);
@@ -31,7 +31,7 @@
   transition: opacity 0.2s, transform 0.2s;
 }
 
-.toast:hover { transform: translateX(-2px); }
+.toast-toast:hover { transform: translateX(-2px); }
 
 .toast-info { border-left-color: var(--color-primary); }
 .toast-success { border-left-color: var(--color-success-dark); }

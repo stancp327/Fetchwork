@@ -11,7 +11,7 @@ const LoadingSkeleton = ({
   const skeletons = Array.from({ length: count }, (_, index) => (
     <div
       key={index}
-      className={`loading-skeleton ${className}`}
+      className={`ls-loading-skeleton ${className}`}
       style={{
         width,
         height,
@@ -21,13 +21,13 @@ const LoadingSkeleton = ({
     />
   ));
 
-  return count === 1 ? skeletons[0] : <div className="loading-skeleton-group">{skeletons}</div>;
+  return count === 1 ? skeletons[0] : <div className="ls-loading-skeleton-group">{skeletons}</div>;
 };
 
 export const SkeletonCard = () => (
-  <div className="skeleton-card">
+  <div className="ls-skeleton-card">
     <LoadingSkeleton height="200px" borderRadius="var(--radius-lg)" />
-    <div className="skeleton-card-content">
+    <div className="ls-skeleton-card-content">
       <LoadingSkeleton height="24px" width="80%" />
       <LoadingSkeleton height="16px" width="60%" />
       <LoadingSkeleton height="16px" width="40%" />
@@ -36,11 +36,11 @@ export const SkeletonCard = () => (
 );
 
 export const SkeletonList = ({ items = 3 }) => (
-  <div className="skeleton-list">
+  <div className="ls-skeleton-list">
     {Array.from({ length: items }, (_, index) => (
-      <div key={index} className="skeleton-list-item">
+      <div key={index} className="ls-skeleton-list-item">
         <LoadingSkeleton width="40px" height="40px" borderRadius="var(--radius-full)" />
-        <div className="skeleton-list-content">
+        <div className="ls-skeleton-list-content">
           <LoadingSkeleton height="18px" width="70%" />
           <LoadingSkeleton height="14px" width="50%" />
         </div>

@@ -72,22 +72,22 @@ const IncomingCallOverlay = () => {
   return (
     <>
       {incomingCall && (
-        <div className="incoming-call-toast">
-          <div className="incoming-call-info">
-            <div className="incoming-call-avatar">
+        <div className="ico-incoming-call-toast">
+          <div className="ico-incoming-call-info">
+            <div className="ico-incoming-call-avatar">
               {incomingCall.caller.profileImage
                 ? <img src={incomingCall.caller.profileImage} alt="" />
                 : <span>{incomingCall.caller.firstName?.[0]}</span>
               }
             </div>
             <div>
-              <div className="incoming-call-name">{incomingCall.caller.firstName} {incomingCall.caller.lastName}</div>
-              <div className="incoming-call-type">Incoming {incomingCall.type} call…</div>
+              <div className="ico-incoming-call-name">{incomingCall.caller.firstName} {incomingCall.caller.lastName}</div>
+              <div className="ico-incoming-call-type">Incoming {incomingCall.type} call…</div>
             </div>
           </div>
-          <div className="incoming-call-actions">
-            <button className="incoming-btn accept" onClick={acceptCall}>Accept</button>
-            <button className="incoming-btn reject" onClick={rejectCall}>Decline</button>
+          <div className="ico-incoming-call-actions">
+            <button className="ico-incoming-btn accept" onClick={acceptCall}>Accept</button>
+            <button className="ico-incoming-btn reject" onClick={rejectCall}>Decline</button>
           </div>
         </div>
       )}

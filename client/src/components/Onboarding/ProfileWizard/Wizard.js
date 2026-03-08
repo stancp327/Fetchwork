@@ -170,8 +170,8 @@ const Wizard = () => {
   const removeArrayItem = (listKey, idx) => setData(d => ({ ...d, [listKey]: (d[listKey] || []).filter((_, i) => i !== idx) }));
 
   return (
-    <div className="wizard-container">
-      <div className="wizard-header">
+    <div className="wiz-wizard-container">
+      <div className="wiz-wizard-header">
         <h1>Set up your profile</h1>
         <div className="wiz-progress-bar">
           <div className="wiz-progress" style={{ width: `${stepProgress}%` }} />
@@ -213,13 +213,13 @@ const Wizard = () => {
           <div className="wiz-section">
             <div className="wiz-row">
               <label>Skills</label>
-              <div className="skills-input">
+              <div className="wiz-skills-input">
                 <input value={newSkill} onChange={e => setNewSkill(e.target.value)} placeholder="Add a skill..." onKeyDown={e => e.key==='Enter' && (e.preventDefault(), addSkill())} />
                 <button type="button" onClick={addSkill}>Add</button>
               </div>
-              <div className="skills-list">
+              <div className="wiz-skills-list">
                 {data.skills.map((s, i) => (
-                  <span key={i} className="skill-tag">
+                  <span key={i} className="wiz-skill-tag">
                     {s}
                     <button type="button" onClick={() => removeSkill(s)}>×</button>
                   </span>
@@ -468,7 +468,7 @@ const Wizard = () => {
         )}
       </div>
 
-      <div className="wizard-actions">
+      <div className="wiz-wizard-actions">
         {msg && <div className="wiz-info">{msg}</div>}
         <button onClick={onBack} disabled={stepIdx === 0 || saving}>Back</button>
         <button onClick={onNext} disabled={saving || (steps[stepIdx].key === 'review' && !data.username)}>{steps[stepIdx].key === 'review' ? 'Publish' : 'Save & Next'}</button>

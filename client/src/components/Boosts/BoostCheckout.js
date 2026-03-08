@@ -45,10 +45,10 @@ const CheckoutForm = ({ amount, type, itemId, onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="boost-checkout-form">
+    <form onSubmit={handleSubmit} className="bc-boost-checkout-form">
       <PaymentElement />
-      {error && <div className="boost-checkout-error">{error}</div>}
-      <button type="submit" disabled={!stripe || paying} className="boost-checkout-pay-btn">
+      {error && <div className="bc-boost-checkout-error">{error}</div>}
+      <button type="submit" disabled={!stripe || paying} className="bc-boost-checkout-pay-btn">
         {paying ? 'Processing…' : `Pay $${(amount / 100).toFixed(2)}`}
       </button>
     </form>
@@ -80,14 +80,14 @@ const BoostCheckout = () => {
 
   if (!clientSecret || !itemId) {
     return (
-      <div className="boost-checkout-container">
+      <div className="bc-boost-checkout-container">
         <SEO title="Boost Checkout" noIndex />
-        <div className="boost-checkout-card">
-          <div className="boost-checkout-error-state">
-            <span className="boost-error-icon">⚠️</span>
+        <div className="bc-boost-checkout-card">
+          <div className="bc-boost-checkout-error-state">
+            <span className="bc-boost-error-icon">⚠️</span>
             <h2>Invalid Checkout Link</h2>
             <p>This boost checkout link is invalid or has expired.</p>
-            <Link to="/projects" className="boost-back-link">← Back to Projects</Link>
+            <Link to="/projects" className="bc-boost-back-link">← Back to Projects</Link>
           </div>
         </div>
       </div>
@@ -96,17 +96,17 @@ const BoostCheckout = () => {
 
   if (success) {
     return (
-      <div className="boost-checkout-container">
+      <div className="bc-boost-checkout-container">
         <SEO title="Boost Active!" noIndex />
-        <div className="boost-checkout-card">
-          <div className="boost-success-state">
-            <span className="boost-success-icon">🚀</span>
+        <div className="bc-boost-checkout-card">
+          <div className="bc-boost-success-state">
+            <span className="bc-boost-success-icon">🚀</span>
             <h2>Boost Activated!</h2>
             <p>
               Your {type} {itemTitle ? `"${itemTitle}"` : ''} is now boosted for {BOOST_TIERS[plan]?.label || '7 days'}.
               It will appear higher in search results and browse pages.
             </p>
-            <button className="boost-back-btn" onClick={() => navigate('/projects')}>
+            <button className="bc-boost-back-btn" onClick={() => navigate('/projects')}>
               ← Back to Projects
             </button>
           </div>
@@ -118,25 +118,25 @@ const BoostCheckout = () => {
   const tier = BOOST_TIERS[plan] || BOOST_TIERS['7day'];
 
   return (
-    <div className="boost-checkout-container">
+    <div className="bc-boost-checkout-container">
       <SEO title="Boost Checkout" noIndex />
-      <div className="boost-checkout-card">
-        <div className="boost-checkout-header">
-          <span className="boost-header-icon">🚀</span>
+      <div className="bc-boost-checkout-card">
+        <div className="bc-boost-checkout-header">
+          <span className="bc-boost-header-icon">🚀</span>
           <h1>Boost Your {type === 'service' ? 'Service' : 'Job'}</h1>
-          {itemTitle && <p className="boost-item-title">"{itemTitle}"</p>}
+          {itemTitle && <p className="bc-boost-item-title">"{itemTitle}"</p>}
         </div>
 
-        <div className="boost-checkout-details">
-          <div className="boost-detail-row">
+        <div className="bc-boost-checkout-details">
+          <div className="bc-boost-detail-row">
             <span>Boost Duration</span>
             <strong>{tier.label}</strong>
           </div>
-          <div className="boost-detail-row">
+          <div className="bc-boost-detail-row">
             <span>Price</span>
             <strong>{tier.price}</strong>
           </div>
-          <div className="boost-detail-row boost-benefits">
+          <div className="bc-boost-detail-row bc-boost-benefits">
             <span>What you get</span>
             <ul>
               <li>🔝 Priority placement in search & browse</li>
@@ -146,15 +146,15 @@ const BoostCheckout = () => {
           </div>
         </div>
 
-        <div className="boost-checkout-payment">
+        <div className="bc-boost-checkout-payment">
           <h3>Payment Details</h3>
           <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
             <CheckoutForm amount={amount} type={type} itemId={itemId} onSuccess={() => setSuccess(true)} />
           </Elements>
         </div>
 
-        <div className="boost-checkout-footer">
-          <Link to="/projects" className="boost-cancel-link">Cancel</Link>
+        <div className="bc-boost-checkout-footer">
+          <Link to="/projects" className="bc-boost-cancel-link">Cancel</Link>
         </div>
       </div>
     </div>

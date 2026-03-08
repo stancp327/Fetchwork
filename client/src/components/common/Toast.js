@@ -24,13 +24,13 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
       <div className="toast-container">
-        {toasts.map(toast => (
-          <div key={toast.id} className={`toast toast-${toast.type}`} onClick={() => removeToast(toast.id)}>
+        {toasts.map(t => (
+          <div key={t.id} className={`toast-toast toast-${t.type}`} onClick={() => removeToast(t.id)}>
             <span className="toast-icon">
-              {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : toast.type === 'warning' ? '⚠️' : 'ℹ️'}
+              {t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : t.type === 'warning' ? '⚠️' : 'ℹ️'}
             </span>
-            <span className="toast-message">{toast.message}</span>
-            <button className="toast-close" onClick={(e) => { e.stopPropagation(); removeToast(toast.id); }}>×</button>
+            <span className="toast-message">{t.message}</span>
+            <button className="toast-close" onClick={(e) => { e.stopPropagation(); removeToast(t.id); }}>×</button>
           </div>
         ))}
       </div>

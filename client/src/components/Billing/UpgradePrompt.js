@@ -27,18 +27,18 @@ const UpgradePrompt = ({ reason = 'default', message, limit, feature, onDismiss,
     || (DEFAULT_MESSAGES[reason] ? DEFAULT_MESSAGES[reason](limit) : DEFAULT_MESSAGES.default());
 
   const content = (
-    <div className={`upgrade-prompt ${inline ? 'upgrade-prompt-inline' : 'upgrade-prompt-modal-body'}`}>
-      <div className="upgrade-prompt-icon">🚀</div>
-      <div className="upgrade-prompt-text">
+    <div className={`upgrade-prompt ${inline ? 'up-upgrade-prompt-inline' : 'up-upgrade-prompt-modal-body'}`}>
+      <div className="up-upgrade-prompt-icon">🚀</div>
+      <div className="up-upgrade-prompt-text">
         <strong>Upgrade to unlock this</strong>
         <p>{resolvedMsg}</p>
       </div>
-      <div className="upgrade-prompt-actions">
-        <Link to="/pricing" className="upgrade-prompt-cta">
+      <div className="up-upgrade-prompt-actions">
+        <Link to="/pricing" className="up-upgrade-prompt-cta">
           See plans →
         </Link>
         {onDismiss && (
-          <button className="upgrade-prompt-dismiss" onClick={onDismiss}>
+          <button className="up-upgrade-prompt-dismiss" onClick={onDismiss}>
             Not now
           </button>
         )}
@@ -49,10 +49,10 @@ const UpgradePrompt = ({ reason = 'default', message, limit, feature, onDismiss,
   if (inline) return content;
 
   return (
-    <div className="upgrade-prompt-overlay" onClick={onDismiss}>
-      <div className="upgrade-prompt-card" onClick={e => e.stopPropagation()}>
+    <div className="up-upgrade-prompt-overlay" onClick={onDismiss}>
+      <div className="up-upgrade-prompt-card" onClick={e => e.stopPropagation()}>
         {onDismiss && (
-          <button className="upgrade-prompt-close" onClick={onDismiss} aria-label="Close">✕</button>
+          <button className="up-upgrade-prompt-close" onClick={onDismiss} aria-label="Close">✕</button>
         )}
         {content}
       </div>

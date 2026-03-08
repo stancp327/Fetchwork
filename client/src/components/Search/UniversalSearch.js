@@ -53,28 +53,28 @@ const timeAgo = (date) => {
 const ResultCard = ({ job, onClick }) => {
   const budget = job.budget || {};
   return (
-    <div className="search-result-card" onClick={onClick}>
-      <div className="result-card-header">
-        <span className="result-card-title">{job.title}</span>
-        <span className="result-card-budget">
+    <div className="us-search-result-card" onClick={onClick}>
+      <div className="us-result-card-header">
+        <span className="us-result-card-title">{job.title}</span>
+        <span className="us-result-card-budget">
           {formatCurrency(budget.amount)} {budget.type === 'hourly' ? '/hr' : ''}
         </span>
       </div>
 
-      <div className="result-card-desc">{job.description}</div>
+      <div className="us-result-card-desc">{job.description}</div>
 
       {job.skills?.length > 0 && (
-        <div className="result-card-skills">
+        <div className="us-result-card-skills">
           {job.skills.slice(0, 6).map((skill, i) => (
-            <span key={i} className="skill-tag">{skill}</span>
+            <span key={i} className="us-skill-tag">{skill}</span>
           ))}
           {job.skills.length > 6 && (
-            <span className="skill-tag">+{job.skills.length - 6} more</span>
+            <span className="us-skill-tag">+{job.skills.length - 6} more</span>
           )}
         </div>
       )}
 
-      <div className="result-card-meta">
+      <div className="us-result-card-meta">
         <span>📁 {CATEGORIES.find(c => c.value === job.category)?.label || job.category}</span>
         <span>📨 {job.proposalCount || 0} proposals</span>
         <span>⏱️ {timeAgo(job.createdAt)}</span>
@@ -221,13 +221,13 @@ const UniversalSearch = () => {
   const activeFilterCount = [category, duration, experience, minBudget, maxBudget, remoteOnly].filter(Boolean).length;
 
   return (
-    <div className="search-container">
+    <div className="us-search-container">
       <SEO title="Search" description="Search jobs, services, and freelancers on Fetchwork." path="/search" />
       {/* Search Bar */}
       <form onSubmit={handleSubmit}>
-        <div className="search-bar-wrapper">
-          <div className="search-bar">
-            <span className="search-icon">🔍</span>
+        <div className="us-search-bar-wrapper">
+          <div className="us-search-bar">
+            <span className="us-search-icon">🔍</span>
             <input
               ref={inputRef}
               type="text"
@@ -241,7 +241,7 @@ const UniversalSearch = () => {
               placeholder="Search jobs, skills, categories..."
             />
             {query && (
-              <button type="button" className="clear-btn" onClick={() => { setQuery(''); inputRef.current?.focus(); }}>
+              <button type="button" className="us-clear-btn" onClick={() => { setQuery(''); inputRef.current?.focus(); }}>
                 ✕
               </button>
             )}
@@ -249,15 +249,15 @@ const UniversalSearch = () => {
 
           {/* Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="search-suggestions">
+            <div className="us-search-suggestions">
               {suggestions.map((s, i) => (
                 <div
                   key={i}
-                  className="suggestion-item"
+                  className="us-suggestion-item"
                   onMouseDown={() => handleSuggestionClick(s)}
                 >
-                  <span className={`suggestion-type ${s.type}`}>{s.type}</span>
-                  <span className="suggestion-text">{s.text}</span>
+                  <span className={`us-suggestion-type ${s.type}`}>{s.type}</span>
+                  <span className="us-suggestion-text">{s.text}</span>
                 </div>
               ))}
             </div>
@@ -266,8 +266,8 @@ const UniversalSearch = () => {
       </form>
 
       {/* Filters */}
-      <div className="search-filters">
-        <div className="filter-group">
+      <div className="us-search-filters">
+        <div className="us-filter-group">
           <label>Category</label>
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             {CATEGORIES.map((c) => (
@@ -276,7 +276,7 @@ const UniversalSearch = () => {
           </select>
         </div>
 
-        <div className="filter-group">
+        <div className="us-filter-group">
           <label>Duration</label>
           <select value={duration} onChange={(e) => setDuration(e.target.value)}>
             {DURATIONS.map((d) => (
@@ -285,7 +285,7 @@ const UniversalSearch = () => {
           </select>
         </div>
 
-        <div className="filter-group">
+        <div className="us-filter-group">
           <label>Experience</label>
           <select value={experience} onChange={(e) => setExperience(e.target.value)}>
             {EXPERIENCE.map((e) => (
@@ -294,7 +294,7 @@ const UniversalSearch = () => {
           </select>
         </div>
 
-        <div className="filter-group">
+        <div className="us-filter-group">
           <label>Min Budget</label>
           <input
             type="number"
@@ -305,7 +305,7 @@ const UniversalSearch = () => {
           />
         </div>
 
-        <div className="filter-group">
+        <div className="us-filter-group">
           <label>Max Budget</label>
           <input
             type="number"
@@ -316,7 +316,7 @@ const UniversalSearch = () => {
           />
         </div>
 
-        <div className="filter-group" style={{ justifyContent: 'flex-end' }}>
+        <div className="us-filter-group" style={{ justifyContent: 'flex-end' }}>
           <label>&nbsp;</label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', cursor: 'pointer', textTransform: 'none', letterSpacing: 0 }}>
             <input
@@ -331,45 +331,45 @@ const UniversalSearch = () => {
 
       {/* Active Filters */}
       {activeFilterCount > 0 && (
-        <div className="active-filters">
+        <div className="us-active-filters">
           {category && (
-            <span className="filter-tag">
+            <span className="us-filter-tag">
               {CATEGORIES.find(c => c.value === category)?.label}
-              <button className="remove-filter" onClick={() => setCategory('')}>✕</button>
+              <button className="us-remove-filter" onClick={() => setCategory('')}>✕</button>
             </span>
           )}
           {duration && (
-            <span className="filter-tag">
+            <span className="us-filter-tag">
               {DURATIONS.find(d => d.value === duration)?.label}
-              <button className="remove-filter" onClick={() => setDuration('')}>✕</button>
+              <button className="us-remove-filter" onClick={() => setDuration('')}>✕</button>
             </span>
           )}
           {experience && (
-            <span className="filter-tag">
+            <span className="us-filter-tag">
               {EXPERIENCE.find(e => e.value === experience)?.label}
-              <button className="remove-filter" onClick={() => setExperience('')}>✕</button>
+              <button className="us-remove-filter" onClick={() => setExperience('')}>✕</button>
             </span>
           )}
           {minBudget && (
-            <span className="filter-tag">
+            <span className="us-filter-tag">
               Min: ${minBudget}
-              <button className="remove-filter" onClick={() => setMinBudget('')}>✕</button>
+              <button className="us-remove-filter" onClick={() => setMinBudget('')}>✕</button>
             </span>
           )}
           {maxBudget && (
-            <span className="filter-tag">
+            <span className="us-filter-tag">
               Max: ${maxBudget}
-              <button className="remove-filter" onClick={() => setMaxBudget('')}>✕</button>
+              <button className="us-remove-filter" onClick={() => setMaxBudget('')}>✕</button>
             </span>
           )}
           {remoteOnly && (
-            <span className="filter-tag">
+            <span className="us-filter-tag">
               Remote Only
-              <button className="remove-filter" onClick={() => setRemoteOnly(false)}>✕</button>
+              <button className="us-remove-filter" onClick={() => setRemoteOnly(false)}>✕</button>
             </span>
           )}
           <button
-            className="remove-filter"
+            className="us-remove-filter"
             onClick={clearFilters}
             style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)', cursor: 'pointer', background: 'none', border: 'none' }}
           >
@@ -380,8 +380,8 @@ const UniversalSearch = () => {
 
       {/* Results Header */}
       {hasSearched && (
-        <div className="search-results-header">
-          <span className="results-count">
+        <div className="us-search-results-header">
+          <span className="us-results-count">
             {loading ? 'Searching...' : `${pagination.total} job${pagination.total !== 1 ? 's' : ''} found`}
           </span>
           <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setTimeout(() => search(1), 50); }}>
@@ -393,12 +393,12 @@ const UniversalSearch = () => {
       )}
 
       {/* Loading */}
-      {loading && <div className="search-loading">Searching...</div>}
+      {loading && <div className="us-search-loading">Searching...</div>}
 
       {/* Results */}
       {!loading && hasSearched && results.length === 0 && (
-        <div className="search-empty">
-          <div className="empty-icon">🔍</div>
+        <div className="us-search-empty">
+          <div className="us-empty-icon">🔍</div>
           <p>No jobs found matching your criteria</p>
           <p style={{ fontSize: 'var(--font-size-sm)' }}>Try adjusting your filters or search terms</p>
         </div>
@@ -414,14 +414,14 @@ const UniversalSearch = () => {
 
       {/* Pagination */}
       {!loading && pagination.pages > 1 && (
-        <div className="search-pagination">
+        <div className="us-search-pagination">
           <button
             disabled={pagination.page <= 1}
             onClick={() => search(pagination.page - 1)}
           >
             ← Previous
           </button>
-          <span className="page-info">
+          <span className="us-page-info">
             Page {pagination.page} of {pagination.pages}
           </span>
           <button
@@ -435,8 +435,8 @@ const UniversalSearch = () => {
 
       {/* Initial State */}
       {!hasSearched && !loading && (
-        <div className="search-empty">
-          <div className="empty-icon">🔍</div>
+        <div className="us-search-empty">
+          <div className="us-empty-icon">🔍</div>
           <p>Search for jobs across FetchWork</p>
           <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
             Type a keyword, select filters, or browse by category

@@ -613,56 +613,56 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   const formatDuration = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   return (
-    <div className="videocall-overlay">
-      <div className={`videocall-modal ${callStatus}`}>
+    <div className="vcm-videocall-overlay">
+      <div className={`vcm-videocall-modal ${callStatus}`}>
         {/* Remote video (full) */}
-        <div className="videocall-remote">
-          <video ref={remoteVideoRef} autoPlay playsInline className="videocall-remote-video" />
+        <div className="vcm-videocall-remote">
+          <video ref={remoteVideoRef} autoPlay playsInline className="vcm-videocall-remote-video" />
           {(!remoteMediaState.video || callStatus !== 'active') && (
-            <div className="videocall-remote-placeholder">
-              <div className="videocall-avatar">
+            <div className="vcm-videocall-remote-placeholder">
+              <div className="vcm-videocall-avatar">
                 {remoteUser.profileImage
                   ? <img src={remoteUser.profileImage} alt="" />
                   : <span>{remoteUser.firstName?.[0]}{remoteUser.lastName?.[0]}</span>
                 }
               </div>
-              <div className="videocall-remote-name">{remoteUser.firstName} {remoteUser.lastName}</div>
-              {callStatus === 'ringing' && <div className="videocall-status">Ringing…</div>}
-              {callStatus === 'connecting' && <div className="videocall-status">Connecting…</div>}
-              {callStatus === 'incoming' && <div className="videocall-status">Incoming {type} call…</div>}
-              {callStatus === 'ended' && <div className="videocall-status">Call ended</div>}
-              {callStatus === 'failed' && <div className="videocall-status">{!hasWebRTC ? 'Video calls not supported in this browser' : 'Call failed — check camera/mic permissions'}</div>}
+              <div className="vcm-videocall-remote-name">{remoteUser.firstName} {remoteUser.lastName}</div>
+              {callStatus === 'ringing' && <div className="vcm-videocall-status">Ringing…</div>}
+              {callStatus === 'connecting' && <div className="vcm-videocall-status">Connecting…</div>}
+              {callStatus === 'incoming' && <div className="vcm-videocall-status">Incoming {type} call…</div>}
+              {callStatus === 'ended' && <div className="vcm-videocall-status">Call ended</div>}
+              {callStatus === 'failed' && <div className="vcm-videocall-status">{!hasWebRTC ? 'Video calls not supported in this browser' : 'Call failed — check camera/mic permissions'}</div>}
             </div>
           )}
           {!remoteMediaState.audio && callStatus === 'active' && (
-            <div className="videocall-muted-badge">🔇 Muted</div>
+            <div className="vcm-videocall-muted-badge">🔇 Muted</div>
           )}
         </div>
 
         {/* Local video (picture-in-picture) */}
         {type === 'video' && (
-          <div className="videocall-local">
-            <video ref={localVideoRef} autoPlay playsInline muted className="videocall-local-video" />
-            {isCameraOff && <div className="videocall-local-off">Camera off</div>}
+          <div className="vcm-videocall-local">
+            <video ref={localVideoRef} autoPlay playsInline muted className="vcm-videocall-local-video" />
+            {isCameraOff && <div className="vcm-videocall-local-off">Camera off</div>}
           </div>
         )}
 
         {/* Duration */}
         {callStatus === 'active' && (
-          <div className="videocall-duration">{formatDuration(duration)}</div>
+          <div className="vcm-videocall-duration">{formatDuration(duration)}</div>
         )}
 
         {/* Connection Info debug panel */}
         {callStatus === 'active' && (
           <>
             <button
-              className="videocall-debug-toggle"
+              className="vcm-videocall-debug-toggle"
               onClick={() => setShowDebugPanel(v => !v)}
             >
               {showDebugPanel ? 'Hide' : 'Connection Info'}
             </button>
             {showDebugPanel && (
-              <div className="videocall-debug-panel">
+              <div className="vcm-videocall-debug-panel">
                 <div><strong>ICE state:</strong> {debugInfo.iceState}</div>
                 <div><strong>Candidate:</strong> {debugInfo.candidateType}</div>
                 <div><strong>TURN:</strong> {debugInfo.turnStatus}</div>
@@ -672,32 +672,32 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
         )}
 
         {/* Controls */}
-        <div className="videocall-controls">
+        <div className="vcm-videocall-controls">
           {callStatus === 'incoming' ? (
             <>
-              <button className="videocall-btn accept" onClick={acceptCall} title="Accept">
+              <button className="vcm-videocall-btn accept" onClick={acceptCall} title="Accept">
                 📞
               </button>
-              <button className="videocall-btn reject" onClick={handleReject} title="Decline">
+              <button className="vcm-videocall-btn reject" onClick={handleReject} title="Decline">
                 ❌
               </button>
             </>
           ) : (
             <>
-              <button className={`videocall-btn ${isMuted ? 'active' : ''}`} onClick={toggleMute} title={isMuted ? 'Unmute' : 'Mute'}>
+              <button className={`vcm-videocall-btn ${isMuted ? 'active' : ''}`} onClick={toggleMute} title={isMuted ? 'Unmute' : 'Mute'}>
                 {isMuted ? '🔇' : '🎤'}
               </button>
               {type === 'video' && (
-                <button className={`videocall-btn ${isCameraOff ? 'active' : ''}`} onClick={toggleCamera} title={isCameraOff ? 'Camera on' : 'Camera off'}>
+                <button className={`vcm-videocall-btn ${isCameraOff ? 'active' : ''}`} onClick={toggleCamera} title={isCameraOff ? 'Camera on' : 'Camera off'}>
                   {isCameraOff ? '📷' : '🎥'}
                 </button>
               )}
               {type === 'video' && callStatus === 'active' && !isMobile && navigator.mediaDevices?.getDisplayMedia && (
-                <button className={`videocall-btn ${isScreenSharing ? 'active' : ''}`} onClick={toggleScreenShare} title="Screen share">
+                <button className={`vcm-videocall-btn ${isScreenSharing ? 'active' : ''}`} onClick={toggleScreenShare} title="Screen share">
                   🖥️
                 </button>
               )}
-              <button className="videocall-btn end" onClick={handleEndCall} title="End call">
+              <button className="vcm-videocall-btn end" onClick={handleEndCall} title="End call">
                 📵
               </button>
             </>

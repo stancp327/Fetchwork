@@ -3,7 +3,7 @@
  * Scope: Animated shimmer skeletons for loading states across the app
  */
 /* Enhanced Loading skeleton styles */
-.loading-skeleton {
+.ls-loading-skeleton {
   background: linear-gradient(90deg, 
     rgba(240, 240, 240, 0.8) 25%, 
     rgba(255, 255, 255, 0.9) 50%, 
@@ -15,7 +15,7 @@
   overflow: hidden;
 }
 
-.loading-skeleton::after {
+.ls-loading-skeleton::after {
   content: '';
   position: absolute;
   top: 0;
@@ -47,12 +47,12 @@
   }
 }
 
-.loading-skeleton-group {
+.ls-loading-skeleton-group {
   display: flex;
   flex-direction: column;
 }
 
-.skeleton-card {
+.ls-skeleton-card {
   background: var(--gradient-surface);
   backdrop-filter: blur(var(--blur-sm));
   border-radius: var(--radius-xl);
@@ -63,7 +63,7 @@
   overflow: hidden;
 }
 
-.skeleton-card::before {
+.ls-skeleton-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -74,20 +74,20 @@
   opacity: 0.3;
 }
 
-.skeleton-card-content {
+.ls-skeleton-card-content {
   margin-top: var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 }
 
-.skeleton-list {
+.ls-skeleton-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
 }
 
-.skeleton-list-item {
+.ls-skeleton-list-item {
   display: flex;
   align-items: center;
   gap: var(--space-md);
@@ -100,7 +100,7 @@
   overflow: hidden;
 }
 
-.skeleton-list-item::before {
+.ls-skeleton-list-item::before {
   content: '';
   position: absolute;
   top: 0;
@@ -111,27 +111,27 @@
   opacity: 0.2;
 }
 
-.skeleton-list-content {
+.ls-skeleton-list-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
 }
 
-.skeleton-avatar {
+.ls-skeleton-avatar {
   width: 48px;
   height: 48px;
   border-radius: var(--radius-full);
   margin-bottom: var(--space-md);
 }
 
-.skeleton-button {
+.ls-skeleton-button {
   height: 44px;
   width: 120px;
   border-radius: var(--radius-xl);
 }
 
-.skeleton-tag {
+.ls-skeleton-tag {
   height: 28px;
   width: 80px;
   border-radius: var(--radius-full);
@@ -141,22 +141,22 @@
 }
 
 /* Enhanced skeleton grid */
-.skeleton-grid {
+.ls-skeleton-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--space-xl);
 }
 
 /* Mobile base */
-.skeleton-grid { grid-template-columns: 1fr; }
+.ls-skeleton-grid { grid-template-columns: 1fr; }
 
 @media (min-width: 768px) {
-  .skeleton-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .ls-skeleton-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loading-skeleton,
-  .loading-skeleton::after {
+  .ls-loading-skeleton,
+  .ls-loading-skeleton::after {
     animation: none;
     background: rgba(240, 240, 240, 0.8);
   }

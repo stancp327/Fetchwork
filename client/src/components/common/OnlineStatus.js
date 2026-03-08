@@ -42,9 +42,9 @@ const OnlineStatus = ({ isOnline, lastSeen, size = 'md', showLabel = true, class
       : 'Offline';
 
   return (
-    <span className={`online-status online-status--${size} ${className}`} title={label}>
-      <span className={`online-dot ${isOnline ? 'online' : 'offline'}`} />
-      {showLabel && <span className="online-label">{label}</span>}
+    <span className={`os-online-status os-online-status--${size} ${className}`} title={label}>
+      <span className={`os-online-dot ${isOnline ? 'online' : 'offline'}`} />
+      {showLabel && <span className="os-online-label">{label}</span>}
     </span>
   );
 };

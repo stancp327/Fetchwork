@@ -116,7 +116,7 @@ const PricingPage = () => {
   };
 
   return (
-    <div className="pricing-page">
+    <div className="pp-pricing-page">
       <SEO
         title="Pricing"
         description="Simple, transparent pricing for freelancers and clients on Fetchwork. Free to start — upgrade when you need more features."
@@ -124,20 +124,20 @@ const PricingPage = () => {
         path="/pricing"
       />
       {/* ── Hero ── */}
-      <div className="pricing-hero">
-        <h1 className="pricing-title">Simple, transparent pricing</h1>
-        <p className="pricing-subtitle">No hidden fees. Change or cancel anytime.</p>
+      <div className="pp-pricing-hero">
+        <h1 className="pp-pricing-title">Simple, transparent pricing</h1>
+        <p className="pp-pricing-subtitle">No hidden fees. Change or cancel anytime.</p>
 
         {/* Audience toggle */}
-        <div className="pricing-toggle">
+        <div className="pp-pricing-toggle">
           <button
-            className={`pricing-toggle-btn ${audience === 'freelancer' ? 'active' : ''}`}
+            className={`pp-pricing-toggle-btn ${audience === 'freelancer' ? 'active' : ''}`}
             onClick={() => setAudience('freelancer')}
           >
             👤 I'm a Freelancer
           </button>
           <button
-            className={`pricing-toggle-btn ${audience === 'client' ? 'active' : ''}`}
+            className={`pp-pricing-toggle-btn ${audience === 'client' ? 'active' : ''}`}
             onClick={() => setAudience('client')}
           >
             🏢 I'm Hiring
@@ -145,31 +145,31 @@ const PricingPage = () => {
         </div>
       </div>
 
-      {error && <div className="pricing-error">{error}</div>}
+      {error && <div className="pp-pricing-error">{error}</div>}
 
       {/* ── Plan cards ── */}
       {loading ? (
-        <div className="pricing-loading">Loading plans…</div>
+        <div className="pp-pricing-loading">Loading plans…</div>
       ) : (
-        <div className="pricing-cards">
+        <div className="pp-pricing-cards">
 
           {/* Free */}
-          <div className="pricing-card">
-            <div className="pricing-card-header">
-              <div className="pricing-tier-label">Free</div>
-              <div className="pricing-price">$0<span>/mo</span></div>
-              <div className="pricing-price-note">No credit card needed</div>
+          <div className="pp-pricing-card">
+            <div className="pp-pricing-card-header">
+              <div className="pp-pricing-tier-label">Free</div>
+              <div className="pp-pricing-price">$0<span>/mo</span></div>
+              <div className="pp-pricing-price-note">No credit card needed</div>
             </div>
-            <div className="pricing-card-body">
+            <div className="pp-pricing-card-body">
               {audience === 'freelancer'
-                ? <ul className="pricing-highlights">
+                ? <ul className="pp-pricing-highlights">
                     <li>$0 commission on local jobs</li>
                     <li>10% fee on remote</li>
                     <li>3 active job posts</li>
                     <li>1 service listing</li>
                     <li>Basic earnings summary</li>
                   </ul>
-                : <ul className="pricing-highlights">
+                : <ul className="pp-pricing-highlights">
                     <li>Standard booking fees</li>
                     <li>5% remote client fee</li>
                     <li>3 active job posts</li>
@@ -177,30 +177,30 @@ const PricingPage = () => {
                   </ul>
               }
             </div>
-            <div className="pricing-card-cta">
+            <div className="pp-pricing-card-cta">
               {currentPlanSlug?.includes('free') || !currentPlanSlug
-                ? <button className="pricing-btn pricing-btn-current" disabled>Current Plan</button>
-                : <button className="pricing-btn pricing-btn-outline" onClick={() => navigate('/billing')}>Manage Plan</button>
+                ? <button className="pp-pricing-btn pp-pricing-btn-current" disabled>Current Plan</button>
+                : <button className="pp-pricing-btn pp-pricing-btn-outline" onClick={() => navigate('/billing')}>Manage Plan</button>
               }
             </div>
           </div>
 
           {/* Plus */}
-          <div className="pricing-card pricing-card-featured">
-            <div className="pricing-badge-popular">Most Popular</div>
-            <div className="pricing-card-header">
-              <div className="pricing-tier-label">{tierLabels[audience].plus}</div>
-              <div className="pricing-price">
+          <div className="pp-pricing-card pp-pricing-card-featured">
+            <div className="pp-pricing-badge-popular">Most Popular</div>
+            <div className="pp-pricing-card-header">
+              <div className="pp-pricing-tier-label">{tierLabels[audience].plus}</div>
+              <div className="pp-pricing-price">
                 ${plansByTier.plus?.price || (audience === 'freelancer' ? 24 : 19)}
                 <span>/mo</span>
               </div>
-              <div className="pricing-price-note">
+              <div className="pp-pricing-price-note">
                 {audience === 'freelancer' ? 'Tools to grow your business' : 'Lower fees + better tools'}
               </div>
             </div>
-            <div className="pricing-card-body">
+            <div className="pp-pricing-card-body">
               {audience === 'freelancer'
-                ? <ul className="pricing-highlights">
+                ? <ul className="pp-pricing-highlights">
                     <li>$0 commission on local jobs</li>
                     <li>7% fee on remote</li>
                     <li>20 active job posts</li>
@@ -210,7 +210,7 @@ const PricingPage = () => {
                     <li>Standard analytics + CSV</li>
                     <li>Priority support</li>
                   </ul>
-                : <ul className="pricing-highlights">
+                : <ul className="pp-pricing-highlights">
                     <li>Reduced local booking fees</li>
                     <li>3% remote client fee</li>
                     <li>20 active job posts</li>
@@ -220,11 +220,11 @@ const PricingPage = () => {
                   </ul>
               }
             </div>
-            <div className="pricing-card-cta">
+            <div className="pp-pricing-card-cta">
               {currentPlanSlug?.includes('plus')
-                ? <button className="pricing-btn pricing-btn-current" disabled>Current Plan</button>
+                ? <button className="pp-pricing-btn pp-pricing-btn-current" disabled>Current Plan</button>
                 : <button
-                    className="pricing-btn pricing-btn-primary"
+                    className="pp-pricing-btn pp-pricing-btn-primary"
                     onClick={() => handleUpgrade(audience === 'freelancer' ? 'freelancer_plus' : 'client_plus')}
                     disabled={upgrading === (audience === 'freelancer' ? 'freelancer_plus' : 'client_plus')}
                   >
@@ -235,20 +235,20 @@ const PricingPage = () => {
           </div>
 
           {/* Pro / Business */}
-          <div className="pricing-card">
-            <div className="pricing-card-header">
-              <div className="pricing-tier-label">{tierLabels[audience].pro}</div>
-              <div className="pricing-price">
+          <div className="pp-pricing-card">
+            <div className="pp-pricing-card-header">
+              <div className="pp-pricing-tier-label">{tierLabels[audience].pro}</div>
+              <div className="pp-pricing-price">
                 ${plansByTier.pro?.price || (audience === 'freelancer' ? 59 : 79)}
                 <span>/mo</span>
               </div>
-              <div className="pricing-price-note">
+              <div className="pp-pricing-price-note">
                 {audience === 'freelancer' ? 'Full business stack' : 'Team tools + lowest fees'}
               </div>
             </div>
-            <div className="pricing-card-body">
+            <div className="pp-pricing-card-body">
               {audience === 'freelancer'
-                ? <ul className="pricing-highlights">
+                ? <ul className="pp-pricing-highlights">
                     <li>$0 commission on local jobs</li>
                     <li>5% fee on remote</li>
                     <li>Unlimited job posts + services</li>
@@ -258,7 +258,7 @@ const PricingPage = () => {
                     <li>Featured placement eligible</li>
                     <li>Priority payout</li>
                   </ul>
-                : <ul className="pricing-highlights">
+                : <ul className="pp-pricing-highlights">
                     <li>Lowest local booking fees</li>
                     <li>2% remote client fee</li>
                     <li>Unlimited job posts</li>
@@ -269,11 +269,11 @@ const PricingPage = () => {
                   </ul>
               }
             </div>
-            <div className="pricing-card-cta">
+            <div className="pp-pricing-card-cta">
               {(currentPlanSlug?.includes('pro') || currentPlanSlug?.includes('business'))
-                ? <button className="pricing-btn pricing-btn-current" disabled>Current Plan</button>
+                ? <button className="pp-pricing-btn pp-pricing-btn-current" disabled>Current Plan</button>
                 : <button
-                    className="pricing-btn pricing-btn-primary"
+                    className="pp-pricing-btn pp-pricing-btn-primary"
                     onClick={() => handleUpgrade(audience === 'freelancer' ? 'freelancer_pro' : 'client_business')}
                     disabled={upgrading === (audience === 'freelancer' ? 'freelancer_pro' : 'client_business')}
                   >
@@ -286,24 +286,24 @@ const PricingPage = () => {
       )}
 
       {/* ── Full comparison table ── */}
-      <div className="pricing-comparison">
-        <h2 className="pricing-compare-title">Full feature comparison</h2>
-        <div className="pricing-table-wrap">
-          <table className="pricing-table">
+      <div className="pp-pricing-comparison">
+        <h2 className="pp-pricing-compare-title">Full feature comparison</h2>
+        <div className="pp-pricing-table-wrap">
+          <table className="pp-pricing-table">
             <thead>
               <tr>
                 <th>Feature</th>
                 <th>Free</th>
-                <th className="pricing-th-featured">{tierLabels[audience].plus}</th>
+                <th className="pp-pricing-th-featured">{tierLabels[audience].plus}</th>
                 <th>{tierLabels[audience].pro}</th>
               </tr>
             </thead>
             <tbody>
               {features.map((row, i) => (
-                <tr key={i} className={i % 2 === 0 ? 'pricing-tr-alt' : ''}>
-                  <td className="pricing-feature-label">{row.label}</td>
+                <tr key={i} className={i % 2 === 0 ? 'pp-pricing-tr-alt' : ''}>
+                  <td className="pp-pricing-feature-label">{row.label}</td>
                   <td><CellValue val={row.free} /></td>
-                  <td className="pricing-td-featured"><CellValue val={row.plus} /></td>
+                  <td className="pp-pricing-td-featured"><CellValue val={row.plus} /></td>
                   <td><CellValue val={row.pro} /></td>
                 </tr>
               ))}
@@ -313,21 +313,21 @@ const PricingPage = () => {
       </div>
 
       {/* ── Local fee note ── */}
-      <div className="pricing-note">
+      <div className="pp-pricing-note">
         <p>💡 <strong>Local freelancers are never charged commission</strong> — $0 on every job, on every plan. Subscriptions give you tools to run your business, not a cut of your earnings.</p>
       </div>
 
       {/* ── FAQ ── */}
       <div className="pricing-faq">
-        <h2 className="pricing-faq-title">Common questions</h2>
-        <div className="pricing-faq-grid">
+        <h2 className="pp-pricing-faq-title">Common questions</h2>
+        <div className="pp-pricing-faq-grid">
           {[
             { q: 'Can I cancel anytime?', a: 'Yes. Cancel from your billing settings and you\'ll keep your benefits until the end of the billing period.' },
             { q: 'Do fees change when I upgrade?', a: 'Your new fee rates apply immediately to new jobs. Existing escrow payments use the rate they were funded with.' },
             { q: 'What happens if I downgrade?', a: 'You keep your plan until the end of the billing period, then drop to Free. Existing bookings and jobs are not affected.' },
             { q: 'Are there annual plans?', a: 'Monthly billing only at launch. Annual plans coming soon with a discount.' },
           ].map((item, i) => (
-            <div key={i} className="pricing-faq-item">
+            <div key={i} className="pp-pricing-faq-item">
               <strong>{item.q}</strong>
               <p>{item.a}</p>
             </div>

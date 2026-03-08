@@ -22,7 +22,7 @@ const StatusBadge = ({ status }) => {
     awaiting_response: 'Awaiting Response'
   };
   return (
-    <span className={`dispute-status-badge status-${status}`}>
+    <span className={`dc-dispute-status-badge dc-status-${status}`}>
       {labels[status] || status}
     </span>
   );
@@ -40,7 +40,7 @@ const reasonLabels = {
 
 // ── Empty State ─────────────────────────────────────────────────
 const EmptyState = ({ filter }) => (
-  <div className="disputes-empty">
+  <div className="dc-disputes-empty">
     <div className="dc-empty-icon">⚖️</div>
     <h3>{filter === 'all' ? 'No Disputes Yet' : `No ${filter.replace('_', ' ')} Disputes`}</h3>
     <p>
@@ -67,34 +67,34 @@ const DisputeCard = ({ dispute, currentUserId, onClick }) => {
   };
 
   return (
-    <div className="dispute-card" onClick={() => onClick(dispute._id)}>
-      <div className="dispute-card-header">
-        <div className="dispute-card-title">
+    <div className="dc-dispute-card" onClick={() => onClick(dispute._id)}>
+      <div className="dc-dispute-card-header">
+        <div className="dc-dispute-card-title">
           <h4>{dispute.job?.title || 'Untitled Job'}</h4>
           <StatusBadge status={dispute.status} />
         </div>
-        <span className="dispute-card-time">{timeAgo(dispute.updatedAt || dispute.createdAt)}</span>
+        <span className="dc-dispute-card-time">{timeAgo(dispute.updatedAt || dispute.createdAt)}</span>
       </div>
-      <div className="dispute-card-body">
-        <div className="dispute-card-meta">
-          <span className="dispute-reason-tag">{reasonLabels[dispute.reason] || dispute.reason}</span>
-          <span className="dispute-card-party">
+      <div className="dc-dispute-card-body">
+        <div className="dc-dispute-card-meta">
+          <span className="dc-dispute-reason-tag">{reasonLabels[dispute.reason] || dispute.reason}</span>
+          <span className="dc-dispute-card-party">
             {isClient ? 'vs' : 'from'} {otherParty?.firstName} {otherParty?.lastName}
           </span>
         </div>
-        <p className="dispute-card-desc">
+        <p className="dc-dispute-card-desc">
           {dispute.description?.substring(0, 120)}{dispute.description?.length > 120 ? '...' : ''}
         </p>
       </div>
-      <div className="dispute-card-footer">
-        <span className="dispute-card-role">{isClient ? 'Client' : 'Freelancer'}</span>
+      <div className="dc-dispute-card-footer">
+        <span className="dc-dispute-card-role">{isClient ? 'Client' : 'Freelancer'}</span>
         {dispute.messages?.length > 0 && (
           <span className="dispute-card-messages">
             💬 {dispute.messages.length} message{dispute.messages.length !== 1 ? 's' : ''}
           </span>
         )}
         {dispute.deadline && (
-          <span className={`dispute-card-deadline ${new Date(dispute.deadline) < new Date() ? 'overdue' : ''}`}>
+          <span className={`dc-dispute-card-deadline ${new Date(dispute.deadline) < new Date() ? 'overdue' : ''}`}>
             ⏰ {new Date(dispute.deadline).toLocaleDateString()}
           </span>
         )}
@@ -204,18 +204,18 @@ const DisputeCenter = () => {
   }
 
   return (
-    <div className="dispute-center">
+    <div className="dc-dispute-center">
       <SEO title="Dispute Center" path="/disputes" noIndex={true} />
-      <div className="dispute-center-header">
+      <div className="dc-dispute-center-header">
         <div>
           <h1>Dispute Center</h1>
-          <p className="dispute-center-subtitle">Manage and track your disputes</p>
+          <p className="dc-dispute-center-subtitle">Manage and track your disputes</p>
         </div>
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="dispute-filters">
-        <div className="dispute-filter-tabs">
+      <div className="dc-dispute-filters">
+        <div className="dc-dispute-filter-tabs">
           {['all', 'opened', 'needs_info', 'under_review', 'escalated', 'proposed_resolution', 'resolved', 'closed'].map(status => (
             <button
               key={status}
@@ -229,7 +229,7 @@ const DisputeCenter = () => {
             </button>
           ))}
         </div>
-        <div className="dispute-sort">
+        <div className="dc-dispute-sort">
           <select value={sortBy} onChange={e => setSort(e.target.value)}>
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
@@ -239,19 +239,19 @@ const DisputeCenter = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="disputes-loading">
+        <div className="dc-disputes-loading">
           <div className="dc-spinner"></div>
           <p>Loading disputes...</p>
         </div>
       ) : error ? (
-        <div className="disputes-error">
+        <div className="dc-disputes-error">
           <p>⚠️ {error}</p>
           <button onClick={fetchDisputes}>Retry</button>
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState filter={statusFilter} />
       ) : (
-        <div className="dispute-list">
+        <div className="dc-dispute-list">
           {filtered.map(dispute => (
             <DisputeCard
               key={dispute._id}

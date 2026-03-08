@@ -100,14 +100,14 @@ const WalletPage = () => {
     }
   };
 
-  if (loading) return <div className="wallet-loading">Loading wallet…</div>;
+  if (loading) return <div className="wp-wallet-loading">Loading wallet…</div>;
 
   if (gated) {
     return (
-      <div className="wallet-wrap">
+      <div className="wp-wallet-wrap">
       <SEO title="Wallet" path="/wallet" noIndex={true} />
-        <div className="wallet-header">
-          <h1 className="wallet-title">Wallet</h1>
+        <div className="wp-wallet-header">
+          <h1 className="wp-wallet-title">Wallet</h1>
         </div>
         <UpgradePrompt
           reason="wallet"
@@ -122,40 +122,40 @@ const WalletPage = () => {
   const history  = wallet?.history || [];
 
   return (
-    <div className="wallet-wrap">
+    <div className="wp-wallet-wrap">
       <SEO title="Wallet" path="/wallet" noIndex={true} />
-      <div className="wallet-header">
-        <h1 className="wallet-title">Wallet</h1>
-        <Link to="/billing" className="wallet-billing-link">Billing settings →</Link>
+      <div className="wp-wallet-header">
+        <h1 className="wp-wallet-title">Wallet</h1>
+        <Link to="/billing" className="wp-wallet-billing-link">Billing settings →</Link>
       </div>
 
-      {successMsg && <div className="wallet-success">{successMsg}</div>}
-      {error      && <div className="wallet-error">{error}</div>}
+      {successMsg && <div className="wp-wallet-success">{successMsg}</div>}
+      {error      && <div className="wp-wallet-error">{error}</div>}
 
       {/* ── Balance card ── */}
-      <div className="wallet-balance-card">
-        <div className="wallet-balance-label">Available balance</div>
-        <div className="wallet-balance-amount">${balance.toFixed(2)}</div>
-        <div className="wallet-balance-note">Applied automatically to job fees and platform charges</div>
+      <div className="wp-wallet-balance-card">
+        <div className="wp-wallet-balance-label">Available balance</div>
+        <div className="wp-wallet-balance-amount">${balance.toFixed(2)}</div>
+        <div className="wp-wallet-balance-note">Applied automatically to job fees and platform charges</div>
       </div>
 
       {/* ── Add funds ── */}
-      <div className="wallet-card">
-        <div className="wallet-card-title">Add funds</div>
-        <div className="wallet-presets">
+      <div className="wp-wallet-card">
+        <div className="wp-wallet-card-title">Add funds</div>
+        <div className="wp-wallet-presets">
           {PRESET_AMOUNTS.map(a => (
             <button
               key={a}
-              className={`wallet-preset-btn ${amount === String(a) && !customAmount ? 'active' : ''}`}
+              className={`wp-wallet-preset-btn ${amount === String(a) && !customAmount ? 'active' : ''}`}
               onClick={() => { setAmount(String(a)); setCustomAmount(''); setError(''); }}
             >
               ${a}
             </button>
           ))}
         </div>
-        <div className="wallet-custom-row">
+        <div className="wp-wallet-custom-row">
           <input
-            className="wallet-custom-input"
+            className="wp-wallet-custom-input"
             type="number"
             placeholder="Custom amount"
             min="5"
@@ -165,23 +165,23 @@ const WalletPage = () => {
             onChange={e => { setCustomAmount(e.target.value); setAmount(''); setError(''); }}
           />
           <button
-            className="wallet-add-btn"
+            className="wp-wallet-add-btn"
             onClick={handleAddFunds}
             disabled={adding || (!amount && !customAmount)}
           >
             {adding ? 'Redirecting…' : `Add $${parseFloat(customAmount || amount || 0).toFixed(2)}`}
           </button>
         </div>
-        <p className="wallet-add-note">Funds are added instantly via Stripe. No expiry.</p>
+        <p className="wp-wallet-add-note">Funds are added instantly via Stripe. No expiry.</p>
       </div>
 
       {/* ── Withdraw funds (freelancers with Stripe Connect) ── */}
       {payoutStatus?.connected && payoutStatus?.payoutsEnabled && balance > 0 && (
-        <div className="wallet-card">
-          <div className="wallet-card-title">Withdraw to bank</div>
-          <div className="wallet-custom-row">
+        <div className="wp-wallet-card">
+          <div className="wp-wallet-card-title">Withdraw to bank</div>
+          <div className="wp-wallet-custom-row">
             <input
-              className="wallet-custom-input"
+              className="wp-wallet-custom-input"
               type="number"
               placeholder="Amount to withdraw"
               min="1"
@@ -191,7 +191,7 @@ const WalletPage = () => {
               onChange={e => { setWithdrawAmount(e.target.value); setError(''); }}
             />
             <button
-              className="wallet-add-btn"
+              className="wp-wallet-add-btn"
               onClick={handleWithdraw}
               disabled={withdrawing || !withdrawAmount}
               style={{ background: '#059669' }}
@@ -199,7 +199,7 @@ const WalletPage = () => {
               {withdrawing ? 'Processing…' : `Withdraw $${parseFloat(withdrawAmount || 0).toFixed(2)}`}
             </button>
           </div>
-          <p className="wallet-add-note">
+          <p className="wp-wallet-add-note">
             Transferred to your connected Stripe account. May take 1–2 business days.
           </p>
         </div>
@@ -207,19 +207,19 @@ const WalletPage = () => {
 
       {/* ── Active credits ── */}
       {active.length > 0 && (
-        <div className="wallet-card">
-          <div className="wallet-card-title">Active credits</div>
-          <div className="wallet-credit-list">
+        <div className="wp-wallet-card">
+          <div className="wp-wallet-card-title">Active credits</div>
+          <div className="wp-wallet-credit-list">
             {active.map(c => (
-              <div key={c._id} className="wallet-credit-row">
-                <div className="wallet-credit-info">
-                  <span className="wallet-credit-reason">{c.reason}</span>
-                  <span className="wallet-credit-date">Added {new Date(c.createdAt).toLocaleDateString()}</span>
+              <div key={c._id} className="wp-wallet-credit-row">
+                <div className="wp-wallet-credit-info">
+                  <span className="wp-wallet-credit-reason">{c.reason}</span>
+                  <span className="wp-wallet-credit-date">Added {new Date(c.createdAt).toLocaleDateString()}</span>
                 </div>
-                <div className="wallet-credit-amount">
+                <div className="wp-wallet-credit-amount">
                   ${c.remaining?.toFixed(2)}
                   {c.amount !== c.remaining && (
-                    <span className="wallet-credit-original"> of ${c.amount?.toFixed(2)}</span>
+                    <span className="wp-wallet-credit-original"> of ${c.amount?.toFixed(2)}</span>
                   )}
                 </div>
               </div>
@@ -230,18 +230,18 @@ const WalletPage = () => {
 
       {/* ── History ── */}
       {history.length > 0 && (
-        <div className="wallet-card">
-          <div className="wallet-card-title">History</div>
-          <div className="wallet-credit-list">
+        <div className="wp-wallet-card">
+          <div className="wp-wallet-card-title">History</div>
+          <div className="wp-wallet-credit-list">
             {history.map(c => (
-              <div key={c._id} className={`wallet-credit-row wallet-credit-${c.status}`}>
-                <div className="wallet-credit-info">
-                  <span className="wallet-credit-reason">{c.reason}</span>
-                  <span className="wallet-credit-date">{new Date(c.updatedAt || c.createdAt).toLocaleDateString()}</span>
+              <div key={c._id} className={`wp-wallet-credit-row wallet-credit-${c.status}`}>
+                <div className="wp-wallet-credit-info">
+                  <span className="wp-wallet-credit-reason">{c.reason}</span>
+                  <span className="wp-wallet-credit-date">{new Date(c.updatedAt || c.createdAt).toLocaleDateString()}</span>
                 </div>
-                <div className="wallet-credit-amount wallet-credit-used">
+                <div className="wp-wallet-credit-amount wp-wallet-credit-used">
                   ${c.amount?.toFixed(2)}
-                  <span className="wallet-credit-status-pill">{c.status}</span>
+                  <span className="wp-wallet-credit-status-pill">{c.status}</span>
                 </div>
               </div>
             ))}
@@ -250,7 +250,7 @@ const WalletPage = () => {
       )}
 
       {active.length === 0 && history.length === 0 && (
-        <div className="wallet-empty">
+        <div className="wp-wallet-empty">
           <p>No credits yet. Add funds above to get started.</p>
         </div>
       )}

@@ -73,13 +73,13 @@ const EmailPreferences = () => {
   if (loading) return <div className="ep-loading">Loading preferences...</div>;
 
   return (
-    <div className="email-preferences">
+    <div className="ep-email-preferences">
       <h2>Email Preferences</h2>
       
-      <div className="preference-section">
+      <div className="ep-preference-section">
         <h3>Email Notifications</h3>
         {Object.entries(preferences.emailNotifications).map(([key, value]) => (
-          <div key={key} className="preference-item">
+          <div key={key} className="ep-preference-item">
             <label>
               <input
                 type="checkbox"
@@ -87,7 +87,7 @@ const EmailPreferences = () => {
                 onChange={() => handleToggle('emailNotifications', key)}
                 disabled={saving}
               />
-              <span className="preference-label">
+              <span className="ep-preference-label">
                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
               </span>
             </label>
@@ -95,7 +95,7 @@ const EmailPreferences = () => {
         ))}
       </div>
 
-      <div className="preference-section">
+      <div className="ep-preference-section">
         <h3>Notification Frequency</h3>
         <select
           value={preferences.notificationFrequency}
@@ -108,9 +108,9 @@ const EmailPreferences = () => {
         </select>
       </div>
 
-      <div className="preference-section">
+      <div className="ep-preference-section">
         <h3>SMS Notifications</h3>
-        <div className="preference-item">
+        <div className="ep-preference-item">
           <label>
             <input
               type="checkbox"
@@ -118,7 +118,7 @@ const EmailPreferences = () => {
               onChange={() => handleToggle('smsNotifications')}
               disabled={saving}
             />
-            <span className="preference-label">
+            <span className="ep-preference-label">
               Enable SMS notifications
             </span>
           </label>

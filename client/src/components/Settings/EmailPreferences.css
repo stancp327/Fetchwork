@@ -2,19 +2,19 @@
  * Prefix: ep-
  * Scope: Email and notification preference settings
  */
-.email-preferences {
+.ep-email-preferences {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
 }
 
-.email-preferences h2 {
+.ep-email-preferences h2 {
   color: #333;
   margin-bottom: 30px;
   text-align: center;
 }
 
-.preference-section {
+.ep-preference-section {
   background: #fff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -22,33 +22,33 @@
   margin-bottom: 20px;
 }
 
-.preference-section h3 {
+.ep-preference-section h3 {
   color: #333;
   margin: 0 0 15px 0;
   font-size: 18px;
 }
 
-.preference-item {
+.ep-preference-item {
   margin-bottom: 12px;
 }
 
-.preference-item label {
+.ep-preference-item label {
   display: flex;
   align-items: center;
   cursor: pointer;
   font-size: 14px;
 }
 
-.preference-item input[type="checkbox"] {
+.ep-preference-item input[type="checkbox"] {
   margin-right: 10px;
   transform: scale(1.2);
 }
 
-.preference-label {
+.ep-preference-label {
   color: #555;
 }
 
-.preference-section select {
+.ep-preference-section select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #ddd;
@@ -63,12 +63,12 @@
   color: #666;
 }
 
-.preference-item input:disabled,
-.preference-section select:disabled {
+.ep-preference-item input:disabled,
+.ep-preference-section select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 /* Mobile base */
-.preference-item label { min-height: 44px; }
-.preference-section select { min-height: 44px; }
+.ep-preference-item label { min-height: 44px; }
+.ep-preference-section select { min-height: 44px; }

@@ -44,28 +44,28 @@ const DisputeTimeline = ({ dispute }) => {
   const steps = getTimelineSteps();
 
   return (
-    <div className="dispute-timeline">
+    <div className="dt-dispute-timeline">
       <h3>Dispute Progress</h3>
-      <div className="timeline-steps">
+      <div className="dt-timeline-steps">
         {steps.map((step, index) => (
           <div 
             key={step.id}
-            className={`timeline-step ${step.completed ? 'completed' : 'pending'}`}
+            className={`dt-timeline-step ${step.completed ? 'completed' : 'pending'}`}
           >
-            <div className="timeline-indicator">
-              <div className={`timeline-circle ${step.completed ? 'completed' : ''}`}>
+            <div className="dt-timeline-indicator">
+              <div className={`dt-timeline-circle ${step.completed ? 'completed' : ''}`}>
                 {step.completed ? '✓' : index + 1}
               </div>
               {index < steps.length - 1 && (
-                <div className={`timeline-line ${step.completed ? 'completed' : ''}`}></div>
+                <div className={`dt-timeline-line ${step.completed ? 'completed' : ''}`}></div>
               )}
             </div>
             
-            <div className="timeline-content">
-              <div className="timeline-title">{step.title}</div>
-              <div className="timeline-description">{step.description}</div>
+            <div className="dt-timeline-content">
+              <div className="dt-timeline-title">{step.title}</div>
+              <div className="dt-timeline-description">{step.description}</div>
               {step.completed && step.date && (
-                <div className="timeline-date">{formatDate(step.date)}</div>
+                <div className="dt-timeline-date">{formatDate(step.date)}</div>
               )}
             </div>
           </div>
@@ -73,9 +73,9 @@ const DisputeTimeline = ({ dispute }) => {
       </div>
       
       {dispute.status === 'resolved' && dispute.resolution && (
-        <div className="resolution-summary">
+        <div className="dt-resolution-summary">
           <h4>Resolution</h4>
-          <div className="resolution-details">
+          <div className="dt-resolution-details">
             <div><strong>Outcome:</strong> {dispute.resolution.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
             {dispute.resolutionAmount > 0 && (
               <div><strong>Amount:</strong> ${dispute.resolutionAmount}</div>

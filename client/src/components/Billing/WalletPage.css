@@ -3,20 +3,20 @@
  * Scope: Wallet balance, credit management, and top-up flow
  */
 /* ── WalletPage ───────────────────────────────────────────────── */
-.wallet-wrap {
+.wp-wallet-wrap {
   max-width: 600px;
   margin: 0 auto;
   padding: 32px 16px 80px;
 }
 
-.wallet-loading {
+.wp-wallet-loading {
   text-align: center;
   padding: 60px;
   color: var(--color-text-muted);
 }
 
 /* ── Header ── */
-.wallet-header {
+.wp-wallet-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -24,22 +24,22 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-.wallet-title {
+.wp-wallet-title {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
   margin: 0;
 }
-.wallet-billing-link {
+.wp-wallet-billing-link {
   font-size: var(--font-size-sm);
   color: var(--color-primary);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
 }
-.wallet-billing-link:hover { text-decoration: underline; }
+.wp-wallet-billing-link:hover { text-decoration: underline; }
 
 /* ── Alerts ── */
-.wallet-success {
+.wp-wallet-success {
   background: rgba(40,167,69,0.08);
   border: 1px solid rgba(40,167,69,0.2);
   color: var(--color-success);
@@ -48,7 +48,7 @@
   font-size: var(--font-size-sm);
   margin-bottom: 20px;
 }
-.wallet-error {
+.wp-wallet-error {
   background: rgba(220,53,69,0.06);
   border: 1px solid rgba(220,53,69,0.2);
   color: var(--color-danger);
@@ -59,7 +59,7 @@
 }
 
 /* ── Balance card ── */
-.wallet-balance-card {
+.wp-wallet-balance-card {
   background: var(--gradient-primary);
   border-radius: var(--radius-xl);
   padding: 28px 24px;
@@ -67,26 +67,26 @@
   margin-bottom: 20px;
   text-align: center;
 }
-.wallet-balance-label {
+.wp-wallet-balance-label {
   font-size: var(--font-size-sm);
   opacity: 0.85;
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.wallet-balance-amount {
+.wp-wallet-balance-amount {
   font-size: 52px;
   font-weight: var(--font-weight-bold);
   line-height: 1;
   margin-bottom: 10px;
 }
-.wallet-balance-note {
+.wp-wallet-balance-note {
   font-size: var(--font-size-xs);
   opacity: 0.75;
 }
 
 /* ── Generic card ── */
-.wallet-card {
+.wp-wallet-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: 20px;
@@ -94,7 +94,7 @@
   box-shadow: var(--shadow-sm);
   margin-bottom: 20px;
 }
-.wallet-card-title {
+.wp-wallet-card-title {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
@@ -102,13 +102,13 @@
 }
 
 /* ── Preset amounts ── */
-.wallet-presets {
+.wp-wallet-presets {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
-.wallet-preset-btn {
+.wp-wallet-preset-btn {
   height: 40px;
   min-width: 60px;
   padding: 0 16px;
@@ -121,16 +121,16 @@
   cursor: pointer;
   transition: all var(--transition-fast);
 }
-.wallet-preset-btn:hover  { border-color: var(--color-primary); color: var(--color-primary); }
-.wallet-preset-btn.active { background: rgba(102,126,234,0.1); border-color: var(--color-primary); color: var(--color-primary); font-weight: var(--font-weight-semibold); }
+.wp-wallet-preset-btn:hover  { border-color: var(--color-primary); color: var(--color-primary); }
+.wp-wallet-preset-btn.active { background: rgba(102,126,234,0.1); border-color: var(--color-primary); color: var(--color-primary); font-weight: var(--font-weight-semibold); }
 
 /* ── Custom row ── */
-.wallet-custom-row {
+.wp-wallet-custom-row {
   display: flex;
   gap: 8px;
   align-items: center;
 }
-.wallet-custom-input {
+.wp-wallet-custom-input {
   flex: 1;
   height: 44px;
   padding: 0 12px;
@@ -141,11 +141,11 @@
   color: var(--color-text-primary);
   box-sizing: border-box;
 }
-.wallet-custom-input:focus {
+.wp-wallet-custom-input:focus {
   outline: none;
   border-color: var(--color-primary);
 }
-.wallet-add-btn {
+.wp-wallet-add-btn {
   height: 44px;
   padding: 0 20px;
   background: var(--gradient-primary);
@@ -158,18 +158,18 @@
   white-space: nowrap;
   transition: opacity var(--transition-fast);
 }
-.wallet-add-btn:hover:not(:disabled) { opacity: 0.88; }
-.wallet-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.wp-wallet-add-btn:hover:not(:disabled) { opacity: 0.88; }
+.wp-wallet-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.wallet-add-note {
+.wp-wallet-add-note {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: 8px 0 0;
 }
 
 /* ── Credit list ── */
-.wallet-credit-list { display: flex; flex-direction: column; gap: 8px; }
-.wallet-credit-row {
+.wp-wallet-credit-list { display: flex; flex-direction: column; gap: 8px; }
+.wp-wallet-credit-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -177,36 +177,36 @@
   padding: 10px 0;
   border-bottom: 1px solid var(--color-bg-secondary);
 }
-.wallet-credit-row:last-child { border-bottom: none; }
+.wp-wallet-credit-row:last-child { border-bottom: none; }
 
-.wallet-credit-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.wallet-credit-reason {
+.wp-wallet-credit-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.wp-wallet-credit-reason {
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.wallet-credit-date {
+.wp-wallet-credit-date {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
-.wallet-credit-amount {
+.wp-wallet-credit-amount {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-success);
   white-space: nowrap;
   text-align: right;
 }
-.wallet-credit-original {
+.wp-wallet-credit-original {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-weight: var(--font-weight-normal);
 }
-.wallet-credit-used { color: var(--color-text-muted); }
+.wp-wallet-credit-used { color: var(--color-text-muted); }
 
-.wallet-credit-status-pill {
+.wp-wallet-credit-status-pill {
   display: inline-block;
   font-size: 10px;
   font-weight: var(--font-weight-medium);
@@ -219,7 +219,7 @@
 }
 
 /* ── Empty state ── */
-.wallet-empty {
+.wp-wallet-empty {
   text-align: center;
   padding: 32px;
   color: var(--color-text-muted);
@@ -228,6 +228,6 @@
 
 /* ── Responsive ── */
 @media (min-width: 480px) {
-  .wallet-card { padding: 24px; }
-  .wallet-wrap { padding: 40px 24px 80px; }
+  .wp-wallet-card { padding: 24px; }
+  .wp-wallet-wrap { padding: 40px 24px 80px; }
 }

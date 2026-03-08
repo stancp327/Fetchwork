@@ -2,27 +2,31 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
 
 const FEATURE_LABELS = {
-  recurring_services:   { label: 'Recurring Services',     desc: 'Weekly/monthly service offerings', tier: 'Plus+', tierColor: 'blue' },
-  bundle_creation:      { label: 'Session Bundles',        desc: 'Prepaid session packages on services', tier: 'Plus+', tierColor: 'blue' },
-  bundle_expiration:    { label: 'Bundle Expiration Rules',desc: 'Set expiry on session bundles', tier: 'Pro', tierColor: 'purple' },
-  booking_calendar:     { label: 'Booking Calendar',       desc: 'Scheduling & availability management', tier: 'Plus+', tierColor: 'blue' },
-  intake_forms:         { label: 'Intake Forms',           desc: 'Custom intake forms on listings', tier: 'Plus+', tierColor: 'blue' },
-  deposits:             { label: 'Deposits',               desc: 'Require deposits on bookings', tier: 'Pro', tierColor: 'purple' },
-  travel_fees:          { label: 'Travel Fees',            desc: 'Add travel fee to local services', tier: 'Pro', tierColor: 'purple' },
-  repeat_client_tools:  { label: 'Repeat Client Tools',    desc: 'Client management & rebooking', tier: 'Free', tierColor: 'gray' },
-  capacity_controls:    { label: 'Capacity Controls',      desc: 'Max clients per day/week limits', tier: 'Plus+', tierColor: 'blue' },
-  faster_payout:        { label: 'Faster Payout',          desc: 'Priority payout processing', tier: 'Plus+', tierColor: 'blue' },
-  advanced_analytics:   { label: 'Advanced Analytics',     desc: 'Full analytics suite & insights', tier: 'Pro', tierColor: 'purple' },
-  csv_export:           { label: 'CSV Export',             desc: 'Export earnings & data to CSV', tier: 'Plus+', tierColor: 'blue' },
-  saved_providers:      { label: 'Saved Providers',        desc: 'Save favourite freelancers', tier: 'Client Plus+', tierColor: 'blue' },
-  job_templates:        { label: 'Job Templates',          desc: 'Reusable job post templates', tier: 'Client Plus+', tierColor: 'blue' },
-  proposal_comparison:  { label: 'Proposal Comparison',    desc: 'Side-by-side proposal view', tier: 'Client Plus+', tierColor: 'blue' },
-  spend_dashboard:      { label: 'Spend Dashboard',        desc: 'Full spend tracking & reporting', tier: 'Business', tierColor: 'orange' },
-  team_accounts:        { label: 'Team Accounts',          desc: 'Multiple logins per organisation', tier: 'Business', tierColor: 'orange' },
-  beta_access:          { label: 'Beta Access',            desc: 'Early access to new features', tier: 'Admin grant', tierColor: 'red' },
-  unlimited_services:   { label: 'Unlimited Services',     desc: 'No service listing count cap', tier: 'Admin grant', tierColor: 'red' },
-  unlimited_jobs:       { label: 'Unlimited Job Posts',    desc: 'No active job count cap', tier: 'Admin grant', tierColor: 'red' },
+  repeat_client_tools:  { label: 'Repeat Client Tools',    desc: 'Client management & rebooking', tier: 'Free', tierColor: 'gray', tierOrder: 0 },
+  recurring_services:   { label: 'Recurring Services',     desc: 'Weekly/monthly service offerings', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  bundle_creation:      { label: 'Session Bundles',        desc: 'Prepaid session packages on services', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  booking_calendar:     { label: 'Booking Calendar',       desc: 'Scheduling & availability management', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  intake_forms:         { label: 'Intake Forms',           desc: 'Custom intake forms on listings', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  capacity_controls:    { label: 'Capacity Controls',      desc: 'Max clients per day/week limits', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  faster_payout:        { label: 'Faster Payout',          desc: 'Priority payout processing', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  csv_export:           { label: 'CSV Export',             desc: 'Export earnings & data to CSV', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  ai_job_description:   { label: 'AI Job Description',     desc: 'AI-generated job post descriptions', tier: 'Plus+', tierColor: 'blue', tierOrder: 1 },
+  bundle_expiration:    { label: 'Bundle Expiration Rules',desc: 'Set expiry on session bundles', tier: 'Pro', tierColor: 'purple', tierOrder: 2 },
+  deposits:             { label: 'Deposits',               desc: 'Require deposits on bookings', tier: 'Pro', tierColor: 'purple', tierOrder: 2 },
+  travel_fees:          { label: 'Travel Fees',            desc: 'Add travel fee to local services', tier: 'Pro', tierColor: 'purple', tierOrder: 2 },
+  advanced_analytics:   { label: 'Advanced Analytics',     desc: 'Full analytics suite & insights', tier: 'Pro', tierColor: 'purple', tierOrder: 2 },
+  ai_matching:          { label: 'AI Matching',            desc: 'AI-powered freelancer matching', tier: 'Pro', tierColor: 'purple', tierOrder: 2 },
+  saved_providers:      { label: 'Saved Providers',        desc: 'Save favourite freelancers', tier: 'Client Plus+', tierColor: 'blue', tierOrder: 3 },
+  job_templates:        { label: 'Job Templates',          desc: 'Reusable job post templates', tier: 'Client Plus+', tierColor: 'blue', tierOrder: 3 },
+  proposal_comparison:  { label: 'Proposal Comparison',    desc: 'Side-by-side proposal view', tier: 'Client Plus+', tierColor: 'blue', tierOrder: 3 },
+  spend_dashboard:      { label: 'Spend Dashboard',        desc: 'Full spend tracking & reporting', tier: 'Business', tierColor: 'orange', tierOrder: 4 },
+  team_accounts:        { label: 'Team Accounts',          desc: 'Multiple logins per organisation', tier: 'Business', tierColor: 'orange', tierOrder: 4 },
+  beta_access:          { label: 'Beta Access',            desc: 'Early access to new features', tier: 'Admin', tierColor: 'red', tierOrder: 5 },
+  unlimited_services:   { label: 'Unlimited Services',     desc: 'No service listing count cap', tier: 'Admin', tierColor: 'red', tierOrder: 5 },
+  unlimited_jobs:       { label: 'Unlimited Job Posts',    desc: 'No active job count cap', tier: 'Admin', tierColor: 'red', tierOrder: 5 },
 };
+
+const TIER_ORDER = ['Free', 'Plus+', 'Pro', 'Client Plus+', 'Business', 'Admin'];
 
 const TIER_COLORS = {
   blue:   { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' },
@@ -121,9 +125,20 @@ export default function FeatureFlagsPanel({ userId }) {
   const available = featureData?.availableFeatures || Object.keys(FEATURE_LABELS);
   const grantedFeatures = grants.reduce((acc, g) => { acc[g.feature] = g; return acc; }, {});
 
-  // Group resolved by access
-  const hasAccess = Object.entries(resolved).filter(([, v]) => v);
-  const noAccess  = Object.entries(resolved).filter(([, v]) => !v);
+  // Group resolved features by tier
+  const byTier = {};
+  Object.entries(resolved).forEach(([feature, access]) => {
+    const meta = FEATURE_LABELS[feature];
+    const tier = meta?.tier || 'Other';
+    if (!byTier[tier]) byTier[tier] = [];
+    byTier[tier].push({ feature, access, meta });
+  });
+  const sortedTiers = TIER_ORDER.filter(t => byTier[t]).concat(
+    Object.keys(byTier).filter(t => !TIER_ORDER.includes(t))
+  );
+
+  const totalGranted = Object.values(resolved).filter(Boolean).length;
+  const totalDenied  = Object.values(resolved).filter(v => !v).length;
 
   return (
     <div className="ffp-root">
@@ -214,36 +229,58 @@ export default function FeatureFlagsPanel({ userId }) {
         </button>
       </div>
 
-      {/* Resolved access grid */}
+      {/* Resolved access — grouped by tier */}
       <div className="ffp-section">
         <div className="ffp-section-header">
           <span className="ffp-section-title">Resolved Access</span>
           <span className="ffp-resolved-counts">
-            <span className="ffp-count-has">{hasAccess.length} granted</span>
-            <span className="ffp-count-no">{noAccess.length} denied</span>
+            <span className="ffp-count-has">{totalGranted} granted</span>
+            <span className="ffp-count-no">{totalDenied} denied</span>
           </span>
         </div>
-        <div className="ffp-resolved-grid">
-          {[...hasAccess, ...noAccess].map(([feature, access]) => {
-            const meta = FEATURE_LABELS[feature];
-            const isOverridden = !!grantedFeatures[feature];
-            return (
-              <div key={feature} className={`ffp-resolved-item ${access ? 'has' : 'no'} ${isOverridden ? 'override' : ''}`}>
-                <span className="ffp-resolved-icon">{access ? '✅' : '⬜'}</span>
-                <div className="ffp-resolved-body">
-                  <div className="ffp-resolved-top">
-                    <span className="ffp-resolved-name">{meta?.label || feature}</span>
-                    {isOverridden && <span className="ffp-override-pill">override</span>}
-                  </div>
-                  <div className="ffp-resolved-bottom">
-                    <span className="ffp-resolved-desc">{meta?.desc || ''}</span>
-                    {meta && <TierBadge tier={meta.tier} tierColor={meta.tierColor} />}
-                  </div>
-                </div>
+
+        {sortedTiers.map(tier => {
+          const items = byTier[tier];
+          const meta0 = items[0]?.meta;
+          const tierColor = meta0?.tierColor || 'gray';
+          const c = TIER_COLORS[tierColor] || TIER_COLORS.gray;
+          const grantedCount = items.filter(i => i.access).length;
+
+          return (
+            <div key={tier} className="ffp-tier-group">
+              <div className="ffp-tier-header" style={{ borderColor: c.border, background: c.bg }}>
+                <TierBadge tier={tier} tierColor={tierColor} />
+                <span className="ffp-tier-label">{tier} features</span>
+                <span className="ffp-tier-count" style={{ color: c.text }}>
+                  {grantedCount}/{items.length} active
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <div className="ffp-resolved-grid">
+                {items.map(({ feature, access, meta }) => {
+                  const isOverridden = !!grantedFeatures[feature];
+                  return (
+                    <div key={feature} className={`ffp-resolved-item ${access ? 'has' : 'no'} ${isOverridden ? 'override' : ''}`}>
+                      <span className="ffp-resolved-check" style={{
+                        background: access ? c.bg : 'var(--bg-secondary)',
+                        border: `2px solid ${access ? c.border : 'var(--border-color)'}`,
+                        color: access ? c.text : 'var(--text-muted)',
+                      }}>
+                        {access ? '✓' : ''}
+                      </span>
+                      <div className="ffp-resolved-body">
+                        <div className="ffp-resolved-top">
+                          <span className="ffp-resolved-name">{meta?.label || feature}</span>
+                          {isOverridden && <span className="ffp-override-pill">override</span>}
+                        </div>
+                        <span className="ffp-resolved-desc">{meta?.desc || feature}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
