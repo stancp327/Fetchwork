@@ -3,35 +3,37 @@
   --nav-height: 64px;   /* matches Navigation height; update both together */
 
   /* -- Brand Colors -------------------------------------------- */
-  --color-primary:       #2563eb;   /* Tailwind blue-600 — canonical primary */
-  --color-primary-dark:  #1d4ed8;   /* Tailwind blue-700 — hover/active state */
-  --color-primary-light:    #eff6ff;   /* Tailwind blue-50  — tinted bg */
-  --color-primary-bg:       #dbeafe;   /* Tailwind blue-100 — chip/tag bg */
-  --color-primary-disabled: #93c5fd;   /* Tailwind blue-300 — disabled btn */
+  --color-primary:       #2563eb;   /* Tailwind blue-600 ï¿½ canonical primary */
+  --color-primary-dark:  #1d4ed8;   /* Tailwind blue-700 ï¿½ hover/active state */
+  --color-primary-light:    #eff6ff;   /* Tailwind blue-50  ï¿½ tinted bg */
+  --color-primary-bg:       #dbeafe;   /* Tailwind blue-100 ï¿½ chip/tag bg */
+  --color-primary-disabled: #93c5fd;   /* Tailwind blue-300 ï¿½ disabled btn */
   --color-primary-ring:     rgba(37, 99, 235, 0.2); /* focus ring */
 
   /* -- Semantic Colors ----------------------------------------- */
-  --color-success:       #10b981;   /* Tailwind emerald-500 — was #28a745 */
-  --color-success-dark:  #059669;   /* Tailwind emerald-600 — hover */
-  --color-success-light: #ecfdf5;   /* Tailwind emerald-50  — tinted bg */
+  --color-success:       #10b981;   /* Tailwind emerald-500 ï¿½ was #28a745 */
+  --color-success-dark:  #059669;   /* Tailwind emerald-600 ï¿½ hover */
+  --color-success-light: #ecfdf5;   /* Tailwind emerald-50  ï¿½ tinted bg */
 
-  --color-danger:        #dc2626;   /* Tailwind red-600     — was #dc3545 */
-  --color-danger-dark:   #b91c1c;   /* Tailwind red-700     — hover */
-  --color-danger-light:  #fee2e2;   /* Tailwind red-100     — tinted bg */
-  --color-danger-subtle: #fef2f2;   /* Tailwind red-50      — softest bg */
+  --color-danger:        #dc2626;   /* Tailwind red-600     ï¿½ was #dc3545 */
+  --color-danger-dark:   #b91c1c;   /* Tailwind red-700     ï¿½ hover */
+  --color-danger-light:  #fee2e2;   /* Tailwind red-100     ï¿½ tinted bg */
+  --color-danger-subtle: #fef2f2;   /* Tailwind red-50      ï¿½ softest bg */
 
-  --color-warning:       #f59e0b;   /* Tailwind amber-500   — was #ffc107 */
-  --color-warning-dark:  #d97706;   /* Tailwind amber-600   — hover */
-  --color-warning-light: #fef3c7;   /* Tailwind amber-100   — tinted bg */
+  --color-warning:       #f59e0b;   /* Tailwind amber-500   ï¿½ was #ffc107 */
+  --color-warning-dark:  #d97706;   /* Tailwind amber-600   ï¿½ hover */
+  --color-warning-light: #fef3c7;   /* Tailwind amber-100   ï¿½ tinted bg */
 
   --color-info:          #0ea5e9;   /* Tailwind sky-500 */
   --color-info-light:    #f0f9ff;   /* Tailwind sky-50  */
+  --color-accent:        #8b5cf6;   /* purple accent */
 
   /* -- Text Colors --------------------------------------------- */
   --color-text-darker:    #111827;  /* near-black, hero headings (gray-900) */
   --color-text-dark:      #1e293b;  /* headings, high emphasis (slate-800) */
   --color-text-heading:   #1f2937;  /* section headings (gray-800) */
   --color-text:           #374151;  /* body text (gray-700) */
+  --color-text-primary:   var(--color-text);  /* alias for body text */
   --color-text-medium:    #4b5563;  /* secondary body text (gray-600) */
   --color-text-secondary: #6b7280;  /* secondary text (gray-500) */
   --color-text-muted:     #9ca3af;  /* placeholders, captions (gray-400) */
@@ -41,12 +43,12 @@
   /* -- Background Colors --------------------------------------- */
   --color-bg-primary:   #ffffff;
   --color-bg-secondary: #f8fafc;    /* page background */
-  --color-bg-subtle:    #f8fafc;    /* alias — near-white surface */
+  --color-bg-subtle:    #f8fafc;    /* alias ï¿½ near-white surface */
   --color-bg-muted:     #f3f4f6;    /* light card, input bg */
   --color-bg-hover:     #f1f5f9;    /* hover state bg */
 
   /* -- Border Colors ------------------------------------------- */
-  --color-border:        #e5e7eb;   /* default border — was #e1e5e9 */
+  --color-border:        #e5e7eb;   /* default border ï¿½ was #e1e5e9 */
   --color-border-medium: #d1d5db;   /* input borders, table dividers (gray-300) */
   --color-border-light:  #f3f4f6;   /* subtle divider */
   --color-border-focus:  var(--color-primary);
@@ -55,7 +57,7 @@
   --color-surface-glass:      rgba(255, 255, 255, 0.85);
   --color-surface-glass-dark: rgba(15, 23, 42, 0.85);
 
-  /* -- Typography — fluid scaling (mobile-first, clamp) ------- */
+  /* -- Typography ï¿½ fluid scaling (mobile-first, clamp) ------- */
   --font-size-xs:   clamp(0.7rem,   0.65rem  + 0.25vw, 0.75rem);
   --font-size-sm:   clamp(0.8rem,   0.75rem  + 0.25vw, 0.875rem);
   --font-size-base: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);
