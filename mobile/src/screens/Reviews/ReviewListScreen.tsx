@@ -73,7 +73,7 @@ export default function ReviewListScreen({ route, navigation }: Props) {
         <Avatar
           uri={item.reviewer.avatar}
           name={`${item.reviewer.firstName} ${item.reviewer.lastName}`}
-          size={36}
+          size="sm"
         />
         <View style={styles.reviewMeta}>
           <Text style={styles.reviewerName}>
@@ -130,7 +130,7 @@ export default function ReviewListScreen({ route, navigation }: Props) {
           </Card>
         ) : null}
         ListEmptyComponent={
-          !isLoading ? <EmptyState icon="star-outline" title="No reviews yet" message="Be the first to leave a review" /> : null
+          !isLoading ? <EmptyState emoji="⭐" title="No reviews yet" subtitle="Be the first to leave a review" /> : null
         }
       />
     </SafeAreaView>

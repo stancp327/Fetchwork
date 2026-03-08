@@ -196,6 +196,26 @@ export default function ServiceOrderProgressScreen({ route, navigation }: Props)
               </Text>
             </TouchableOpacity>
           )}
+
+          {/* Leave a Review */}
+          {status === 'completed' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.btnOutline]}
+              onPress={() =>
+                navigation.getParent()?.getParent()?.navigate('Profile', {
+                  screen: 'WriteReview',
+                  params: {
+                    serviceId,
+                    orderId,
+                    targetName: service.title,
+                    targetId: service.freelancer._id,
+                  },
+                })
+              }
+            >
+              <Text style={styles.actionBtnTextPrimary}>Leave a Review</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
