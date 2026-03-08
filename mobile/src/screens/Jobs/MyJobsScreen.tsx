@@ -58,6 +58,16 @@ export default function MyJobsScreen({ navigation }: Props) {
               {user?.role === 'client' && typeof job.proposalCount === 'number' && (
                 <Text style={styles.proposals}>{job.proposalCount} proposal{job.proposalCount !== 1 ? 's' : ''}</Text>
               )}
+              {user?.role === 'client' && (job.status === 'open' || job.status === 'accepted') && (
+                <Pressable onPress={() => navigation.navigate('JobProposals', { jobId: job._id, jobTitle: job.title })}>
+                  <Text style={styles.actionLink}>View Proposals →</Text>
+                </Pressable>
+              )}
+              {job.status === 'in_progress' && (
+                <Pressable onPress={() => navigation.navigate('JobProgress', { jobId: job._id, jobTitle: job.title })}>
+                  <Text style={styles.actionLink}>Track Progress →</Text>
+                </Pressable>
+              )}
             </Card>
           )}
           ListEmptyComponent={
@@ -88,5 +98,6 @@ const styles = StyleSheet.create({
   title:         { ...typography.h4, flex: 1, marginRight: spacing.sm },
   meta:          { ...typography.caption },
   proposals:     { ...typography.bodySmall, color: colors.primary, marginTop: 4 },
+  actionLink:    { ...typography.bodySmall, color: colors.primary, fontWeight: '600', marginTop: 4 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

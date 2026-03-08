@@ -13,6 +13,8 @@ export type JobsStackParamList = {
   PostJob:        undefined;
   MyJobs:         undefined;
   ProposalDetail: { id: string; jobId: string };
+  JobProposals:   { jobId: string; jobTitle?: string };
+  JobProgress:    { jobId: string; jobTitle?: string };
 };
 
 export type ServicesStackParamList = {

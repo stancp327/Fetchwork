@@ -233,6 +233,13 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         {isOwnJob && (
           <Card style={styles.section}>
             <Text style={styles.sectionLabel}>Actions</Text>
+            <Button
+              label="View Proposals"
+              onPress={() => navigation.navigate('JobProposals', { jobId: id, jobTitle: job.title })}
+              variant="secondary"
+              fullWidth
+              style={{ marginBottom: 8 }}
+            />
             {canFund && (
               <Button label={funding ? 'Processing...' : '💳 Fund Job (Secure Payment)'}
                 onPress={handleFundJob} loading={funding} fullWidth style={{ marginBottom: 8 }} />

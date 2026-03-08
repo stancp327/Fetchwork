@@ -51,4 +51,10 @@ export const jobsApi = {
 
   verifyPromotion: (jobId: string, proposalId: string, paymentIntentId: string) =>
     client.post(`/api/jobs/${jobId}/proposals/${proposalId}/promote/verify`, { paymentIntentId }).then(r => r.data),
+
+  completeMilestone: (jobId: string, milestoneId: string) =>
+    client.post(`/api/jobs/${jobId}/milestones/${milestoneId}/complete`).then(r => r.data),
+
+  approveMilestone: (jobId: string, milestoneId: string) =>
+    client.post(`/api/jobs/${jobId}/milestones/${milestoneId}/approve`).then(r => r.data),
 };
