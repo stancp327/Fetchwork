@@ -1,5 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
+const net = require('net');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const Call = require('../models/Call');
@@ -38,6 +39,66 @@ router.get('/turn-credentials', authenticateToken, (req, res) => {
       },
     ],
     ttl,
+  });
+});
+
+// GET /api/calls/admin/test-turn — admin TURN diagnostics
+router.get('/admin/test-turn', authenticateToken, async (req, res) => {
+  const user = req.user;
+  if (!user.isAdmin && user.role !== 'admin' && !user.isAdminPromoted) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const secret = process.env.TURN_AUTH_SECRET || '';
+  const urlsRaw = process.env.TURN_URLS || '';
+  const turnUrls = urlsRaw.split(',').map(u => u.trim()).filter(Boolean);
+  const ttl = Number(process.env.TURN_TTL_SECONDS || 86400);
+
+  // Generate sample credentials
+  const expiresAt = Math.floor(Date.now() / 1000) + ttl;
+  const sampleUsername = `${expiresAt}:diagnostics`;
+  const sampleCredential = secret
+    ? crypto.createHmac('sha1', secret).update(sampleUsername).digest('base64')
+    : '';
+
+  // TCP reachability check for each TURN URL
+  const parseTurnUrl = (url) => {
+    // turn:host:port?transport=x  or  turn:host:port
+    const m = url.match(/^turns?:([^:?]+):(\d+)/);
+    if (m) return { host: m[1], port: parseInt(m[2], 10) };
+    // turn:host (default port 3478)
+    const m2 = url.match(/^turns?:([^:?]+)/);
+    if (m2) return { host: m2[1], port: url.startsWith('turns:') ? 5349 : 3478 };
+    return null;
+  };
+
+  const checkTcp = (host, port) =>
+    new Promise((resolve) => {
+      const sock = net.createConnection({ host, port, timeout: 3000 }, () => {
+        sock.destroy();
+        resolve(true);
+      });
+      sock.on('error', () => { sock.destroy(); resolve(false); });
+      sock.on('timeout', () => { sock.destroy(); resolve(false); });
+    });
+
+  const reachability = await Promise.all(
+    turnUrls.map(async (url) => {
+      const parsed = parseTurnUrl(url);
+      if (!parsed) return { url, host: null, port: null, tcpOpen: false };
+      const tcpOpen = await checkTcp(parsed.host, parsed.port);
+      return { url, host: parsed.host, port: parsed.port, tcpOpen };
+    })
+  );
+
+  res.json({
+    turn_auth_secret_set: !!secret,
+    turn_urls_set: turnUrls.length > 0,
+    turn_urls: turnUrls,
+    ttl_seconds: ttl,
+    sample_credentials: { username: sampleUsername, credential: sampleCredential },
+    reachability,
+    timestamp: new Date().toISOString(),
   });
 });
 

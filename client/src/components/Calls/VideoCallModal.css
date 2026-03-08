@@ -208,6 +208,46 @@
   font-size: 1.75rem;
 }
 
+/* Debug panel */
+.videocall-debug-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 4;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.videocall-debug-toggle:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.videocall-debug-panel {
+  position: absolute;
+  top: 3rem;
+  right: 1rem;
+  z-index: 4;
+  background: rgba(0, 0, 0, 0.75);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  min-width: 200px;
+  backdrop-filter: blur(8px);
+}
+
+.videocall-debug-panel strong {
+  color: #94a3b8;
+  margin-right: 0.25rem;
+}
+
 /* Mobile responsive */
 @media (min-width: 768px) {
   .videocall-local {

@@ -38,6 +38,8 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
   const [isCameraOff, setIsCameraOff] = useState(type === 'audio');
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [remoteMediaState, setRemoteMediaState] = useState({ audio: true, video: type === 'video' });
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({ iceState: 'new', candidateType: '—', turnStatus: '—' });
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -402,6 +404,41 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
     return () => clearTimeout(t);
   }, [callStatus, callId, socket, finalizeAndClose]);
 
+  // Debug panel: poll getStats() every 5s when active and panel is open
+  useEffect(() => {
+    if (callStatus !== 'active' || !showDebugPanel) return undefined;
+    const poll = async () => {
+      const pc = pcRef.current;
+      if (!pc?.getStats) return;
+      try {
+        const stats = await pc.getStats();
+        let selectedPair = null;
+        let localCand = null;
+        stats.forEach((report) => {
+          if (report.type === 'transport' && report.selectedCandidatePairId) {
+            selectedPair = stats.get(report.selectedCandidatePairId) || selectedPair;
+          }
+          if (!selectedPair && report.type === 'candidate-pair' && report.state === 'succeeded' && report.nominated) {
+            selectedPair = report;
+          }
+        });
+        if (selectedPair?.localCandidateId) {
+          localCand = stats.get(selectedPair.localCandidateId);
+        }
+        const cType = localCand?.candidateType || '—';
+        const turnActive = cType === 'relay';
+        setDebugInfo({
+          iceState: pc.iceConnectionState || 'unknown',
+          candidateType: cType,
+          turnStatus: turnActive ? 'relay (TURN active)' : cType === '—' ? '—' : `${cType} (no TURN)`,
+        });
+      } catch { /* ignore stats errors */ }
+    };
+    poll();
+    const id = setInterval(poll, 5000);
+    return () => clearInterval(id);
+  }, [callStatus, showDebugPanel]);
+
   const handleEndCall = useCallback(async () => {
     socket?.emit('call:end', { callId });
     await finalizeAndClose('ended');
@@ -497,6 +534,25 @@ const VideoCallModal = ({ callId, remoteUser, type = 'video', isIncoming = false
         {/* Duration */}
         {callStatus === 'active' && (
           <div className="videocall-duration">{formatDuration(duration)}</div>
+        )}
+
+        {/* Connection Info debug panel */}
+        {callStatus === 'active' && (
+          <>
+            <button
+              className="videocall-debug-toggle"
+              onClick={() => setShowDebugPanel(v => !v)}
+            >
+              {showDebugPanel ? 'Hide' : 'Connection Info'}
+            </button>
+            {showDebugPanel && (
+              <div className="videocall-debug-panel">
+                <div><strong>ICE state:</strong> {debugInfo.iceState}</div>
+                <div><strong>Candidate:</strong> {debugInfo.candidateType}</div>
+                <div><strong>TURN:</strong> {debugInfo.turnStatus}</div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Controls */}
