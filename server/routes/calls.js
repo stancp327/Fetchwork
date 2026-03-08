@@ -167,7 +167,9 @@ router.post('/:id/relay-credentials', authenticateToken, async (req, res) => {
 
     const ttlSeconds = Number(process.env.TURN_TTL_SECONDS || 86400); // 24h — was 120s which caused mid-call credential expiry
     const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
-    const username = `${expiresAt}:${userId}:${req.params.id}`;
+    // Simplified username: {expiresAt}:{userId} — coturn REST auth only needs timestamp:anystring
+    // Previously included callId as third segment; removed to eliminate ambiguity (ChatGPT rec)
+    const username = `${expiresAt}:${userId}`;
     const credential = crypto
       .createHmac('sha1', process.env.TURN_AUTH_SECRET)
       .update(username)
