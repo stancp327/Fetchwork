@@ -77,8 +77,11 @@ class StripeService {
    * @param {string} currency     - Default 'usd'
    * @param {object} metadata     - jobId, clientId, freelancerId etc.
    */
-  async chargeForJob(amount, currency = 'usd', metadata = {}) {
+  async chargeForJob(amount, currency = 'usd', metadata = {}, options = {}) {
     this._ensureStripe();
+    const requestOptions = options.idempotencyKey
+      ? { idempotencyKey: options.idempotencyKey }
+      : {};
     return stripe.paymentIntents.create({
       amount:   Math.round(amount * 100), // cents
       currency,
@@ -86,7 +89,7 @@ class StripeService {
       // Stripe chooses the best payment methods per user (cards, Apple Pay,
       // Google Pay, bank transfers, etc.) — no hardcoded payment_method_types.
       automatic_payment_methods: { enabled: true },
-    });
+    }, requestOptions);
   }
 
   /**
@@ -205,10 +208,13 @@ class StripeService {
    * @param {string} pmId         - saved payment method ID
    * @param {object} metadata
    */
-  async chargeWithSavedMethod(amount, customerId, pmId, metadata = {}) {
+  async chargeWithSavedMethod(amount, customerId, pmId, metadata = {}, options = {}) {
     this._ensureStripe();
     // Ownership check — prevents a user from charging another user's card
     await this.verifyPMOwnership(pmId, customerId);
+    const requestOptions = options.idempotencyKey
+      ? { idempotencyKey: options.idempotencyKey }
+      : {};
     return stripe.paymentIntents.create({
       amount:         Math.round(amount * 100),
       currency:       'usd',
@@ -217,7 +223,7 @@ class StripeService {
       confirm:        true,
       off_session:    false, // user is present
       metadata,
-    });
+    }, requestOptions);
   }
 
   // ── PaymentIntent Lookup ─────────────────────────────────────────

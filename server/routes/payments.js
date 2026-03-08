@@ -428,6 +428,14 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
 });
 
 // ── POST /tip — client sends a bonus tip to freelancer ──────────
+//
+// Fee policy: no Fetchwork platform fee on tips — freelancer gets 100% of the
+// tip amount. Stripe's processing fee (2.9% + $0.30) is passed to the client
+// by charging (tipAmount + stripeFee) so Fetchwork breaks even.
+//
+// Math: to net `tipAmount` after Stripe takes 2.9% + $0.30:
+//   chargeAmount = ceil((tipAmount + 0.30) / 0.971 * 100) / 100
+//
 router.post('/tip', authenticateToken, async (req, res) => {
   try {
     const { jobId, amount, paymentMethodId } = req.body;
@@ -453,11 +461,23 @@ router.post('/tip', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Freelancer has not connected a bank account yet' });
     }
 
+    // Pass Stripe processing fee to client so freelancer gets full tip amount.
+    // Stripe rate: 2.9% + $0.30. Solve for chargeAmount where:
+    //   chargeAmount - (chargeAmount * 0.029 + 0.30) = amount
+    //   chargeAmount = (amount + 0.30) / 0.971
+    const stripeFee    = Math.ceil(((amount + 0.30) / 0.971 - amount) * 100) / 100;
+    const chargeAmount = Math.round((amount + stripeFee) * 100) / 100;
+
+    // Idempotency key: jobId + clientId + tip amount — prevents double-charges on retry
+    const idempotencyKey = `tip_${jobId}_${req.user.userId}_${Math.round(amount * 100)}`;
+
     const metadata = {
       jobId:        String(jobId),
       clientId:     String(req.user.userId),
       freelancerId,
       type:         'tip',
+      tipAmount:    String(amount),
+      stripeFee:    String(stripeFee),
     };
 
     let paymentIntent;
@@ -466,20 +486,24 @@ router.post('/tip', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'No saved payment methods on file' });
       }
       paymentIntent = await stripeService.chargeWithSavedMethod(
-        amount, clientUser.stripeCustomerId, paymentMethodId, metadata
+        chargeAmount, clientUser.stripeCustomerId, paymentMethodId, metadata,
+        { idempotencyKey }
       );
     } else {
-      paymentIntent = await stripeService.chargeForJob(amount, 'usd', metadata);
+      paymentIntent = await stripeService.chargeForJob(
+        chargeAmount, 'usd', metadata,
+        { idempotencyKey }
+      );
     }
 
-    // Record payment
+    // Record payment — amount = what freelancer receives, chargeAmount = what client pays
     const payment = await Payment.create({
       job:         jobId,
       client:      req.user.userId,
       freelancer:  freelancerId,
-      amount,
-      fees:        { platform: 0, payment: 0, total: 0 }, // tips are fee-free
-      netAmount:   amount,
+      amount:      chargeAmount,                           // client charge (tip + stripe fee)
+      fees:        { platform: 0, payment: stripeFee, total: stripeFee }, // Stripe fee, no platform cut
+      netAmount:   amount,                                 // freelancer receives full tip
       type:        'bonus',
       status:      paymentMethodId ? 'processing' : 'pending',
       paymentMethod: 'stripe',
