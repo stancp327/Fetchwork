@@ -1,0 +1,328 @@
+/* ── Team Wallet — Mobile-first ──────────────────────────────── */
+.tw-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ── Balance Card ────────────────────────────────────────────── */
+.tw-balance-card {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.tw-balance-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+}
+
+.tw-balance-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: var(--font-weight-medium);
+}
+
+.tw-balance-amount {
+  font-size: 2.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.1;
+  margin-bottom: var(--space-md);
+}
+
+.tw-balance-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+/* ── Spend Summary ───────────────────────────────────────────── */
+.tw-spend-summary {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.tw-spend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.tw-spend-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.tw-spend-values {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.tw-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.tw-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transition: width 0.4s ease;
+}
+
+.tw-progress-fill.tw-warning {
+  background: var(--color-warning, #f59e0b);
+}
+
+.tw-progress-fill.tw-danger {
+  background: var(--color-danger);
+}
+
+/* ── Section Card ────────────────────────────────────────────── */
+.tw-section {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.tw-section-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+/* ── Table ────────────────────────────────────────────────────── */
+.tw-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tw-table th {
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: var(--space-sm) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tw-table td {
+  padding: var(--space-sm) var(--space-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light, var(--color-border));
+}
+
+.tw-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Transaction List ────────────────────────────────────────── */
+.tw-tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tw-tx-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border-light, var(--color-border));
+  gap: var(--space-sm);
+}
+
+.tw-tx-item:last-child {
+  border-bottom: none;
+}
+
+.tw-tx-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tw-tx-desc {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tw-tx-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.tw-tx-amount {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.tw-tx-amount.tw-positive {
+  color: var(--color-success);
+}
+
+.tw-tx-amount.tw-negative {
+  color: var(--color-danger);
+}
+
+/* ── Approval Card ───────────────────────────────────────────── */
+.tw-approval-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.tw-approval-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+}
+
+.tw-approval-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.tw-approval-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.tw-approval-amount {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.tw-approval-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.tw-approval-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* ── Modal ───────────────────────────────────────────────────── */
+.tw-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md);
+}
+
+.tw-modal {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-xl);
+}
+
+.tw-modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.tw-modal-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  margin-bottom: var(--space-md);
+  box-sizing: border-box;
+}
+
+.tw-modal-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.tw-modal-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+/* ── Empty State ─────────────────────────────────────────────── */
+.tw-empty {
+  text-align: center;
+  padding: var(--space-lg) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Tablet+ ─────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .tw-balance-amount {
+    font-size: 3rem;
+  }
+
+  .tw-approval-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tw-approval-top {
+    flex: 1;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .tw-progress-fill {
+    transition: none;
+  }
+}

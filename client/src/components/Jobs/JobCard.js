@@ -38,6 +38,18 @@ const JobCard = ({ job }) => {
       <div className="card-header">
         <div>
           <h3 className="card-title">{job.title}</h3>
+          {(job.team || job.teamId) && (
+            <div className="jc-team-badge">
+              <span className="jc-team-badge-icon">
+                {job.team?.logo ? (
+                  <img src={job.team.logo} alt="" className="jc-team-badge-logo" />
+                ) : (
+                  (job.team?.name || 'T')[0]
+                )}
+              </span>
+              <span>Posted by {job.team?.name || 'Company'}</span>
+            </div>
+          )}
           <div className="card-meta">
             Posted by {job.client.firstName} {job.client.lastName} <TrustBadges user={job.client} size="xs" /> • {formatBudget(job.budget)} • {formatDuration(job.duration)}
           </div>

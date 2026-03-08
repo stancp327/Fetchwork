@@ -1,0 +1,478 @@
+/* ── Agency Public Profile — Mobile-first ────────────────────── */
+/* Premium, polished, client-facing agency page                   */
+
+.agp-page {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+}
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+.agp-hero {
+  position: relative;
+  padding: var(--space-2xl) var(--space-lg) var(--space-xl);
+  background: var(--gradient-surface);
+  border-bottom: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.agp-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+}
+
+.agp-hero-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-lg);
+}
+
+.agp-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-xl);
+  object-fit: cover;
+  border: 3px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.agp-logo-placeholder {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-xl);
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-lg);
+}
+
+.agp-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.agp-name {
+  font-size: var(--font-size-2xl, 1.75rem);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.agp-tagline {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  max-width: 600px;
+  margin: 0;
+}
+
+.agp-website {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.agp-website:hover {
+  text-decoration: underline;
+}
+
+/* ── Specialties Chips ───────────────────────────────────────── */
+.agp-specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  justify-content: center;
+}
+
+.agp-chip {
+  background: var(--color-primary-bg, rgba(99, 102, 241, 0.1));
+  color: var(--color-primary);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+/* ── Stats Row ───────────────────────────────────────────────── */
+.agp-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-lg);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.agp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.agp-stat-value {
+  font-size: var(--font-size-xl, 1.25rem);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.agp-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Content Sections ────────────────────────────────────────── */
+.agp-content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg) var(--space-2xl);
+}
+
+.agp-section {
+  margin-bottom: var(--space-2xl);
+}
+
+.agp-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-lg) 0;
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--color-border);
+}
+
+/* ── Members Grid ────────────────────────────────────────────── */
+.agp-members-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+.agp-member-card {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  transition: box-shadow 0.2s ease;
+}
+
+.agp-member-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.agp-member-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--color-border);
+}
+
+.agp-member-avatar-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.agp-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.agp-member-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.agp-member-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.agp-member-rating {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning, #f59e0b);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── Portfolio Grid ──────────────────────────────────────────── */
+.agp-portfolio-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+.agp-portfolio-card {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.agp-portfolio-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.agp-portfolio-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.agp-portfolio-body {
+  padding: var(--space-md);
+}
+
+.agp-portfolio-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.agp-portfolio-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.agp-portfolio-link {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.agp-portfolio-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Services List ───────────────────────────────────────────── */
+.agp-services-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.agp-service-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.agp-service-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* ── Reviews ─────────────────────────────────────────────────── */
+.agp-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.agp-review-card {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.agp-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.agp-review-author {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.agp-review-stars {
+  color: var(--color-warning, #f59e0b);
+  font-size: var(--font-size-sm);
+}
+
+.agp-review-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* ── CTA Section ─────────────────────────────────────────────── */
+.agp-cta {
+  background: var(--gradient-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+}
+
+.agp-cta-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.agp-cta-sub {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-lg) 0;
+}
+
+.agp-cta-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* ── Loading / Empty ─────────────────────────────────────────── */
+.agp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+}
+
+.agp-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: var(--space-md);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-lg);
+}
+
+.agp-not-found h2 {
+  font-size: var(--font-size-xl, 1.25rem);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.agp-not-found p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* ── Tablet (600px+) ─────────────────────────────────────────── */
+@media (min-width: 600px) {
+  .agp-members-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .agp-portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .agp-cta-buttons {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+/* ── Desktop (768px+) ────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .agp-hero {
+    padding: var(--space-2xl) var(--space-xl);
+  }
+
+  .agp-hero-inner {
+    flex-direction: row;
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .agp-specialties {
+    justify-content: flex-start;
+  }
+
+  .agp-logo,
+  .agp-logo-placeholder {
+    width: 112px;
+    height: 112px;
+    font-size: 3rem;
+  }
+
+  .agp-name {
+    font-size: 2rem;
+  }
+
+  .agp-members-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .agp-portfolio-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .agp-portfolio-img {
+    height: 200px;
+  }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .agp-portfolio-card,
+  .agp-member-card {
+    transition: none;
+  }
+}

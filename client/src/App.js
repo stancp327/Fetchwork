@@ -72,7 +72,7 @@ const BillingSuccess       = React.lazy(() => import('./components/Billing/Billi
 const WalletPage           = React.lazy(() => import('./components/Billing/WalletPage'));
 const TeamsPage            = React.lazy(() => import('./components/Teams/TeamsPage'));
 const TeamDetail           = React.lazy(() => import('./components/Teams/TeamDetail'));
-const AgencyProfile        = React.lazy(() => import('./components/Teams/AgencyProfile'));
+const AgencyProfile        = React.lazy(() => import('./components/Teams/AgencyPublicProfile'));
 const AgencyDirectory      = React.lazy(() => import('./components/Teams/AgencyDirectory'));
 const UserAnalytics        = React.lazy(() => import('./components/Analytics/UserAnalytics'));
 const SpendDashboard       = React.lazy(() => import('./components/Analytics/SpendDashboard'));
