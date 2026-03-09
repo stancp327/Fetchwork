@@ -14,8 +14,7 @@ router.get('/', async (req, res) => {
 
     // Find teams where user is active member
     const myTeams = await Team.find({
-      'members.user': userId,
-      'members.status': 'active',
+      members: { $elemMatch: { user: userId, status: 'active' } },
       type: 'agency',
     }).select('_id').lean();
     const myTeamIds = myTeams.map(t => t._id);

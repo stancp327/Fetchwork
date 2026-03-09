@@ -43,7 +43,7 @@ router.get('/', async (req, res) => {
 
     // Teams the user is an active member of that belong to an org
     const memberTeams = await Team.find(
-      { 'members.user': requesterId, 'members.status': 'active', organization: { $ne: null }, isActive: true },
+      { members: { $elemMatch: { user: requesterId, status: 'active' } }, organization: { $ne: null }, isActive: true },
       'organization'
     ).lean();
     const memberOrgIds = [...new Set(memberTeams.map(t => String(t.organization)))];

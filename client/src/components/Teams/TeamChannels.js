@@ -7,20 +7,29 @@ export default function TeamChannels({ teamId, teamMembers = [] }) {
   const [channels, setChannels]     = useState([]);
   const [active, setActive]         = useState(null);
   const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm]             = useState({ name: '', description: '', memberIds: [] });
   const [saving, setSaving]         = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  const activeRef = React.useRef(active);
+  activeRef.current = active;
 
   const load = useCallback(async () => {
     if (!teamId) return;
     setLoading(true);
+    setError('');
     try {
       const data = await apiRequest(`/api/team-channels/${teamId}`);
       setChannels(data.channels || []);
-      if (!active && data.channels?.length) setActive(data.channels[0]);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
-  }, [teamId, active]);
+      if (!activeRef.current && data.channels?.length) setActive(data.channels[0]);
+    } catch (err) {
+      setError(err.message || 'Failed to load channels');
+    } finally {
+      setLoading(false);
+    }
+  }, [teamId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -28,6 +37,7 @@ export default function TeamChannels({ teamId, teamMembers = [] }) {
     e.preventDefault();
     if (!form.name.trim() || saving) return;
     setSaving(true);
+    setCreateError('');
     try {
       const data = await apiRequest('/api/team-channels', {
         method: 'POST',
@@ -37,8 +47,11 @@ export default function TeamChannels({ teamId, teamMembers = [] }) {
       setActive(data.channel);
       setShowCreate(false);
       setForm({ name: '', description: '', memberIds: [] });
-    } catch { /* silent */ }
-    finally { setSaving(false); }
+    } catch (err) {
+      setCreateError(err.message || 'Failed to create channel');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleMember = (id) => {
@@ -58,7 +71,12 @@ export default function TeamChannels({ teamId, teamMembers = [] }) {
         </div>
 
         {loading ? (
-          <p className="tc-loading">Loading…</p>
+          <p className="tc-loading">Loading...</p>
+        ) : error ? (
+          <div className="tc-error">
+            <p>{error}</p>
+            <button className="tc-empty-link" onClick={load}>Retry</button>
+          </div>
         ) : channels.length === 0 ? (
           <p className="tc-empty">No channels yet.<br /><button className="tc-empty-link" onClick={() => setShowCreate(true)}>Create one</button></p>
         ) : (
@@ -130,6 +148,7 @@ export default function TeamChannels({ teamId, teamMembers = [] }) {
                   </div>
                 </>
               )}
+              {createError && <p className="tc-create-error">{createError}</p>}
               <div className="tc-modal-actions">
                 <button type="button" className="tc-btn-cancel" onClick={() => setShowCreate(false)}>Cancel</button>
                 <button type="submit" className="tc-btn-primary" disabled={!form.name.trim() || saving}>

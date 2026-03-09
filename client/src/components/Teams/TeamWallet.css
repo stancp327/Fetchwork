@@ -298,9 +298,67 @@
 /* ── Empty State ─────────────────────────────────────────────── */
 .tw-empty {
   text-align: center;
-  padding: var(--space-lg) 0;
+  padding: var(--space-xl) var(--space-md);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.tw-retry-btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tw-retry-btn:hover {
+  background: var(--color-bg-hover);
+}
+
+/* ── Loading skeleton ── */
+.tw-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+}
+
+.tw-skeleton-card {
+  height: 160px;
+  background: var(--color-bg-muted, #e5e7eb);
+  border-radius: var(--radius-lg);
+  animation: tw-pulse 1.5s ease-in-out infinite;
+}
+
+.tw-skeleton-card--short {
+  height: 80px;
+}
+
+@keyframes tw-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ── Error/success banners ── */
+.tw-error-banner {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-danger-light, #fef2f2);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.tw-fund-error {
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-sm);
 }
 
 /* ── Tablet+ ─────────────────────────────────────────────────── */

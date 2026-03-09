@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import './TeamSettings.css';
@@ -10,7 +10,7 @@ export default function TeamSettings({ teamId, team, onTeamUpdated, onTeamDelete
   const isOwner = currentUserRole === 'owner';
   const canEdit = ['owner', 'admin'].includes(currentUserRole);
 
-  // Edit form
+  // Edit form — sync when team prop changes
   const [form, setForm] = useState({
     name: team?.name || '',
     description: team?.description || '',
@@ -18,6 +18,25 @@ export default function TeamSettings({ teamId, team, onTeamUpdated, onTeamDelete
     website: team?.website || '',
     billingEmail: team?.billingEmail || '',
   });
+
+  useEffect(() => {
+    if (team) {
+      setForm({
+        name: team.name || '',
+        description: team.description || '',
+        logo: team.logo || '',
+        website: team.website || '',
+        billingEmail: team.billingEmail || '',
+      });
+      setSpendControls({
+        monthlyCapEnabled: team.spendControls?.monthlyCapEnabled || false,
+        monthlyCap: team.spendControls?.monthlyCap || 0,
+        alertThreshold: team.spendControls?.alertThreshold ?? 0.8,
+      });
+      setApprovalEnabled((team.approvalThreshold || 0) > 0);
+      setApprovalAmount(team.approvalThreshold || 0);
+    }
+  }, [team]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
@@ -79,7 +98,7 @@ export default function TeamSettings({ teamId, team, onTeamUpdated, onTeamDelete
     if (!transferTarget || transferring) return;
     setTransferring(true);
     try {
-      const data = await apiRequest(`/api/teams/${teamId}/transfer`, {
+      const data = await apiRequest(`/api/teams/${teamId}/transfer-ownership`, {
         method: 'POST',
         body: JSON.stringify({ targetUserId: transferTarget }),
       });
