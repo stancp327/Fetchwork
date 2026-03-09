@@ -1,0 +1,206 @@
+/* ── AgencyClients ── prefix: ac- ── */
+
+.ac-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 24px);
+}
+
+.ac-title {
+  font-size: var(--font-size-xl, 1.25rem);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* ── Sections ── */
+.ac-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.ac-section-title {
+  font-size: var(--font-size-md, 1rem);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* ── Cards ── */
+.ac-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.ac-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+  padding: var(--space-md, 16px);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+@media (min-width: 640px) {
+  .ac-card {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.ac-card-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  flex: 1;
+  min-width: 0;
+}
+
+.ac-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ac-avatar-initial {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-primary-light, #e0e7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--font-size-md, 1rem);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.ac-card-details {
+  min-width: 0;
+}
+
+.ac-card-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-primary);
+}
+
+.ac-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.ac-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.ac-badge-preferred {
+  background: var(--color-info-bg, #dbeafe);
+  color: var(--color-info, #2563eb);
+}
+
+.ac-badge-retainer {
+  background: var(--color-success-bg, #d1fae5);
+  color: var(--color-success, #059669);
+}
+
+.ac-badge-one_time {
+  background: var(--color-bg-secondary, #f3f4f6);
+  color: var(--color-text-secondary);
+}
+
+.ac-badge-pending {
+  background: var(--color-warning-bg, #fef3c7);
+  color: var(--color-warning, #d97706);
+}
+
+.ac-retainer-summary {
+  margin-top: var(--space-xs, 4px);
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary);
+}
+
+.ac-retainer-summary span {
+  margin-right: var(--space-sm, 8px);
+}
+
+/* ── Actions ── */
+.ac-card-actions {
+  display: flex;
+  gap: var(--space-xs, 4px);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.ac-btn {
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs, 0.75rem);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.ac-btn:hover {
+  background: var(--color-bg-secondary, #f3f4f6);
+}
+
+.ac-btn-accept {
+  background: var(--color-success, #059669);
+  color: var(--color-primary-contrast, #fff);
+  border-color: var(--color-success, #059669);
+}
+
+.ac-btn-accept:hover {
+  opacity: 0.9;
+  background: var(--color-success, #059669);
+}
+
+.ac-btn-decline {
+  color: var(--color-error, #dc2626);
+  border-color: var(--color-error, #dc2626);
+}
+
+.ac-btn-decline:hover {
+  background: var(--color-error-bg, #fee2e2);
+}
+
+/* ── States ── */
+.ac-empty {
+  text-align: center;
+  padding: var(--space-xl, 32px);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.ac-loading {
+  text-align: center;
+  padding: var(--space-xl, 32px);
+  color: var(--color-text-secondary);
+}
+
+.ac-error {
+  padding: var(--space-md, 16px);
+  background: var(--color-error-bg, #fee2e2);
+  color: var(--color-error, #dc2626);
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+}

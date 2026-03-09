@@ -1,5 +1,6 @@
 const { geocode, nearSphereQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
+const Team = require('../models/Team');
 
 function parsePagination(query) {
   const page = parseInt(query.page, 10) || 1;
@@ -42,6 +43,20 @@ async function buildServiceFilters(query) {
       if (!filters['location.locationType']) {
         filters['location.locationType'] = { $in: ['local', 'hybrid'] };
       }
+    }
+  }
+
+  // Team member filter: return services owned by members of a specific team
+  if (query.teamId) {
+    const team = await Team.findById(query.teamId).select('members').lean();
+    if (team) {
+      const memberIds = (team.members || [])
+        .filter(m => m.status === 'active')
+        .map(m => m.user);
+      filters.freelancer = { $in: memberIds };
+      // When fetching for team management, include non-active statuses
+      delete filters.status;
+      delete filters.isActive;
     }
   }
 

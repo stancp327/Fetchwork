@@ -41,6 +41,9 @@ const notificationSchema = new mongoose.Schema({
       'team_invitation',
       'team_invitation_accepted',
       'team_invitation_declined',
+      // Agency relationships
+      'agency_relationship_invite',
+      'agency_relationship_accepted',
       // System
       'system',
       'system_announcement',
