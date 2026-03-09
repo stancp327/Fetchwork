@@ -226,7 +226,8 @@ router.get('/', validateQueryParams, async (req, res) => {
         [jobs, total] = await Promise.all([
           Job.find(filters)
             .populate('client', 'firstName lastName profilePicture rating totalJobs')
-            .sort(sortOptions).skip(skip).limit(limit),
+            .sort(sortOptions).skip(skip).limit(limit)
+            .lean(),
           Job.countDocuments(filters)
         ]);
       }
@@ -236,7 +237,8 @@ router.get('/', validateQueryParams, async (req, res) => {
           .populate('client', 'firstName lastName profilePicture rating totalJobs')
           .sort(sortOptions)
           .skip(skip)
-          .limit(limit),
+          .limit(limit)
+          .lean(),
         Job.countDocuments(filters)
       ]);
     }

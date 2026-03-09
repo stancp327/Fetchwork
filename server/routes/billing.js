@@ -28,6 +28,9 @@ const ProcessedWebhookEvent   = require('../models/ProcessedWebhookEvent');
 const { parsePositiveAmount, createWalletCredit } = require('./billing.helpers');
 const { getPlanLimits }       = require('../middleware/entitlements');
 
+const rateLimit = require('express-rate-limit');
+const billingLimiter = rateLimit({ windowMs: 60_000, max: 10, message: { error: 'Too many billing requests, please try again later' }, standardHeaders: true, legacyHeaders: false });
+
 const BILLING_WEBHOOK_SECRET = process.env.STRIPE_BILLING_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
 
 // ── GET /api/billing/plans ──────────────────────────────────────
@@ -50,7 +53,7 @@ router.get('/status', authenticateToken, async (req, res) => {
   try {
     const sub = await UserSubscription
       .findOne({ user: req.user.userId, status: { $in: ['active', 'trialing', 'past_due'] } })
-      .populate('plan')
+      .populate('plan', 'name tier price limits features stripeProductId')
       .lean();
 
     if (!sub) {
@@ -83,7 +86,7 @@ router.get('/status', authenticateToken, async (req, res) => {
 
 // ── POST /api/billing/subscribe ─────────────────────────────────
 // Creates a Stripe Checkout session to upgrade to a paid plan
-router.post('/subscribe', authenticateToken, async (req, res) => {
+router.post('/subscribe', billingLimiter, authenticateToken, async (req, res) => {
   try {
     const { planSlug } = req.body;
     if (!planSlug) return res.status(400).json({ error: 'planSlug is required' });
@@ -567,7 +570,7 @@ router.post('/wallet/add', authenticateToken, async (req, res) => {
     // We use analyticsLevel as a proxy for tier; free users have 'basic'
     const sub = await UserSubscription
       .findOne({ user: req.user.userId, status: { $in: ['active', 'trialing'] } })
-      .populate('plan').lean();
+      .populate('plan', 'name tier price limits features stripeProductId').lean();
     const tier = sub?.plan?.tier || 'free';
 
     if (tier === 'free') {

@@ -340,6 +340,7 @@ jobSchema.index({ client: 1, isActive: 1, createdAt: -1 });
 jobSchema.index({ freelancer: 1, isActive: 1, status: 1 });
 // Archive index
 jobSchema.index({ isArchived: 1, archivedAt: -1 });
+jobSchema.index({ team: 1, status: 1, createdAt: -1 });
 
 jobSchema.pre('save', function(next) {
   if (this.isModified('proposals')) {

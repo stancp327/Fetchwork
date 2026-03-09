@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const emailWorkflowService = require('../services/emailWorkflowService');
 
 /**
@@ -22,7 +23,9 @@ router.post('/process-onboarding', async (req, res) => {
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
 
-  if (token !== secret) {
+  const tokenBuf = Buffer.from(token.padEnd(secret.length));
+  const secretBuf = Buffer.from(secret);
+  if (tokenBuf.length !== secretBuf.length || !crypto.timingSafeEqual(tokenBuf, secretBuf)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

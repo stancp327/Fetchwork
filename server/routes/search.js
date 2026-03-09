@@ -3,10 +3,12 @@ const router = express.Router();
 const Job = require('../models/Job');
 const User = require('../models/User');
 const { trackEvent } = require('../middleware/analytics');
+const rateLimit = require('express-rate-limit');
+const searchLimiter = rateLimit({ windowMs: 60_000, max: 30, message: { error: 'Too many search requests, please try again later' }, standardHeaders: true, legacyHeaders: false });
 
 // Backward-compatible search root endpoint
 // GET /api/search?q=design&limit=10
-router.get('/', async (req, res) => {
+router.get('/', searchLimiter, async (req, res) => {
   trackEvent('searches');
   try {
     const q = (req.query.q || req.query.query || '').trim();
@@ -53,7 +55,8 @@ router.get('/suggestions', async (req, res) => {
     }
 
     const suggestions = [];
-    const regex = new RegExp(query, 'i');
+    const safeQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(safeQ, 'i');
 
     const jobTitles = await Job.distinct('title', {
       title: regex,

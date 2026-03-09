@@ -171,7 +171,7 @@ class RecurringSeriesService {
       where: { bookingId: booking.id },
     });
 
-    const created = [];
+    const occurrenceData = [];
     let nextDate = this._nextDate(latestDate, series);
     let occurrenceNo = currentCount + 1;
 
@@ -195,43 +195,43 @@ class RecurringSeriesService {
       const startAtUtc = DateTime.fromISO(`${dateStr}T${series.startTime}`, { zone: tz }).toUTC().toJSDate();
       const endAtUtc   = DateTime.fromISO(`${dateStr}T${series.endTime}`,   { zone: tz }).toUTC().toJSDate();
 
-      const occurrence = await prisma.bookingOccurrence.create({
-        data: {
-          bookingId: booking.id,
-          seriesId,
-          occurrenceNo,
-          clientId:     booking.clientId,
-          freelancerId: booking.freelancerId,
-          startAtUtc,
-          endAtUtc,
-          timezone:             tz,
-          localStartWallclock:  `${dateStr}T${series.startTime}`,
-          localEndWallclock:    `${dateStr}T${series.endTime}`,
-          status:               'confirmed',
-        },
+      occurrenceData.push({
+        bookingId: booking.id,
+        seriesId,
+        occurrenceNo,
+        clientId:     booking.clientId,
+        freelancerId: booking.freelancerId,
+        startAtUtc,
+        endAtUtc,
+        timezone:             tz,
+        localStartWallclock:  `${dateStr}T${series.startTime}`,
+        localEndWallclock:    `${dateStr}T${series.endTime}`,
+        status:               'confirmed',
       });
 
-      created.push(occurrence);
       occurrenceNo++;
       nextDate = this._nextDate(nextDate, series);
     }
 
-    // Update series generatedThrough + count
-    if (created.length > 0) {
+    // Single batch insert
+    if (occurrenceData.length > 0) {
+      await prisma.bookingOccurrence.createMany({ data: occurrenceData });
+
+      const lastEntry = occurrenceData[occurrenceData.length - 1];
       const lastDate = this._nextDate(
-        DateTime.fromJSDate(created[created.length - 1].startAtUtc).setZone(tz),
+        DateTime.fromJSDate(lastEntry.startAtUtc).setZone(tz),
         series
       );
       await prisma.recurringSeries.update({
         where: { id: seriesId },
         data: {
           generatedThrough: lastDate.minus({ days: 1 }).toFormat('yyyy-MM-dd'),
-          generatedCount:   { increment: created.length },
+          generatedCount:   { increment: occurrenceData.length },
         },
       });
     }
 
-    return created;
+    return occurrenceData;
   }
 
   /**
@@ -430,6 +430,7 @@ class RecurringSeriesService {
         ],
       },
       include: { booking: true },
+      take: 50,
     });
 
     const results = [];

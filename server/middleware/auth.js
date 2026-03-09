@@ -70,6 +70,13 @@ const authenticateAdmin = async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
+    // Token version check — ensures logout invalidates admin sessions
+    if (decoded.tokenVersion !== undefined && user.tokenVersion !== undefined) {
+      if (user.tokenVersion !== decoded.tokenVersion) {
+        return res.status(401).json({ error: 'Session expired. Please log in again.' });
+      }
+    }
+
     const isAdmin = user.isAdmin || user.role === 'admin';
     const isModerator = user.role === 'moderator';
     

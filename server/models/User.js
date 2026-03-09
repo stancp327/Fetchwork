@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
       // Password not required for OAuth users (Google/Facebook)
       return !this.googleId && !this.facebookId;
     },
-    minlength: [6, 'Password must be at least 6 characters long']
+    minlength: [8, 'Password must be at least 8 characters long']
   },
   firstName: {
     type: String,
@@ -336,7 +336,7 @@ userSchema.index({ username: 1 }, { unique: true, sparse: true });
 // Compound indexes for freelancer browse (accountType used in $or filter)
 userSchema.index({ accountType: 1 });
 userSchema.index({ accountType: 1, isActive: 1, rating: -1 }); // sorted freelancer browse
-
+userSchema.index({ 'idVerification.status': 1 });
 
 userSchema.pre('validate', function(next) {
   if (this.email) this.emailCanonical = canonicalizeEmail(this.email);

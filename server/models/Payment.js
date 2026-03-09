@@ -143,6 +143,8 @@ paymentSchema.index({ type: 1 });
 paymentSchema.index({ transactionId: 1 });
 paymentSchema.index({ createdAt: -1 });
 paymentSchema.index({ escrowReleaseDate: 1 });
+paymentSchema.index({ client: 1, status: 1, createdAt: -1 });
+paymentSchema.index({ freelancer: 1, status: 1, createdAt: -1 });
 
 paymentSchema.pre('save', function(next) {
   if (this.isModified('amount') || this.isModified('fees')) {

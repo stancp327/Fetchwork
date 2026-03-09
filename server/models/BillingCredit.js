@@ -25,5 +25,7 @@ billingCreditSchema.pre('save', function(next) {
 });
 
 billingCreditSchema.index({ user: 1, status: 1 });
+billingCreditSchema.index({ team: 1, createdAt: -1 });
+billingCreditSchema.index({ user: 1, usedOn: 1, usedAt: -1 });
 
 module.exports = mongoose.model('BillingCredit', billingCreditSchema);

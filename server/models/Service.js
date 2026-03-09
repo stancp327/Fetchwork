@@ -261,6 +261,8 @@ serviceSchema.index({ title: 'text', description: 'text' }); // service search
 // Archive index
 serviceSchema.index({ isArchived: 1, archivedAt: -1 });
 serviceSchema.index({ updatedAt: 1, isArchived: 1 }); // inactivity cron scan
+serviceSchema.index({ 'orders.client': 1 });
+serviceSchema.index({ 'orders.status': 1 });
 
 serviceSchema.methods.incrementViews = function() {
   this.views += 1;

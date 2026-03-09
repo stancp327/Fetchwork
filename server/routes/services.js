@@ -709,7 +709,8 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
     let orders = [];
     if (role === 'client') {
       const services = await Service.find({ 'orders.client': userId })
-        .populate('freelancer', 'firstName lastName profilePicture');
+        .populate('freelancer', 'firstName lastName profilePicture')
+        .limit(100);
       services.forEach(s => {
         s.orders.filter(o => String(o.client) === String(userId)).forEach(o => {
           orders.push({
@@ -720,7 +721,8 @@ router.get('/orders/my', authenticateToken, async (req, res) => {
       });
     } else {
       const services = await Service.find({ freelancer: userId, 'orders.0': { $exists: true } })
-        .populate('orders.client', 'firstName lastName profilePicture');
+        .populate('orders.client', 'firstName lastName profilePicture')
+        .limit(100);
       services.forEach(s => {
         s.orders.forEach(o => {
           orders.push({

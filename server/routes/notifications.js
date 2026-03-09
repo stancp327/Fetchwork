@@ -13,7 +13,8 @@ router.get('/', authenticateToken, async (req, res) => {
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .lean();
 
     const total = await Notification.countDocuments(query);
     const unreadCount = await Notification.countDocuments({ recipient: req.user.userId, read: false });

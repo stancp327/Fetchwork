@@ -104,10 +104,11 @@ router.get('/', validateQueryParams, async (req, res) => {
 
     try {
       freelancers = await User.find(queryFilters)
-        .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
+        .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId -email -emailCanonical -googleId -facebookId -tokenVersion -permissions -role -isSuspended')
         .sort(sortOptions)
         .skip(skip)
-        .limit(limit);
+        .limit(limit)
+        .lean();
 
       total = await User.countDocuments(queryFilters);
     } catch (geoErr) {
@@ -118,10 +119,11 @@ router.get('/', validateQueryParams, async (req, res) => {
         delete queryFilters['location.coordinates'];
 
         freelancers = await User.find(queryFilters)
-          .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId')
+          .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId -email -emailCanonical -googleId -facebookId -tokenVersion -permissions -role -isSuspended')
           .sort(sortOptions)
           .skip(skip)
-          .limit(limit);
+          .limit(limit)
+          .lean();
 
         total = await User.countDocuments(queryFilters);
       } else {
@@ -130,9 +132,9 @@ router.get('/', validateQueryParams, async (req, res) => {
     }
     
     const withStatus = freelancers.map(f => {
-      const obj = f.toObject();
+      const obj = { ...f };
       obj.isOnline = typeof global.io?.isUserOnline === 'function'
-        ? global.io.isUserOnline(f._id.toString())
+        ? global.io.isUserOnline(String(f._id))
         : false;
       return obj;
     });
@@ -183,7 +185,8 @@ router.get('/:id/similar', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId');
+      .select('-password -resetPasswordToken -resetPasswordExpires -emailVerificationToken -bankAccount -emailVerificationExpires -bankAccount -paypalEmail -stripeAccountId -email -emailCanonical -googleId -facebookId -tokenVersion -permissions -role')
+      .lean();
 
     if (!user || !user.isActive || user.isSuspended) {
       return res.status(404).json({ error: 'Freelancer not found' });
@@ -206,9 +209,10 @@ router.get('/:id', async (req, res) => {
     const Job = require('../models/Job');
     const completedJobs = await Job.countDocuments({ freelancer: user._id, status: 'completed' });
 
-    const freelancerObj = user.toObject();
+    const freelancerObj = { ...user };
+    delete freelancerObj.isSuspended;
     freelancerObj.isOnline = typeof global.io?.isUserOnline === 'function'
-      ? global.io.isUserOnline(user._id.toString())
+      ? global.io.isUserOnline(String(user._id))
       : false;
 
     res.json({

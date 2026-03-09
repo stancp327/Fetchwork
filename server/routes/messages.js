@@ -68,7 +68,7 @@ router.get('/conversations', authenticateToken, validateQueryParams, async (req,
       isActive: true
     })
     .populate('participants', 'firstName lastName profilePicture')
-    .populate('lastMessage')
+    .populate('lastMessage', 'content sender createdAt messageType')
     .populate('job', '_id title status')
     .populate('service', '_id title pricing')
     .sort({ lastActivity: -1 })

@@ -14,6 +14,8 @@ const ProcessedWebhookEvent  = require('../models/ProcessedWebhookEvent');
 
 const { getFee } = require('../services/feeEngine');
 const { deriveAuthoritativeEscrowAmount, validateRequestedEscrowAmount } = require('./payments.helpers');
+const rateLimit = require('express-rate-limit');
+const paymentLimiter = rateLimit({ windowMs: 60_000, max: 10, message: { error: 'Too many payment requests, please try again later' }, standardHeaders: true, legacyHeaders: false });
 
 // ── Helper: calculate platform fee (plan-aware) ─────────────────
 // role: 'client' | 'freelancer'
@@ -232,14 +234,14 @@ router.delete('/methods/:pmId', authenticateToken, async (req, res) => {
 // ── POST /api/payments/fund-escrow ─────────────────────────────
 // Client funds escrow when accepting a proposal.
 // Creates a manual-capture PaymentIntent — money is held but not charged yet.
-router.post('/fund-escrow', authenticateToken, async (req, res) => {
+router.post('/fund-escrow', paymentLimiter, authenticateToken, async (req, res) => {
   try {
     const { jobId, amount: requestedAmount, paymentMethodId } = req.body;
     if (!jobId) {
       return res.status(400).json({ error: 'jobId is required' });
     }
 
-    const job = await Job.findById(jobId).populate('freelancer');
+    const job = await Job.findById(jobId).populate('freelancer', 'firstName lastName stripeAccountId paypalEmail email');
     if (!job) return res.status(404).json({ error: 'Job not found' });
     if (String(job.client) !== String(req.user.userId)) {
       return res.status(403).json({ error: 'Only the client can fund escrow' });
@@ -335,12 +337,12 @@ router.post('/fund-escrow', authenticateToken, async (req, res) => {
 // ── POST /api/payments/release-escrow ──────────────────────────
 // Client releases escrow on job completion.
 // Captures the PaymentIntent and transfers net amount to freelancer.
-router.post('/release-escrow', authenticateToken, async (req, res) => {
+router.post('/release-escrow', paymentLimiter, authenticateToken, async (req, res) => {
   try {
     const { jobId } = req.body;
     if (!jobId) return res.status(400).json({ error: 'jobId is required' });
 
-    const job = await Job.findById(jobId).populate('freelancer');
+    const job = await Job.findById(jobId).populate('freelancer', 'firstName lastName stripeAccountId paypalEmail email');
     if (!job) return res.status(404).json({ error: 'Job not found' });
     if (String(job.client) !== String(req.user.userId)) {
       return res.status(403).json({ error: 'Only the client can release escrow' });
@@ -436,7 +438,7 @@ router.post('/release-escrow', authenticateToken, async (req, res) => {
 // Math: to net `tipAmount` after Stripe takes 2.9% + $0.30:
 //   chargeAmount = ceil((tipAmount + 0.30) / 0.971 * 100) / 100
 //
-router.post('/tip', authenticateToken, async (req, res) => {
+router.post('/tip', paymentLimiter, authenticateToken, async (req, res) => {
   try {
     const { jobId, amount, paymentMethodId } = req.body;
     if (!jobId || !amount) return res.status(400).json({ error: 'jobId and amount required' });
@@ -444,7 +446,7 @@ router.post('/tip', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Tip must be between $1 and $5,000' });
     }
 
-    const job = await Job.findById(jobId).populate('freelancer');
+    const job = await Job.findById(jobId).populate('freelancer', 'firstName lastName stripeAccountId paypalEmail email');
     if (!job) return res.status(404).json({ error: 'Job not found' });
     if (String(job.client) !== String(req.user.userId)) {
       return res.status(403).json({ error: 'Only the client can send a tip' });
