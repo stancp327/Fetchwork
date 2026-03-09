@@ -11,6 +11,7 @@ const TeamClient = require('../models/TeamClient');
 const TeamNote = require('../models/TeamNote');
 const Job = require('../models/Job');
 const emailService = require('../services/emailService');
+const stripeService = require('../services/stripeService');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { getUserSubscription } = require('../utils/billingUtils');
 
@@ -909,26 +910,25 @@ router.post('/:id/billing/add-funds', async (req, res) => {
     if (!amount || amount < 5 || amount > 500) return res.status(400).json({ error: 'Amount must be $5â€“$500' });
 
     // Create Stripe Checkout for team
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
     if (!team.stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        name: team.name,
-        email: team.billingEmail || undefined,
-        metadata: { teamId: team._id.toString() },
-      });
+      const customer = await stripeService.createCustomer(
+        team.billingEmail || undefined,
+        team.name,
+        { teamId: team._id.toString() }
+      );
       team.stripeCustomerId = customer.id;
       await team.save();
     }
 
-    const session = await stripe.checkout.sessions.create({
-      customer: team.stripeCustomerId,
-      mode: 'payment',
-      line_items: [{ price_data: { currency: 'usd', unit_amount: Math.round(amount * 100), product_data: { name: `${team.name} â€” Wallet Top-Up` } }, quantity: 1 }],
-      success_url: `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}?funded=true`,
-      cancel_url: `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}`,
-      metadata: { type: 'team_wallet', teamId: team._id.toString(), amount: String(amount) },
-    });
+    const session = await stripeService.createPaymentSession(
+      team.stripeCustomerId,
+      Math.round(amount * 100),
+      `${team.name} — Wallet Top-Up`,
+      `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}?funded=true`,
+      `${process.env.CLIENT_URL || 'https://www.fetchwork.net'}/teams/${team._id}`,
+      { type: 'team_wallet', teamId: team._id.toString(), amount: String(amount) },
+      false
+    );
 
     res.json({ url: session.url });
   } catch (err) {

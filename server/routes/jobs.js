@@ -525,8 +525,7 @@ router.post('/:id/feature', authenticateToken, validateMongoId, async (req, res)
       return res.status(409).json({ error: 'Job is already featured', expiresAt: job.featuredExpiresAt });
     }
 
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.create({
+    const pi = await stripeService.createPaymentIntent({
       amount:   option.amountCents,
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
@@ -552,8 +551,7 @@ router.post('/:id/feature/verify', authenticateToken, validateMongoId, async (re
     const { paymentIntentId } = req.body;
     if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
 
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const pi = await stripeService.retrievePaymentIntent(paymentIntentId);
 
     if (pi.status !== 'succeeded') {
       return res.status(402).json({ error: 'Payment not complete', status: pi.status });
@@ -588,8 +586,7 @@ router.post('/:id/proposals/:proposalId/promote', authenticateToken, validateMon
       return res.status(409).json({ error: 'Proposal is already promoted' });
     }
 
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.create({
+    const pi = await stripeService.createPaymentIntent({
       amount:   299, // $2.99
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
@@ -614,8 +611,7 @@ router.post('/:id/proposals/:proposalId/promote/verify', authenticateToken, vali
     const { paymentIntentId } = req.body;
     if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
 
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const pi = await stripeService.retrievePaymentIntent(paymentIntentId);
     if (pi.status !== 'succeeded') {
       return res.status(402).json({ error: 'Payment not complete', status: pi.status });
     }

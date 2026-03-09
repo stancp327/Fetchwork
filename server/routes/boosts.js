@@ -6,15 +6,7 @@ const Service = require('../models/Service');
 const BoostCredit = require('../models/BoostCredit');
 const BoostImpression = require('../models/BoostImpression');
 const { notifyMatchingUsers } = require('../services/discoveryEngine');
-// Lazy-init Stripe — avoids crash at module load when STRIPE_SECRET_KEY is temporarily missing
-let _stripe = null;
-function getStripe() {
-  if (!_stripe) {
-    if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY is not configured');
-    _stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  }
-  return _stripe;
-}
+const stripeService = require('../services/stripeService');
 
 // Boost config
 const BOOST_OPTIONS = {
@@ -124,7 +116,7 @@ router.post('/job/:id', authenticateToken, async (req, res) => {
       // No credits left — fall through to paid
     }
 
-    const paymentIntent = await getStripe().paymentIntents.create({
+    const paymentIntent = await stripeService.createPaymentIntent({
       amount: option.price,
       currency: 'usd',
       metadata: {
@@ -176,7 +168,7 @@ router.post('/service/:id', authenticateToken, async (req, res) => {
       }
     }
 
-    const paymentIntent = await getStripe().paymentIntents.create({
+    const paymentIntent = await stripeService.createPaymentIntent({
       amount: option.price,
       currency: 'usd',
       metadata: {

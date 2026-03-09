@@ -226,6 +226,13 @@ class StripeService {
     }, requestOptions);
   }
 
+  // ── Generic PaymentIntent Creation ──────────────────────────────
+  /** Create a PaymentIntent with raw params (amount in cents). */
+  async createPaymentIntent(params) {
+    this._ensureStripe();
+    return stripe.paymentIntents.create(params);
+  }
+
   // ── PaymentIntent Lookup ─────────────────────────────────────────
   async retrievePaymentIntent(piId) {
     this._ensureStripe();
@@ -233,12 +240,13 @@ class StripeService {
   }
 
   // ── Refunds ─────────────────────────────────────────────────────
-  async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer') {
+  async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer', metadata) {
     this._ensureStripe();
     return stripe.refunds.create({
       payment_intent: paymentIntentId,
       amount: amount ? Math.round(amount * 100) : undefined,
       reason,
+      ...(metadata && { metadata }),
     });
   }
 
@@ -374,6 +382,40 @@ class StripeService {
   async constructBillingWebhookEvent(rawBody, signature, secret) {
     this._ensureStripe();
     return stripe.webhooks.constructEvent(rawBody, signature, secret);
+  }
+
+  // ── Product & Price Management ──────────────────────────────────
+
+  async listProducts(params = {}) {
+    this._ensureStripe();
+    return stripe.products.list(params);
+  }
+
+  async updateProduct(productId, params) {
+    this._ensureStripe();
+    return stripe.products.update(productId, params);
+  }
+
+  async listPrices(params = {}) {
+    this._ensureStripe();
+    return stripe.prices.list(params);
+  }
+
+  async updatePrice(priceId, params) {
+    this._ensureStripe();
+    return stripe.prices.update(priceId, params);
+  }
+
+  // ── Checkout Session Retrieval ────────────────────────────────
+
+  async retrieveCheckoutSession(sessionId, params = {}) {
+    this._ensureStripe();
+    return stripe.checkout.sessions.retrieve(sessionId, params);
+  }
+
+  async expireCheckoutSession(sessionId) {
+    this._ensureStripe();
+    return stripe.checkout.sessions.expire(sessionId);
   }
 
   // ── Recurring Service Subscriptions ─────────────────────────────

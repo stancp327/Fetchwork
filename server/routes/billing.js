@@ -850,8 +850,7 @@ router.post('/wallet/split-pay', authenticateToken, async (req, res) => {
       if (paymentMethodId) {
         // Saved card — charge immediately
         try {
-          const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-          const pi = await stripe.paymentIntents.create({
+          const pi = await stripeService.createPaymentIntent({
             amount: Math.round(cardPortion * 100),
             currency: 'usd',
             customer: user.stripeCustomerId,
@@ -1055,8 +1054,7 @@ router.get('/sessions/:sessionId', authenticateToken, async (req, res) => {
     }
 
     // Fetch from Stripe (authoritative source)
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    const session = await stripeService.retrieveCheckoutSession(sessionId, {
       expand: ['line_items', 'customer'],
     });
 
@@ -1114,8 +1112,7 @@ router.post('/sessions/:sessionId/expire', authenticateToken, async (req, res) =
     }
 
     // Expire on Stripe
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    await stripe.checkout.sessions.expire(sessionId);
+    await stripeService.expireCheckoutSession(sessionId);
 
     local.status = 'expired';
     await local.save();

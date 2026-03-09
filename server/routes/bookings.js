@@ -12,6 +12,7 @@ router.param('id', objectIdParam);
 const { authenticateToken } = require('../middleware/auth');
 const { requireFeature }    = require('../middleware/entitlements');
 const Service               = require('../models/Service'); // service catalog only
+const stripeService         = require('../services/stripeService');
 
 // ── Load SQL controller ──────────────────────────────────────────
 let ctrl;
@@ -192,8 +193,7 @@ router.post('/:bookingId/payment-intent', authenticateToken, async (req, res) =>
       return res.json({ alreadyPaid: true, confirmed: true });
     }
 
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.create({
+    const pi = await stripeService.createPaymentIntent({
       amount:   amountCents,
       currency: pricing.currency || 'usd',
       automatic_payment_methods: { enabled: true },
@@ -240,8 +240,7 @@ router.post('/:bookingId/confirm-payment', authenticateToken, async (req, res) =
     if (booking.clientId !== actorId) return res.status(403).json({ error: 'Not authorized' });
 
     // Verify with Stripe
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const pi = await stripeService.retrievePaymentIntent(paymentIntentId);
     if (pi.status !== 'succeeded') {
       return res.status(402).json({ error: 'Payment not complete', status: pi.status });
     }

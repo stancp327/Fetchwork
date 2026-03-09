@@ -12,6 +12,7 @@ const Review = require('../models/Review');
 const Team = require('../models/Team');
 const { Message, ChatRoom } = require('../models/Message');
 const { logAdminAction, AdminAuditLog } = require('../utils/adminAudit');
+const stripeService = require('../services/stripeService');
 
 router.get('/profile', authenticateAdmin, async (req, res) => {
   try {
@@ -1455,12 +1456,9 @@ router.put('/billing/promo/:promoId', authenticateAdmin, requirePermission('paym
 // GET /api/admin/stripe/catalog — list Stripe Products with their Prices
 router.get('/stripe/catalog', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
   try {
-    const stripeService = require('../services/stripeService');
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
     const [products, prices, plans] = await Promise.all([
-      stripe.products.list({ limit: 50, active: true }),
-      stripe.prices.list({ limit: 100, active: true }),
+      stripeService.listProducts({ limit: 50, active: true }),
+      stripeService.listPrices({ limit: 100, active: true }),
       Plan.find().lean(),
     ]);
 
@@ -1499,7 +1497,6 @@ router.get('/stripe/catalog', authenticateAdmin, requirePermission('payment_mana
 // Body: { name, description, slug, audience, tier, price, interval, features, limits }
 router.post('/stripe/plans', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
   try {
-    const stripeService = require('../services/stripeService');
     const { name, description, slug, audience, tier, price, interval = 'month', features, limits, sortOrder } = req.body;
 
     if (!name || !slug || !tier || !price) {
@@ -1542,8 +1539,6 @@ router.post('/stripe/plans', authenticateAdmin, requirePermission('payment_manag
 // Body: { price, interval }
 router.put('/stripe/plans/:planId/price', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
   try {
-    const stripeService = require('../services/stripeService');
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const plan = await Plan.findById(req.params.planId);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
 
@@ -1552,7 +1547,7 @@ router.put('/stripe/plans/:planId/price', authenticateAdmin, requirePermission('
 
     // Archive old Price in Stripe
     if (plan.stripePriceId) {
-      await stripe.prices.update(plan.stripePriceId, { active: false }).catch(() => {});
+      await stripeService.updatePrice(plan.stripePriceId, { active: false }).catch(() => {});
     }
 
     // Create new Price
@@ -1577,9 +1572,8 @@ router.put('/stripe/plans/:planId/price', authenticateAdmin, requirePermission('
 // PUT /api/admin/stripe/products/:productId — update Stripe product name/description
 router.put('/stripe/products/:productId', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
   try {
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const { name, description } = req.body;
-    const product = await stripe.products.update(req.params.productId, {
+    const product = await stripeService.updateProduct(req.params.productId, {
       ...(name        && { name }),
       ...(description && { description }),
     });
@@ -1949,14 +1943,13 @@ router.post('/payments/:id/refund', authenticateAdmin, requirePermission('paymen
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
     if (payment.status === 'refunded') return res.status(400).json({ error: 'Already refunded' });
 
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    
     if (payment.stripePaymentIntentId) {
-      await stripe.refunds.create({
-        payment_intent: payment.stripePaymentIntentId,
-        reason: 'requested_by_customer',
-        metadata: { adminRefund: 'true', reason: req.body.reason || 'Admin refund' }
-      });
+      await stripeService.refundPayment(
+        payment.stripePaymentIntentId,
+        null,
+        'requested_by_customer',
+        { adminRefund: 'true', reason: req.body.reason || 'Admin refund' }
+      );
     }
 
     payment.status = 'refunded';
