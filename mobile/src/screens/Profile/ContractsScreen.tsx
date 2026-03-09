@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, ListRenderItemInfo, RefreshControl, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import { contractsApi } from '../../api/endpoints/contractsApi';
+import { contractsApi, ContractItem } from '../../api/endpoints/contractsApi';
 import { colors, radius, spacing, typography } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 
@@ -20,6 +20,8 @@ export default function ContractsScreen() {
   const { data, isLoading, error: queryError, isRefetching, refetch } = useQuery({
     queryKey: ['mobile-contracts', filter],
     queryFn: () => contractsApi.getContracts(filter),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -28,10 +30,10 @@ export default function ContractsScreen() {
     }
   }, [user, signatureName]);
 
-  const refreshContracts = () => {
+  const refreshContracts = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['mobile-contracts'] });
     refetch();
-  };
+  }, [queryClient, refetch]);
 
   const sendMutation = useMutation({
     mutationFn: (id: string) => contractsApi.sendContract(id),
@@ -74,6 +76,128 @@ export default function ContractsScreen() {
 
   const contracts = useMemo(() => data?.contracts || [], [data?.contracts]);
 
+  const handleFilterPress = useCallback((status: string) => {
+    setError('');
+    setMessage('');
+    setFilter(status);
+  }, []);
+
+  const handleSend = useCallback((id: string) => {
+    setError('');
+    setMessage('');
+    sendMutation.mutate(id);
+  }, [sendMutation]);
+
+  const handleSign = useCallback((id: string) => {
+    setError('');
+    setMessage('');
+    signMutation.mutate(id);
+  }, [signMutation]);
+
+  const handleCancel = useCallback((id: string) => {
+    setError('');
+    setMessage('');
+    cancelMutation.mutate(id);
+  }, [cancelMutation]);
+
+  const handleRetry = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const keyExtractor = useCallback((item: ContractItem) => item._id, []);
+
+  const renderItem = useCallback(({ item: contract }: ListRenderItemInfo<ContractItem>) => {
+    const clientName = `${contract.client?.firstName || ''} ${contract.client?.lastName || ''}`.trim() || 'Client';
+    const freelancerName = `${contract.freelancer?.firstName || ''} ${contract.freelancer?.lastName || ''}`.trim() || 'Freelancer';
+
+    return (
+      <View style={styles.contractRow}>
+        <View style={styles.contractInfo}>
+          <Text style={styles.contractTitle}>{contract.title}</Text>
+          <Text style={styles.meta}>Status: {contract.status}</Text>
+          <Text style={styles.meta}>{clientName} ↔ {freelancerName}</Text>
+        </View>
+
+        <View style={styles.actionsCol}>
+          {contract.status === 'draft' && (
+            <Button
+              label="Send"
+              size="sm"
+              onPress={() => handleSend(contract._id)}
+              disabled={sendMutation.isPending}
+            />
+          )}
+
+          {(contract.status === 'pending' || contract.status === 'active') && (
+            <Button
+              label="Sign"
+              size="sm"
+              variant="success"
+              onPress={() => handleSign(contract._id)}
+              disabled={signMutation.isPending || !signatureName.trim()}
+            />
+          )}
+
+          {!['cancelled', 'completed'].includes(contract.status) && (
+            <Button
+              label="Cancel"
+              size="sm"
+              variant="secondary"
+              onPress={() => handleCancel(contract._id)}
+              disabled={cancelMutation.isPending}
+            />
+          )}
+        </View>
+      </View>
+    );
+  }, [handleSend, handleSign, handleCancel, sendMutation.isPending, signMutation.isPending, signatureName, cancelMutation.isPending]);
+
+  const listHeader = useMemo(() => (
+    <>
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Contracts</Text>
+        <View style={styles.filtersWrap}>
+          {STATUS_FILTERS.map((status) => (
+            <Button
+              key={status}
+              label={status[0].toUpperCase() + status.slice(1)}
+              size="sm"
+              variant={filter === status ? 'primary' : 'secondary'}
+              onPress={() => handleFilterPress(status)}
+            />
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Signature Name</Text>
+        <Input
+          value={signatureName}
+          onChangeText={setSignatureName}
+          placeholder="Type full name"
+        />
+        <Text style={styles.meta}>Used when signing pending contracts.</Text>
+      </View>
+
+      {(error || message) ? (
+        <View style={styles.card}>
+          {!!error && <Text style={styles.error}>{error}</Text>}
+          {!!message && <Text style={styles.success}>{message}</Text>}
+        </View>
+      ) : null}
+
+      <View style={styles.listHeaderCard}>
+        <Text style={styles.sectionTitle}>Contract List</Text>
+      </View>
+    </>
+  ), [filter, handleFilterPress, signatureName, error, message]);
+
+  const listEmpty = useMemo(() => (
+    <View style={styles.listEmptyCard}>
+      <Text style={styles.meta}>No contracts found for this filter.</Text>
+    </View>
+  ), []);
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -89,7 +213,7 @@ export default function ContractsScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={handleRetry} style={{ marginTop: spacing.md }} />
         </View>
       </SafeAreaView>
     );
@@ -97,111 +221,18 @@ export default function ContractsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
+      <FlatList
+        data={contracts}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
-      >
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Contracts</Text>
-          <View style={styles.filtersWrap}>
-            {STATUS_FILTERS.map((status) => (
-              <Button
-                key={status}
-                label={status[0].toUpperCase() + status.slice(1)}
-                size="sm"
-                variant={filter === status ? 'primary' : 'secondary'}
-                onPress={() => {
-                  setError('');
-                  setMessage('');
-                  setFilter(status);
-                }}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Signature Name</Text>
-          <Input
-            value={signatureName}
-            onChangeText={setSignatureName}
-            placeholder="Type full name"
-          />
-          <Text style={styles.meta}>Used when signing pending contracts.</Text>
-        </View>
-
-        {(error || message) && (
-          <View style={styles.card}>
-            {!!error && <Text style={styles.error}>{error}</Text>}
-            {!!message && <Text style={styles.success}>{message}</Text>}
-          </View>
-        )}
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Contract List</Text>
-          {!contracts.length ? (
-            <Text style={styles.meta}>{isLoading ? 'Loading contracts…' : 'No contracts found for this filter.'}</Text>
-          ) : (
-            contracts.map((contract) => {
-              const clientName = `${contract.client?.firstName || ''} ${contract.client?.lastName || ''}`.trim() || 'Client';
-              const freelancerName = `${contract.freelancer?.firstName || ''} ${contract.freelancer?.lastName || ''}`.trim() || 'Freelancer';
-
-              return (
-                <View key={contract._id} style={styles.contractRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.contractTitle}>{contract.title}</Text>
-                    <Text style={styles.meta}>Status: {contract.status}</Text>
-                    <Text style={styles.meta}>{clientName} ↔ {freelancerName}</Text>
-                  </View>
-
-                  <View style={styles.actionsCol}>
-                    {contract.status === 'draft' && (
-                      <Button
-                        label="Send"
-                        size="sm"
-                        onPress={() => {
-                          setError('');
-                          setMessage('');
-                          sendMutation.mutate(contract._id);
-                        }}
-                        disabled={sendMutation.isPending}
-                      />
-                    )}
-
-                    {(contract.status === 'pending' || contract.status === 'active') && (
-                      <Button
-                        label="Sign"
-                        size="sm"
-                        variant="success"
-                        onPress={() => {
-                          setError('');
-                          setMessage('');
-                          signMutation.mutate(contract._id);
-                        }}
-                        disabled={signMutation.isPending || !signatureName.trim()}
-                      />
-                    )}
-
-                    {!['cancelled', 'completed'].includes(contract.status) && (
-                      <Button
-                        label="Cancel"
-                        size="sm"
-                        variant="secondary"
-                        onPress={() => {
-                          setError('');
-                          setMessage('');
-                          cancelMutation.mutate(contract._id);
-                        }}
-                        disabled={cancelMutation.isPending}
-                      />
-                    )}
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </View>
-      </ScrollView>
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
     </SafeAreaView>
   );
 }
@@ -223,6 +254,28 @@ const styles = StyleSheet.create({
   error: { ...typography.bodySmall, color: colors.danger },
   success: { ...typography.bodySmall, color: colors.success },
   filtersWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  listHeaderCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    paddingBottom: 0,
+    marginBottom: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  listEmptyCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderTopWidth: 0,
+    marginBottom: spacing.sm,
+  },
   contractRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -230,9 +283,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
-    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.white,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderLeftColor: colors.border,
+    borderRightColor: colors.border,
     gap: spacing.sm,
   },
+  contractInfo: { flex: 1 },
   contractTitle: { ...typography.body, fontWeight: '700', color: colors.textDark },
   actionsCol: { gap: spacing.xs, minWidth: 110 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },

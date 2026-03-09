@@ -16,6 +16,8 @@ export default function EarningsScreen() {
   const { data, isLoading } = useQuery({
     queryKey: ['earnings', year],
     queryFn:  () => earningsApi.getEarnings(year),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const fmt = (n: number) =>
@@ -55,7 +57,7 @@ export default function EarningsScreen() {
             {data.pendingEscrow > 0 && (
               <View style={[s.statCard, s.pendingCard]}>
                 <Text style={s.statLabel}>Pending in Escrow</Text>
-                <Text style={[s.statValue, { color: colors.warning }]}>{fmt(data.pendingEscrow)}</Text>
+                <Text style={[s.statValue, s.statValueWarning]}>{fmt(data.pendingEscrow)}</Text>
               </View>
             )}
 
@@ -81,17 +83,17 @@ export default function EarningsScreen() {
             <View style={s.card}>
               <Text style={s.sectionTitle}>Breakdown</Text>
               <View style={s.tableHeader}>
-                <Text style={[s.thCell, { flex: 2 }]}>Month</Text>
+                <Text style={[s.thCell, s.thCellWide]}>Month</Text>
                 <Text style={s.thCell}>Jobs</Text>
-                <Text style={[s.thCell, { textAlign: 'right' }]}>Earned</Text>
+                <Text style={[s.thCell, s.thCellRight]}>Earned</Text>
               </View>
               {data.monthly.filter(m => m.amount > 0).length === 0 ? (
                 <Text style={s.empty}>No earnings for {year}</Text>
               ) : data.monthly.filter(m => m.amount > 0).map(m => (
                 <View key={m.month} style={s.tableRow}>
-                  <Text style={[s.tdCell, { flex: 2 }]}>{m.name} {m.year}</Text>
+                  <Text style={[s.tdCell, s.tdCellWide]}>{m.name} {m.year}</Text>
                   <Text style={s.tdCell}>{m.jobCount}</Text>
-                  <Text style={[s.tdCell, s.tdAmount, { textAlign: 'right' }]}>{fmt(m.amount)}</Text>
+                  <Text style={[s.tdCell, s.tdAmount, s.tdCellRight]}>{fmt(m.amount)}</Text>
                 </View>
               ))}
             </View>
@@ -100,7 +102,7 @@ export default function EarningsScreen() {
           <Text style={s.empty}>Failed to load earnings.</Text>
         )}
 
-        <View style={{ height: spacing.xl }} />
+        <View style={s.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -124,6 +126,7 @@ const s = StyleSheet.create({
   pendingCard: { marginBottom: spacing.sm, backgroundColor: colors.warningLight, borderColor: colors.warning },
   statLabel:   { fontSize: 11, fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
   statValue:   { fontSize: 20, fontWeight: '800', color: colors.textDark, marginTop: 2 },
+  statValueWarning: { color: colors.warning },
   statSub:     { fontSize: 11, color: colors.textMuted, marginTop: 1 },
 
   card:         { backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md },
@@ -138,8 +141,13 @@ const s = StyleSheet.create({
 
   tableHeader: { flexDirection: 'row', paddingBottom: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: spacing.xs },
   thCell:      { flex: 1, fontSize: 10, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase' },
+  thCellWide:  { flex: 2 },
+  thCellRight: { textAlign: 'right' },
   tableRow:    { flexDirection: 'row', paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
   tdCell:      { flex: 1, fontSize: 13, color: colors.text },
+  tdCellWide:  { flex: 2 },
+  tdCellRight: { textAlign: 'right' },
   tdAmount:    { fontWeight: '700', color: colors.success },
   empty:       { textAlign: 'center', color: colors.textMuted, fontSize: 13, padding: spacing.xl },
+  bottomSpacer:{ height: spacing.xl },
 });

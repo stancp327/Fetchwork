@@ -69,7 +69,7 @@ function CreateTeamCard({ onCreated }: { onCreated: () => void }) {
         </Pressable>
       </View>
       <View style={styles.createActions}>
-        <Button label="Cancel" variant="secondary" size="sm" onPress={() => setExpanded(false)} style={{ flex: 1 }} />
+        <Button label="Cancel" variant="secondary" size="sm" onPress={() => setExpanded(false)} style={styles.flexBtn} />
         <Button
           label="Create"
           size="sm"
@@ -79,7 +79,7 @@ function CreateTeamCard({ onCreated }: { onCreated: () => void }) {
           }}
           loading={createMutation.isPending}
           disabled={createMutation.isPending}
-          style={{ flex: 1 }}
+          style={styles.flexBtn}
         />
       </View>
     </Card>
@@ -107,8 +107,8 @@ function InviteCard({
         </View>
       </View>
       <View style={styles.inviteActions}>
-        <Button label="Decline" variant="secondary" size="sm" onPress={() => onRespond(invite._id, 'decline')} disabled={isPending} style={{ flex: 1 }} />
-        <Button label="Accept" variant="success" size="sm" onPress={() => onRespond(invite._id, 'accept')} disabled={isPending} style={{ flex: 1 }} />
+        <Button label="Decline" variant="secondary" size="sm" onPress={() => onRespond(invite._id, 'decline')} disabled={isPending} style={styles.flexBtn} />
+        <Button label="Accept" variant="success" size="sm" onPress={() => onRespond(invite._id, 'accept')} disabled={isPending} style={styles.flexBtn} />
       </View>
     </Card>
   );
@@ -144,11 +144,15 @@ export default function TeamsScreen({ navigation }: Props) {
   const teamsQuery = useQuery({
     queryKey: ['mobile-teams'],
     queryFn: () => teamsApi.getMyTeams(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const invitesQuery = useQuery({
     queryKey: ['mobile-team-invitations'],
     queryFn: () => teamsApi.getPendingInvitations(),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const invitationMutation = useMutation({
@@ -200,6 +204,9 @@ export default function TeamsScreen({ navigation }: Props) {
       <FlatList
         data={teams}
         keyExtractor={item => item._id}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListHeaderComponent={
@@ -261,4 +268,5 @@ const styles = StyleSheet.create({
   teamInfo: { flex: 1 },
   teamName: { ...typography.body, fontWeight: '700', color: colors.textDark },
   teamMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  flexBtn: { flex: 1 },
 });

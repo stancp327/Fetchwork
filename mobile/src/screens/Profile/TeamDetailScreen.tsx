@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, Pressable, RefreshControl,
   SafeAreaView, ScrollView, StyleSheet, Text, View,
@@ -79,6 +79,8 @@ export default function TeamDetailScreen({ route }: Props) {
   const { data, refetch, isRefetching, isLoading, isError } = useQuery({
     queryKey: ['mobile-team-detail', teamId],
     queryFn: () => teamsApi.getTeam(teamId),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const team: MobileTeam | undefined = data?.team;
@@ -106,6 +108,8 @@ export default function TeamDetailScreen({ route }: Props) {
     queryKey: ['mobile-team-audit', teamId],
     queryFn: () => teamsApi.getAuditLogs(teamId, { page: 1, limit: 5 }),
     enabled: isOwner || isAdmin,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
   const auditLogs: TeamAuditLog[] = auditData?.logs || [];
 
@@ -113,14 +117,16 @@ export default function TeamDetailScreen({ route }: Props) {
     queryKey: ['mobile-team-spend-controls', teamId],
     queryFn: () => teamsApi.getSpendControls(teamId),
     enabled: isOwner,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // ── Mutations ──────────────────────────────────────────────────────────
 
-  const invalidateTeam = () => {
+  const invalidateTeam = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['mobile-team-detail', teamId] });
     queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
-  };
+  }, [queryClient, teamId]);
 
   const inviteMutation = useMutation({
     mutationFn: () => teamsApi.inviteMember(teamId, { email: inviteEmail.trim(), role: inviteRole }),
@@ -142,33 +148,33 @@ export default function TeamDetailScreen({ route }: Props) {
 
   // ── Actions ────────────────────────────────────────────────────────────
 
-  const onInvite = () => {
+  const onInvite = useCallback(() => {
     if (!inviteEmail.trim()) { Alert.alert('Validation', 'Email is required'); return; }
     inviteMutation.mutate();
-  };
+  }, [inviteEmail, inviteMutation]);
 
-  const onRemoveMember = (member: TeamMember) => {
+  const onRemoveMember = useCallback((member: TeamMember) => {
     const id = getMemberId(member);
     if (!id) return;
     Alert.alert('Remove member?', 'This user will lose access to the team.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => removeMemberMutation.mutate(id) },
     ]);
-  };
+  }, [removeMemberMutation]);
 
-  const onTransferOwnership = () => {
+  const onTransferOwnership = useCallback(() => {
     if (!transferTargetUserId) return;
     Alert.alert('Transfer ownership?', 'This will remove your owner privileges and cannot be auto-reverted.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Transfer', style: 'destructive', onPress: () => transferOwnershipMutation.mutate(transferTargetUserId) },
     ]);
-  };
+  }, [transferTargetUserId, transferOwnershipMutation]);
 
-  const onRefreshAll = () => {
+  const onRefreshAll = useCallback(() => {
     refetch();
     if (isOwner || isAdmin) refetchAudit();
     if (isOwner) refetchSpendControls();
-  };
+  }, [refetch, refetchAudit, refetchSpendControls, isOwner, isAdmin]);
 
   // ── Loading / Error ────────────────────────────────────────────────────
 
@@ -216,13 +222,13 @@ export default function TeamDetailScreen({ route }: Props) {
         <Card>
           <Text style={s.sectionTitle}>Recent Activity</Text>
           {auditFetching && !auditLogs.length ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: spacing.sm }} />
+            <ActivityIndicator size="small" color={colors.primary} style={s.activityLoading} />
           ) : null}
           {!auditFetching && !auditLogs.length ? <Text style={s.emptyText}>No activity recorded yet.</Text> : null}
           {auditLogs.map((log) => (
             <View key={log._id} style={s.activityRow}>
               <View style={s.activityDot} />
-              <View style={{ flex: 1 }}>
+              <View style={s.activityContent}>
                 <Text style={s.activityAction}>{String(log.action || '').replace(/_/g, ' ')}</Text>
                 <Text style={s.activityMeta}>
                   {log.actor?.firstName || 'User'} {log.actor?.lastName || ''} {'\u00B7'} {formatTimeAgo(log.createdAt)}
@@ -429,8 +435,10 @@ const s = StyleSheet.create({
   emptyText:   { ...typography.bodySmall, color: colors.textMuted },
   activityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.xs, borderTopWidth: 1, borderTopColor: colors.bgMuted },
   activityDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 5 },
+  activityContent: { flex: 1 },
   activityAction: { ...typography.body, color: colors.textDark, fontWeight: '500', textTransform: 'capitalize' },
   activityMeta: { ...typography.caption, color: colors.textMuted },
+  activityLoading: { marginVertical: spacing.sm },
 
   // Members
   memberRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.bgMuted },

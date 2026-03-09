@@ -23,11 +23,15 @@ export default function MyBundlesScreen() {
   const { data: subs, isLoading: subsLoading, error: subsError, refetch: refetchSubs, isRefetching: subsRefetching } = useQuery({
     queryKey: ['mySubscriptions', role],
     queryFn: () => servicesApi.getMySubscriptions(role),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: bundles, isLoading: bundlesLoading, error: bundlesError, refetch: refetchBundles, isRefetching: bundlesRefetching } = useQuery({
     queryKey: ['myBundles', role],
     queryFn: () => servicesApi.getMyBundles(role),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const cancelSub = useMutation({
@@ -48,7 +52,7 @@ export default function MyBundlesScreen() {
       <SafeAreaView style={s.safe}>
         <View style={s.center}>
           <Text style={s.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={s.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -66,7 +70,7 @@ export default function MyBundlesScreen() {
       )}
       {item.status === 'active' && (
         <Button label="Cancel" variant="danger" size="sm" onPress={() => cancelSub.mutate(item._id)}
-          loading={cancelSub.isPending} style={{ marginTop: spacing.sm }} />
+          loading={cancelSub.isPending} style={s.cancelSubBtn} />
       )}
     </Card>
   );
@@ -113,6 +117,9 @@ export default function MyBundlesScreen() {
         <FlatList
           data={tab === 'subscriptions' ? subscriptions : bundleList}
           keyExtractor={(item: any) => item._id}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           renderItem={tab === 'subscriptions' ? renderSubscription : renderBundle}
           contentContainerStyle={s.list}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
@@ -146,4 +153,6 @@ const s = StyleSheet.create({
   progressFill:{ height: 6, backgroundColor: colors.primary, borderRadius: 3 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText:  { ...typography.bodySmall, color: colors.danger },
+  retryBtn:   { marginTop: spacing.md },
+  cancelSubBtn: { marginTop: spacing.sm },
 });

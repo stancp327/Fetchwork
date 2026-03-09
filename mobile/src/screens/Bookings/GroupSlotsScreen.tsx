@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   TouchableOpacity, Modal, Alert, ActivityIndicator, TextInput,
@@ -129,16 +129,18 @@ export default function GroupSlotsScreen({ route }: Props) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['groupSlots', serviceId, fromDate, toDate],
     queryFn:  () => bookingsApi.getGroupSlots(serviceId, fromDate, toDate),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const slots: GroupSlot[] = (data as { slots?: GroupSlot[] } | undefined)?.slots ?? [];
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setFromDate(fromInput);
     setToDate(toInput);
-  };
+  }, [fromInput, toInput]);
 
-  const handleWaitlist = async (slot: GroupSlot) => {
+  const handleWaitlist = useCallback(async (slot: GroupSlot) => {
     try {
       await bookingsApi.joinWaitlist(slot.id, 1);
       Alert.alert("You're on the list! 🎟", "We'll notify you if a spot opens up.");
@@ -146,9 +148,22 @@ export default function GroupSlotsScreen({ route }: Props) {
     } catch (e: unknown) {
       Alert.alert('Error', (e as Error).message);
     }
-  };
+  }, [queryClient]);
 
-  const renderSlot = ({ item: slot }: { item: GroupSlot }) => {
+  const handleSlotSelect = useCallback((slot: GroupSlot) => {
+    setSelectedSlot(slot);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedSlot(null);
+  }, []);
+
+  const handleBooked = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['groupSlots'] });
+    setSelectedSlot(null);
+  }, [queryClient]);
+
+  const renderSlot = useCallback(({ item: slot }: { item: GroupSlot }) => {
     const spotsLeft = slot.spotsLeft ?? Math.max(0, slot.totalCapacity - (slot.bookedCount ?? 0));
     const full      = spotsLeft <= 0;
     const pct       = slot.totalCapacity > 0
@@ -190,13 +205,15 @@ export default function GroupSlotsScreen({ route }: Props) {
             <Text style={styles.btnWaitlistText}>Join Waitlist</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.btnBook} onPress={() => setSelectedSlot(slot)}>
+          <TouchableOpacity style={styles.btnBook} onPress={() => handleSlotSelect(slot)}>
             <Text style={styles.btnBookText}>Book Seats</Text>
           </TouchableOpacity>
         )}
       </View>
     );
-  };
+  }, [handleWaitlist, handleSlotSelect]);
+
+  const keyExtractor = useCallback((s: GroupSlot) => s.id, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -230,16 +247,19 @@ export default function GroupSlotsScreen({ route }: Props) {
         </View>
       ) : error ? (
         <View style={styles.center}>
-          <Text style={{ ...typography.bodySmall, color: colors.danger }}>
+          <Text style={styles.errorText}>
             {(error as Error).message}
           </Text>
         </View>
       ) : (
         <FlatList
           data={slots}
-          keyExtractor={s => s.id}
+          keyExtractor={keyExtractor}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           renderItem={renderSlot}
-          contentContainerStyle={[styles.list, slots.length === 0 && { flex: 1 }]}
+          contentContainerStyle={[styles.list, slots.length === 0 && styles.listEmpty]}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyIcon}>📅</Text>
@@ -256,11 +276,8 @@ export default function GroupSlotsScreen({ route }: Props) {
         <BookSeatsModal
           slot={selectedSlot}
           visible={true}
-          onClose={() => setSelectedSlot(null)}
-          onBooked={() => {
-            queryClient.invalidateQueries({ queryKey: ['groupSlots'] });
-            setSelectedSlot(null);
-          }}
+          onClose={handleCloseModal}
+          onBooked={handleBooked}
         />
       )}
     </SafeAreaView>
@@ -271,6 +288,7 @@ export default function GroupSlotsScreen({ route }: Props) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.bgSubtle },
   center:   { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { ...typography.bodySmall, color: colors.danger },
 
   filterBar:  { backgroundColor: colors.white, padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, gap: spacing.sm },
   dateInputs: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -280,6 +298,7 @@ const styles = StyleSheet.create({
   searchBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
 
   list: { padding: spacing.md, paddingBottom: spacing.xl },
+  listEmpty: { flex: 1 },
 
   card:    { backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.sm },

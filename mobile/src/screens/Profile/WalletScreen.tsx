@@ -16,6 +16,8 @@ export default function WalletScreen() {
   const { data, refetch, isRefetching, isLoading, error: walletQueryError } = useQuery({
     queryKey: ['mobile-wallet'],
     queryFn: () => billingApi.getWallet(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const queryError = (walletQueryError as any)?.response?.data?.error;
@@ -78,7 +80,7 @@ export default function WalletScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
-        contentContainerStyle={{ padding: spacing.md }}
+        contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       >
         <View style={styles.card}>
@@ -139,7 +141,7 @@ export default function WalletScreen() {
           ) : (
             recentHistory.map((entry) => (
               <View key={entry._id} style={styles.historyRow}>
-                <View style={{ flex: 1 }}>
+                <View style={styles.historyContent}>
                   <Text style={styles.historyReason}>{entry.reason || 'Wallet activity'}</Text>
                   <Text style={styles.historyMeta}>{entry.status}</Text>
                 </View>
@@ -155,6 +157,8 @@ export default function WalletScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bgSubtle },
+  scroll: { padding: spacing.md },
+  historyContent: { flex: 1 },
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.lg,

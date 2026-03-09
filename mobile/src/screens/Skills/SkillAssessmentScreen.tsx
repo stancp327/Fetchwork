@@ -1,10 +1,10 @@
 /**
  * SkillAssessmentScreen
  * Browse assessable categories, take quizzes, earn badges.
- * Navigation: Profile → Skills 🏅
+ * Navigation: Profile → Skills
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Alert, FlatList, SafeAreaView, RefreshControl,
@@ -45,7 +45,7 @@ const QuizView: React.FC<{
       .finally(() => setLoading(false));
   }, [category.id]);
 
-  const handleSelect = (optIdx: number) => {
+  const handleSelect = useCallback((optIdx: number) => {
     if (answers[current] !== undefined) return;
     const next = [...answers];
     next[current] = optIdx;
@@ -53,9 +53,9 @@ const QuizView: React.FC<{
     setTimeout(() => {
       if (current < questions.length - 1) setCurrent(c => c + 1);
     }, 500);
-  };
+  }, [answers, current, questions.length]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     try {
       const result = await skillsApi.submitAssessment(category.id, answers);
@@ -65,7 +65,7 @@ const QuizView: React.FC<{
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [category.id, answers, onDone]);
 
   if (loading) return (
     <View style={styles.center}>
@@ -112,7 +112,6 @@ const QuizView: React.FC<{
         {q.options.map((opt, i) => {
           const isCorrectAnswer = answered !== undefined && i === q.answer;
           const isWrongAnswer   = answered !== undefined && i === answered && i !== q.answer;
-          const isSelected      = answered === undefined ? false : false; // only pre-answer highlight
 
           return (
             <TouchableOpacity
@@ -133,7 +132,6 @@ const QuizView: React.FC<{
                 styles.optionText,
                 isCorrectAnswer && styles.optionCorrectText,
                 isWrongAnswer   && styles.optionWrongText,
-                { flex: 1 },
               ]}>{opt}</Text>
             </TouchableOpacity>
           );
@@ -254,21 +252,31 @@ const SkillAssessmentScreen: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const assessmentMap = Object.fromEntries(myAssessments.map(a => [a.category, a]));
-  const earned = myAssessments.filter(a => a.passed && a.badge?.earned);
+  const assessmentMap = useMemo(
+    () => Object.fromEntries(myAssessments.map(a => [a.category, a])),
+    [myAssessments],
+  );
+  const earned = useMemo(
+    () => myAssessments.filter(a => a.passed && a.badge?.earned),
+    [myAssessments],
+  );
 
-  const handleDone = (result: AssessmentResult) => {
+  const handleDone = useCallback((result: AssessmentResult) => {
     setQuizResult(result);
     if (user) {
       skillsApi.getMyAssessments().then(r => setMyAssessments(r.assessments || []));
     }
-  };
+  }, [user]);
 
-  const startQuiz = (cat: SkillCategory) => {
+  const startQuiz = useCallback((cat: SkillCategory) => {
     if (!user) { navigation.navigate('Login'); return; }
     setQuizResult(null);
     setActiveQuiz(cat);
-  };
+  }, [user, navigation]);
+
+  const handleResultBack = useCallback(() => { setActiveQuiz(null); setQuizResult(null); }, []);
+  const handleResultRetry = useCallback(() => setQuizResult(null), []);
+  const handleQuizBack = useCallback(() => setActiveQuiz(null), []);
 
   // Quiz mode
   if (activeQuiz) {
@@ -277,8 +285,8 @@ const SkillAssessmentScreen: React.FC = () => {
         <ResultView
           result={quizResult}
           categoryLabel={activeQuiz.label}
-          onBack={() => { setActiveQuiz(null); setQuizResult(null); }}
-          onRetry={() => setQuizResult(null)}
+          onBack={handleResultBack}
+          onRetry={handleResultRetry}
         />
       );
     }
@@ -286,7 +294,7 @@ const SkillAssessmentScreen: React.FC = () => {
       <QuizView
         category={activeQuiz}
         onDone={handleDone}
-        onBack={() => setActiveQuiz(null)}
+        onBack={handleQuizBack}
       />
     );
   }
@@ -365,6 +373,10 @@ const SkillAssessmentScreen: React.FC = () => {
     </View>
   );
 
+  const keyExtractorCategory = (item: SkillCategory) => item.id;
+  const keyExtractorBadge = (item: SkillAssessment) => item.category;
+  const switchToBrowse = () => setTab('browse');
+
   return (
     <View style={styles.screen}>
       {/* Hero */}
@@ -408,15 +420,18 @@ const SkillAssessmentScreen: React.FC = () => {
       {tab === 'mine' ? (
         <FlatList<SkillAssessment>
           data={myAssessments}
-          keyExtractor={(item) => item.category}
+          keyExtractor={keyExtractorBadge}
           renderItem={renderMyBadge}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Text style={styles.emptyIcon}>🏅</Text>
               <Text style={styles.emptyText}>No assessments yet. Take a test to earn your first badge!</Text>
-              <TouchableOpacity style={styles.btnPrimary} onPress={() => setTab('browse')}>
+              <TouchableOpacity style={styles.btnPrimary} onPress={switchToBrowse}>
                 <Text style={styles.btnPrimaryText}>Browse Tests</Text>
               </TouchableOpacity>
             </View>
@@ -425,10 +440,13 @@ const SkillAssessmentScreen: React.FC = () => {
       ) : (
         <FlatList<SkillCategory>
           data={categories}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractorCategory}
           renderItem={renderCategory}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
         />
       )}
     </View>

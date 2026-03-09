@@ -27,14 +27,14 @@ export function getJobStatusVariant(status: string): BadgeVariant {
   return map[status] ?? 'neutral';
 }
 
-export default function Badge({ label, variant = 'neutral' }: BadgeProps) {
+export default React.memo(function Badge({ label, variant = 'neutral' }: BadgeProps) {
   const v = VARIANTS[variant];
   return (
     <View style={[styles.badge, { backgroundColor: v.bg }]}>
       <Text style={[styles.label, { color: v.text }]}>{label}</Text>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full, alignSelf: 'flex-start' },

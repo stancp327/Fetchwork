@@ -36,6 +36,8 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
   const { data: service, isLoading, error, isRefetching, refetch } = useQuery({
     queryKey: ['service', id],
     queryFn:  () => servicesApi.getById(id),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // ── Message mutation ────────────────────────────────────────────
@@ -120,7 +122,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -158,7 +160,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
         <Card style={styles.providerCard}>
           <View style={styles.providerRow}>
             <Avatar name={`${service.freelancer?.firstName} ${service.freelancer?.lastName}`} size="lg" />
-            <View style={{ marginLeft: spacing.md, flex: 1 }}>
+            <View style={styles.providerInfo}>
               <Text style={typography.h4}>{service.freelancer?.firstName} {service.freelancer?.lastName}</Text>
               {(service.freelancer?.rating ?? 0) > 0 && (
                 <Text style={typography.bodySmall}>⭐ {(service.freelancer as any).rating.toFixed(1)}</Text>
@@ -199,7 +201,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
           <View style={styles.pkgSelector}>
             {availablePkgs.map(p => (
               <Button key={p} label={PKG_LABELS[p]} onPress={() => setSelectedPkg(p)}
-                variant={selectedPkg === p ? 'primary' : 'secondary'} size="sm" style={{ flex: 1 }} />
+                variant={selectedPkg === p ? 'primary' : 'secondary'} size="sm" style={styles.pkgBtn} />
             ))}
           </View>
         )}
@@ -314,7 +316,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
                 onPress={() => handlePayment('bundle')}
                 disabled={paymentLoading}
                 fullWidth size="lg"
-                style={{ marginTop: spacing.sm, backgroundColor: colors.success }}
+                style={styles.buyBundleBtn}
               />
             )}
 
@@ -323,7 +325,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
               onPress={() => messageMutation.mutate()}
               loading={messageMutation.isPending}
               variant="secondary" fullWidth size="lg"
-              style={{ marginTop: spacing.sm }}
+              style={styles.messageBtn}
             />
           </View>
         )}
@@ -334,7 +336,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
           </View>
         )}
 
-        <View style={{ height: spacing.xl }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -346,7 +348,9 @@ const styles = StyleSheet.create({
   center:               { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText:            { ...typography.bodySmall, color: colors.danger },
   providerCard:         { marginBottom: spacing.md },
+  retryBtn:             { marginTop: spacing.md },
   providerRow:          { flexDirection: 'row', alignItems: 'center' },
+  providerInfo:         { marginLeft: spacing.md, flex: 1 },
   badgeRow:             { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
   recurringBadge:       { backgroundColor: '#dcfce7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   recurringBadgeText:   { fontSize: 12, fontWeight: '600', color: '#166534' },
@@ -355,6 +359,7 @@ const styles = StyleSheet.create({
   title:                { ...typography.h2, marginBottom: spacing.sm },
   desc:                 { ...typography.body, marginBottom: spacing.md, lineHeight: 22 },
   pkgSelector:          { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  pkgBtn:               { flex: 1 },
   pkgCard:              { marginBottom: spacing.md },
   pkgTitle:             { ...typography.h4, marginBottom: 4 },
   pkgDesc:              { ...typography.bodySmall, marginBottom: spacing.md },
@@ -395,6 +400,9 @@ const styles = StyleSheet.create({
 
   // Actions
   actions:              { marginTop: spacing.sm },
+  buyBundleBtn:         { marginTop: spacing.sm, backgroundColor: colors.success },
+  messageBtn:           { marginTop: spacing.sm },
+  bottomSpacer:         { height: spacing.xl },
   ownNotice:            { alignItems: 'center', padding: spacing.lg },
   ownNoticeText:        { ...typography.bodySmall, color: colors.textSecondary },
 });

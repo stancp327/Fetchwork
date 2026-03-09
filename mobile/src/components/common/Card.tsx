@@ -9,7 +9,7 @@ interface CardProps {
   padding?: number;
 }
 
-export default function Card({ children, onPress, style, padding = spacing.md }: CardProps) {
+export default React.memo(function Card({ children, onPress, style, padding = spacing.md }: CardProps) {
   const inner = <View style={[styles.card, { padding }, style]}>{children}</View>;
 
   if (onPress) {
@@ -21,7 +21,7 @@ export default function Card({ children, onPress, style, padding = spacing.md }:
   }
 
   return inner;
-}
+});
 
 const styles = StyleSheet.create({
   card: {

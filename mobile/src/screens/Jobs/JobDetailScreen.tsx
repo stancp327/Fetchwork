@@ -61,6 +61,8 @@ export default function JobDetailScreen({ route, navigation }: Props) {
   const { data: job, isLoading, error, isRefetching, refetch } = useQuery({
     queryKey: ['job', id],
     queryFn: () => jobsApi.getById(id),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { control, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ProposalForm>({
@@ -175,7 +177,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -193,7 +195,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         {/* Title + status */}
         <View style={styles.titleRow}>
           <Text style={styles.title}>{job.title}</Text>
-          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <View style={styles.statusRow}>
             {job.isFeatured && (
               <View style={styles.featuredChip}>
                 <Text style={styles.featuredChipText}>⭐ Featured</Text>
@@ -207,7 +209,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         <Card style={styles.clientCard}>
           <View style={styles.clientRow}>
             <Avatar name={`${job.client?.firstName} ${job.client?.lastName}`} size="md" />
-            <View style={{ marginLeft: spacing.sm }}>
+            <View style={styles.clientInfo}>
               <Text style={typography.label}>{job.client?.firstName} {job.client?.lastName}</Text>
               <Text style={typography.caption}>Client</Text>
             </View>
@@ -249,15 +251,15 @@ export default function JobDetailScreen({ route, navigation }: Props) {
               onPress={() => navigation.navigate('JobProposals', { jobId: id, jobTitle: job.title })}
               variant="secondary"
               fullWidth
-              style={{ marginBottom: 8 }}
+              style={styles.actionBtnSpacing}
             />
             {canFund && (
               <Button label={funding ? 'Processing...' : '💳 Fund Job (Secure Payment)'}
-                onPress={handleFundJob} loading={funding} fullWidth style={{ marginBottom: 8 }} />
+                onPress={handleFundJob} loading={funding} fullWidth style={styles.actionBtnSpacing} />
             )}
             {job.status === 'open' && !isBoosted && (
               <Button label={boosting ? 'Processing...' : '🚀 Boost Job'}
-                onPress={handleBoost} loading={boosting} variant="secondary" fullWidth style={{ marginBottom: 8 }} />
+                onPress={handleBoost} loading={boosting} variant="secondary" fullWidth style={styles.actionBtnSpacing} />
             )}
             {isBoosted && (
               <View style={styles.boostActive}>
@@ -271,12 +273,12 @@ export default function JobDetailScreen({ route, navigation }: Props) {
                 loading={featuring}
                 variant="secondary"
                 fullWidth
-                style={{ marginTop: 8 }}
+                style={styles.featureBtn}
               />
             )}
             {job.isFeatured && (
-              <View style={[styles.boostActive, { borderColor: '#f59e0b', backgroundColor: '#fffbeb' }]}>
-                <Text style={[styles.boostActiveText, { color: '#92400e' }]}>
+              <View style={[styles.boostActive, styles.featuredActive]}>
+                <Text style={[styles.boostActiveText, styles.featuredActiveText]}>
                   ⭐ Featured{job.featuredExpiresAt ? ` until ${new Date(job.featuredExpiresAt).toLocaleDateString()}` : ''}
                 </Text>
               </View>
@@ -310,7 +312,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
                     <View style={styles.aiMatchAvatarCircle}>
                       <Text style={styles.aiMatchAvatarText}>{m.name[0]}</Text>
                     </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={styles.aiMatchContent}>
                       <Text style={styles.aiMatchName} numberOfLines={1}>{m.name}</Text>
                       {m.rating > 0 && <Text style={styles.aiMatchRating}>⭐ {m.rating.toFixed(1)}</Text>}
                       {!!m.matchReason && <Text style={styles.aiMatchReason} numberOfLines={2}>{m.matchReason}</Text>}
@@ -349,13 +351,13 @@ export default function JobDetailScreen({ route, navigation }: Props) {
                   )} />
                 <Button label="Send Proposal" onPress={handleSubmit(d => applyMutation.mutate(d))}
                   loading={isSubmitting || applyMutation.isPending} fullWidth />
-                <Button label="Cancel" onPress={() => setShowProposal(false)} variant="ghost" fullWidth style={{ marginTop: 8 }} />
+                <Button label="Cancel" onPress={() => setShowProposal(false)} variant="ghost" fullWidth style={styles.cancelBtn} />
               </Card>
             )}
           </>
         )}
 
-        <View style={{ height: spacing.xl }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -377,6 +379,16 @@ const styles = StyleSheet.create({
   skills:      { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   skillTag:    { backgroundColor: colors.bgMuted, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 3 },
   skillText:   { fontSize: 12, color: colors.textSecondary },
+  retryBtn:    { marginTop: spacing.md },
+  statusRow:   { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' },
+  clientInfo:  { marginLeft: spacing.sm },
+  actionBtnSpacing: { marginBottom: 8 },
+  featureBtn:  { marginTop: 8 },
+  featuredActive: { borderColor: '#f59e0b', backgroundColor: '#fffbeb' },
+  featuredActiveText: { color: '#92400e' },
+  cancelBtn:   { marginTop: 8 },
+  bottomSpacer:{ height: spacing.xl },
+  aiMatchContent: { flex: 1, minWidth: 0 },
   applyBtn:    { marginTop: spacing.md },
   boostActive: { backgroundColor: colors.primary + '10', borderRadius: 8, padding: spacing.sm, alignItems: 'center' },
   featuredChip: { backgroundColor: '#fef3c7', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: '#f59e0b' },

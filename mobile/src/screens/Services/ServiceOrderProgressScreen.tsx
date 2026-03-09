@@ -33,6 +33,8 @@ export default function ServiceOrderProgressScreen({ route, navigation }: Props)
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['serviceOrder', serviceId, orderId],
     queryFn: () => servicesApi.getOrder(serviceId, orderId),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const invalidate = () =>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   ActivityIndicator, RefreshControl, Pressable,
@@ -33,6 +33,8 @@ export default function NotificationsScreen({ navigation }: any) {
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsApi.list(1, 50),
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const markRead = useMutation({
@@ -53,15 +55,14 @@ export default function NotificationsScreen({ navigation }: any) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
   }
 
-  const handlePress = (notif: any) => {
+  const handlePress = useCallback((notif: any) => {
     if (!notif.read) markRead.mutate(notif._id);
-    // Navigate based on link
     if (notif.link) {
       if (notif.link.startsWith('/jobs/')) {
         navigation.navigate('Jobs', { screen: 'JobDetail', params: { id: notif.link.split('/jobs/')[1] } });
@@ -71,9 +72,9 @@ export default function NotificationsScreen({ navigation }: any) {
         navigation.navigate('Messages');
       }
     }
-  };
+  }, [markRead, navigation]);
 
-  const renderNotif = ({ item }: { item: any }) => (
+  const renderNotif = useCallback(({ item }: { item: any }) => (
     <Pressable
       style={[styles.notifRow, !item.read && styles.unread]}
       onPress={() => handlePress(item)}
@@ -86,7 +87,7 @@ export default function NotificationsScreen({ navigation }: any) {
       </View>
       {!item.read && <View style={styles.dot} />}
     </Pressable>
-  );
+  ), [handlePress]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -108,6 +109,8 @@ export default function NotificationsScreen({ navigation }: any) {
           renderItem={renderNotif}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           contentContainerStyle={styles.list}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
           ListEmptyComponent={<EmptyState emoji="🔔" title="No notifications" subtitle="You're all caught up!" />}
         />
       )}
@@ -131,4 +134,5 @@ const styles = StyleSheet.create({
   dot:        { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 6 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText:  { ...typography.bodySmall, color: colors.danger },
+  retryBtn:   { marginTop: spacing.md },
 });

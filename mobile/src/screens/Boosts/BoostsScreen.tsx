@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   Pressable, Alert, ActivityIndicator, RefreshControl,
@@ -26,14 +26,29 @@ export default function BoostsScreen() {
   const [selected, setSelected] = useState<{ id: string; type: Tab } | null>(null);
   const qc = useQueryClient();
 
-  const { data: credits, isLoading: creditsLoading, error: creditsError, isRefetching: creditsRefetching, refetch: refetchCredits } = useQuery({ queryKey: ['boost-credits'], queryFn: boostsApi.getCredits });
-  const { data: jobsData, isLoading: jobsLoading, error: jobsError, isRefetching: jobsRefetching, refetch: refetchJobs } = useQuery({ queryKey: ['jobs', 'mine'], queryFn: () => jobsApi.browse({ limit: 20 }) });
-  const { data: servicesData, isLoading: servicesLoading, error: servicesError, isRefetching: servicesRefetching, refetch: refetchServices } = useQuery({ queryKey: ['services', 'me'], queryFn: () => servicesApi.myServices() });
+  const { data: credits, isLoading: creditsLoading, error: creditsError, isRefetching: creditsRefetching, refetch: refetchCredits } = useQuery({
+    queryKey: ['boost-credits'],
+    queryFn: boostsApi.getCredits,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+  const { data: jobsData, isLoading: jobsLoading, error: jobsError, isRefetching: jobsRefetching, refetch: refetchJobs } = useQuery({
+    queryKey: ['jobs', 'mine'],
+    queryFn: () => jobsApi.browse({ limit: 20 }),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+  const { data: servicesData, isLoading: servicesLoading, error: servicesError, isRefetching: servicesRefetching, refetch: refetchServices } = useQuery({
+    queryKey: ['services', 'me'],
+    queryFn: () => servicesApi.myServices(),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   const isLoading = creditsLoading || jobsLoading || servicesLoading;
   const error = creditsError || jobsError || servicesError;
   const isRefetching = creditsRefetching || jobsRefetching || servicesRefetching;
-  const refetch = () => { refetchCredits(); refetchJobs(); refetchServices(); };
+  const refetch = useCallback(() => { refetchCredits(); refetchJobs(); refetchServices(); }, [refetchCredits, refetchJobs, refetchServices]);
 
   const boostMut = useMutation({
     mutationFn: ({ id, type, tier }: { id: string; type: Tab; tier: BoostTier }) =>
@@ -47,18 +62,23 @@ export default function BoostsScreen() {
     onError: (err: Error) => Alert.alert('Error', err.message),
   });
 
-  const handleBoost = (id: string, type: Tab) => {
+  const handleBoost = useCallback((id: string, type: Tab) => {
     setSelected({ id, type });
-  };
+  }, []);
 
-  const confirmBoost = (tier: BoostTier) => {
+  const confirmBoost = useCallback((tier: BoostTier) => {
     if (!selected) return;
     boostMut.mutate({ id: selected.id, type: selected.type, tier });
-  };
+  }, [selected, boostMut]);
 
-  const jobs = jobsData?.jobs ?? [];
-  const services = Array.isArray(servicesData) ? servicesData : (servicesData as { services?: unknown[] } | undefined)?.services ?? [];
+  const jobs = useMemo(() => jobsData?.jobs ?? [], [jobsData]);
+  const services = useMemo(
+    () => Array.isArray(servicesData) ? servicesData : (servicesData as { services?: unknown[] } | undefined)?.services ?? [],
+    [servicesData],
+  );
   const items = tab === 'jobs' ? jobs : services;
+
+  const cancelSelect = useCallback(() => setSelected(null), []);
 
   if (isLoading) {
     return (
@@ -75,7 +95,7 @@ export default function BoostsScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={refetch} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -83,7 +103,7 @@ export default function BoostsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.primary} />}>
+      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}>
 
         {/* Credits card */}
         <Card style={styles.creditsCard}>
@@ -120,7 +140,7 @@ export default function BoostsScreen() {
                 <Text style={styles.tierPrice}>{t.price}</Text>
               </Pressable>
             ))}
-            <Pressable style={styles.cancelBtn} onPress={() => setSelected(null)}>
+            <Pressable style={styles.cancelBtn} onPress={cancelSelect}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
           </Card>
@@ -170,7 +190,7 @@ export default function BoostsScreen() {
         )}
 
         {boostMut.isPending && (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
+          <ActivityIndicator color={colors.primary} style={styles.pendingIndicator} />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -223,4 +243,6 @@ const styles = StyleSheet.create({
   emptyText: { ...typography.body, color: colors.textMuted },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { ...typography.bodySmall, color: colors.danger },
+  retryBtn: { marginTop: spacing.md },
+  pendingIndicator: { marginTop: spacing.md },
 });

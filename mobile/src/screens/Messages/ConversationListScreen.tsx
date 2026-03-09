@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -29,13 +29,65 @@ export default function ConversationListScreen({ navigation }: Props) {
   const { data = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['conversations'],
     queryFn: () => messagesApi.getConversations(),
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchInterval: 15000, // poll every 15s as fallback
   });
 
   const conversations: Conversation[] = Array.isArray(data) ? data : [];
 
-  const getOtherParticipant = (conv: Conversation) =>
-    conv.participants?.find(p => p._id !== user?.id && p._id !== user?._id);
+  const getOtherParticipant = useCallback((conv: Conversation) =>
+    conv.participants?.find(p => p._id !== user?.id && p._id !== user?._id),
+  [user?.id, user?._id]);
+
+  const renderConversation = useCallback(({ item: conv }: { item: Conversation }) => {
+    const other = getOtherParticipant(conv);
+    const hasUnread = (conv.unreadCount ?? 0) > 0;
+    return (
+      <Card
+        onPress={() => navigation.navigate('MessageThread', {
+          conversationId: conv._id,
+          recipientName: other ? `${other.firstName} ${other.lastName}` : '',
+          recipientId: other?._id,
+          recipientFirstName: other?.firstName,
+          recipientLastName: other?.lastName,
+        })}
+        style={styles.convCard}
+      >
+        <View style={styles.row}>
+          <Avatar
+            name={other ? `${other.firstName} ${other.lastName}` : '?'}
+            size="md"
+            online={other?.availabilityStatus === 'available'}
+          />
+          <View style={styles.content}>
+            <View style={styles.topRow}>
+              <Text style={[styles.name, hasUnread && styles.nameBold]} numberOfLines={1}>
+                {other ? `${other.firstName} ${other.lastName}` : 'Unknown'}
+              </Text>
+              <Text style={styles.time}>{conv.updatedAt ? timeAgo(conv.updatedAt) : ''}</Text>
+            </View>
+            <View style={styles.bottomRow}>
+              <Text style={[styles.lastMsg, hasUnread && styles.lastMsgBold]} numberOfLines={1}>
+                {conv.lastMessage?.content || 'No messages yet'}
+              </Text>
+              {hasUnread && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{conv.unreadCount}</Text>
+                </View>
+              )}
+            </View>
+            {conv.job && (
+              <Text style={styles.context} numberOfLines={1}>📋 {conv.job.title}</Text>
+            )}
+            {conv.service && (
+              <Text style={styles.context} numberOfLines={1}>⚡ {conv.service.title}</Text>
+            )}
+          </View>
+        </View>
+      </Card>
+    );
+  }, [getOtherParticipant, navigation]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -46,59 +98,15 @@ export default function ConversationListScreen({ navigation }: Props) {
           data={conversations}
           keyExtractor={c => c._id}
           contentContainerStyle={styles.list}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           ListEmptyComponent={
             <EmptyState emoji="💬" title="No messages yet"
               subtitle="Start a conversation by messaging a freelancer or responding to a job" />
           }
-          renderItem={({ item: conv }) => {
-            const other = getOtherParticipant(conv);
-            const hasUnread = (conv.unreadCount ?? 0) > 0;
-            return (
-              <Card
-                onPress={() => navigation.navigate('MessageThread', {
-                  conversationId: conv._id,
-                  recipientName: other ? `${other.firstName} ${other.lastName}` : '',
-                  recipientId: other?._id,
-                  recipientFirstName: other?.firstName,
-                  recipientLastName: other?.lastName,
-                })}
-                style={styles.convCard}
-              >
-                <View style={styles.row}>
-                  <Avatar
-                    name={other ? `${other.firstName} ${other.lastName}` : '?'}
-                    size="md"
-                    online={other?.availabilityStatus === 'available'}
-                  />
-                  <View style={styles.content}>
-                    <View style={styles.topRow}>
-                      <Text style={[styles.name, hasUnread && styles.nameBold]} numberOfLines={1}>
-                        {other ? `${other.firstName} ${other.lastName}` : 'Unknown'}
-                      </Text>
-                      <Text style={styles.time}>{conv.updatedAt ? timeAgo(conv.updatedAt) : ''}</Text>
-                    </View>
-                    <View style={styles.bottomRow}>
-                      <Text style={[styles.lastMsg, hasUnread && styles.lastMsgBold]} numberOfLines={1}>
-                        {conv.lastMessage?.content || 'No messages yet'}
-                      </Text>
-                      {hasUnread && (
-                        <View style={styles.badge}>
-                          <Text style={styles.badgeText}>{conv.unreadCount}</Text>
-                        </View>
-                      )}
-                    </View>
-                    {conv.job && (
-                      <Text style={styles.context} numberOfLines={1}>📋 {conv.job.title}</Text>
-                    )}
-                    {conv.service && (
-                      <Text style={styles.context} numberOfLines={1}>⚡ {conv.service.title}</Text>
-                    )}
-                  </View>
-                </View>
-              </Card>
-            );
-          }}
+          renderItem={renderConversation}
         />
       )}
     </SafeAreaView>

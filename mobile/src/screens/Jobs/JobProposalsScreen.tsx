@@ -30,6 +30,8 @@ export default function JobProposalsScreen({ route, navigation }: Props) {
   const { data: proposals = [], isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['proposals', jobId],
     queryFn: () => jobsApi.getProposals(jobId),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const acceptMutation = useMutation({
@@ -82,7 +84,7 @@ export default function JobProposalsScreen({ route, navigation }: Props) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load proposals</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -146,6 +148,9 @@ export default function JobProposalsScreen({ route, navigation }: Props) {
         keyExtractor={p => p._id}
         renderItem={renderProposal}
         contentContainerStyle={styles.list}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         ListEmptyComponent={
           <EmptyState
             emoji="📬"
@@ -176,4 +181,5 @@ const styles = StyleSheet.create({
   readMore:       { ...typography.caption, color: colors.primary, marginBottom: 4 },
   date:           { ...typography.caption, color: colors.textMuted },
   acceptBtn:      { marginTop: spacing.sm },
+  retryBtn:       { marginTop: spacing.md },
 });

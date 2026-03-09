@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   Pressable, RefreshControl, ActivityIndicator,
@@ -31,30 +31,44 @@ export default function HomeScreen() {
   const jobsQuery = useQuery({
     queryKey: ['jobs', 'recent'],
     queryFn: () => jobsApi.browse({ limit: 5 }),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const myJobsQuery = useQuery({
     queryKey: ['my-jobs-summary'],
     queryFn: () => jobsApi.myJobs(),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const servicesQuery = useQuery({
     queryKey: ['services', 'recent'],
     queryFn: () => servicesApi.browse({ limit: 4 }),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const notificationsQuery = useQuery({
     queryKey: ['notifications', 'preview'],
     queryFn: () => usersApi.getNotifications({ page: 1 }),
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
-  const recentJobs: Job[] = jobsQuery.data?.jobs || [];
-  const myActiveJobs: Job[] = (Array.isArray(myJobsQuery.data) ? myJobsQuery.data : []).filter(
-    (j: Job) => ['in_progress', 'awaiting_start', 'open'].includes(j.status),
+  const recentJobs: Job[] = useMemo(() => jobsQuery.data?.jobs || [], [jobsQuery.data]);
+  const myActiveJobs: Job[] = useMemo(
+    () => (Array.isArray(myJobsQuery.data) ? myJobsQuery.data : []).filter(
+      (j: Job) => ['in_progress', 'awaiting_start', 'open'].includes(j.status),
+    ),
+    [myJobsQuery.data],
   );
-  const recentServices: Service[] = servicesQuery.data?.services || [];
-  const notifications: Notification[] = (notificationsQuery.data?.notifications || []).slice(0, 3);
-  const unreadCount: number = notifications.filter(n => !n.read).length;
+  const recentServices: Service[] = useMemo(() => servicesQuery.data?.services || [], [servicesQuery.data]);
+  const notifications: Notification[] = useMemo(
+    () => (notificationsQuery.data?.notifications || []).slice(0, 3),
+    [notificationsQuery.data],
+  );
+  const unreadCount: number = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
   const isRefreshing = jobsQuery.isRefetching || servicesQuery.isRefetching
     || myJobsQuery.isRefetching || notificationsQuery.isRefetching;
@@ -65,6 +79,23 @@ export default function HomeScreen() {
     myJobsQuery.refetch();
     notificationsQuery.refetch();
   }, [jobsQuery, servicesQuery, myJobsQuery, notificationsQuery]);
+
+  const handleFindJobs = useCallback(
+    () => navigation.navigate('Jobs', { screen: 'BrowseJobs' }),
+    [navigation],
+  );
+  const handlePostJob = useCallback(
+    () => navigation.navigate('Jobs', { screen: 'PostJob' }),
+    [navigation],
+  );
+  const handleFreelancers = useCallback(
+    () => navigation.navigate('Jobs', { screen: 'BrowseFreelancers' }),
+    [navigation],
+  );
+  const handleBrowseServices = useCallback(
+    () => navigation.navigate('Services', { screen: 'BrowseServices' }),
+    [navigation],
+  );
 
   const isLoading = jobsQuery.isLoading && servicesQuery.isLoading;
 
@@ -89,7 +120,7 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={{ flex: 1 }}>
+          <View style={styles.headerTextWrap}>
             <Text style={styles.greeting}>Hey {user?.firstName || 'there'} 👋</Text>
             <Text style={styles.greetingSub}>What are you looking for today?</Text>
           </View>
@@ -108,19 +139,19 @@ export default function HomeScreen() {
 
         {/* Quick actions */}
         <View style={styles.quickActions}>
-          <Pressable style={styles.quickBtn} onPress={() => navigation.navigate('Jobs', { screen: 'BrowseJobs' })}>
+          <Pressable style={styles.quickBtn} onPress={handleFindJobs}>
             <Text style={styles.quickIcon}>🔍</Text>
             <Text style={styles.quickLabel}>Find Jobs</Text>
           </Pressable>
-          <Pressable style={styles.quickBtn} onPress={() => navigation.navigate('Jobs', { screen: 'PostJob' })}>
+          <Pressable style={styles.quickBtn} onPress={handlePostJob}>
             <Text style={styles.quickIcon}>➕</Text>
             <Text style={styles.quickLabel}>Post Job</Text>
           </Pressable>
-          <Pressable style={styles.quickBtn} onPress={() => navigation.navigate('Jobs', { screen: 'BrowseFreelancers' })}>
+          <Pressable style={styles.quickBtn} onPress={handleFreelancers}>
             <Text style={styles.quickIcon}>👤</Text>
             <Text style={styles.quickLabel}>Freelancers</Text>
           </Pressable>
-          <Pressable style={styles.quickBtn} onPress={() => navigation.navigate('Services', { screen: 'BrowseServices' })}>
+          <Pressable style={styles.quickBtn} onPress={handleBrowseServices}>
             <Text style={styles.quickIcon}>⚡</Text>
             <Text style={styles.quickLabel}>Services</Text>
           </Pressable>
@@ -162,7 +193,7 @@ export default function HomeScreen() {
                   style={[styles.notifRow, i < notifications.length - 1 && styles.notifBorder]}
                 >
                   {!notif.read && <View style={styles.unreadDot} />}
-                  <View style={{ flex: 1 }}>
+                  <View style={styles.notifTextWrap}>
                     <Text style={styles.notifTitle} numberOfLines={1}>{notif.title}</Text>
                     <Text style={styles.notifMessage} numberOfLines={1}>{notif.message}</Text>
                   </View>
@@ -221,20 +252,20 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        <View style={{ height: spacing.xl }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
+const SectionHeader = React.memo(function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <Pressable onPress={onSeeAll}><Text style={styles.seeAll}>See all</Text></Pressable>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   safe:           { flex: 1, backgroundColor: colors.bgSubtle },
@@ -281,4 +312,7 @@ const styles = StyleSheet.create({
   serviceTitle:   { ...typography.label, marginBottom: 4 },
   serviceProvider:{ ...typography.caption, marginBottom: 4 },
   servicePrice:   { ...typography.body, color: colors.primary, fontWeight: '700' },
+  headerTextWrap: { flex: 1 },
+  notifTextWrap:  { flex: 1 },
+  bottomSpacer:   { height: spacing.xl },
 });

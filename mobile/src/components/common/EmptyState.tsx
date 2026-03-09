@@ -11,7 +11,7 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export default function EmptyState({ emoji = '📭', title, subtitle, actionLabel, onAction }: EmptyStateProps) {
+export default React.memo(function EmptyState({ emoji = '📭', title, subtitle, actionLabel, onAction }: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>{emoji}</Text>
@@ -22,7 +22,7 @@ export default function EmptyState({ emoji = '📭', title, subtitle, actionLabe
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },

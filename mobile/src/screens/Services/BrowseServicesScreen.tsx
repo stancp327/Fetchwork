@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   TextInput, ActivityIndicator, Pressable, RefreshControl,
@@ -34,11 +34,13 @@ export default function BrowseServicesScreen({ navigation }: Props) {
       }),
     getNextPageParam: (last) => last.page < last.pages ? last.page + 1 : undefined,
     initialPageParam: 1,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const services: Service[] = data?.pages.flatMap(p => p.services) ?? [];
 
-  const renderService = ({ item: svc }: { item: Service }) => {
+  const renderService = useCallback(({ item: svc }: { item: Service }) => {
     const isRecurring = svc.serviceType === 'recurring';
     const price = svc.pricing?.basic?.price;
     const cycle = svc.recurring?.billingCycle;
@@ -74,13 +76,13 @@ export default function BrowseServicesScreen({ navigation }: Props) {
         </View>
       </Card>
     );
-  };
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.safe}>
       {/* Search */}
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={18} color={colors.textMuted} style={{ marginRight: 6 }} />
+        <Ionicons name="search-outline" size={18} color={colors.textMuted} style={styles.searchIcon} />
         <TextInput style={styles.searchInput} placeholder="Search services..."
           placeholderTextColor={colors.textMuted} value={search} onChangeText={setSearch}
           onSubmitEditing={() => setQuery(search.trim())} returnKeyType="search" />
@@ -114,11 +116,14 @@ export default function BrowseServicesScreen({ navigation }: Props) {
           renderItem={renderService}
           contentContainerStyle={styles.list}
           numColumns={2}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           columnWrapperStyle={styles.row}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
           onEndReachedThreshold={0.4}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={{ margin: 20 }} color={colors.primary} /> : null}
+          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerLoader} color={colors.primary} /> : null}
           ListEmptyComponent={<EmptyState emoji="🛎️" title="No services found" subtitle="Try a different search" />}
         />
       )}
@@ -153,4 +158,6 @@ const styles = StyleSheet.create({
   price:          { fontSize: 14, fontWeight: '700', color: colors.primary },
   duration:       { ...typography.caption },
   center:         { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  searchIcon:     { marginRight: 6 },
+  footerLoader:   { margin: 20 },
 });

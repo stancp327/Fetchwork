@@ -50,6 +50,8 @@ export default function ReviewListScreen({ route, navigation }: Props) {
   const { data: reviews = [], refetch, isLoading } = useQuery({
     queryKey: ['reviews', freelancerId, serviceId],
     queryFn: () => reviewsApi.list({ freelancerId, serviceId }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const onRefresh = useCallback(async () => {
@@ -120,6 +122,9 @@ export default function ReviewListScreen({ route, navigation }: Props) {
       <FlatList
         data={reviews}
         keyExtractor={r => r._id}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         renderItem={renderReview}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}

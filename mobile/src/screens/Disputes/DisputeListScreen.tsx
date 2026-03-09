@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   RefreshControl, Pressable,
@@ -28,6 +28,8 @@ export default function DisputeListScreen({ navigation }: Props) {
   const { data: disputes = [], refetch, isLoading } = useQuery({
     queryKey: ['disputes'],
     queryFn: disputesApi.list,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const onRefresh = useCallback(async () => {
@@ -36,17 +38,20 @@ export default function DisputeListScreen({ navigation }: Props) {
     setRefreshing(false);
   }, [refetch]);
 
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable onPress={() => navigation.navigate('FileDispute', {})} hitSlop={8} style={{ marginRight: spacing.sm }}>
-          <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-        </Pressable>
-      ),
-    });
-  }, [navigation]);
+  const headerRight = useCallback(
+    () => (
+      <Pressable onPress={() => navigation.navigate('FileDispute', {})} hitSlop={8} style={styles.headerBtn}>
+        <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+      </Pressable>
+    ),
+    [navigation],
+  );
 
-  const renderItem = ({ item }: { item: Dispute }) => {
+  React.useLayoutEffect(() => {
+    navigation.setOptions({ headerRight });
+  }, [navigation, headerRight]);
+
+  const renderItem = useCallback(({ item }: { item: Dispute }) => {
     const other = item.respondent;
     const ref = item.job?.title ?? item.service?.title ?? 'No reference';
     return (
@@ -66,21 +71,30 @@ export default function DisputeListScreen({ navigation }: Props) {
         </View>
       </Card>
     );
-  };
+  }, [navigation]);
+
+  const keyExtractor = useCallback((d: Dispute) => d._id, []);
+
+  const listEmptyComponent = useMemo(
+    () =>
+      !isLoading ? (
+        <EmptyState emoji="✅" title="No disputes" subtitle="You have no open or past disputes" />
+      ) : null,
+    [isLoading],
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
       <FlatList
         data={disputes}
-        keyExtractor={d => d._id}
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        ListEmptyComponent={
-          !isLoading ? (
-            <EmptyState emoji="✅" title="No disputes" subtitle="You have no open or past disputes" />
-          ) : null
-        }
+        ListEmptyComponent={listEmptyComponent}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
       />
     </SafeAreaView>
   );
@@ -97,4 +111,5 @@ const styles = StyleSheet.create({
   meta: { ...typography.caption, color: colors.textMuted, marginTop: 4 },
   right: { alignItems: 'flex-end', gap: 4 },
   amount: { ...typography.bodySmall, fontWeight: '700', color: colors.text },
+  headerBtn: { marginRight: spacing.sm },
 });
