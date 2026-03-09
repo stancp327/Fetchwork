@@ -3,7 +3,7 @@ const router = express.Router();
 const { objectIdParam } = require('../middleware/validateObjectId');
 router.param('id', objectIdParam);
 const Contract = require('../models/Contract');
-const Notification = require('../models/Notification');
+const { notify } = require('../services/notificationService');
 const { authenticateToken } = require('../middleware/auth');
 const { uploadContractDoc } = require('../middleware/upload');
 
@@ -257,7 +257,7 @@ router.post('/:id/send', authenticateToken, async (req, res) => {
     // Notify the other party
     const recipientId = contract.createdBy.toString() === contract.client.toString()
       ? contract.freelancer : contract.client;
-    await Notification.create({
+    await notify({
       recipient: recipientId,
       type: 'contract',
       title: 'Contract awaiting your signature',
@@ -323,7 +323,7 @@ router.post('/:id/sign', authenticateToken, async (req, res) => {
       ? `${contract.client.firstName} ${contract.client.lastName}`
       : `${contract.freelancer.firstName} ${contract.freelancer.lastName}`;
 
-    await Notification.create({
+    await notify({
       recipient: otherParty._id,
       type: 'contract',
       title: contract.isFullySigned ? 'Contract fully signed!' : 'Contract signed',

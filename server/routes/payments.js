@@ -9,7 +9,7 @@ const Job     = require('../models/Job');
 const Payment = require('../models/Payment');
 const Service = require('../models/Service');
 const { Message, Conversation } = require('../models/Message');
-const Notification           = require('../models/Notification');
+const { notify }             = require('../services/notificationService');
 const ProcessedWebhookEvent  = require('../models/ProcessedWebhookEvent');
 
 const { getFee } = require('../services/feeEngine');
@@ -521,7 +521,7 @@ router.post('/tip', paymentLimiter, authenticateToken, async (req, res) => {
 
     // Notify freelancer
     const clientName = `${clientUser.firstName || ''} ${clientUser.lastName || ''}`.trim() || 'Your client';
-    await Notification.create({
+    await notify({
       recipient: freelancerId,
       type:      'payment_received',
       title:     'You received a tip!',
@@ -690,7 +690,7 @@ router.webhookHandler = async (req, res) => {
               await conv.updateLastActivity();
 
               // Notify freelancer
-              await Notification.create({
+              await notify({
                 recipient: service.freelancer._id,
                 type: 'new_order',
                 title: 'New service order',
@@ -715,7 +715,7 @@ router.webhookHandler = async (req, res) => {
               purchase.activatedAt = new Date();
               await purchase.save();
 
-              await Notification.create({
+              await notify({
                 recipient: purchase.client,
                 title:     'Bundle activated',
                 message:   `Your "${purchase.bundleName}" bundle is now active. ${purchase.sessionsTotal} sessions ready to schedule.`,
@@ -734,7 +734,7 @@ router.webhookHandler = async (req, res) => {
             .populate('client', 'firstName lastName')
             .populate('freelancer', '_id');
           if (job && job.freelancer) {
-            await Notification.create({
+            await notify({
               recipient: job.freelancer._id,
               type: 'payment_received',
               title: 'Secure Payment funded',
@@ -769,7 +769,7 @@ router.webhookHandler = async (req, res) => {
         // Notify client
         if (failedJob?.client) {
           try {
-            await Notification.create({
+            await notify({
               recipient:  failedJob.client._id,
               type:       'payment_failed',
               title:      'Payment not completed',
@@ -805,7 +805,7 @@ router.webhookHandler = async (req, res) => {
 
           // Became fully enabled for the first time (or re-enabled)
           if (fullyEnabled && !wasConnected) {
-            await Notification.create({
+            await notify({
               recipient: user._id,
               type:      'system',
               title:     '🎉 Payout account ready',
@@ -817,7 +817,7 @@ router.webhookHandler = async (req, res) => {
           // Has past-due requirements that could block payouts
           if (pastDue) {
             const fields = account.requirements.past_due.slice(0, 3).join(', ');
-            await Notification.create({
+            await notify({
               recipient: user._id,
               type:      'system',
               title:     '⚠️ Action needed: payment account',
@@ -907,7 +907,7 @@ router.webhookHandler = async (req, res) => {
           await sub.save();
 
           // Notify freelancer
-          await Notification.create({
+          await notify({
             recipient: sub.freelancer,
             title:     'Recurring payment received',
             message:   `You received $${payoutAmt.toFixed(2)} for a recurring service subscription`,
@@ -933,7 +933,7 @@ router.webhookHandler = async (req, res) => {
           sub.status = 'past_due';
           await sub.save();
 
-          await Notification.create({
+          await notify({
             recipient: sub.client,
             title:     'Recurring payment failed',
             message:   'Your payment for a recurring service failed. Please update your payment method.',

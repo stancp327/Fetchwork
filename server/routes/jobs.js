@@ -11,7 +11,7 @@ const { uploadJobAttachments } = require('../middleware/upload');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
 const { trackEvent } = require('../middleware/analytics');
-const Notification = require('../models/Notification');
+const { notify } = require('../services/notificationService');
 const User = require('../models/User');
 const stripeService = require('../services/stripeService');
 const Payment = require('../models/Payment');
@@ -848,9 +848,8 @@ router.post('/:id/start', authenticateToken, validateMongoId, async (req, res) =
     await job.save();
 
     // Notify client
-    const Notification = require('../models/Notification');
     const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`;
-    await Notification.create({
+    await notify({
       recipient: job.client._id,
       title: 'Freelancer is ready to start',
       message: `${freelancerName} is ready to begin "${job.title}". You have 24 hours to review milestones and approve the start.`,
@@ -903,9 +902,8 @@ router.post('/:id/begin', authenticateToken, validateMongoId, async (req, res) =
     await job.save();
 
     // Notify freelancer
-    const Notification = require('../models/Notification');
     const clientName = `${job.client.firstName} ${job.client.lastName}`;
-    await Notification.create({
+    await notify({
       recipient: job.freelancer._id,
       title: 'Job approved — time to get to work!',
       message: `${clientName} approved the start of "${job.title}". The job is now in progress.`,
@@ -989,7 +987,7 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
       } catch (msgErr) { console.error('Failed to post completion message:', msgErr.message); }
 
       try {
-        await Notification.create({
+        await notify({
           recipient: job.freelancer._id,
           type: 'job_update',
           title: 'Job approved & payment released',
@@ -1047,7 +1045,7 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
 
     // Notify client
     try {
-      await Notification.create({
+      await notify({
         recipient: job.client._id,
         type: 'job_update',
         title: 'Job marked complete',
@@ -1130,7 +1128,7 @@ router.post('/:id/refund', authenticateToken, validateMongoId, async (req, res) 
     // Notify the other party
     try {
       const notifRecipient = isClient ? job.freelancer._id : job.client._id;
-      await Notification.create({
+      await notify({
         recipient:  notifRecipient,
         type:       'job_update',
         title:      'Job cancelled',

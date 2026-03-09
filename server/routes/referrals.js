@@ -3,7 +3,7 @@ const router     = express.Router();
 const crypto     = require('crypto');
 const User       = require('../models/User');
 const Referral   = require('../models/Referral');
-const Notification = require('../models/Notification');
+const { notify } = require('../services/notificationService');
 const { authenticateToken } = require('../middleware/auth');
 
 const REWARD_AMOUNT = 25; // $25 credit per qualified referral
@@ -112,7 +112,7 @@ async function triggerReferralReward(refereeId) {
     // Notify referrer
     const referee = await User.findById(refereeId).select('firstName lastName').lean();
     const name    = `${referee?.firstName || ''} ${referee?.lastName || ''}`.trim() || 'Someone';
-    await Notification.create({
+    await notify({
       recipient: referral.referrer,
       type:      'referral_reward',
       title:     'Referral reward earned!',

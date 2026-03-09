@@ -18,7 +18,7 @@ const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 const User             = require('../models/User');
 const Plan             = require('../models/Plan');
 const UserSubscription = require('../models/UserSubscription');
-const Notification     = require('../models/Notification');
+const { notify }       = require('../services/notificationService');
 const { assignDefaultPlan, logBillingAction } = require('../utils/billingUtils');
 const { CLIENT_URL }   = require('../config/env');
 const BillingCredit           = require('../models/BillingCredit');
@@ -276,7 +276,7 @@ async function handleSubscriptionDeleted(stripeSub) {
   });
 
   // Notify user
-  await Notification.create({
+  await notify({
     recipient: userId,
     type:      'system',
     title:     'Subscription ended',
@@ -308,7 +308,7 @@ async function handlePaymentFailed(invoice) {
   const billingUrl = `${CLIENT_URL}/billing`;
 
   // In-app notification
-  await Notification.create({
+  await notify({
     recipient: user._id,
     type:      'system',
     title:     'Payment failed',
@@ -363,7 +363,7 @@ async function activateSubscription(userId, plan, stripeSub) {
   });
 
   // Welcome notification
-  await Notification.create({
+  await notify({
     recipient: userId,
     type:      'system',
     title:     `${plan.name} activated!`,

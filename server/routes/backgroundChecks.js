@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const BackgroundCheck = require('../models/BackgroundCheck');
 const User = require('../models/User');
-const Notification = require('../models/Notification');
+const { notify } = require('../services/notificationService');
 const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 
 const CHECK_TIERS = {
@@ -164,7 +164,7 @@ router.post('/:id/consent', authenticateToken, async (req, res) => {
         });
 
         // Notify user
-        await Notification.create({
+        await notify({
           recipient: bgCheck.user,
           type: 'verification',
           title: 'Background check complete! ✅',
