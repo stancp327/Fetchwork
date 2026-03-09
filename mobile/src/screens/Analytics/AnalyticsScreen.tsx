@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  Pressable, ActivityIndicator,
+  Pressable, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { analyticsApi, FreelancerAnalytics } from '../../api/endpoints/analyticsApi';
 import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
 import { colors, spacing, typography } from '../../theme';
 
 type Range = '1mo' | '3mo' | '6mo' | '1yr';
@@ -44,7 +45,7 @@ function MiniBar({ value, max, label }: { value: number; max: number; label: str
 export default function AnalyticsScreen() {
   const [range, setRange] = useState<Range>('1yr');
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, error, isRefetching, refetch } = useQuery({
     queryKey: ['analytics', range],
     queryFn: () => analyticsApi.getMyAnalytics(range),
   });
@@ -52,9 +53,20 @@ export default function AnalyticsScreen() {
   const f: FreelancerAnalytics | null = data?.freelancer ?? null;
   const maxMonthly = f ? Math.max(...(f.monthlyEarnings?.map(m => m.amount) ?? [0]), 1) : 1;
 
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.primary} />}>
         {/* Range picker */}
         <View style={styles.rangePicker}>
           {RANGES.map(r => (
@@ -191,4 +203,6 @@ const styles = StyleSheet.create({
   emptyCard: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
   emptyText: { ...typography.h3, color: colors.text },
   emptySub: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { ...typography.bodySmall, color: colors.danger },
 });

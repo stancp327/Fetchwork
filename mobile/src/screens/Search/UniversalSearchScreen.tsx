@@ -137,7 +137,7 @@ export default function UniversalSearchScreen() {
       style={styles.card}
     >
       <View style={styles.row}>
-        <Avatar uri={item.avatar} name={`${item.firstName} ${item.lastName}`} size={40} />
+        <Avatar uri={item.avatar} name={`${item.firstName} ${item.lastName}`} size="md" />
         <View style={styles.freelancerInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.cardTitle}>{item.firstName} {item.lastName}</Text>
@@ -185,10 +185,10 @@ export default function UniversalSearchScreen() {
   const ListEmpty = () => {
     if (loading) return null;
     if (!query.trim()) return (
-      <EmptyState icon="search-outline" title="Search Fetchwork" message="Find jobs, services, or freelancers" />
+      <EmptyState emoji="🔍" title="Search Fetchwork" subtitle="Find jobs, services, or freelancers" />
     );
     return (
-      <EmptyState icon="search-outline" title="No results" message={`No ${activeTab} found for "${query}"`} />
+      <EmptyState emoji="🔍" title="No results" subtitle={`No ${activeTab} found for "${query}"`} />
     );
   };
 

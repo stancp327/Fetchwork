@@ -27,6 +27,8 @@ import DisputeDetailScreen from '../screens/Disputes/DisputeDetailScreen';
 import FileDisputeScreen   from '../screens/Disputes/FileDisputeScreen';
 import BoostsScreen        from '../screens/Boosts/BoostsScreen';
 import AnalyticsScreen     from '../screens/Analytics/AnalyticsScreen';
+import OffersScreen        from '../screens/Profile/OffersScreen';
+import ReferralScreen      from '../screens/Profile/ReferralScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -51,6 +53,8 @@ export default function ProfileStackNavigator() {
       <Stack.Screen name="Wallet"            component={WalletScreen}            options={{ title: 'Wallet' }} />
       <Stack.Screen name="Payments"          component={PaymentsScreen}          options={{ title: 'Payments' }} />
       <Stack.Screen name="Contracts"         component={ContractsScreen}         options={{ title: 'Contracts' }} />
+      <Stack.Screen name="Offers"            component={OffersScreen}            options={{ title: 'My Offers' }} />
+      <Stack.Screen name="Referrals"         component={ReferralScreen}          options={{ title: 'Referrals' }} />
       <Stack.Screen name="Earnings"          component={EarningsScreen}          options={{ title: 'My Earnings' }} />
       <Stack.Screen name="Skills"            component={SkillAssessmentScreen}   options={{ title: 'Skill Assessments' }} />
       <Stack.Screen name="Bookings"          component={BookingListScreen}        options={{ title: 'My Bookings' }} />

@@ -1,33 +1,145 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator, Alert, FlatList, Pressable, RefreshControl,
+  SafeAreaView, StyleSheet, Text, View,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import { teamsApi } from '../../api/endpoints/teamsApi';
 import { ProfileStackParamList } from '../../types/navigation';
+import { teamsApi, MobileTeam, TeamInvitation } from '../../api/endpoints/teamsApi';
+import Avatar from '../../components/common/Avatar';
+import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
+import Card from '../../components/common/Card';
+import EmptyState from '../../components/common/EmptyState';
+import Input from '../../components/common/Input';
 import { colors, radius, spacing, typography } from '../../theme';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Teams'>;
 
-export default function TeamsScreen({ navigation }: Props) {
-  const queryClient = useQueryClient();
+/* ─────── Create Team Section ─────── */
+function CreateTeamCard({ onCreated }: { onCreated: () => void }) {
+  const [expanded, setExpanded] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<'client_team' | 'agency'>('client_team');
-  const [orgName, setOrgName] = useState('');
-  const [orgDescription, setOrgDescription] = useState('');
-  const [selectedOrgId, setSelectedOrgId] = useState('');
-  const [deptName, setDeptName] = useState('');
-  const [deptDescription, setDeptDescription] = useState('');
-  const [teamToAddId, setTeamToAddId] = useState('');
-  const [orgMonthlyCapEnabled, setOrgMonthlyCapEnabled] = useState(false);
-  const [orgMonthlyCap, setOrgMonthlyCap] = useState('0');
-  const [orgAlertThresholdPct, setOrgAlertThresholdPct] = useState('80');
-  const [orgPayoutRequiresApproval, setOrgPayoutRequiresApproval] = useState(false);
-  const [orgPayoutThresholdAmount, setOrgPayoutThresholdAmount] = useState('0');
-  const [orgRequireDualControl, setOrgRequireDualControl] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: () => teamsApi.createTeam({ name: name.trim(), type }),
+    onSuccess: () => {
+      setName('');
+      setExpanded(false);
+      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
+      onCreated();
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to create team';
+      Alert.alert('Error', msg);
+    },
+  });
+
+  if (!expanded) {
+    return (
+      <Button
+        label="Create Team"
+        onPress={() => setExpanded(true)}
+        leftIcon="add-circle-outline"
+        fullWidth
+        style={styles.createBtn}
+      />
+    );
+  }
+
+  return (
+    <Card style={styles.createCard}>
+      <Text style={styles.createTitle}>New Team</Text>
+      <Input label="Team Name" value={name} onChangeText={setName} placeholder="My Team" />
+      <View style={styles.typeRow}>
+        <Pressable
+          style={[styles.typeChip, type === 'client_team' && styles.typeChipActive]}
+          onPress={() => setType('client_team')}
+        >
+          <Text style={[styles.typeChipText, type === 'client_team' && styles.typeChipTextActive]}>Client Team</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.typeChip, type === 'agency' && styles.typeChipActive]}
+          onPress={() => setType('agency')}
+        >
+          <Text style={[styles.typeChipText, type === 'agency' && styles.typeChipTextActive]}>Agency</Text>
+        </Pressable>
+      </View>
+      <View style={styles.createActions}>
+        <Button label="Cancel" variant="secondary" size="sm" onPress={() => setExpanded(false)} style={{ flex: 1 }} />
+        <Button
+          label="Create"
+          size="sm"
+          onPress={() => {
+            if (!name.trim()) { Alert.alert('Error', 'Team name is required'); return; }
+            createMutation.mutate();
+          }}
+          loading={createMutation.isPending}
+          disabled={createMutation.isPending}
+          style={{ flex: 1 }}
+        />
+      </View>
+    </Card>
+  );
+}
+
+/* ─────── Invite Card ─────── */
+function InviteCard({
+  invite, onRespond, isPending,
+}: {
+  invite: TeamInvitation;
+  onRespond: (teamId: string, action: 'accept' | 'decline') => void;
+  isPending: boolean;
+}) {
+  return (
+    <Card style={styles.inviteCard}>
+      <View style={styles.inviteRow}>
+        <Avatar name={invite.name} size="md" />
+        <View style={styles.inviteInfo}>
+          <Text style={styles.inviteName}>{invite.name}</Text>
+          <Text style={styles.inviteMeta}>
+            {invite.type === 'agency' ? 'Agency' : 'Client Team'}
+            {invite.owner ? ` · From ${invite.owner.firstName || 'Owner'}` : ''}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.inviteActions}>
+        <Button label="Decline" variant="secondary" size="sm" onPress={() => onRespond(invite._id, 'decline')} disabled={isPending} style={{ flex: 1 }} />
+        <Button label="Accept" variant="success" size="sm" onPress={() => onRespond(invite._id, 'accept')} disabled={isPending} style={{ flex: 1 }} />
+      </View>
+    </Card>
+  );
+}
+
+/* ─────── Team Card ─────── */
+function TeamListCard({ team, onPress }: { team: MobileTeam; onPress: () => void }) {
+  const activeCount = (team.members || []).filter(m => m.status === 'active').length;
+  const roleLabel = team.currentUserRole
+    ? team.currentUserRole.charAt(0).toUpperCase() + team.currentUserRole.slice(1)
+    : 'Member';
+
+  return (
+    <Card onPress={onPress} style={styles.teamCard}>
+      <View style={styles.teamRow}>
+        <Avatar name={team.name} size="lg" />
+        <View style={styles.teamInfo}>
+          <Text style={styles.teamName} numberOfLines={1}>{team.name}</Text>
+          <Text style={styles.teamMeta}>
+            {team.type === 'agency' ? 'Agency' : 'Client Team'} · {activeCount} member{activeCount !== 1 ? 's' : ''}
+          </Text>
+        </View>
+        <Badge label={roleLabel} variant={team.currentUserIsOwner ? 'warning' : 'neutral'} />
+      </View>
+    </Card>
+  );
+}
+
+/* ─────── Main Screen ─────── */
+export default function TeamsScreen({ navigation }: Props) {
+  const queryClient = useQueryClient();
 
   const teamsQuery = useQuery({
     queryKey: ['mobile-teams'],
@@ -39,583 +151,114 @@ export default function TeamsScreen({ navigation }: Props) {
     queryFn: () => teamsApi.getPendingInvitations(),
   });
 
-  const orgsQuery = useQuery({
-    queryKey: ['mobile-organizations'],
-    queryFn: () => teamsApi.getMyOrganizations(),
-  });
-
-  const orgDetailQuery = useQuery({
-    queryKey: ['mobile-organization-detail', selectedOrgId],
-    queryFn: () => teamsApi.getOrganization(selectedOrgId),
-    enabled: !!selectedOrgId,
-  });
-
-  const queryError = (teamsQuery.error as any)?.response?.data?.error
-    || (invitesQuery.error as any)?.response?.data?.error
-    || (orgsQuery.error as any)?.response?.data?.error
-    || (orgDetailQuery.error as any)?.response?.data?.error;
-
-
-  const createMutation = useMutation({
-    mutationFn: () => teamsApi.createTeam({ name: name.trim(), type }),
-    onSuccess: () => {
-      setMessage('Team created');
-      setError('');
-      setName('');
-      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to create team');
-      setMessage('');
-    },
-  });
-
   const invitationMutation = useMutation({
     mutationFn: ({ teamId, action }: { teamId: string; action: 'accept' | 'decline' }) =>
       action === 'accept' ? teamsApi.acceptInvitation(teamId) : teamsApi.declineInvitation(teamId),
     onSuccess: () => {
-      setMessage('Invitation updated');
-      setError('');
       queryClient.invalidateQueries({ queryKey: ['mobile-team-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
     },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to update invitation');
-      setMessage('');
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed';
+      Alert.alert('Error', msg);
     },
   });
-
-  const createOrgMutation = useMutation({
-    mutationFn: () => teamsApi.createOrganization({ name: orgName.trim(), description: orgDescription.trim() }),
-    onSuccess: (res: any) => {
-      const createdOrgId = res?.organization?._id || '';
-      setMessage('Organization created');
-      setError('');
-      setOrgName('');
-      setOrgDescription('');
-      if (createdOrgId) setSelectedOrgId(createdOrgId);
-      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to create organization');
-      setMessage('');
-    },
-  });
-
-  const addDepartmentMutation = useMutation({
-    mutationFn: () => teamsApi.addOrganizationDepartment(selectedOrgId, { name: deptName.trim(), description: deptDescription.trim() }),
-    onSuccess: () => {
-      setDeptName('');
-      setDeptDescription('');
-      setMessage('Department added');
-      setError('');
-      orgDetailQuery.refetch();
-      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to add department');
-      setMessage('');
-    },
-  });
-
-  const removeDepartmentMutation = useMutation({
-    mutationFn: (deptId: string) => teamsApi.removeOrganizationDepartment(selectedOrgId, deptId),
-    onSuccess: () => {
-      setMessage('Department removed');
-      setError('');
-      orgDetailQuery.refetch();
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to remove department');
-      setMessage('');
-    },
-  });
-
-  const addTeamToOrgMutation = useMutation({
-    mutationFn: () => teamsApi.addTeamToOrganization(selectedOrgId, teamToAddId),
-    onSuccess: () => {
-      setTeamToAddId('');
-      setMessage('Team added to organization');
-      setError('');
-      orgDetailQuery.refetch();
-      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
-      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to add team to organization');
-      setMessage('');
-    },
-  });
-
-  const removeTeamFromOrgMutation = useMutation({
-    mutationFn: (teamId: string) => teamsApi.removeTeamFromOrganization(selectedOrgId, teamId),
-    onSuccess: () => {
-      setMessage('Team removed from organization');
-      setError('');
-      orgDetailQuery.refetch();
-      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
-      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to remove team from organization');
-      setMessage('');
-    },
-  });
-
-  const updateOrgSettingsMutation = useMutation({
-    mutationFn: () => teamsApi.updateOrganizationSettings(selectedOrgId, {
-      spendControls: {
-        monthlyCapEnabled: orgMonthlyCapEnabled,
-        monthlyCap: Number(orgMonthlyCap || 0),
-        alertThreshold: Math.max(0, Math.min(1, Number(orgAlertThresholdPct || 0) / 100)),
-      },
-      approvalThresholds: {
-        payoutRequiresApproval: orgPayoutRequiresApproval,
-        payoutThresholdAmount: Number(orgPayoutThresholdAmount || 0),
-        requireDualControl: orgRequireDualControl,
-      },
-    }),
-    onSuccess: () => {
-      setMessage('Organization settings updated');
-      setError('');
-      orgDetailQuery.refetch();
-      queryClient.invalidateQueries({ queryKey: ['mobile-organizations'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to update organization settings');
-      setMessage('');
-    },
-  });
-
-  const isRefreshing = teamsQuery.isRefetching || invitesQuery.isRefetching || orgsQuery.isRefetching;
-  const isLoading = teamsQuery.isLoading || invitesQuery.isLoading;
-
-  const onRefresh = () => {
-    setError('');
-    setMessage('');
-    teamsQuery.refetch();
-    invitesQuery.refetch();
-    orgsQuery.refetch();
-  };
-
-  const onCreateTeam = () => {
-    if (!name.trim()) {
-      setError('Team name is required');
-      setMessage('');
-      return;
-    }
-    setError('');
-    setMessage('');
-    createMutation.mutate();
-  };
-
-  const onCreateOrganization = () => {
-    if (!orgName.trim()) {
-      setError('Organization name is required');
-      setMessage('');
-      return;
-    }
-    setError('');
-    setMessage('');
-    createOrgMutation.mutate();
-  };
-
-  const onAddDepartment = () => {
-    if (!selectedOrgId) return;
-    if (!deptName.trim()) {
-      setError('Department name is required');
-      return;
-    }
-    setError('');
-    setMessage('');
-    addDepartmentMutation.mutate();
-  };
-
-  const onAddTeamToOrg = () => {
-    if (!selectedOrgId || !teamToAddId) {
-      setError('Select a team to add');
-      return;
-    }
-    setError('');
-    setMessage('');
-    addTeamToOrgMutation.mutate();
-  };
-
-  const onSaveOrgSettings = () => {
-    if (!orgSettingsValid) {
-      setError(orgSettingsValidationError || 'Invalid organization settings values');
-      return;
-    }
-
-    setError('');
-    setMessage('');
-    updateOrgSettingsMutation.mutate();
-  };
 
   const teams = teamsQuery.data?.teams || [];
   const invitations = invitesQuery.data?.invitations || [];
-  const organizations = orgsQuery.data?.organizations || [];
-  const selectedOrg = orgDetailQuery.data?.organization;
-  const selectedOrgTeams = orgDetailQuery.data?.teams || [];
+  const isLoading = teamsQuery.isLoading || invitesQuery.isLoading;
+  const isRefreshing = teamsQuery.isRefetching || invitesQuery.isRefetching;
+  const hasError = teamsQuery.isError || invitesQuery.isError;
 
-  useEffect(() => {
-    if (!selectedOrg) return;
-    const spend = selectedOrg.settings?.spendControls || {};
-    const approvals = selectedOrg.settings?.approvalThresholds || {};
-    setOrgMonthlyCapEnabled(Boolean(spend.monthlyCapEnabled));
-    setOrgMonthlyCap(String(spend.monthlyCap ?? 0));
-    setOrgAlertThresholdPct(String(Math.round(Number(spend.alertThreshold ?? 0.8) * 100)));
-    setOrgPayoutRequiresApproval(Boolean(approvals.payoutRequiresApproval));
-    setOrgPayoutThresholdAmount(String(approvals.payoutThresholdAmount ?? 0));
-    setOrgRequireDualControl(Boolean(approvals.requireDualControl));
-  }, [selectedOrg]);
+  const onRefresh = () => {
+    teamsQuery.refetch();
+    invitesQuery.refetch();
+  };
 
-  const availableTeamsForOrg = useMemo(() => {
-    if (!selectedOrg) return [];
-    const inOrg = new Set(selectedOrgTeams.map((t) => t._id));
-    return teams.filter((t) => !inOrg.has(t._id));
-  }, [selectedOrg, selectedOrgTeams, teams]);
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-  const orgMonthlyCapNum = Number(orgMonthlyCap || 0);
-  const orgAlertThresholdPctNum = Number(orgAlertThresholdPct || 0);
-  const orgPayoutThresholdNum = Number(orgPayoutThresholdAmount || 0);
-
-  const orgSettingsValidationError = !Number.isFinite(orgMonthlyCapNum) || orgMonthlyCapNum < 0
-    ? 'Monthly cap must be a non-negative number'
-    : !Number.isFinite(orgAlertThresholdPctNum) || orgAlertThresholdPctNum < 0 || orgAlertThresholdPctNum > 100
-      ? 'Alert threshold must be between 0 and 100'
-      : !Number.isFinite(orgPayoutThresholdNum) || orgPayoutThresholdNum < 0
-        ? 'Payout threshold must be a non-negative number'
-        : '';
-
-  const orgSettingsValid = !orgSettingsValidationError;
+  if (hasError && !teams.length) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <EmptyState emoji="⚠️" title="Something went wrong" subtitle="Could not load your teams." actionLabel="Retry" onAction={onRefresh} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
+      <FlatList
+        data={teams}
+        keyExtractor={item => item._id}
+        contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-      >
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Create Team</Text>
-          <Input
-            label="Team Name"
-            value={name}
-            onChangeText={setName}
-            placeholder="My Team"
-          />
-
-          <View style={styles.optionRow}>
-            <Button
-              label="Client Team"
-              size="sm"
-              variant={type === 'client_team' ? 'primary' : 'secondary'}
-              onPress={() => setType('client_team')}
-              style={{ flex: 1 }}
-            />
-            <Button
-              label="Agency"
-              size="sm"
-              variant={type === 'agency' ? 'primary' : 'secondary'}
-              onPress={() => setType('agency')}
-              style={{ flex: 1 }}
-            />
-          </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {!error && queryError ? <Text style={styles.error}>{queryError}</Text> : null}
-          {message ? <Text style={styles.success}>{message}</Text> : null}
-
-          <Button
-            label="Create Team"
-            onPress={onCreateTeam}
-            loading={createMutation.isPending}
-            disabled={createMutation.isPending}
-            fullWidth
-          />
-        </View>
-
-        {invitations.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Pending Invitations</Text>
-            {invitations.map((invite) => (
-              <View key={invite._id} style={styles.teamRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.teamName}>{invite.name}</Text>
-                  <Text style={styles.teamMeta}>{invite.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
-                </View>
-                <View style={styles.actionsRow}>
-                  <Button
-                    label="Accept"
-                    size="sm"
-                    variant="success"
-                    onPress={() => {
-                      setError('');
-                      setMessage('');
-                      invitationMutation.mutate({ teamId: invite._id, action: 'accept' });
-                    }}
-                    disabled={invitationMutation.isPending}
+        ListHeaderComponent={
+          <>
+            <CreateTeamCard onCreated={() => {}} />
+            {invitations.length > 0 && (
+              <View style={styles.sectionWrap}>
+                <Text style={styles.sectionTitle}>Pending Invitations</Text>
+                {invitations.map(invite => (
+                  <InviteCard
+                    key={invite._id}
+                    invite={invite}
+                    onRespond={(teamId, action) => invitationMutation.mutate({ teamId, action })}
+                    isPending={invitationMutation.isPending}
                   />
-                  <Button
-                    label="Decline"
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => {
-                      setError('');
-                      setMessage('');
-                      invitationMutation.mutate({ teamId: invite._id, action: 'decline' });
-                    }}
-                    disabled={invitationMutation.isPending}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Organizations</Text>
-          <Input
-            label="Organization Name"
-            value={orgName}
-            onChangeText={setOrgName}
-            placeholder="Acme Group"
-          />
-          <Input
-            label="Description (optional)"
-            value={orgDescription}
-            onChangeText={setOrgDescription}
-            placeholder="What this org does"
-          />
-          <Button
-            testID="teams-create-organization-btn"
-            label="Create Organization"
-            onPress={onCreateOrganization}
-            loading={createOrgMutation.isPending}
-            disabled={createOrgMutation.isPending}
-            fullWidth
-          />
-
-          {!organizations.length ? (
-            <Text style={styles.teamMeta}>No organizations yet.</Text>
-          ) : (
-            organizations.map((org) => (
-              <View key={org._id} style={styles.teamRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.teamName}>{org.name}</Text>
-                  <Text style={styles.teamMeta}>@{org.slug}</Text>
-                  <Text style={styles.teamMeta}>{(org.teams || []).length} teams</Text>
-                </View>
-                <Button
-                  testID={`teams-org-manage-${org._id}`}
-                  label={selectedOrgId === org._id ? 'Close' : 'Manage'}
-                  size="sm"
-                  variant="secondary"
-                  onPress={() => setSelectedOrgId(selectedOrgId === org._id ? '' : org._id)}
-                />
-              </View>
-            ))
-          )}
-        </View>
-
-        {selectedOrgId ? (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Organization Detail</Text>
-            {orgDetailQuery.isLoading ? <Text style={styles.teamMeta}>Loading organization…</Text> : null}
-            {!!selectedOrg && (
-              <>
-                <Text style={styles.teamName}>{selectedOrg.name}</Text>
-                {!!selectedOrg.description && <Text style={styles.teamMeta}>{selectedOrg.description}</Text>}
-
-                <Text style={styles.sectionTitle}>Departments</Text>
-                <Input label="Department name" value={deptName} onChangeText={setDeptName} placeholder="Operations" />
-                <Input label="Description (optional)" value={deptDescription} onChangeText={setDeptDescription} placeholder="What this department handles" />
-                <Button
-                  label="Add Department"
-                  size="sm"
-                  onPress={onAddDepartment}
-                  loading={addDepartmentMutation.isPending}
-                  disabled={addDepartmentMutation.isPending}
-                />
-                {(selectedOrg.departments || []).map((dept) => (
-                  <View key={dept._id} style={styles.teamRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.teamName}>{dept.name}</Text>
-                      {!!dept.description && <Text style={styles.teamMeta}>{dept.description}</Text>}
-                    </View>
-                    <Button
-                      label="Remove"
-                      size="sm"
-                      variant="secondary"
-                      onPress={() => removeDepartmentMutation.mutate(dept._id)}
-                      disabled={removeDepartmentMutation.isPending}
-                    />
-                  </View>
                 ))}
-
-                <Text style={styles.sectionTitle}>Teams in Organization</Text>
-                {!selectedOrgTeams.length ? <Text style={styles.teamMeta}>No teams linked yet.</Text> : null}
-                {selectedOrgTeams.map((team) => (
-                  <View key={team._id} style={styles.teamRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.teamName}>{team.name}</Text>
-                      <Text style={styles.teamMeta}>{team.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
-                    </View>
-                    <Button
-                      label="Remove"
-                      size="sm"
-                      variant="secondary"
-                      onPress={() => removeTeamFromOrgMutation.mutate(team._id)}
-                      disabled={removeTeamFromOrgMutation.isPending}
-                    />
-                  </View>
-                ))}
-
-                <Text style={styles.sectionTitle}>Add Existing Team</Text>
-                <View style={styles.optionRow}>
-                  {availableTeamsForOrg.map((team) => (
-                    <Button
-                      key={team._id}
-                      label={team.name}
-                      size="sm"
-                      variant={teamToAddId === team._id ? 'primary' : 'secondary'}
-                      onPress={() => setTeamToAddId(team._id)}
-                    />
-                  ))}
-                </View>
-                <Button
-                  label="Add Team to Organization"
-                  size="sm"
-                  onPress={onAddTeamToOrg}
-                  loading={addTeamToOrgMutation.isPending}
-                  disabled={addTeamToOrgMutation.isPending || !teamToAddId}
-                />
-
-                <Text style={styles.sectionTitle}>Organization Settings</Text>
-                <View style={styles.optionRow}>
-                  <Button
-                    label={orgMonthlyCapEnabled ? 'Monthly cap ON' : 'Monthly cap OFF'}
-                    size="sm"
-                    variant={orgMonthlyCapEnabled ? 'primary' : 'secondary'}
-                    onPress={() => setOrgMonthlyCapEnabled((v) => !v)}
-                  />
-                  <Button
-                    label={orgPayoutRequiresApproval ? 'Payout approvals ON' : 'Payout approvals OFF'}
-                    size="sm"
-                    variant={orgPayoutRequiresApproval ? 'primary' : 'secondary'}
-                    onPress={() => setOrgPayoutRequiresApproval((v) => !v)}
-                  />
-                  <Button
-                    label={orgRequireDualControl ? 'Dual control ON' : 'Dual control OFF'}
-                    size="sm"
-                    variant={orgRequireDualControl ? 'primary' : 'secondary'}
-                    onPress={() => setOrgRequireDualControl((v) => !v)}
-                  />
-                </View>
-                <Input
-                  testID="teams-org-monthly-cap-input"
-                  label="Monthly cap amount"
-                  value={orgMonthlyCap}
-                  onChangeText={setOrgMonthlyCap}
-                  placeholder="0"
-                  keyboardType="numeric"
-                />
-                <Input
-                  testID="teams-org-alert-threshold-input"
-                  label="Alert threshold %"
-                  value={orgAlertThresholdPct}
-                  onChangeText={setOrgAlertThresholdPct}
-                  placeholder="80"
-                  keyboardType="numeric"
-                />
-                <Input
-                  testID="teams-org-payout-threshold-input"
-                  label="Payout threshold amount"
-                  value={orgPayoutThresholdAmount}
-                  onChangeText={setOrgPayoutThresholdAmount}
-                  placeholder="0"
-                  keyboardType="numeric"
-                />
-                {!!orgSettingsValidationError && (
-                  <Text style={styles.error}>{orgSettingsValidationError}</Text>
-                )}
-                <Button
-                  testID="teams-org-save-settings-btn"
-                  label="Save Organization Settings"
-                  size="sm"
-                  onPress={onSaveOrgSettings}
-                  loading={updateOrgSettingsMutation.isPending}
-                  disabled={updateOrgSettingsMutation.isPending || !orgSettingsValid}
-                />
-              </>
+              </View>
             )}
-          </View>
-        ) : null}
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>My Teams</Text>
-          {!teams.length ? (
-            <View style={styles.emptyWrap}>
-              <Text style={styles.emptyTitle}>{isLoading ? 'Loading teams…' : 'No teams yet'}</Text>
-              <Text style={styles.emptySub}>Create one above or accept an invite.</Text>
-            </View>
-          ) : (
-            teams.map((team) => {
-              const activeCount = (team.members || []).filter((m) => m.status === 'active').length;
-              return (
-                <View key={team._id} style={styles.teamRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.teamName}>{team.name}</Text>
-                    <Text style={styles.teamMeta}>{team.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
-                    <Text style={styles.teamMeta}>{activeCount} active members</Text>
-                  </View>
-                  <Button
-                    testID={`teams-open-team-${team._id}`}
-                    label="Open"
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => navigation.navigate('TeamDetail', { teamId: team._id })}
-                  />
-                </View>
-              );
-            })
-          )}
-        </View>
-      </ScrollView>
+            {teams.length > 0 && <Text style={styles.sectionTitle}>My Teams</Text>}
+          </>
+        }
+        renderItem={({ item }) => (
+          <TeamListCard team={item} onPress={() => navigation.navigate('TeamDetail', { teamId: item._id })} />
+        )}
+        ListEmptyComponent={
+          <EmptyState emoji="👥" title="No teams yet" subtitle="Create one above or accept an invite to get started." />
+        }
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bgSubtle },
-  scroll: { padding: spacing.md, gap: spacing.sm },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  list: { padding: spacing.md, paddingBottom: spacing.xxl },
+  createBtn: { marginBottom: spacing.md },
+  createCard: { marginBottom: spacing.md },
+  createTitle: { ...typography.h4, marginBottom: spacing.sm },
+  typeRow: { flexDirection: 'row', gap: spacing.sm, marginVertical: spacing.sm },
+  typeChip: {
+    flex: 1, paddingVertical: spacing.sm, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.white,
   },
-  sectionTitle: { ...typography.label, color: colors.textSecondary },
-  optionRow: { flexDirection: 'row', gap: spacing.xs },
-  error: { ...typography.caption, color: colors.danger },
-  success: { ...typography.caption, color: colors.success },
-  teamRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
-    marginTop: spacing.xs,
-    gap: spacing.sm,
-  },
-  actionsRow: { flexDirection: 'row', gap: spacing.xs },
+  typeChipActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  typeChipText: { ...typography.label, color: colors.textSecondary },
+  typeChipTextActive: { color: colors.primary },
+  createActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  sectionWrap: { marginBottom: spacing.md },
+  sectionTitle: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm },
+  inviteCard: { marginBottom: spacing.sm },
+  inviteRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  inviteInfo: { flex: 1 },
+  inviteName: { ...typography.body, fontWeight: '600' },
+  inviteMeta: { ...typography.caption, color: colors.textSecondary },
+  inviteActions: { flexDirection: 'row', gap: spacing.sm },
+  teamCard: { marginBottom: spacing.sm },
+  teamRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  teamInfo: { flex: 1 },
   teamName: { ...typography.body, fontWeight: '700', color: colors.textDark },
-  teamMeta: { ...typography.caption, color: colors.textSecondary },
-  emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl },
-  emptyTitle: { ...typography.h4, marginBottom: spacing.xs },
-  emptySub: { ...typography.bodySmall, color: colors.textMuted },
+  teamMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  ActivityIndicator, Alert, TouchableOpacity,
+  ActivityIndicator, Alert, TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -30,7 +30,7 @@ export default function ServiceOrderProgressScreen({ route, navigation }: Props)
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['serviceOrder', serviceId, orderId],
     queryFn: () => servicesApi.getOrder(serviceId, orderId),
   });
@@ -111,7 +111,7 @@ export default function ServiceOrderProgressScreen({ route, navigation }: Props)
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.primary} />}>
         {/* Header */}
         <View style={styles.headerRow}>
           <Text style={styles.title} numberOfLines={2}>

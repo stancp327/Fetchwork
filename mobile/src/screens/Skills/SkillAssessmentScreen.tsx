@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, FlatList,
+  ActivityIndicator, Alert, FlatList, SafeAreaView, RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { skillsApi, SkillCategory, SkillAssessment, SkillQuestion, AssessmentResult } from '../../api/endpoints/skillsApi';
@@ -223,12 +223,15 @@ const SkillAssessmentScreen: React.FC = () => {
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [myAssessments, setMyAssessments] = useState<SkillAssessment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeQuiz, setActiveQuiz] = useState<SkillCategory | null>(null);
   const [quizResult, setQuizResult] = useState<AssessmentResult | null>(null);
   const [tab, setTab] = useState<'browse' | 'mine'>('browse');
 
   const load = useCallback(async () => {
     try {
+      setError(null);
       const [catRes, assRes] = await Promise.all([
         skillsApi.getCategories(),
         user ? skillsApi.getMyAssessments() : Promise.resolve({ assessments: [] }),
@@ -237,10 +240,17 @@ const SkillAssessmentScreen: React.FC = () => {
       setMyAssessments(assRes.assessments || []);
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err : new Error('Failed to load'));
     } finally {
       setLoading(false);
     }
   }, [user]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -282,10 +292,25 @@ const SkillAssessmentScreen: React.FC = () => {
   }
 
   if (loading) return (
-    <View style={styles.center}>
-      <ActivityIndicator color={colors.primary} />
-    </View>
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    </SafeAreaView>
   );
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <TouchableOpacity style={styles.btnPrimary} onPress={() => { setLoading(true); load(); }}>
+            <Text style={styles.btnPrimaryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const renderCategory = ({ item: cat }: { item: SkillCategory }) => {
     const existing = assessmentMap[cat.id];
@@ -386,6 +411,7 @@ const SkillAssessmentScreen: React.FC = () => {
           keyExtractor={(item) => item.category}
           renderItem={renderMyBadge}
           contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Text style={styles.emptyIcon}>🏅</Text>
@@ -402,6 +428,7 @@ const SkillAssessmentScreen: React.FC = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderCategory}
           contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         />
       )}
     </View>
@@ -411,6 +438,7 @@ const SkillAssessmentScreen: React.FC = () => {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md },
+  errorText: { ...typography.bodySmall, color: colors.danger },
   loadingText: { ...typography.body, color: colors.textSecondary },
 
   // Hero

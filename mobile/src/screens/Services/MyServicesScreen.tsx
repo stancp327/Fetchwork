@@ -22,7 +22,7 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 export default function MyServicesScreen({ navigation }: any) {
   const { user } = useAuth();
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['myServices'],
     queryFn: () => servicesApi.myServices(),
     enabled: !!user,
@@ -95,6 +95,17 @@ export default function MyServicesScreen({ navigation }: any) {
     </Card>
   );
 
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -149,6 +160,7 @@ const styles = StyleSheet.create({
   boostBadge: { backgroundColor: colors.primary + '12', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 4 },
   boostText:  { fontSize: 11, color: colors.primary, fontWeight: '600' },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText:  { ...typography.bodySmall, color: colors.danger },
   actions:    { flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
   actionBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.primary + '40', borderRadius: 6, backgroundColor: colors.primaryLight, minHeight: 32 },
   actionBtnText: { fontSize: 12, color: colors.primary, fontWeight: '600' },

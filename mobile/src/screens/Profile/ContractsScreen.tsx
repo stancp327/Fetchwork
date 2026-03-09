@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -17,7 +17,7 @@ export default function ContractsScreen() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const { data, isLoading, isRefetching, refetch } = useQuery({
+  const { data, isLoading, error: queryError, isRefetching, refetch } = useQuery({
     queryKey: ['mobile-contracts', filter],
     queryFn: () => contractsApi.getContracts(filter),
   });
@@ -73,6 +73,27 @@ export default function ContractsScreen() {
   });
 
   const contracts = useMemo(() => data?.contracts || [], [data?.contracts]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (queryError) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -214,4 +235,6 @@ const styles = StyleSheet.create({
   },
   contractTitle: { ...typography.body, fontWeight: '700', color: colors.textDark },
   actionsCol: { gap: spacing.xs, minWidth: 110 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { ...typography.bodySmall, color: colors.danger },
 });

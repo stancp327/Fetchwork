@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Button from '../../components/common/Button';
 import { paymentsApi, SavedPaymentMethod } from '../../api/endpoints/paymentsApi';
@@ -75,7 +75,18 @@ export default function PaymentsScreen() {
     historyQuery.refetch();
   };
 
+  const isLoading = statusQuery.isLoading || methodsQuery.isLoading || historyQuery.isLoading;
   const connect = statusQuery.data;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -216,4 +227,5 @@ const styles = StyleSheet.create({
   amount: { ...typography.body, color: colors.textDark, fontWeight: '700' },
   error: { ...typography.bodySmall, color: colors.danger },
   success: { ...typography.bodySmall, color: colors.success },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

@@ -1,15 +1,30 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  ActivityIndicator, Alert, Pressable, RefreshControl,
+  SafeAreaView, ScrollView, StyleSheet, Text, View,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Input from '../../components/common/Input';
+import Avatar from '../../components/common/Avatar';
+import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
-import { TeamAuditLog, TeamClientRelationship, TeamCustomRole, TeamPermissionKey, teamsApi, TeamMember, TeamMemberRole } from '../../api/endpoints/teamsApi';
+import Card from '../../components/common/Card';
+import EmptyState from '../../components/common/EmptyState';
+import Input from '../../components/common/Input';
+import { teamsApi, TeamMember, TeamAuditLog, MobileTeam } from '../../api/endpoints/teamsApi';
+import { useAuth } from '../../context/AuthContext';
 import { ProfileStackParamList } from '../../types/navigation';
 import { colors, radius, spacing, typography } from '../../theme';
-import { useAuth } from '../../context/AuthContext';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'TeamDetail'>;
+type TabKey = 'dashboard' | 'members' | 'wallet' | 'settings';
+
+const TABS: Array<{ key: TabKey; label: string }> = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'members', label: 'Members' },
+  { key: 'wallet', label: 'Wallet' },
+  { key: 'settings', label: 'Settings' },
+];
 
 const ROLE_OPTIONS: Array<{ label: string; value: 'member' | 'manager' | 'admin' }> = [
   { label: 'Member', value: 'member' },
@@ -17,945 +32,439 @@ const ROLE_OPTIONS: Array<{ label: string; value: 'member' | 'manager' | 'admin'
   { label: 'Admin', value: 'admin' },
 ];
 
-const PERMISSION_OPTIONS: Array<{ key: TeamPermissionKey; label: string }> = [
-  { key: 'manage_members', label: 'Manage Members' },
-  { key: 'manage_billing', label: 'Manage Billing' },
-  { key: 'approve_orders', label: 'Approve Orders' },
-  { key: 'create_jobs', label: 'Post Jobs' },
-  { key: 'manage_services', label: 'Manage Services' },
-  { key: 'view_analytics', label: 'View Analytics' },
-  { key: 'message_clients', label: 'Message Clients' },
-  { key: 'assign_work', label: 'Assign Work' },
-];
+function getMemberName(m: TeamMember): string {
+  if (typeof m.user === 'string') return m.user;
+  const u = m.user;
+  return `${u?.firstName || ''} ${u?.lastName || ''}`.trim() || u?.email || 'Member';
+}
+
+function getMemberId(m: TeamMember): string {
+  return typeof m.user === 'string' ? m.user : m.user?._id || '';
+}
+
+function getMemberImage(m: TeamMember): string | undefined {
+  return typeof m.user === 'string' ? undefined : m.user?.profileImage ?? undefined;
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function roleBadgeVariant(role: string): 'purple' | 'danger' | 'warning' | 'neutral' {
+  if (role === 'owner') return 'purple';
+  if (role === 'admin') return 'danger';
+  if (role === 'manager') return 'warning';
+  return 'neutral';
+}
+
+type ApiError = { response?: { data?: { error?: string } } };
 
 export default function TeamDetailScreen({ route }: Props) {
   const { teamId } = route.params;
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'member' | 'manager' | 'admin'>('member');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [transferTargetUserId, setTransferTargetUserId] = useState('');
-  const [newRoleName, setNewRoleName] = useState('');
-  const [newRolePermissions, setNewRolePermissions] = useState<TeamPermissionKey[]>([]);
-  const [clientUserId, setClientUserId] = useState('');
-  const [clientSearch, setClientSearch] = useState('');
-  const [clientProjectLabel, setClientProjectLabel] = useState('');
-  const [clientAccessLevel, setClientAccessLevel] = useState<'view_assigned' | 'view_all' | 'collaborate'>('view_assigned');
-  const [editingRoleId, setEditingRoleId] = useState('');
-  const [editingRoleName, setEditingRoleName] = useState('');
-  const [editingRolePermissions, setEditingRolePermissions] = useState<TeamPermissionKey[]>([]);
-  const [editingClientId, setEditingClientId] = useState('');
-  const [editingClientLabel, setEditingClientLabel] = useState('');
-  const [capAmountInput, setCapAmountInput] = useState('0');
-  const [alertThresholdPctInput, setAlertThresholdPctInput] = useState('80');
-  const [payoutThresholdInput, setPayoutThresholdInput] = useState('0');
 
-  const { data, refetch, isRefetching, isLoading } = useQuery({
+  // ── Queries ────────────────────────────────────────────────────────────
+
+  const { data, refetch, isRefetching, isLoading, isError } = useQuery({
     queryKey: ['mobile-team-detail', teamId],
     queryFn: () => teamsApi.getTeam(teamId),
   });
 
-  const team = data?.team;
+  const team: MobileTeam | undefined = data?.team;
 
   const myMember = useMemo(() => {
     if (!team?.members || !user?._id) return null;
-    return team.members.find((m) => {
-      const memberId = typeof m.user === 'string' ? m.user : m.user?._id;
-      return memberId === user._id;
-    });
+    return team.members.find((m) => getMemberId(m) === user._id) ?? null;
   }, [team?.members, user?._id]);
 
-  const myRole = ((team?.currentUserRole || myMember?.role || 'member') as TeamMemberRole);
+  const myRole = team?.currentUserRole || myMember?.role || 'member';
   const isOwner = Boolean(team?.currentUserIsOwner || team?.currentUserCanDelete || myRole === 'owner');
   const isAdmin = myRole === 'admin';
   const canManageMembers = Boolean(team?.currentUserCanManageMembers || isOwner || isAdmin || myRole === 'manager');
 
-  const inviteMutation = useMutation({
-    mutationFn: () => teamsApi.inviteMember(teamId, { email: inviteEmail.trim(), role: inviteRole }),
-    onSuccess: (res) => {
-      setMessage(res.message || 'Invitation sent');
-      setError('');
-      setInviteEmail('');
-      queryClient.invalidateQueries({ queryKey: ['mobile-team-detail', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to send invitation');
-      setMessage('');
-    },
-  });
+  const activeMembers = useMemo(
+    () => (team?.members || []).filter((m) => m.status === 'active'),
+    [team?.members],
+  );
+  const transferCandidates = useMemo(
+    () => activeMembers.filter((m) => m.role !== 'owner'),
+    [activeMembers],
+  );
 
-  const removeMemberMutation = useMutation({
-    mutationFn: (userId: string) => teamsApi.removeMember(teamId, userId),
-    onSuccess: (res) => {
-      setMessage(res.message || 'Member removed');
-      setError('');
-      queryClient.invalidateQueries({ queryKey: ['mobile-team-detail', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to remove member');
-      setMessage('');
-    },
-  });
-
-  const transferOwnershipMutation = useMutation({
-    mutationFn: (targetUserId: string) => teamsApi.transferOwnership(teamId, targetUserId),
-    onSuccess: (res) => {
-      setMessage(res.message || 'Ownership transferred');
-      setError('');
-      setTransferTargetUserId('');
-      queryClient.invalidateQueries({ queryKey: ['mobile-team-detail', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['mobile-team-audit', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to transfer ownership');
-      setMessage('');
-    },
-  });
-
-  const { data: auditData, refetch: refetchAudit, isFetching: auditLoading } = useQuery({
+  const { data: auditData, refetch: refetchAudit, isFetching: auditFetching } = useQuery({
     queryKey: ['mobile-team-audit', teamId],
-    queryFn: () => teamsApi.getAuditLogs(teamId, { page: 1, limit: 20 }),
+    queryFn: () => teamsApi.getAuditLogs(teamId, { page: 1, limit: 5 }),
     enabled: isOwner || isAdmin,
   });
-
-  const { data: customRolesData, refetch: refetchCustomRoles } = useQuery({
-    queryKey: ['mobile-team-custom-roles', teamId],
-    queryFn: () => teamsApi.getCustomRoles(teamId),
-    enabled: isOwner || isAdmin,
-  });
-
-  const { data: clientsData, refetch: refetchClients } = useQuery({
-    queryKey: ['mobile-team-clients', teamId],
-    queryFn: () => teamsApi.getLinkedClients(teamId),
-    enabled: isOwner || isAdmin,
-  });
-
-  const { data: clientLookupData, isFetching: clientLookupLoading } = useQuery({
-    queryKey: ['mobile-team-client-lookup', teamId, clientSearch],
-    queryFn: () => teamsApi.lookupUsersForTeam(teamId, clientSearch),
-    enabled: (isOwner || isAdmin) && clientSearch.trim().length >= 2,
-  });
+  const auditLogs: TeamAuditLog[] = auditData?.logs || [];
 
   const { data: spendControlsData, refetch: refetchSpendControls } = useQuery({
     queryKey: ['mobile-team-spend-controls', teamId],
     queryFn: () => teamsApi.getSpendControls(teamId),
-    enabled: isOwner || isAdmin,
+    enabled: isOwner,
   });
 
-  const createCustomRoleMutation = useMutation({
-    mutationFn: (payload: { name: string; permissions: TeamPermissionKey[] }) => teamsApi.createCustomRole(teamId, payload),
-    onSuccess: () => {
-      setNewRoleName('');
-      setNewRolePermissions([]);
-      refetchCustomRoles();
-      refetch();
-      setMessage('Custom role created');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to create custom role');
-      setMessage('');
-    },
+  // ── Mutations ──────────────────────────────────────────────────────────
+
+  const invalidateTeam = () => {
+    queryClient.invalidateQueries({ queryKey: ['mobile-team-detail', teamId] });
+    queryClient.invalidateQueries({ queryKey: ['mobile-teams'] });
+  };
+
+  const inviteMutation = useMutation({
+    mutationFn: () => teamsApi.inviteMember(teamId, { email: inviteEmail.trim(), role: inviteRole }),
+    onSuccess: (res) => { Alert.alert('Success', res.message || 'Invitation sent'); setInviteEmail(''); invalidateTeam(); },
+    onError: (err: ApiError) => { Alert.alert('Error', err?.response?.data?.error || 'Failed to send invitation'); },
   });
 
-  const updateCustomRoleMutation = useMutation({
-    mutationFn: (payload: { roleId: string; name: string; permissions: TeamPermissionKey[] }) =>
-      teamsApi.updateCustomRole(teamId, payload.roleId, { name: payload.name, permissions: payload.permissions }),
-    onSuccess: () => {
-      setEditingRoleId('');
-      setEditingRoleName('');
-      setEditingRolePermissions([]);
-      refetchCustomRoles();
-      refetch();
-      setMessage('Custom role updated');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to update custom role');
-      setMessage('');
-    },
+  const removeMemberMutation = useMutation({
+    mutationFn: (userId: string) => teamsApi.removeMember(teamId, userId),
+    onSuccess: () => invalidateTeam(),
+    onError: (err: ApiError) => { Alert.alert('Error', err?.response?.data?.error || 'Failed to remove member'); },
   });
 
-  const deleteCustomRoleMutation = useMutation({
-    mutationFn: (roleId: string) => teamsApi.deleteCustomRole(teamId, roleId),
-    onSuccess: () => {
-      refetchCustomRoles();
-      refetch();
-      setMessage('Custom role deleted');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to delete custom role');
-      setMessage('');
-    },
+  const transferOwnershipMutation = useMutation({
+    mutationFn: (targetUserId: string) => teamsApi.transferOwnership(teamId, targetUserId),
+    onSuccess: (res) => { Alert.alert('Success', res.message || 'Ownership transferred'); setTransferTargetUserId(''); invalidateTeam(); },
+    onError: (err: ApiError) => { Alert.alert('Error', err?.response?.data?.error || 'Failed to transfer ownership'); },
   });
 
-  const assignCustomRoleMutation = useMutation({
-    mutationFn: ({ userId, customRoleName }: { userId: string; customRoleName: string }) =>
-      teamsApi.assignMemberCustomRole(teamId, userId, customRoleName),
-    onSuccess: () => {
-      refetch();
-      setMessage('Member custom role updated');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to update member custom role');
-      setMessage('');
-    },
-  });
-
-  const linkClientMutation = useMutation({
-    mutationFn: (payload: { clientUserId: string; projectLabel?: string; accessLevel?: 'view_assigned' | 'view_all' | 'collaborate' }) => teamsApi.createLinkedClient(teamId, payload),
-    onSuccess: () => {
-      setClientUserId('');
-      setClientSearch('');
-      setClientProjectLabel('');
-      setClientAccessLevel('view_assigned');
-      refetchClients();
-      setMessage('Client linked');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to link client');
-      setMessage('');
-    },
-  });
-
-  const updateLinkedClientMutation = useMutation({
-    mutationFn: ({ clientId, accessLevel, projectLabel }: { clientId: string; accessLevel: 'view_assigned' | 'view_all' | 'collaborate'; projectLabel?: string }) =>
-      teamsApi.updateLinkedClient(teamId, clientId, { accessLevel, projectLabel }),
-    onSuccess: () => {
-      refetchClients();
-      setMessage('Linked client updated');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to update linked client');
-      setMessage('');
-    },
-  });
-
-  const unlinkClientMutation = useMutation({
-    mutationFn: (linkedClientId: string) => teamsApi.removeLinkedClient(teamId, linkedClientId),
-    onSuccess: () => {
-      refetchClients();
-      setMessage('Client unlinked');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to unlink client');
-      setMessage('');
-    },
-  });
-
-  const updateSpendControlsMutation = useMutation({
-    mutationFn: (payload: { spendControls: any; approvalThresholds: any }) => teamsApi.updateSpendControls(teamId, payload),
-    onSuccess: () => {
-      refetchSpendControls();
-      setMessage('Team controls updated');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(err?.response?.data?.error || 'Failed to update team controls');
-      setMessage('');
-    },
-  });
+  // ── Actions ────────────────────────────────────────────────────────────
 
   const onInvite = () => {
-    if (!inviteEmail.trim()) {
-      setError('Email is required');
-      setMessage('');
-      return;
-    }
-    setError('');
-    setMessage('');
+    if (!inviteEmail.trim()) { Alert.alert('Validation', 'Email is required'); return; }
     inviteMutation.mutate();
   };
 
   const onRemoveMember = (member: TeamMember) => {
-    const memberId = typeof member.user === 'string' ? member.user : member.user?._id;
-    if (!memberId) return;
-
+    const id = getMemberId(member);
+    if (!id) return;
     Alert.alert('Remove member?', 'This user will lose access to the team.', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => removeMemberMutation.mutate(memberId),
-      },
+      { text: 'Remove', style: 'destructive', onPress: () => removeMemberMutation.mutate(id) },
     ]);
   };
 
-  const activeMembers = (team?.members || []).filter((m) => m.status === 'active');
-  const transferCandidates = activeMembers.filter((m) => m.role !== 'owner');
-  const auditLogs: TeamAuditLog[] = auditData?.logs || [];
-  const customRoles: TeamCustomRole[] = customRolesData?.customRoles || [];
-  const linkedClients: TeamClientRelationship[] = clientsData?.clients || [];
-  const clientLookupUsers = clientLookupData?.users || [];
-
-  useEffect(() => {
-    if (!spendControlsData) return;
-    setCapAmountInput(String(spendControlsData.spendControls.monthlyCap ?? 0));
-    setAlertThresholdPctInput(String(Math.round(Number(spendControlsData.spendControls.alertThreshold ?? 0.8) * 100)));
-    setPayoutThresholdInput(String(spendControlsData.approvalThresholds.payoutThresholdAmount ?? 0));
-  }, [spendControlsData]);
-
-  const toggleRolePermission = (permissionKey: TeamPermissionKey) => {
-    setNewRolePermissions((prev) => (
-      prev.includes(permissionKey) ? prev.filter((p) => p !== permissionKey) : [...prev, permissionKey]
-    ));
-  };
-
-  const onCreateCustomRole = () => {
-    const name = newRoleName.trim();
-    if (!name) {
-      setError('Custom role name is required');
-      return;
-    }
-
-    if (!newRolePermissions.length) {
-      setError('Pick at least one permission');
-      return;
-    }
-
-    createCustomRoleMutation.mutate({ name, permissions: newRolePermissions });
-  };
-
-  const onLinkClient = () => {
-    if (!clientUserId.trim()) {
-      setError('Client user id is required');
-      return;
-    }
-    linkClientMutation.mutate({
-      clientUserId: clientUserId.trim(),
-      accessLevel: clientAccessLevel,
-      projectLabel: clientProjectLabel.trim(),
-    });
-  };
-
-  const startEditRole = (role: TeamCustomRole) => {
-    setEditingRoleId(role._id);
-    setEditingRoleName(role.name);
-    setEditingRolePermissions(role.permissions || []);
-  };
-
-  const toggleEditingRolePermission = (permissionKey: TeamPermissionKey) => {
-    setEditingRolePermissions((prev) => (
-      prev.includes(permissionKey) ? prev.filter((p) => p !== permissionKey) : [...prev, permissionKey]
-    ));
-  };
-
-  const saveEditedRole = () => {
-    if (!editingRoleId || !editingRoleName.trim()) return;
-    if (!editingRolePermissions.length) {
-      setError('Pick at least one permission for edited role');
-      return;
-    }
-    updateCustomRoleMutation.mutate({
-      roleId: editingRoleId,
-      name: editingRoleName.trim(),
-      permissions: editingRolePermissions,
-    });
-  };
-
-  const saveClientLabel = (clientId: string, accessLevel: 'view_assigned' | 'view_all' | 'collaborate') => {
-    updateLinkedClientMutation.mutate({ clientId, accessLevel, projectLabel: editingClientLabel.trim() });
-    setEditingClientId('');
-    setEditingClientLabel('');
-  };
-
-  const capAmountNum = Number(capAmountInput || 0);
-  const alertThresholdPctNum = Number(alertThresholdPctInput || 0);
-  const payoutThresholdNum = Number(payoutThresholdInput || 0);
-
-  const numericControlsValidationError = !Number.isFinite(capAmountNum) || capAmountNum < 0
-    ? 'Monthly cap must be a non-negative number'
-    : !Number.isFinite(alertThresholdPctNum) || alertThresholdPctNum < 0 || alertThresholdPctNum > 100
-      ? 'Alert threshold must be between 0 and 100'
-      : !Number.isFinite(payoutThresholdNum) || payoutThresholdNum < 0
-        ? 'Payout threshold must be a non-negative number'
-        : '';
-
-  const numericControlsValid = !numericControlsValidationError;
-
-  const saveNumericTeamControls = () => {
-    if (!spendControlsData) return;
-
-    if (!numericControlsValid) {
-      setError(numericControlsValidationError || 'Invalid team controls values');
-      return;
-    }
-
-    setError('');
-    updateSpendControlsMutation.mutate({
-      spendControls: {
-        ...spendControlsData.spendControls,
-        monthlyCap: capAmountNum,
-        alertThreshold: alertThresholdPctNum / 100,
-      },
-      approvalThresholds: {
-        ...spendControlsData.approvalThresholds,
-        payoutThresholdAmount: payoutThresholdNum,
-      },
-    });
-  };
-
   const onTransferOwnership = () => {
-    if (!transferTargetUserId) {
-      setError('Pick a member to transfer ownership to');
-      return;
-    }
-
-    Alert.alert(
-      'Transfer ownership?',
-      'This will remove your owner privileges and cannot be auto-reverted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Transfer',
-          style: 'destructive',
-          onPress: () => transferOwnershipMutation.mutate(transferTargetUserId),
-        },
-      ]
-    );
+    if (!transferTargetUserId) return;
+    Alert.alert('Transfer ownership?', 'This will remove your owner privileges and cannot be auto-reverted.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Transfer', style: 'destructive', onPress: () => transferOwnershipMutation.mutate(transferTargetUserId) },
+    ]);
   };
 
   const onRefreshAll = () => {
     refetch();
-    if (isOwner || isAdmin) {
-      refetchAudit();
-      refetchCustomRoles();
-      refetchClients();
-      refetchSpendControls();
+    if (isOwner || isAdmin) refetchAudit();
+    if (isOwner) refetchSpendControls();
+  };
+
+  // ── Loading / Error ────────────────────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.centered}><ActivityIndicator size="large" color={colors.primary} /></View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError || !team) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <EmptyState title="Could not load team" subtitle="Something went wrong. Tap below to retry." actionLabel="Retry" onAction={() => refetch()} />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Tab: Dashboard ─────────────────────────────────────────────────────
+
+  const renderDashboard = () => (
+    <View style={s.tabContent}>
+      <Card>
+        <Text style={s.teamName}>{team.name}</Text>
+        <Badge label={team.type === 'agency' ? 'Agency' : 'Client Team'} variant={team.type === 'agency' ? 'purple' : 'primary'} />
+        {team.description ? <Text style={s.description}>{team.description}</Text> : null}
+      </Card>
+
+      <View style={s.statsGrid}>
+        {[
+          { value: String(activeMembers.length), label: 'Members' },
+          { value: '0', label: 'Active Jobs' },
+          { value: '$0', label: 'Balance' },
+          { value: '0', label: 'Pending' },
+        ].map((stat) => (
+          <Card key={stat.label} style={s.statCard}>
+            <Text style={s.statValue}>{stat.value}</Text>
+            <Text style={s.statLabel}>{stat.label}</Text>
+          </Card>
+        ))}
+      </View>
+
+      {(isOwner || isAdmin) && (
+        <Card>
+          <Text style={s.sectionTitle}>Recent Activity</Text>
+          {auditFetching && !auditLogs.length ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: spacing.sm }} />
+          ) : null}
+          {!auditFetching && !auditLogs.length ? <Text style={s.emptyText}>No activity recorded yet.</Text> : null}
+          {auditLogs.map((log) => (
+            <View key={log._id} style={s.activityRow}>
+              <View style={s.activityDot} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.activityAction}>{String(log.action || '').replace(/_/g, ' ')}</Text>
+                <Text style={s.activityMeta}>
+                  {log.actor?.firstName || 'User'} {log.actor?.lastName || ''} {'\u00B7'} {formatTimeAgo(log.createdAt)}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </Card>
+      )}
+    </View>
+  );
+
+  // ── Tab: Members ───────────────────────────────────────────────────────
+
+  const renderMembers = () => (
+    <View style={s.tabContent}>
+      <Card>
+        <Text style={s.sectionTitle}>Team Members ({activeMembers.length})</Text>
+        {!activeMembers.length ? <Text style={s.emptyText}>No active members.</Text> : null}
+        {activeMembers.map((member) => {
+          const memberId = getMemberId(member);
+          const name = getMemberName(member);
+          const canRemove = canManageMembers && member.role !== 'owner' && memberId !== user?._id;
+          return (
+            <View key={`${memberId}-${member.role}`} style={s.memberRow}>
+              <Avatar uri={getMemberImage(member)} name={name} size="sm" />
+              <View style={s.memberInfo}>
+                <Text style={s.memberName}>{name}</Text>
+                <Badge label={member.role} variant={roleBadgeVariant(member.role)} />
+              </View>
+              {canRemove ? (
+                <Button label="Remove" variant="danger" size="sm" onPress={() => onRemoveMember(member)} loading={removeMemberMutation.isPending} />
+              ) : null}
+            </View>
+          );
+        })}
+      </Card>
+
+      {canManageMembers && (
+        <Card>
+          <Text style={s.sectionTitle}>Invite Member</Text>
+          <Input label="Email" value={inviteEmail} onChangeText={setInviteEmail} placeholder="teammate@email.com" autoCapitalize="none" keyboardType="email-address" />
+          <Text style={s.fieldLabel}>Role</Text>
+          <View style={s.roleRow}>
+            {ROLE_OPTIONS.map((opt) => (
+              <Pressable key={opt.value} style={[s.roleChip, inviteRole === opt.value && s.roleChipActive]} onPress={() => setInviteRole(opt.value)}>
+                <Text style={[s.roleChipText, inviteRole === opt.value && s.roleChipTextActive]}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Button label="Send Invite" onPress={onInvite} loading={inviteMutation.isPending} disabled={inviteMutation.isPending} fullWidth />
+        </Card>
+      )}
+    </View>
+  );
+
+  // ── Tab: Wallet ────────────────────────────────────────────────────────
+
+  const renderWallet = () => {
+    const sc = spendControlsData?.spendControls;
+    return (
+      <View style={s.tabContent}>
+        <Card style={s.balanceCard}>
+          <Text style={s.balanceLabel}>Team Balance</Text>
+          <Text style={s.balanceValue}>$0.00</Text>
+        </Card>
+
+        {isOwner && sc ? (
+          <Card>
+            <Text style={s.sectionTitle}>Spend Controls</Text>
+            <View style={s.controlRow}>
+              <Text style={s.controlLabel}>Monthly Cap</Text>
+              <Text style={s.controlValue}>{sc.monthlyCapEnabled ? `$${Number(sc.monthlyCap || 0).toFixed(2)}` : 'Disabled'}</Text>
+            </View>
+            {sc.monthlyCapEnabled ? (
+              <View style={s.controlRow}>
+                <Text style={s.controlLabel}>Alert Threshold</Text>
+                <Text style={s.controlValue}>{Math.round(Number(sc.alertThreshold || 0.8) * 100)}%</Text>
+              </View>
+            ) : null}
+            {sc.currentMonthSpend !== undefined ? (
+              <View style={s.controlRow}>
+                <Text style={s.controlLabel}>Spent This Month</Text>
+                <Text style={s.controlValue}>${Number(sc.currentMonthSpend).toFixed(2)}</Text>
+              </View>
+            ) : null}
+          </Card>
+        ) : null}
+
+        <Card>
+          <View style={s.comingSoonBox}>
+            <Text style={s.comingSoonTitle}>Wallet Features</Text>
+            <Text style={s.comingSoonText}>Full wallet management including deposits, withdrawals, and transaction history is coming soon.</Text>
+          </View>
+        </Card>
+      </View>
+    );
+  };
+
+  // ── Tab: Settings ──────────────────────────────────────────────────────
+
+  const renderSettings = () => (
+    <View style={s.tabContent}>
+      <Card>
+        <Text style={s.sectionTitle}>Team Information</Text>
+        <View style={s.infoRow}><Text style={s.infoLabel}>Name</Text><Text style={s.infoValue}>{team.name}</Text></View>
+        <View style={s.infoRow}><Text style={s.infoLabel}>Type</Text><Text style={s.infoValue}>{team.type === 'agency' ? 'Agency' : 'Client Team'}</Text></View>
+        {team.description ? (
+          <View style={s.infoRow}><Text style={s.infoLabel}>Description</Text><Text style={s.infoValue}>{team.description}</Text></View>
+        ) : null}
+      </Card>
+
+      {isOwner && transferCandidates.length > 0 ? (
+        <Card>
+          <Text style={s.sectionTitle}>Transfer Ownership</Text>
+          <Text style={s.description}>Choose an active member to become the new owner. This action cannot be auto-reverted.</Text>
+          <View style={s.transferList}>
+            {transferCandidates.map((member) => {
+              const memberId = getMemberId(member);
+              const name = getMemberName(member);
+              const selected = transferTargetUserId === memberId;
+              return (
+                <Pressable key={memberId} style={[s.transferOption, selected && s.transferOptionSelected]} onPress={() => setTransferTargetUserId(memberId)}>
+                  <Avatar uri={getMemberImage(member)} name={name} size="xs" />
+                  <Text style={[s.transferOptionText, selected && s.transferOptionTextSelected]}>{name}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Button
+            label="Transfer Ownership" variant="danger" onPress={onTransferOwnership} fullWidth
+            loading={transferOwnershipMutation.isPending}
+            disabled={!transferTargetUserId || transferOwnershipMutation.isPending || team.transferState === 'applying' || team.transferState === 'pending'}
+          />
+          {team.transferState && team.transferState !== 'idle' ? (
+            <Text style={s.warningText}>Ownership transfer is currently in progress.</Text>
+          ) : null}
+        </Card>
+      ) : null}
+
+      <Card style={s.dangerCard}>
+        <Text style={s.dangerTitle}>Danger Zone</Text>
+        <Text style={s.dangerText}>Deleting a team is permanent and will remove all members, history, and associated data. This feature is not yet available on mobile.</Text>
+      </Card>
+    </View>
+  );
+
+  // ── Main render ────────────────────────────────────────────────────────
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'dashboard': return renderDashboard();
+      case 'members':   return renderMembers();
+      case 'wallet':    return renderWallet();
+      case 'settings':  return renderSettings();
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={s.safe}>
+      <View style={s.tabBar}>
+        {TABS.map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <Pressable key={tab.key} style={[s.tabButton, active && s.tabButtonActive]} onPress={() => setActiveTab(tab.key)}>
+              <Text style={[s.tabLabel, active && s.tabLabelActive]}>{tab.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <ScrollView
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching || auditLoading} onRefresh={onRefreshAll} tintColor={colors.primary} />}
+        contentContainerStyle={s.scroll}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefreshAll} tintColor={colors.primary} />}
       >
-        <View style={styles.card}>
-          <Text style={styles.name}>{team?.name || (isLoading ? 'Loading team…' : 'Team')}</Text>
-          <Text style={styles.meta}>{team?.type === 'agency' ? 'Agency' : 'Client Team'}</Text>
-          {!!team?.description && <Text style={styles.description}>{team.description}</Text>}
-          {team?.transferState && team.transferState !== 'idle' && (
-            <Text style={styles.warning}>Ownership transfer is currently in progress.</Text>
-          )}
-        </View>
-
-        {canManageMembers && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Invite Member</Text>
-            <Input
-              label="Email"
-              value={inviteEmail}
-              onChangeText={setInviteEmail}
-              placeholder="teammate@email.com"
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-
-            <View style={styles.optionRow}>
-              {ROLE_OPTIONS.map((option) => {
-                const selected = inviteRole === option.value;
-                return (
-                  <Button
-                    key={option.value}
-                    label={option.label}
-                    size="sm"
-                    variant={selected ? 'primary' : 'secondary'}
-                    onPress={() => setInviteRole(option.value)}
-                    style={{ flex: 1 }}
-                  />
-                );
-              })}
-            </View>
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {message ? <Text style={styles.success}>{message}</Text> : null}
-
-            <Button
-              label="Send Invite"
-              onPress={onInvite}
-              loading={inviteMutation.isPending}
-              disabled={inviteMutation.isPending}
-              fullWidth
-            />
-          </View>
-        )}
-
-        {isOwner && transferCandidates.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Transfer Ownership</Text>
-            <Text style={styles.description}>Choose an active member to become the new owner.</Text>
-            <View style={styles.optionRow}>
-              {transferCandidates.map((member) => {
-                const memberId = typeof member.user === 'string' ? member.user : member.user?._id || '';
-                const selected = transferTargetUserId === memberId;
-                const name = typeof member.user === 'string'
-                  ? member.user
-                  : `${member.user?.firstName || ''} ${member.user?.lastName || ''}`.trim() || member.user?.email || 'Member';
-                return (
-                  <Button
-                    key={memberId}
-                    label={name}
-                    size="sm"
-                    variant={selected ? 'primary' : 'secondary'}
-                    onPress={() => setTransferTargetUserId(memberId)}
-                    style={{ flex: 1 }}
-                  />
-                );
-              })}
-            </View>
-            <Button
-              label="Transfer Ownership"
-              variant="danger"
-              onPress={onTransferOwnership}
-              loading={transferOwnershipMutation.isPending}
-              disabled={!transferTargetUserId || transferOwnershipMutation.isPending || team?.transferState === 'applying' || team?.transferState === 'pending'}
-              fullWidth
-            />
-          </View>
-        )}
-
-        {(isOwner || isAdmin) && (
-          <View style={styles.card}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.sectionTitle}>Audit Trail</Text>
-              <Button label="Refresh" size="sm" variant="secondary" onPress={() => refetchAudit()} loading={auditLoading} />
-            </View>
-            {auditLoading ? <Text style={styles.meta}>Loading audit logs…</Text> : null}
-            {!auditLoading && !auditLogs.length ? <Text style={styles.empty}>No audit events yet.</Text> : null}
-            {auditLogs.map((log) => (
-              <View key={log._id} style={styles.auditRow}>
-                <Text style={styles.memberName}>{String(log.action || '').replaceAll('_', ' ')}</Text>
-                <Text style={styles.memberMeta}>
-                  {(log.actor?.firstName || 'User')} {(log.actor?.lastName || '')} • {new Date(log.createdAt).toLocaleString()}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {(isOwner || isAdmin) && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Custom Roles</Text>
-            <Input
-              testID="teamdetail-custom-role-name-input"
-              label="Role Name"
-              value={newRoleName}
-              onChangeText={setNewRoleName}
-              placeholder="Finance Reviewer"
-            />
-            <Text style={styles.meta}>Permissions</Text>
-            <View style={styles.optionRow}>
-              {PERMISSION_OPTIONS.map((perm) => (
-                <Button
-                  key={perm.key}
-                  label={perm.label}
-                  size="sm"
-                  variant={newRolePermissions.includes(perm.key) ? 'primary' : 'secondary'}
-                  onPress={() => toggleRolePermission(perm.key)}
-                />
-              ))}
-            </View>
-            <Button
-              testID="teamdetail-create-custom-role-btn"
-              label="Create Custom Role"
-              onPress={onCreateCustomRole}
-              loading={createCustomRoleMutation.isPending}
-              disabled={createCustomRoleMutation.isPending}
-              fullWidth
-            />
-
-            {customRoles.map((role) => (
-              <View key={role._id} style={styles.memberRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.memberName}>{role.name}</Text>
-                  <Text style={styles.memberMeta}>{(role.permissions || []).join(', ') || 'No permissions'}</Text>
-
-                  {editingRoleId === role._id && (
-                    <View style={{ marginTop: spacing.xs }}>
-                      <Input
-                        label="Edit role name"
-                        value={editingRoleName}
-                        onChangeText={setEditingRoleName}
-                        placeholder="Role name"
-                      />
-                      <View style={styles.optionRow}>
-                        {PERMISSION_OPTIONS.map((perm) => (
-                          <Button
-                            key={`${role._id}-${perm.key}`}
-                            label={perm.label}
-                            size="sm"
-                            variant={editingRolePermissions.includes(perm.key) ? 'primary' : 'secondary'}
-                            onPress={() => toggleEditingRolePermission(perm.key)}
-                          />
-                        ))}
-                      </View>
-                      <View style={styles.optionRow}>
-                        <Button
-                          label="Save"
-                          size="sm"
-                          onPress={saveEditedRole}
-                          loading={updateCustomRoleMutation.isPending}
-                          disabled={updateCustomRoleMutation.isPending}
-                        />
-                        <Button
-                          label="Cancel"
-                          size="sm"
-                          variant="secondary"
-                          onPress={() => {
-                            setEditingRoleId('');
-                            setEditingRoleName('');
-                            setEditingRolePermissions([]);
-                          }}
-                        />
-                      </View>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.optionRow}>
-                  <Button
-                    label="Edit"
-                    variant="secondary"
-                    size="sm"
-                    onPress={() => startEditRole(role)}
-                  />
-                  <Button
-                    label="Delete"
-                    variant="danger"
-                    size="sm"
-                    onPress={() => deleteCustomRoleMutation.mutate(role._id)}
-                    loading={deleteCustomRoleMutation.isPending}
-                  />
-                </View>
-              </View>
-            ))}
-            {!customRoles.length && <Text style={styles.empty}>No custom roles yet.</Text>}
-          </View>
-        )}
-
-        {(isOwner || isAdmin) && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Linked Clients</Text>
-            <Input
-              testID="teamdetail-client-search-input"
-              label="Find Client (name or email)"
-              value={clientSearch}
-              onChangeText={setClientSearch}
-              placeholder="Search client"
-              autoCapitalize="none"
-            />
-            {clientLookupLoading ? <Text style={styles.memberMeta}>Searching…</Text> : null}
-            {clientSearch.trim().length >= 2 && clientLookupUsers.length > 0 ? (
-              <View style={styles.optionRow}>
-                {clientLookupUsers.map((u) => {
-                  const label = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || u._id;
-                  return (
-                    <Button
-                      key={u._id}
-                      label={label}
-                      size="sm"
-                      variant={clientUserId === u._id ? 'primary' : 'secondary'}
-                      onPress={() => setClientUserId(u._id)}
-                    />
-                  );
-                })}
-              </View>
-            ) : null}
-            <Input
-              testID="teamdetail-client-userid-input"
-              label="Selected Client User ID"
-              value={clientUserId}
-              onChangeText={setClientUserId}
-              placeholder="Select from search results"
-              autoCapitalize="none"
-            />
-            <Input
-              label="Project Label (optional)"
-              value={clientProjectLabel}
-              onChangeText={setClientProjectLabel}
-              placeholder="Kitchen Remodel"
-            />
-            <Text style={styles.meta}>Access Level</Text>
-            <View style={styles.optionRow}>
-              <Button label="View Assigned" size="sm" variant={clientAccessLevel === 'view_assigned' ? 'primary' : 'secondary'} onPress={() => setClientAccessLevel('view_assigned')} />
-              <Button label="View All" size="sm" variant={clientAccessLevel === 'view_all' ? 'primary' : 'secondary'} onPress={() => setClientAccessLevel('view_all')} />
-              <Button label="Collaborate" size="sm" variant={clientAccessLevel === 'collaborate' ? 'primary' : 'secondary'} onPress={() => setClientAccessLevel('collaborate')} />
-            </View>
-            <Button
-              testID="teamdetail-link-client-btn"
-              label="Link Client"
-              onPress={onLinkClient}
-              loading={linkClientMutation.isPending}
-              disabled={linkClientMutation.isPending || !clientUserId.trim()}
-              fullWidth
-            />
-
-            {linkedClients.map((rel) => {
-              const userObj = typeof rel.client === 'string' ? null : rel.client;
-              const relClientId = typeof rel.client === 'string' ? rel.client : rel.client?._id || '';
-              const relLabel = `${userObj?.firstName || ''} ${userObj?.lastName || ''}`.trim() || userObj?.email || relClientId;
-              return (
-                <View key={rel._id} style={styles.memberRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.memberName}>{relLabel}</Text>
-                    <Text style={styles.memberMeta}>{rel.accessLevel}{rel.projectLabel ? ` • ${rel.projectLabel}` : ''}</Text>
-                    <View style={[styles.optionRow, { marginTop: spacing.xs }]}> 
-                      <Button
-                        label="Assigned"
-                        size="sm"
-                        variant={rel.accessLevel === 'view_assigned' ? 'primary' : 'secondary'}
-                        onPress={() => updateLinkedClientMutation.mutate({ clientId: relClientId, accessLevel: 'view_assigned', projectLabel: rel.projectLabel || '' })}
-                        disabled={updateLinkedClientMutation.isPending}
-                      />
-                      <Button
-                        label="All"
-                        size="sm"
-                        variant={rel.accessLevel === 'view_all' ? 'primary' : 'secondary'}
-                        onPress={() => updateLinkedClientMutation.mutate({ clientId: relClientId, accessLevel: 'view_all', projectLabel: rel.projectLabel || '' })}
-                        disabled={updateLinkedClientMutation.isPending}
-                      />
-                      <Button
-                        label="Collaborate"
-                        size="sm"
-                        variant={rel.accessLevel === 'collaborate' ? 'primary' : 'secondary'}
-                        onPress={() => updateLinkedClientMutation.mutate({ clientId: relClientId, accessLevel: 'collaborate', projectLabel: rel.projectLabel || '' })}
-                        disabled={updateLinkedClientMutation.isPending}
-                      />
-                    </View>
-                    {editingClientId === relClientId ? (
-                      <View style={{ marginTop: spacing.xs }}>
-                        <Input
-                          label="Edit project label"
-                          value={editingClientLabel}
-                          onChangeText={setEditingClientLabel}
-                          placeholder="Project label"
-                        />
-                        <View style={styles.optionRow}>
-                          <Button label="Save Label" size="sm" onPress={() => saveClientLabel(relClientId, rel.accessLevel)} />
-                          <Button label="Cancel" size="sm" variant="secondary" onPress={() => { setEditingClientId(''); setEditingClientLabel(''); }} />
-                        </View>
-                      </View>
-                    ) : (
-                      <Button
-                        label="Edit Label"
-                        size="sm"
-                        variant="secondary"
-                        onPress={() => {
-                          setEditingClientId(relClientId);
-                          setEditingClientLabel(rel.projectLabel || '');
-                        }}
-                      />
-                    )}
-                  </View>
-                  <Button
-                    label="Unlink"
-                    variant="danger"
-                    size="sm"
-                    onPress={() => unlinkClientMutation.mutate(relClientId)}
-                    loading={unlinkClientMutation.isPending}
-                  />
-                </View>
-              );
-            })}
-            {!linkedClients.length && <Text style={styles.empty}>No linked clients.</Text>}
-          </View>
-        )}
-
-        {(isOwner || isAdmin) && spendControlsData ? (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Team Controls</Text>
-            <Text style={styles.memberMeta}>Settings source: {spendControlsData.effectiveSource || 'team'}</Text>
-            <Text style={styles.memberMeta}>
-              Monthly cap: {spendControlsData.spendControls.monthlyCapEnabled ? `$${Number(spendControlsData.spendControls.monthlyCap || 0).toFixed(2)}` : 'disabled'}
-            </Text>
-            <Text style={styles.memberMeta}>
-              Payout approval: {spendControlsData.approvalThresholds.payoutRequiresApproval ? `on (threshold $${Number(spendControlsData.approvalThresholds.payoutThresholdAmount || 0).toFixed(2)})` : 'off'}
-            </Text>
-            {isOwner ? (
-              <>
-                <View style={styles.optionRow}>
-                  <Button
-                    label={spendControlsData.spendControls.monthlyCapEnabled ? 'Disable cap' : 'Enable cap'}
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => updateSpendControlsMutation.mutate({
-                      spendControls: {
-                        ...spendControlsData.spendControls,
-                        monthlyCapEnabled: !spendControlsData.spendControls.monthlyCapEnabled,
-                      },
-                      approvalThresholds: spendControlsData.approvalThresholds,
-                    })}
-                    loading={updateSpendControlsMutation.isPending}
-                  />
-                  <Button
-                    label={spendControlsData.approvalThresholds.payoutRequiresApproval ? 'Disable payout approvals' : 'Enable payout approvals'}
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => updateSpendControlsMutation.mutate({
-                      spendControls: spendControlsData.spendControls,
-                      approvalThresholds: {
-                        ...spendControlsData.approvalThresholds,
-                        payoutRequiresApproval: !spendControlsData.approvalThresholds.payoutRequiresApproval,
-                      },
-                    })}
-                    loading={updateSpendControlsMutation.isPending}
-                  />
-                  <Button
-                    label={spendControlsData.approvalThresholds.requireDualControl ? 'Disable dual control' : 'Enable dual control'}
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => updateSpendControlsMutation.mutate({
-                      spendControls: spendControlsData.spendControls,
-                      approvalThresholds: {
-                        ...spendControlsData.approvalThresholds,
-                        requireDualControl: !spendControlsData.approvalThresholds.requireDualControl,
-                      },
-                    })}
-                    loading={updateSpendControlsMutation.isPending}
-                  />
-                </View>
-
-                <Input
-                  testID="teamdetail-cap-amount-input"
-                  label="Monthly cap amount"
-                  value={capAmountInput}
-                  onChangeText={setCapAmountInput}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-                <Input
-                  testID="teamdetail-alert-threshold-input"
-                  label="Alert threshold %"
-                  value={alertThresholdPctInput}
-                  onChangeText={setAlertThresholdPctInput}
-                  keyboardType="numeric"
-                  placeholder="80"
-                />
-                <Input
-                  testID="teamdetail-payout-threshold-input"
-                  label="Payout threshold amount"
-                  value={payoutThresholdInput}
-                  onChangeText={setPayoutThresholdInput}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-                {!!numericControlsValidationError && (
-                  <Text style={styles.error}>{numericControlsValidationError}</Text>
-                )}
-                <Button
-                  testID="teamdetail-save-numeric-controls-btn"
-                  label="Save Numeric Controls"
-                  size="sm"
-                  onPress={saveNumericTeamControls}
-                  loading={updateSpendControlsMutation.isPending}
-                  disabled={updateSpendControlsMutation.isPending || !numericControlsValid}
-                />
-              </>
-            ) : null}
-          </View>
-        ) : null}
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Members ({activeMembers.length})</Text>
-          {activeMembers.map((member) => {
-            const memberId = typeof member.user === 'string' ? member.user : member.user?._id;
-            const fullName = typeof member.user === 'string'
-              ? member.user
-              : `${member.user?.firstName || ''} ${member.user?.lastName || ''}`.trim() || member.user?.email || 'Member';
-            const canRemove = canManageMembers && member.role !== 'owner' && memberId !== user?._id;
-
-            return (
-              <View key={`${memberId}-${member.role}`} style={styles.memberRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.memberName}>{fullName}</Text>
-                  <Text style={styles.memberMeta}>{member.role}{member.customRoleName ? ` • custom: ${member.customRoleName}` : ''}</Text>
-                  {(isOwner || isAdmin) && member.role !== 'owner' && customRoles.length > 0 && memberId ? (
-                    <View style={[styles.optionRow, { marginTop: spacing.xs }]}> 
-                      <Button
-                        label="Clear custom role"
-                        size="sm"
-                        variant="secondary"
-                        onPress={() => assignCustomRoleMutation.mutate({ userId: memberId, customRoleName: '' })}
-                      />
-                      {customRoles.map((role) => (
-                        <Button
-                          key={`${memberId}-${role._id}`}
-                          label={role.name}
-                          size="sm"
-                          variant={member.customRoleName === role.name ? 'primary' : 'secondary'}
-                          onPress={() => assignCustomRoleMutation.mutate({ userId: memberId, customRoleName: role.name })}
-                        />
-                      ))}
-                    </View>
-                  ) : null}
-                </View>
-                {canRemove ? (
-                  <Button
-                    label="Remove"
-                    variant="danger"
-                    size="sm"
-                    onPress={() => onRemoveMember(member)}
-                    loading={removeMemberMutation.isPending}
-                  />
-                ) : null}
-              </View>
-            );
-          })}
-          {!activeMembers.length && <Text style={styles.empty}>No active members.</Text>}
-        </View>
+        {renderTabContent()}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bgSubtle },
-  scroll: { padding: spacing.md, gap: spacing.sm },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  name: { ...typography.h3, color: colors.textDark },
-  meta: { ...typography.caption, color: colors.textSecondary },
-  description: { ...typography.bodySmall, color: colors.textSecondary },
-  warning: { ...typography.caption, color: '#b45309' },
-  sectionTitle: { ...typography.label, color: colors.textSecondary },
-  optionRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs, flexWrap: 'wrap' },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  error: { ...typography.caption, color: colors.danger },
-  success: { ...typography.caption, color: colors.success },
-  memberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
-    marginTop: spacing.xs,
-  },
+// ── Styles ─────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  safe:       { flex: 1, backgroundColor: colors.bgSubtle },
+  centered:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll:     { padding: spacing.md, paddingBottom: spacing.xxl },
+  tabContent: { gap: spacing.sm },
+
+  // Tab bar
+  tabBar:         { flexDirection: 'row', backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tabButton:      { flex: 1, alignItems: 'center', paddingVertical: spacing.sm + 2, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabButtonActive:{ borderBottomColor: colors.primary },
+  tabLabel:       { ...typography.label, color: colors.textMuted },
+  tabLabelActive: { color: colors.primary },
+
+  // Dashboard
+  teamName:    { ...typography.h3, color: colors.textDark, marginBottom: spacing.xs },
+  description: { ...typography.bodySmall, color: colors.textSecondary, marginTop: spacing.xs },
+  statsGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  statCard:    { width: '47%' as unknown as number, flexGrow: 1, alignItems: 'center' },
+  statValue:   { ...typography.h2, color: colors.textDark },
+  statLabel:   { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  sectionTitle:{ ...typography.h4, color: colors.textDark, marginBottom: spacing.sm },
+  emptyText:   { ...typography.bodySmall, color: colors.textMuted },
+  activityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, paddingVertical: spacing.xs, borderTopWidth: 1, borderTopColor: colors.bgMuted },
+  activityDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 5 },
+  activityAction: { ...typography.body, color: colors.textDark, fontWeight: '500', textTransform: 'capitalize' },
+  activityMeta: { ...typography.caption, color: colors.textMuted },
+
+  // Members
+  memberRow:  { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.bgMuted },
+  memberInfo: { flex: 1, gap: 2 },
   memberName: { ...typography.body, color: colors.textDark, fontWeight: '600' },
-  memberMeta: { ...typography.caption, color: colors.textMuted, textTransform: 'capitalize' },
-  auditRow: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  empty: { ...typography.bodySmall, color: colors.textMuted },
+  fieldLabel: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.xs },
+  roleRow:    { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md },
+  roleChip:   { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white },
+  roleChipActive:     { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  roleChipText:       { ...typography.label, color: colors.textSecondary },
+  roleChipTextActive: { color: colors.primary },
+
+  // Wallet
+  balanceCard:    { alignItems: 'center', paddingVertical: spacing.lg },
+  balanceLabel:   { ...typography.label, color: colors.textSecondary, marginBottom: spacing.xs },
+  balanceValue:   { ...typography.h1, color: colors.textDark },
+  controlRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, borderTopWidth: 1, borderTopColor: colors.bgMuted },
+  controlLabel:   { ...typography.body, color: colors.textSecondary },
+  controlValue:   { ...typography.body, color: colors.textDark, fontWeight: '600' },
+  comingSoonBox:  { alignItems: 'center', paddingVertical: spacing.md },
+  comingSoonTitle:{ ...typography.h4, color: colors.textSecondary, marginBottom: spacing.xs },
+  comingSoonText: { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center' },
+
+  // Settings
+  infoRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: spacing.xs + 2, borderTopWidth: 1, borderTopColor: colors.bgMuted },
+  infoLabel:  { ...typography.label, color: colors.textSecondary, flex: 1 },
+  infoValue:  { ...typography.body, color: colors.textDark, flex: 2, textAlign: 'right' },
+  transferList:   { gap: spacing.xs, marginBottom: spacing.md },
+  transferOption: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white },
+  transferOptionSelected:     { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  transferOptionText:         { ...typography.body, color: colors.text },
+  transferOptionTextSelected: { color: colors.primary, fontWeight: '600' },
+  warningText: { ...typography.caption, color: colors.warning, marginTop: spacing.xs, textAlign: 'center' },
+  dangerCard:  { borderColor: colors.dangerLight, backgroundColor: colors.dangerLight },
+  dangerTitle: { ...typography.h4, color: colors.danger, marginBottom: spacing.xs },
+  dangerText:  { ...typography.bodySmall, color: colors.danger },
 });

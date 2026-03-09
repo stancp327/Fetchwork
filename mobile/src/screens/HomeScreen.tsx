@@ -1,43 +1,109 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable } from 'react-native';
+import React, { useCallback } from 'react';
+import {
+  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  Pressable, RefreshControl, ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { jobsApi } from '../api/endpoints/jobsApi';
 import { servicesApi } from '../api/endpoints/servicesApi';
+import { usersApi } from '../api/endpoints/usersApi';
 import Card from '../components/common/Card';
 import Badge, { getJobStatusVariant } from '../components/common/Badge';
-import { colors, spacing, typography } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 import { Job, Service } from '@fetchwork/shared';
+
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  link?: string;
+}
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- navigation typing across nested stacks
   const navigation = useNavigation<any>();
 
-  const { data: jobsData } = useQuery({
+  const jobsQuery = useQuery({
     queryKey: ['jobs', 'recent'],
     queryFn: () => jobsApi.browse({ limit: 5 }),
   });
 
-  const { data: servicesData } = useQuery({
+  const myJobsQuery = useQuery({
+    queryKey: ['my-jobs-summary'],
+    queryFn: () => jobsApi.myJobs(),
+  });
+
+  const servicesQuery = useQuery({
     queryKey: ['services', 'recent'],
     queryFn: () => servicesApi.browse({ limit: 4 }),
   });
 
-  const recentJobs: Job[] = jobsData?.jobs || [];
-  const recentServices: Service[] = servicesData?.services || [];
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications', 'preview'],
+    queryFn: () => usersApi.getNotifications({ page: 1 }),
+  });
+
+  const recentJobs: Job[] = jobsQuery.data?.jobs || [];
+  const myActiveJobs: Job[] = (Array.isArray(myJobsQuery.data) ? myJobsQuery.data : []).filter(
+    (j: Job) => ['in_progress', 'awaiting_start', 'open'].includes(j.status),
+  );
+  const recentServices: Service[] = servicesQuery.data?.services || [];
+  const notifications: Notification[] = (notificationsQuery.data?.notifications || []).slice(0, 3);
+  const unreadCount: number = notifications.filter(n => !n.read).length;
+
+  const isRefreshing = jobsQuery.isRefetching || servicesQuery.isRefetching
+    || myJobsQuery.isRefetching || notificationsQuery.isRefetching;
+
+  const onRefresh = useCallback(() => {
+    jobsQuery.refetch();
+    servicesQuery.refetch();
+    myJobsQuery.refetch();
+    notificationsQuery.refetch();
+  }, [jobsQuery, servicesQuery, myJobsQuery, notificationsQuery]);
+
+  const isLoading = jobsQuery.isLoading && servicesQuery.isLoading;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
-              Hey {user?.firstName || 'there'} 👋
-            </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>Hey {user?.firstName || 'there'} 👋</Text>
             <Text style={styles.greetingSub}>What are you looking for today?</Text>
           </View>
+          <Pressable
+            style={styles.notifBtn}
+            onPress={() => navigation.navigate('Profile', { screen: 'Notifications' })}
+          >
+            <Text style={styles.notifIcon}>🔔</Text>
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
 
         {/* Quick actions */}
@@ -60,8 +126,57 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        {/* Active Jobs Summary */}
+        {myActiveJobs.length > 0 && (
+          <>
+            <SectionHeader title="Your Active Jobs" onSeeAll={() => navigation.navigate('Jobs', { screen: 'MyJobs' })} />
+            {myActiveJobs.slice(0, 3).map(job => (
+              <Card
+                key={job._id}
+                onPress={() => navigation.navigate('Jobs', { screen: 'JobProgress', params: { jobId: job._id, jobTitle: job.title } })}
+                style={styles.jobCard}
+              >
+                <View style={styles.jobHeader}>
+                  <Text style={styles.jobTitle} numberOfLines={1}>{job.title}</Text>
+                  <Badge label={job.status.replace(/_/g, ' ')} variant={getJobStatusVariant(job.status)} />
+                </View>
+                <Text style={styles.jobMeta}>
+                  ${job.budget?.amount}{job.budget?.type === 'hourly' ? '/hr' : ' fixed'}
+                </Text>
+              </Card>
+            ))}
+          </>
+        )}
+
+        {/* Notifications Preview */}
+        {notifications.length > 0 && (
+          <>
+            <SectionHeader
+              title="Notifications"
+              onSeeAll={() => navigation.navigate('Profile', { screen: 'Notifications' })}
+            />
+            <Card style={styles.notifCard}>
+              {notifications.map((notif, i) => (
+                <View
+                  key={notif._id}
+                  style={[styles.notifRow, i < notifications.length - 1 && styles.notifBorder]}
+                >
+                  {!notif.read && <View style={styles.unreadDot} />}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.notifTitle} numberOfLines={1}>{notif.title}</Text>
+                    <Text style={styles.notifMessage} numberOfLines={1}>{notif.message}</Text>
+                  </View>
+                </View>
+              ))}
+            </Card>
+          </>
+        )}
+
         {/* Recent Jobs */}
         <SectionHeader title="Recent Jobs" onSeeAll={() => navigation.navigate('Jobs', { screen: 'BrowseJobs' })} />
+        {recentJobs.length === 0 && !jobsQuery.isLoading && (
+          <Text style={styles.emptyText}>No jobs posted yet.</Text>
+        )}
         {recentJobs.map(job => (
           <Card
             key={job._id}
@@ -81,6 +196,9 @@ export default function HomeScreen() {
 
         {/* Recent Services */}
         <SectionHeader title="Featured Services" onSeeAll={() => navigation.navigate('Services', { screen: 'BrowseServices' })} />
+        {recentServices.length === 0 && !servicesQuery.isLoading && (
+          <Text style={styles.emptyText}>No services available yet.</Text>
+        )}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.servicesRow}>
           {recentServices.map(svc => (
             <Card
@@ -121,12 +239,22 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => voi
 const styles = StyleSheet.create({
   safe:           { flex: 1, backgroundColor: colors.bgSubtle },
   scroll:         { padding: spacing.md },
+  center:         { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
   greeting:       { ...typography.h2 },
   greetingSub:    { ...typography.bodySmall, marginTop: 2 },
+  notifBtn:       { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  notifIcon:      { fontSize: 22 },
+  notifBadge:     {
+    position: 'absolute', top: 2, right: 2,
+    backgroundColor: colors.danger, borderRadius: 8,
+    minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  notifBadgeText: { color: colors.white, fontSize: 9, fontWeight: '700' },
   quickActions:   { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   quickBtn:       {
-    flex: 1, backgroundColor: colors.white, borderRadius: 12,
+    flex: 1, backgroundColor: colors.white, borderRadius: radius.lg,
     paddingVertical: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border,
   },
   quickIcon:      { fontSize: 22, marginBottom: 4 },
@@ -139,6 +267,13 @@ const styles = StyleSheet.create({
   jobTitle:       { ...typography.h4, flex: 1, marginRight: spacing.sm },
   jobMeta:        { ...typography.caption, marginBottom: 4 },
   jobDesc:        { ...typography.bodySmall },
+  emptyText:      { ...typography.bodySmall, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.md },
+  notifCard:      { marginBottom: spacing.sm },
+  notifRow:       { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  notifBorder:    { borderBottomWidth: 1, borderBottomColor: colors.border },
+  unreadDot:      { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
+  notifTitle:     { ...typography.label, color: colors.textDark },
+  notifMessage:   { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   servicesRow:    { gap: spacing.sm, paddingBottom: spacing.sm },
   serviceCard:    { width: 180, marginRight: 0 },
   recurringBadge: { backgroundColor: '#dcfce7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 6 },
