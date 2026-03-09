@@ -13,6 +13,8 @@ import Card from '../components/common/Card';
 import Badge, { getJobStatusVariant } from '../components/common/Badge';
 import { colors, radius, spacing, typography } from '../theme';
 import { Job, Service } from '@fetchwork/shared';
+import { useAuthStore } from '../store/authStore';
+import { storage } from '../utils/storage';
 
 interface Notification {
   _id: string;
@@ -25,6 +27,7 @@ interface Notification {
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { activeMode, setActiveMode } = useAuthStore();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- navigation typing across nested stacks
   const navigation = useNavigation<any>();
 
@@ -80,6 +83,11 @@ export default function HomeScreen() {
     notificationsQuery.refetch();
   }, [jobsQuery, servicesQuery, myJobsQuery, notificationsQuery]);
 
+  const setMode = useCallback(async (mode: 'client' | 'freelancer') => {
+    setActiveMode(mode);
+    await storage.setActiveMode(mode);
+  }, [setActiveMode]);
+
   const handleFindJobs = useCallback(
     () => navigation.navigate('Jobs', { screen: 'BrowseJobs' }),
     [navigation],
@@ -88,12 +96,24 @@ export default function HomeScreen() {
     () => navigation.navigate('Jobs', { screen: 'PostJob' }),
     [navigation],
   );
+  const handleMyJobs = useCallback(
+    () => navigation.navigate('Jobs', { screen: 'MyJobs' }),
+    [navigation],
+  );
   const handleFreelancers = useCallback(
     () => navigation.navigate('Jobs', { screen: 'BrowseFreelancers' }),
     [navigation],
   );
   const handleBrowseServices = useCallback(
     () => navigation.navigate('Services', { screen: 'BrowseServices' }),
+    [navigation],
+  );
+  const handleEarnings = useCallback(
+    () => navigation.navigate('Profile', { screen: 'Earnings' }),
+    [navigation],
+  );
+  const handleBookings = useCallback(
+    () => navigation.navigate('Profile', { screen: 'Bookings' }),
     [navigation],
   );
 
@@ -123,6 +143,22 @@ export default function HomeScreen() {
           <View style={styles.headerTextWrap}>
             <Text style={styles.greeting}>Hey {user?.firstName || 'there'} 👋</Text>
             <Text style={styles.greetingSub}>What are you looking for today?</Text>
+
+            {/* Mode toggle */}
+            <View style={styles.modeToggleWrap}>
+              <Pressable
+                style={[styles.modePill, activeMode === 'client' && styles.modePillActive]}
+                onPress={() => setMode('client')}
+              >
+                <Text style={[styles.modePillText, activeMode === 'client' && styles.modePillTextActive]}>Client</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modePill, activeMode === 'freelancer' && styles.modePillActive]}
+                onPress={() => setMode('freelancer')}
+              >
+                <Text style={[styles.modePillText, activeMode === 'freelancer' && styles.modePillTextActive]}>Freelancer</Text>
+              </Pressable>
+            </View>
           </View>
           <Pressable
             style={styles.notifBtn}
@@ -139,22 +175,45 @@ export default function HomeScreen() {
 
         {/* Quick actions */}
         <View style={styles.quickActions}>
-          <Pressable style={styles.quickBtn} onPress={handleFindJobs}>
-            <Text style={styles.quickIcon}>🔍</Text>
-            <Text style={styles.quickLabel}>Find Jobs</Text>
-          </Pressable>
-          <Pressable style={styles.quickBtn} onPress={handlePostJob}>
-            <Text style={styles.quickIcon}>➕</Text>
-            <Text style={styles.quickLabel}>Post Job</Text>
-          </Pressable>
-          <Pressable style={styles.quickBtn} onPress={handleFreelancers}>
-            <Text style={styles.quickIcon}>👤</Text>
-            <Text style={styles.quickLabel}>Freelancers</Text>
-          </Pressable>
-          <Pressable style={styles.quickBtn} onPress={handleBrowseServices}>
-            <Text style={styles.quickIcon}>⚡</Text>
-            <Text style={styles.quickLabel}>Services</Text>
-          </Pressable>
+          {activeMode === 'client' ? (
+            <>
+              <Pressable style={styles.quickBtn} onPress={handlePostJob}>
+                <Text style={styles.quickIcon}>➕</Text>
+                <Text style={styles.quickLabel}>Post Job</Text>
+              </Pressable>
+              <Pressable style={styles.quickBtn} onPress={handleMyJobs}>
+                <Text style={styles.quickIcon}>📋</Text>
+                <Text style={styles.quickLabel}>My Jobs</Text>
+              </Pressable>
+              <Pressable style={styles.quickBtn} onPress={handleFreelancers}>
+                <Text style={styles.quickIcon}>👤</Text>
+                <Text style={styles.quickLabel}>Freelancers</Text>
+              </Pressable>
+              <Pressable style={styles.quickBtn} onPress={handleBrowseServices}>
+                <Text style={styles.quickIcon}>⚡</Text>
+                <Text style={styles.quickLabel}>Services</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Pressable style={styles.quickBtn} onPress={handleFindJobs}>
+                <Text style={styles.quickIcon}>🔍</Text>
+                <Text style={styles.quickLabel}>Find Jobs</Text>
+              </Pressable>
+              <Pressable style={styles.quickBtn} onPress={handleEarnings}>
+                <Text style={styles.quickIcon}>💰</Text>
+                <Text style={styles.quickLabel}>Earnings</Text>
+              </Pressable>
+              <Pressable style={styles.quickBtn} onPress={handleBookings}>
+                <Text style={styles.quickIcon}>📆</Text>
+                <Text style={styles.quickLabel}>Bookings</Text>
+              </Pressable>
+              <Pressable style={styles.quickBtn} onPress={handleBrowseServices}>
+                <Text style={styles.quickIcon}>⚡</Text>
+                <Text style={styles.quickLabel}>Services</Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         {/* Active Jobs Summary */}
@@ -313,6 +372,36 @@ const styles = StyleSheet.create({
   serviceProvider:{ ...typography.caption, marginBottom: 4 },
   servicePrice:   { ...typography.body, color: colors.primary, fontWeight: '700' },
   headerTextWrap: { flex: 1 },
+
+  modeToggleWrap: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    padding: 2,
+  },
+  modePill: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modePillActive: {
+    backgroundColor: colors.primary,
+  },
+  modePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  modePillTextActive: {
+    color: colors.white,
+  },
+
   notifTextWrap:  { flex: 1 },
   bottomSpacer:   { height: spacing.xl },
 });

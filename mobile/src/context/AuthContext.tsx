@@ -25,12 +25,15 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isLoading, setToken, setUser, setLoading, clear } = useAuthStore();
+  const { user, isAuthenticated, isLoading, setToken, setUser, setLoading, setActiveMode, clear } = useAuthStore();
 
-  // ── Bootstrap: rehydrate token from SecureStore ─────────────────
+  // ── Bootstrap: rehydrate token + app mode from SecureStore ─────────────────
   useEffect(() => {
     (async () => {
       try {
+        const savedMode = await storage.getActiveMode();
+        if (savedMode) setActiveMode(savedMode);
+
         const token = await storage.getToken();
         if (token) {
           setToken(token);

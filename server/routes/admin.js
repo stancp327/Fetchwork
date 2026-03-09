@@ -2043,18 +2043,39 @@ router.patch('/contracts/:id/void', authenticateAdmin, requirePermission('conten
 // MESSAGE MODERATION
 // ═══════════════════════════════════════════════════════════════
 
-// GET /admin/messages/conversations — list conversations with flags
+// GET /admin/messages/conversations — list conversations (optionally flagged)
 router.get('/messages/conversations', authenticateAdmin, requirePermission('content_moderation'), async (req, res) => {
   try {
     const { page = 1, limit = 50, flagged } = req.query;
-    const query = flagged === 'true' ? { flagged: true } : {};
+
+    const Conversation = require('../models/Message').Conversation;
+
+    let convoQuery = {};
+
+    // "Flagged" here means: conversations that contain messages with moderation/safety signals.
+    if (flagged === 'true') {
+      const flaggedConvoIds = await Message.distinct('conversation', {
+        $or: [
+          { moderatedAt: { $exists: true, $ne: null } },
+          { 'safety.action': { $in: ['warn', 'block'] } },
+          { 'safety.hits.0': { $exists: true } },
+        ],
+        conversation: { $exists: true, $ne: null },
+      });
+
+      convoQuery = { _id: { $in: flaggedConvoIds } };
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
 
     const [conversations, total] = await Promise.all([
-      ChatRoom.find(query)
+      Conversation.find(convoQuery)
         .populate('participants', 'firstName lastName email')
         .sort({ updatedAt: -1 })
-        .skip((page - 1) * limit).limit(Number(limit)).lean(),
-      ChatRoom.countDocuments(query)
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      Conversation.countDocuments(convoQuery),
     ]);
 
     res.json({ conversations, total, page: Number(page), pages: Math.ceil(total / limit) });
