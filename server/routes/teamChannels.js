@@ -22,11 +22,7 @@ async function requireTeamMember(teamId, userId) {
   return { team, member };
 }
 
-const ChatRoom = mongoose.model('ChatRoom', Message.schema.__ChatRoom || require('mongoose').modelNames().includes('ChatRoom')
-  ? undefined
-  : new mongoose.Schema({}));
-
-// Re-export safely — ChatRoom is defined in Message.js
+// ChatRoom is registered by Message.js — look it up after that module loads
 function getChatRoom() {
   try { return mongoose.model('ChatRoom'); } catch { return null; }
 }
