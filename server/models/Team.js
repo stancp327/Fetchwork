@@ -90,6 +90,20 @@ const teamSchema = new mongoose.Schema({
     defaultMemberPermissions: { type: [String], default: ['view_analytics', 'message_clients'] },
   },
 
+  // Talent pipeline (Phase 3)
+  talentPipeline: [{
+    freelancer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    stage: {
+      type: String,
+      enum: ['sourced', 'reviewing', 'shortlisted', 'interviewing', 'offer', 'hired', 'archived'],
+      default: 'sourced',
+    },
+    notes:     { type: String, default: '' },
+    addedBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    addedAt:   { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  }],
+
   // Ownership transfer + race-safety guards
   transferState: { type: String, enum: ['idle', 'pending', 'applying'], default: 'idle' },
   transferTargetUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

@@ -9,6 +9,7 @@ const TeamAuditLog = require('../models/TeamAuditLog');
 const TeamApproval = require('../models/TeamApproval');
 const TeamClient = require('../models/TeamClient');
 const TeamNote = require('../models/TeamNote');
+const Job = require('../models/Job');
 const emailService = require('../services/emailService');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { getUserSubscription } = require('../utils/billingUtils');
@@ -2102,6 +2103,391 @@ router.delete('/:id/notes/:noteId', async (req, res) => {
   } catch (err) {
     console.error('Delete note error:', err.message);
     res.status(500).json({ error: 'Failed to delete note' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// Phase 3 — Analytics & Pipeline
+// ══════════════════════════════════════════════════════════════════
+
+// ── GET /api/teams/:id/analytics — comprehensive team analytics ──
+router.get('/:id/analytics', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_team' });
+    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
+
+    const teamId = team._id;
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = new Date(now - 90 * 24 * 60 * 60 * 1000);
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    // ── Hiring analytics ──
+    let hiring = {
+      totalJobsPosted: 0, totalProposalsReceived: 0, avgProposalsPerJob: 0,
+      avgTimeToHire: 0, repeatFreelancerRate: 0,
+      topFreelancers: [], jobsByMonth: [],
+    };
+
+    try {
+      const teamJobs = await Job.find({ team: teamId }).lean();
+      hiring.totalJobsPosted = teamJobs.length;
+      hiring.totalProposalsReceived = teamJobs.reduce((s, j) => s + (j.proposals?.length || 0), 0);
+      hiring.avgProposalsPerJob = hiring.totalJobsPosted > 0
+        ? Math.round((hiring.totalProposalsReceived / hiring.totalJobsPosted) * 10) / 10
+        : 0;
+
+      // Avg time to hire
+      const hiredJobs = teamJobs.filter(j => j.freelancer && j.acceptedAt && j.createdAt);
+      if (hiredJobs.length > 0) {
+        const totalDays = hiredJobs.reduce((s, j) => {
+          return s + (new Date(j.acceptedAt) - new Date(j.createdAt)) / (1000 * 60 * 60 * 24);
+        }, 0);
+        hiring.avgTimeToHire = Math.round((totalDays / hiredJobs.length) * 10) / 10;
+      }
+
+      // Repeat freelancer rate
+      const freelancerCounts = {};
+      teamJobs.forEach(j => {
+        if (j.freelancer) {
+          const fid = String(j.freelancer);
+          freelancerCounts[fid] = (freelancerCounts[fid] || 0) + 1;
+        }
+      });
+      const uniqueFreelancers = Object.keys(freelancerCounts).length;
+      const repeatFreelancers = Object.values(freelancerCounts).filter(c => c > 1).length;
+      hiring.repeatFreelancerRate = uniqueFreelancers > 0
+        ? Math.round((repeatFreelancers / uniqueFreelancers) * 100)
+        : 0;
+
+      // Top freelancers
+      const topIds = Object.entries(freelancerCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([id]) => id);
+
+      if (topIds.length > 0) {
+        const topUsers = await User.find({ _id: { $in: topIds } })
+          .select('firstName lastName profileImage')
+          .lean();
+        const userMap = {};
+        topUsers.forEach(u => { userMap[String(u._id)] = u; });
+
+        hiring.topFreelancers = topIds.map(fid => {
+          const u = userMap[fid] || {};
+          const fJobs = teamJobs.filter(j => String(j.freelancer) === fid);
+          const completed = fJobs.filter(j => j.status === 'completed').length;
+          const totalPaid = fJobs.reduce((s, j) => s + (j.totalPaid || 0), 0);
+          return {
+            userId: fid,
+            name: [u.firstName, u.lastName].filter(Boolean).join(' ') || 'Unknown',
+            jobsCompleted: completed,
+            totalPaid,
+          };
+        });
+      }
+
+      // Jobs by month (last 6)
+      const monthBuckets = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthBuckets[key] = 0;
+      }
+      teamJobs.forEach(j => {
+        if (!j.createdAt) return;
+        const d = new Date(j.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key in monthBuckets) monthBuckets[key]++;
+      });
+      hiring.jobsByMonth = Object.entries(monthBuckets).map(([month, count]) => ({ month, count }));
+    } catch (e) {
+      console.error('Analytics hiring error:', e.message);
+    }
+
+    // ── Spend analytics ──
+    let spend = {
+      totalAllTime: 0, last30Days: 0, last90Days: 0,
+      byMember: [], byCategory: [], byMonth: [],
+    };
+
+    try {
+      const teamJobs = await Job.find({ team: teamId }).lean();
+
+      spend.totalAllTime = teamJobs.reduce((s, j) => s + (j.totalPaid || 0), 0);
+      spend.last30Days = teamJobs
+        .filter(j => j.completedAt && new Date(j.completedAt) >= thirtyDaysAgo)
+        .reduce((s, j) => s + (j.totalPaid || 0), 0);
+      spend.last90Days = teamJobs
+        .filter(j => j.completedAt && new Date(j.completedAt) >= ninetyDaysAgo)
+        .reduce((s, j) => s + (j.totalPaid || 0), 0);
+
+      // By member (client who posted)
+      const memberSpend = {};
+      teamJobs.forEach(j => {
+        if (!j.client) return;
+        const cid = String(j.client);
+        memberSpend[cid] = (memberSpend[cid] || 0) + (j.totalPaid || 0);
+      });
+      const memberIds = Object.keys(memberSpend);
+      if (memberIds.length > 0) {
+        const memberUsers = await User.find({ _id: { $in: memberIds } })
+          .select('firstName lastName')
+          .lean();
+        const mMap = {};
+        memberUsers.forEach(u => { mMap[String(u._id)] = u; });
+        spend.byMember = Object.entries(memberSpend)
+          .map(([mid, amount]) => {
+            const u = mMap[mid] || {};
+            return {
+              memberId: mid,
+              name: [u.firstName, u.lastName].filter(Boolean).join(' ') || 'Unknown',
+              amount,
+            };
+          })
+          .sort((a, b) => b.amount - a.amount);
+      }
+
+      // By category
+      const catSpend = {};
+      teamJobs.forEach(j => {
+        const cat = j.category || 'Uncategorized';
+        catSpend[cat] = (catSpend[cat] || 0) + (j.totalPaid || 0);
+      });
+      spend.byCategory = Object.entries(catSpend)
+        .map(([category, amount]) => ({ category, amount }))
+        .sort((a, b) => b.amount - a.amount);
+
+      // By month (last 6)
+      const spendBuckets = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        spendBuckets[key] = 0;
+      }
+      teamJobs.forEach(j => {
+        if (!j.completedAt) return;
+        const d = new Date(j.completedAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key in spendBuckets) spendBuckets[key] += (j.totalPaid || 0);
+      });
+      spend.byMonth = Object.entries(spendBuckets).map(([month, amount]) => ({ month, amount }));
+    } catch (e) {
+      console.error('Analytics spend error:', e.message);
+    }
+
+    // ── Performance ──
+    let performance = {
+      completionRate: 0, disputeRate: 0, avgJobDuration: 0, onTimeDeliveryRate: 0,
+    };
+
+    try {
+      const teamJobs = await Job.find({ team: teamId }).lean();
+      const finishedJobs = teamJobs.filter(j => ['completed', 'cancelled'].includes(j.status));
+      const completedJobs = finishedJobs.filter(j => j.status === 'completed');
+      const disputedJobs = teamJobs.filter(j => j.disputeStatus && j.disputeStatus !== 'none');
+
+      if (finishedJobs.length > 0) {
+        performance.completionRate = Math.round((completedJobs.length / finishedJobs.length) * 100);
+      }
+      if (teamJobs.length > 0) {
+        performance.disputeRate = Math.round((disputedJobs.length / teamJobs.length) * 100);
+      }
+
+      // Avg job duration
+      const durJobs = completedJobs.filter(j => j.createdAt && j.completedAt);
+      if (durJobs.length > 0) {
+        const totalDur = durJobs.reduce((s, j) => {
+          return s + (new Date(j.completedAt) - new Date(j.createdAt)) / (1000 * 60 * 60 * 24);
+        }, 0);
+        performance.avgJobDuration = Math.round((totalDur / durJobs.length) * 10) / 10;
+      }
+
+      // On-time delivery rate
+      const deadlineJobs = completedJobs.filter(j => j.deadline);
+      if (deadlineJobs.length > 0) {
+        const onTime = deadlineJobs.filter(j => new Date(j.completedAt) <= new Date(j.deadline)).length;
+        performance.onTimeDeliveryRate = Math.round((onTime / deadlineJobs.length) * 100);
+      }
+    } catch (e) {
+      console.error('Analytics performance error:', e.message);
+    }
+
+    // ── Team growth ──
+    let teamData = {
+      memberCount: 0, activeMembers: 0, pendingInvites: 0, memberGrowth: [],
+    };
+
+    try {
+      const members = team.members || [];
+      teamData.memberCount = members.length;
+      teamData.activeMembers = members.filter(m => m.status === 'active').length;
+      teamData.pendingInvites = members.filter(m => m.status === 'invited').length;
+
+      // Member growth by month (last 6 — use joinedAt)
+      const growthBuckets = {};
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        growthBuckets[key] = 0;
+      }
+      members.forEach(m => {
+        const joinDate = m.joinedAt || m.invitedAt;
+        if (!joinDate) return;
+        const d = new Date(joinDate);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key in growthBuckets) growthBuckets[key]++;
+      });
+      teamData.memberGrowth = Object.entries(growthBuckets).map(([month, count]) => ({ month, count }));
+    } catch (e) {
+      console.error('Analytics team error:', e.message);
+    }
+
+    res.json({
+      hiring,
+      spend,
+      performance,
+      team: teamData,
+    });
+  } catch (err) {
+    console.error('Analytics error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+// ── GET /api/teams/:id/pipeline — list pipeline entries ──
+router.get('/:id/pipeline', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id)
+      .populate('talentPipeline.freelancer', 'firstName lastName email profileImage skills')
+      .populate('talentPipeline.addedBy', 'firstName lastName');
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_team' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not a team member' });
+
+    res.json({ pipeline: team.talentPipeline || [] });
+  } catch (err) {
+    console.error('Pipeline list error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch pipeline' });
+  }
+});
+
+// ── POST /api/teams/:id/pipeline — add freelancer to pipeline ──
+router.post('/:id/pipeline', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const { freelancerId, stage = 'sourced', notes = '' } = req.body;
+    if (!freelancerId) return res.status(400).json({ error: 'freelancerId is required' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_team' });
+    if (!authz.ok) return res.status(403).json({ error: 'Admin access required' });
+
+    // Check freelancer exists
+    const freelancer = await User.findById(freelancerId).select('_id firstName lastName');
+    if (!freelancer) return res.status(404).json({ error: 'Freelancer not found' });
+
+    // Check duplicate
+    const exists = (team.talentPipeline || []).some(
+      e => String(e.freelancer) === String(freelancerId)
+    );
+    if (exists) return res.status(400).json({ error: 'Freelancer already in pipeline' });
+
+    const validStages = ['sourced', 'reviewing', 'shortlisted', 'interviewing', 'offer', 'hired', 'archived'];
+    const safeStage = validStages.includes(stage) ? stage : 'sourced';
+
+    team.talentPipeline.push({
+      freelancer: freelancerId,
+      stage: safeStage,
+      notes,
+      addedBy: requesterId,
+    });
+
+    await team.save();
+
+    const updated = await Team.findById(team._id)
+      .populate('talentPipeline.freelancer', 'firstName lastName email profileImage skills')
+      .populate('talentPipeline.addedBy', 'firstName lastName');
+
+    res.status(201).json({ pipeline: updated.talentPipeline });
+  } catch (err) {
+    console.error('Pipeline add error:', err.message);
+    res.status(500).json({ error: 'Failed to add to pipeline' });
+  }
+});
+
+// ── PATCH /api/teams/:id/pipeline/:entryId — move stage or update notes ──
+router.patch('/:id/pipeline/:entryId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_team' });
+    if (!authz.ok) return res.status(403).json({ error: 'Admin access required' });
+
+    const entry = (team.talentPipeline || []).id(req.params.entryId);
+    if (!entry) return res.status(404).json({ error: 'Pipeline entry not found' });
+
+    const validStages = ['sourced', 'reviewing', 'shortlisted', 'interviewing', 'offer', 'hired', 'archived'];
+    if (req.body.stage !== undefined) {
+      if (!validStages.includes(req.body.stage)) {
+        return res.status(400).json({ error: 'Invalid stage' });
+      }
+      entry.stage = req.body.stage;
+    }
+    if (req.body.notes !== undefined) {
+      entry.notes = req.body.notes;
+    }
+    entry.updatedAt = new Date();
+
+    await team.save();
+
+    const updated = await Team.findById(team._id)
+      .populate('talentPipeline.freelancer', 'firstName lastName email profileImage skills')
+      .populate('talentPipeline.addedBy', 'firstName lastName');
+
+    res.json({ pipeline: updated.talentPipeline });
+  } catch (err) {
+    console.error('Pipeline update error:', err.message);
+    res.status(500).json({ error: 'Failed to update pipeline entry' });
+  }
+});
+
+// ── DELETE /api/teams/:id/pipeline/:entryId — remove from pipeline ──
+router.delete('/:id/pipeline/:entryId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_team' });
+    if (!authz.ok) return res.status(403).json({ error: 'Admin access required' });
+
+    const idx = (team.talentPipeline || []).findIndex(
+      e => String(e._id) === req.params.entryId
+    );
+    if (idx === -1) return res.status(404).json({ error: 'Pipeline entry not found' });
+
+    team.talentPipeline.splice(idx, 1);
+    await team.save();
+
+    res.json({ message: 'Removed from pipeline' });
+  } catch (err) {
+    console.error('Pipeline delete error:', err.message);
+    res.status(500).json({ error: 'Failed to remove from pipeline' });
   }
 });
 
