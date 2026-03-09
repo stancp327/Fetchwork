@@ -1,0 +1,453 @@
+/* ── OrgHierarchy ── prefix: oh- ── */
+
+.oh-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 24px);
+}
+
+.oh-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md, 12px);
+  flex-wrap: wrap;
+}
+
+.oh-title {
+  font-size: var(--font-size-lg, 1.25rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.oh-loading {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm, 0.875rem);
+  padding: var(--space-xl, 32px) 0;
+  text-align: center;
+}
+
+.oh-empty {
+  text-align: center;
+  padding: var(--space-xl, 40px) var(--space-lg, 24px);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base, 1rem);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+}
+
+.oh-empty-text {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm, 0.875rem);
+  margin: 0;
+}
+
+.oh-error {
+  padding: var(--space-sm, 8px) var(--space-md, 12px);
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.oh-success {
+  padding: var(--space-sm, 8px) var(--space-md, 12px);
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+/* ── Org list ── */
+.oh-org-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+}
+
+.oh-org-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--space-md, 16px);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.oh-org-card:hover {
+  border-color: var(--color-primary);
+}
+
+.oh-org-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 12px);
+}
+
+.oh-org-card-name {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.oh-org-card-desc {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  margin: var(--space-xs, 4px) 0 0;
+}
+
+.oh-org-card-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  margin-top: var(--space-sm, 8px);
+}
+
+.oh-team-count {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+
+.oh-logo-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 6px);
+  object-fit: cover;
+}
+
+/* ── Detail view ── */
+.oh-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  padding: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.oh-back-btn:hover {
+  color: var(--color-primary-dark);
+}
+
+.oh-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+}
+
+.oh-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md, 16px);
+}
+
+.oh-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg, 8px);
+  object-fit: cover;
+}
+
+.oh-org-name {
+  font-size: var(--font-size-lg, 1.25rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.oh-org-desc {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  margin: var(--space-xs, 4px) 0 0;
+}
+
+.oh-link {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-primary);
+}
+
+.oh-meta {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ── Badge ── */
+.oh-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* ── Tree ── */
+.oh-tree-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+}
+
+.oh-section-title {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.oh-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.oh-tree-item {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  padding: var(--space-sm, 8px) var(--space-md, 12px);
+  position: relative;
+}
+
+.oh-tree-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--space-xs, 4px) 0;
+  min-height: 44px;
+  color: var(--color-text);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.oh-tree-arrow {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.oh-tree-team-name {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-heading);
+}
+
+.oh-tree-count {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+
+.oh-tree-members {
+  list-style: none;
+  padding: 0 0 0 var(--space-lg, 24px);
+  margin: var(--space-xs, 4px) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 4px);
+}
+
+.oh-tree-member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  padding: var(--space-xs, 4px) 0;
+}
+
+.oh-member-role {
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: capitalize;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+
+.oh-member-title {
+  color: var(--color-text-secondary);
+}
+
+.oh-remove-btn {
+  position: absolute;
+  top: var(--space-sm, 8px);
+  right: var(--space-sm, 8px);
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  font-size: var(--font-size-xs, 0.75rem);
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oh-remove-btn:hover {
+  color: var(--color-danger-dark);
+}
+
+/* ── Add team ── */
+.oh-add-team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  padding: var(--space-md, 12px);
+}
+
+.oh-team-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 4px);
+}
+
+.oh-team-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 8px);
+  padding: var(--space-xs, 4px) 0;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text);
+}
+
+/* ── Form ── */
+.oh-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--space-lg, 24px);
+}
+
+.oh-form-title {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.oh-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 4px);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+}
+
+.oh-input,
+.oh-textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+  background: var(--color-bg-primary);
+  color: var(--color-text);
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.oh-input:focus,
+.oh-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.oh-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.oh-form-actions {
+  display: flex;
+  gap: var(--space-sm, 8px);
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ── */
+.oh-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+}
+
+.oh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.oh-btn--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.oh-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.oh-btn--secondary {
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.oh-btn--secondary:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.oh-btn--sm {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: var(--font-size-xs, 0.75rem);
+}
+
+/* ── Mobile-first responsive ── */
+@media (min-width: 640px) {
+  .oh-org-card-header {
+    gap: var(--space-lg, 16px);
+  }
+  .oh-tree-toggle {
+    font-size: var(--font-size-base, 1rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .oh-org-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

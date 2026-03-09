@@ -33,6 +33,54 @@ async function uniqueSlug(base, excludeId) {
   }
 }
 
+// ── GET /api/organizations ── list orgs user belongs to (owner OR member of a child team)
+router.get('/', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+
+    // Orgs the user owns
+    const ownedOrgs = await Organization.find({ owner: requesterId, isActive: true }).lean();
+
+    // Teams the user is an active member of that belong to an org
+    const memberTeams = await Team.find(
+      { 'members.user': requesterId, 'members.status': 'active', organization: { $ne: null }, isActive: true },
+      'organization'
+    ).lean();
+    const memberOrgIds = [...new Set(memberTeams.map(t => String(t.organization)))];
+    const ownedOrgIds = new Set(ownedOrgs.map(o => String(o._id)));
+    const extraOrgIds = memberOrgIds.filter(id => !ownedOrgIds.has(id));
+    const memberOrgs = extraOrgIds.length
+      ? await Organization.find({ _id: { $in: extraOrgIds }, isActive: true }).lean()
+      : [];
+
+    const allOrgs = [...ownedOrgs, ...memberOrgs];
+
+    // Attach team summaries
+    const orgIds = allOrgs.map(o => o._id);
+    const teams = await Team.find(
+      { organization: { $in: orgIds }, isActive: true },
+      'name _id organization'
+    ).lean();
+    const teamsByOrg = {};
+    for (const t of teams) {
+      const oid = String(t.organization);
+      if (!teamsByOrg[oid]) teamsByOrg[oid] = [];
+      teamsByOrg[oid].push({ _id: t._id, name: t.name });
+    }
+
+    const result = allOrgs.map(o => ({
+      ...o,
+      teams: teamsByOrg[String(o._id)] || [],
+      isOwner: String(o.owner) === requesterId,
+    }));
+
+    res.json({ organizations: result });
+  } catch (err) {
+    console.error('List organizations error:', err.message);
+    res.status(500).json({ error: 'Failed to load organizations' });
+  }
+});
+
 // ── POST /api/organizations ── create org
 router.post('/', async (req, res) => {
   try {
@@ -116,6 +164,34 @@ router.get('/:id', async (req, res) => {
   } catch (err) {
     console.error('Get organization error:', err.message);
     res.status(500).json({ error: 'Failed to load organization' });
+  }
+});
+
+// ── PUT /api/organizations/:id ── update org (owner only)
+router.put('/:id', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const org = await Organization.findById(req.params.id);
+    if (!org || !org.isActive) return res.status(404).json({ error: 'Organization not found' });
+    if (String(org.owner) !== requesterId) return res.status(403).json({ error: 'Forbidden' });
+
+    const { name, description, logo, website, billingEmail } = req.body;
+
+    if (name !== undefined) {
+      org.name = name.trim();
+      const baseSlug = generateSlug(name);
+      org.slug = await uniqueSlug(baseSlug, org._id);
+    }
+    if (description !== undefined) org.description = description;
+    if (logo !== undefined) org.logo = logo;
+    if (website !== undefined) org.website = website;
+    if (billingEmail !== undefined) org.billing.billingEmail = billingEmail;
+
+    await org.save();
+    res.json({ organization: org });
+  } catch (err) {
+    console.error('Update organization error:', err.message);
+    res.status(500).json({ error: 'Failed to update organization' });
   }
 });
 
