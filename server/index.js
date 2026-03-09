@@ -313,6 +313,7 @@ app.use('/api/ai',               require('./routes/ai'));
 app.use('/api/ai-settings',      require('./routes/aiSettings'));
 app.use('/api/feedback',         require('./routes/feedback'));
 app.use('/api/team-channels',    require('./routes/teamChannels'));
+app.use('/api/agency-relationships', require('./routes/agencyRelationships'));
 app.use('/api/ai',               require('./routes/ai-discovery'));   // semantic search, skills, SEO, portfolio, category
 app.use('/api/ai',               require('./routes/ai-workflow'));    // proposal ranker, milestones, contracts, disputes, red flags
 app.use('/api/ai',               require('./routes/ai-assistant'));   // earnings forecast, meeting notes, translator, fake reviews

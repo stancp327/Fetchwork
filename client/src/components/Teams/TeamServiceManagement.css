@@ -1,0 +1,261 @@
+/* ── TeamServiceManagement ── prefix: tsm- ── */
+
+.tsm-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 24px);
+}
+
+.tsm-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+@media (min-width: 640px) {
+  .tsm-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.tsm-title {
+  font-size: var(--font-size-xl, 1.25rem);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.tsm-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs, 4px);
+  padding: var(--space-sm, 8px) var(--space-md, 16px);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast, #fff);
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.tsm-add-btn:hover {
+  opacity: 0.9;
+}
+
+/* ── Filters ── */
+.tsm-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm, 8px);
+}
+
+.tsm-filter-select {
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: var(--font-size-sm, 0.875rem);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+/* ── Service grid ── */
+.tsm-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md, 16px);
+}
+
+@media (min-width: 640px) {
+  .tsm-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tsm-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Service card ── */
+.tsm-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+  padding: var(--space-md, 16px);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.tsm-card-title {
+  font-weight: 600;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tsm-card-owner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs, 4px);
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary);
+}
+
+.tsm-card-owner-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tsm-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm, 8px);
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary);
+}
+
+.tsm-card-stat {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ── Status badge ── */
+.tsm-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.tsm-badge-active {
+  background: var(--color-success-bg, #d1fae5);
+  color: var(--color-success, #059669);
+}
+
+.tsm-badge-paused {
+  background: var(--color-warning-bg, #fef3c7);
+  color: var(--color-warning, #d97706);
+}
+
+.tsm-badge-draft {
+  background: var(--color-bg-secondary, #f3f4f6);
+  color: var(--color-text-secondary);
+}
+
+/* ── Card actions ── */
+.tsm-card-actions {
+  display: flex;
+  gap: var(--space-xs, 4px);
+  margin-top: auto;
+}
+
+.tsm-card-btn {
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs, 0.75rem);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.tsm-card-btn:hover {
+  background: var(--color-bg-secondary, #f3f4f6);
+}
+
+/* ── Assign modal ── */
+.tsm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md, 16px);
+}
+
+.tsm-modal {
+  background: var(--color-bg-primary);
+  border-radius: 12px;
+  padding: var(--space-lg, 24px);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+}
+
+.tsm-modal-title {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.tsm-modal-actions {
+  display: flex;
+  gap: var(--space-sm, 8px);
+  justify-content: flex-end;
+}
+
+.tsm-btn-cancel {
+  padding: var(--space-sm, 8px) var(--space-md, 16px);
+  background: var(--color-bg-secondary, #f3f4f6);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+  cursor: pointer;
+  color: var(--color-text-primary);
+}
+
+.tsm-btn-save {
+  padding: var(--space-sm, 8px) var(--space-md, 16px);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast, #fff);
+  border: none;
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── States ── */
+.tsm-empty {
+  text-align: center;
+  padding: var(--space-xl, 32px);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm, 0.875rem);
+  grid-column: 1 / -1;
+}
+
+.tsm-loading {
+  text-align: center;
+  padding: var(--space-xl, 32px);
+  color: var(--color-text-secondary);
+  grid-column: 1 / -1;
+}
+
+.tsm-error {
+  padding: var(--space-md, 16px);
+  background: var(--color-error-bg, #fee2e2);
+  color: var(--color-error, #dc2626);
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+}
