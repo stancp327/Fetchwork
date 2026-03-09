@@ -713,6 +713,15 @@ router.post('/:id/transfer-ownership', async (req, res) => {
       req,
     });
 
+    // Notify new owner
+    Notification.notify({
+      recipient: targetMember.user,
+      type: 'team_ownership_transferred',
+      title: 'You are now team owner',
+      message: `${req.user.firstName || 'A team admin'} transferred ownership of ${team.name} to you.`,
+      link: '/teams',
+    }).catch(() => {});
+
     return res.json({
       message: 'Ownership transferred',
       team: normalizeTeamForUser(updatedTeam, requesterId),
@@ -980,6 +989,15 @@ router.post('/:id/assign', async (req, res) => {
       job.assignmentNote = note || '';
       await job.save();
 
+      // Notify assigned member
+      Notification.notify({
+        recipient: memberId,
+        type: 'team_work_assigned',
+        title: 'Work assigned to you',
+        message: `${req.user.firstName || 'A team admin'} assigned you a job on ${team.name}: "${job.title}"${note ? ` — ${note}` : ''}`,
+        link: `/jobs/${job._id}`,
+      }).catch(() => {});
+
       return res.json({ message: `Job assigned to ${member.user}`, job: { _id: job._id, title: job.title, assignedTo: memberId } });
     }
 
@@ -996,6 +1014,15 @@ router.post('/:id/assign', async (req, res) => {
       order.assignedBy = req.user.userId;
       order.assignedAt = new Date();
       await service.save();
+
+      // Notify assigned member
+      Notification.notify({
+        recipient: memberId,
+        type: 'team_work_assigned',
+        title: 'Order assigned to you',
+        message: `${req.user.firstName || 'A team admin'} assigned you a service order on ${team.name}${note ? ` — ${note}` : ''}`,
+        link: '/orders',
+      }).catch(() => {});
 
       return res.json({ message: 'Order assigned', orderId: serviceOrderId, assignedTo: memberId });
     }
@@ -1225,10 +1252,32 @@ function checkSpendCap(team, amount) {
   }
   const projected = (sc.currentMonthSpend || 0) + amount;
   if (projected > sc.monthlyCap) {
+    // Notify owner + admins: cap exceeded
+    const recipients = team.members.filter(m => m.status === 'active' && ['owner', 'admin'].includes(m.role));
+    recipients.forEach(m => {
+      Notification.notify({
+        recipient: m.user,
+        type: 'team_spend_cap_exceeded',
+        title: '⚠️ Team spend cap exceeded',
+        message: `${team.name} has reached its monthly spend cap of $${sc.monthlyCap}. This spend was blocked.`,
+        link: '/teams',
+      }).catch(() => {});
+    });
     return { blocked: true, reason: `Exceeds monthly spend cap ($${sc.monthlyCap})`, alert: true };
   }
   const utilization = projected / sc.monthlyCap;
   if (utilization >= (sc.alertThreshold || 0.8)) {
+    // Notify owner + admins: approaching cap
+    const recipients = team.members.filter(m => m.status === 'active' && ['owner', 'admin'].includes(m.role));
+    recipients.forEach(m => {
+      Notification.notify({
+        recipient: m.user,
+        type: 'team_spend_alert',
+        title: '💰 Team spend alert',
+        message: `${team.name} is at ${Math.round(utilization * 100)}% of its $${sc.monthlyCap} monthly spend cap.`,
+        link: '/teams',
+      }).catch(() => {});
+    });
     return { blocked: false, alert: true, reason: `Approaching spend cap (${Math.round(utilization * 100)}%)` };
   }
   return { blocked: false, alert: false };
@@ -1300,6 +1349,22 @@ router.post('/:id/approvals', async (req, res) => {
       req,
     });
 
+    // Notify all owners + admins (except requester)
+    const approvers = team.members.filter(m =>
+      m.status === 'active' &&
+      ['owner', 'admin'].includes(m.role) &&
+      m.user.toString() !== requesterId
+    );
+    approvers.forEach(m => {
+      Notification.notify({
+        recipient: m.user,
+        type: 'team_approval_requested',
+        title: 'Approval required',
+        message: `${req.user.firstName || 'A team member'} requested approval for ${action}${amount ? ` ($${amount})` : ''} on ${team.name}`,
+        link: `/teams`,
+      }).catch(() => {});
+    });
+
     res.status(201).json({ approval });
   } catch (err) {
     console.error('Create approval error:', err.message);
@@ -1348,6 +1413,15 @@ router.post('/:id/approvals/:approvalId/approve', async (req, res) => {
       req,
     });
 
+    // Notify requester their request was approved
+    Notification.notify({
+      recipient: approval.requestedBy,
+      type: 'team_approval_approved',
+      title: 'Approval granted',
+      message: `Your ${approval.action} request on ${team.name} was approved${approval.status === 'approved' ? ' and is ready to execute' : ' (awaiting additional approvers)'}.`,
+      link: '/teams',
+    }).catch(() => {});
+
     res.json({ approval });
   } catch (err) {
     console.error('Approve error:', err.message);
@@ -1376,6 +1450,15 @@ router.post('/:id/approvals/:approvalId/reject', async (req, res) => {
     });
     approval.status = 'rejected';
     await approval.save();
+
+    // Notify requester their request was rejected
+    Notification.notify({
+      recipient: approval.requestedBy,
+      type: 'team_approval_rejected',
+      title: 'Approval denied',
+      message: `Your ${approval.action} request on ${team.name} was denied${req.body.reason ? `: ${req.body.reason}` : '.'}`,
+      link: '/teams',
+    }).catch(() => {});
 
     await logTeamAudit({
       teamId: team._id,
