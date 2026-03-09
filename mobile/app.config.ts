@@ -75,6 +75,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-font',
     'expo-secure-store',
     [
+      'expo-build-properties',
+      {
+        android: {
+          newArchEnabled: false,
+        },
+        ios: {
+          newArchEnabled: false,
+        },
+      },
+    ],
+    [
       'expo-notifications',
       {
         icon: './assets/notification-icon.png',
