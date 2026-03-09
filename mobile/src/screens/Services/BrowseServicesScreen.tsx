@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   TextInput, ActivityIndicator, Pressable, RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -17,6 +18,9 @@ import { Service } from '@fetchwork/shared';
 type Props = NativeStackScreenProps<ServicesStackParamList, 'BrowseServices'>;
 
 export default function BrowseServicesScreen({ navigation }: Props) {
+  const { width } = useWindowDimensions();
+  const numColumns = width >= 700 ? 3 : width >= 420 ? 2 : 1;
+
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'one_time' | 'recurring'>('all');
@@ -111,15 +115,16 @@ export default function BrowseServicesScreen({ navigation }: Props) {
         <EmptyState emoji="⚠️" title="Couldn't load services" actionLabel="Retry" onAction={refetch} />
       ) : (
         <FlatList
+          key={numColumns}
           data={services}
           keyExtractor={s => s._id}
           renderItem={renderService}
           contentContainerStyle={styles.list}
-          numColumns={2}
+          numColumns={numColumns}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
-          columnWrapperStyle={styles.row}
+          columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
           onEndReachedThreshold={0.4}
@@ -139,7 +144,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, height: 44,
   },
   searchInput:    { flex: 1, fontSize: 15, color: colors.textDark },
-  filterRow:      { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
+  filterRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingHorizontal: spacing.md, marginBottom: spacing.sm },
   filterBtn:      { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white },
   filterBtnActive:{ borderColor: colors.primary, backgroundColor: colors.primaryLight },
   filterText:     { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
