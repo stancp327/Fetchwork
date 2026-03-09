@@ -8,7 +8,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AuthStackParamList } from '../../types/navigation';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { colors, spacing, typography, radius } from '../../theme';
@@ -25,6 +27,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 export default function RegisterScreen({ navigation, route }: Props) {
   const { register } = useAuth();
+  const { request, promptAsync, isLoading: googleLoading, error: googleError } = useGoogleAuth();
   const [serverError, setServerError] = useState('');
   const referralCode = route.params?.ref;
 
@@ -104,6 +107,31 @@ export default function RegisterScreen({ navigation, route }: Props) {
 
           <Button label="Create Account" onPress={handleSubmit(onSubmit)} loading={isSubmitting} fullWidth size="lg" />
 
+          {/* Divider */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Google Sign-In */}
+          {googleError ? <Text style={styles.serverError}>{googleError}</Text> : null}
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.googleBtn,
+              pressed && { opacity: 0.8 },
+              (!request || googleLoading) && { opacity: 0.5 },
+            ]}
+            onPress={() => promptAsync()}
+            disabled={!request || googleLoading}
+          >
+            <Ionicons name="logo-google" size={20} color="#4285F4" style={{ marginRight: 10 }} />
+            <Text style={styles.googleBtnText}>
+              {googleLoading ? 'Signing up…' : 'Sign up with Google'}
+            </Text>
+          </Pressable>
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
             <Pressable onPress={() => navigation.navigate('Login')}>
@@ -137,6 +165,15 @@ const styles = StyleSheet.create({
   roleSub:         { fontSize: 11, color: colors.textMuted, textAlign: 'center' },
   nameRow:         { flexDirection: 'row', gap: spacing.sm },
   serverError:     { color: colors.danger, fontSize: 13, marginBottom: spacing.md, textAlign: 'center' },
+  dividerRow:      { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
+  dividerLine:     { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText:     { marginHorizontal: spacing.sm, fontSize: 13, color: colors.textMuted },
+  googleBtn:       {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    width: '100%', minHeight: 52, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.borderMedium, backgroundColor: colors.white,
+  },
+  googleBtnText:   { fontSize: 16, fontWeight: '600', color: colors.text },
   footer:          { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.lg },
   footerText:      { ...typography.bodySmall },
   footerLink:      { fontSize: 13, color: colors.primary, fontWeight: '600' },

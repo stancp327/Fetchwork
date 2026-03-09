@@ -8,10 +8,12 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AuthStackParamList } from '../../types/navigation';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useGoogleAuth } from '../../hooks/useGoogleAuth';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import { colors, spacing, typography } from '../../theme';
+import { colors, spacing, typography, radius } from '../../theme';
 
 const schema = z.object({
   email:    z.string().email('Enter a valid email'),
@@ -23,6 +25,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
+  const { request, promptAsync, isLoading: googleLoading, error: googleError } = useGoogleAuth();
   const [serverError, setServerError] = useState('');
 
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -98,6 +101,31 @@ export default function LoginScreen({ navigation }: Props) {
               fullWidth
               size="lg"
             />
+
+            {/* Divider */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Sign-In */}
+            {googleError ? <Text style={styles.serverError}>{googleError}</Text> : null}
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.googleBtn,
+                pressed && { opacity: 0.8 },
+                (!request || googleLoading) && { opacity: 0.5 },
+              ]}
+              onPress={() => promptAsync()}
+              disabled={!request || googleLoading}
+            >
+              <Ionicons name="logo-google" size={20} color="#4285F4" style={{ marginRight: 10 }} />
+              <Text style={styles.googleBtnText}>
+                {googleLoading ? 'Signing in…' : 'Continue with Google'}
+              </Text>
+            </Pressable>
           </View>
 
           {/* Footer */}
@@ -123,6 +151,15 @@ const styles = StyleSheet.create({
   forgotWrap:  { alignSelf: 'flex-end', marginBottom: spacing.lg, marginTop: -spacing.sm },
   forgotText:  { color: colors.primary, fontSize: 13, fontWeight: '500' },
   serverError: { color: colors.danger, fontSize: 13, marginBottom: spacing.md, textAlign: 'center' },
+  dividerRow:  { flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { marginHorizontal: spacing.sm, fontSize: 13, color: colors.textMuted },
+  googleBtn:   {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    width: '100%', minHeight: 52, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.borderMedium, backgroundColor: colors.white,
+  },
+  googleBtnText: { fontSize: 16, fontWeight: '600', color: colors.text },
   footer:      { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xl },
   footerText:  { ...typography.bodySmall },
   footerLink:  { fontSize: 13, color: colors.primary, fontWeight: '600' },
