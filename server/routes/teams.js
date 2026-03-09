@@ -790,7 +790,8 @@ router.delete('/:id', async (req, res) => {
 // â”€â”€ GET /api/teams/agencies/public â€” public agency directory â”€â”€
 router.get('/agencies/public', async (req, res) => {
   try {
-    const { page = 1, limit = 20, specialty } = req.query;
+    const { page = 1, specialty } = req.query;
+    const limit = Math.min(Math.max(1, Number(req.query.limit) || 20), 100); // cap at 100
     const query = { type: 'agency', isPublic: true, isActive: true };
     if (specialty) query.specialties = specialty;
 
@@ -800,8 +801,8 @@ router.get('/agencies/public', async (req, res) => {
         .populate('members.user', 'firstName lastName profileImage')
         .select('name slug description logo specialties members portfolio')
         .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(Number(limit))
+        .skip((Number(page) - 1) * limit)
+        .limit(limit)
         .lean(),
       Team.countDocuments(query),
     ]);
@@ -1597,80 +1598,7 @@ router.get('/:id/spend-controls', async (req, res) => {
   }
 });
 
-// ── GET /api/teams/:id/analytics ── team analytics (owner/admin)
-router.get('/:id/analytics', async (req, res) => {
-  try {
-    const { id: requesterId } = resolveRequester(req);
-    const team = await Team.findById(req.params.id)
-      .populate('members.user', 'firstName lastName')
-      .lean();
-    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
-
-    const authz = authorizeTeamAction({ team, requesterId, action: 'read_audit_logs' });
-    if (!authz.ok) return res.status(403).json({ error: 'Owner or admin access required' });
-
-    const activeMembers = (team.members || []).filter(m => m.status === 'active');
-    const pendingInvites = (team.members || []).filter(m => m.status === 'invited');
-    const memberIds = activeMembers.map(m => m.user?._id || m.user);
-
-    const Job = require('../models/Job');
-
-    const [assignmentCount, approvalStats, recentActivity, jobsByMember] = await Promise.all([
-      Job.countDocuments({ team: team._id, assignedTo: { $in: memberIds } }),
-      TeamApproval.aggregate([
-        { $match: { team: team._id } },
-        { $group: { _id: '$status', count: { $sum: 1 } } },
-      ]),
-      TeamAuditLog.find({ team: team._id })
-        .populate('actor', 'firstName lastName')
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .lean(),
-      Job.aggregate([
-        { $match: { team: team._id, assignedTo: { $in: memberIds.map(id => new mongoose.Types.ObjectId(String(id))) } } },
-        { $group: { _id: '$assignedTo', count: { $sum: 1 } } },
-      ]),
-    ]);
-
-    const approvalStatsObj = { pending: 0, approved: 0, rejected: 0, expired: 0 };
-    approvalStats.forEach(s => { if (approvalStatsObj.hasOwnProperty(s._id)) approvalStatsObj[s._id] = s.count; });
-
-    const sc = team.spendControls || {};
-    const spendCapUtilization = sc.monthlyCapEnabled && sc.monthlyCap > 0
-      ? Math.round(((sc.currentMonthSpend || 0) / sc.monthlyCap) * 100) / 100
-      : null;
-
-    const memberActivity = activeMembers.map(m => {
-      const uid = String(m.user?._id || m.user);
-      const match = jobsByMember.find(j => String(j._id) === uid);
-      return {
-        userId: uid,
-        name: `${m.user?.firstName || ''} ${m.user?.lastName || ''}`.trim(),
-        role: m.role,
-        assignmentCount: match ? match.count : 0,
-      };
-    });
-
-    res.json({
-      memberCount: activeMembers.length,
-      activeMembers: activeMembers.length,
-      pendingInvites: pendingInvites.length,
-      assignmentCount,
-      totalSpend: sc.currentMonthSpend || 0,
-      spendCapUtilization,
-      approvalStats: approvalStatsObj,
-      recentActivity: recentActivity.map(a => ({
-        actor: `${a.actor?.firstName || ''} ${a.actor?.lastName || ''}`.trim(),
-        action: a.action,
-        createdAt: a.createdAt,
-      })),
-      memberActivity,
-    });
-  } catch (err) {
-    console.error('Analytics error:', err.message);
-    res.status(500).json({ error: 'Failed to load analytics' });
-  }
-});
+// Phase 2 analytics removed — replaced by comprehensive Phase 3 analytics below
 
 // ── GET /api/teams/:id/user-lookup?q=term ── lookup users for linking clients
 router.get('/:id/user-lookup', async (req, res) => {
@@ -2127,6 +2055,9 @@ router.get('/:id/analytics', async (req, res) => {
     const sixMonthsAgo = new Date(now);
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+    // Fetch all team jobs once (avoid N+1 — was 3 separate queries)
+    const allTeamJobs = await Job.find({ team: teamId }).lean();
+
     // ── Hiring analytics ──
     let hiring = {
       totalJobsPosted: 0, totalProposalsReceived: 0, avgProposalsPerJob: 0,
@@ -2135,7 +2066,7 @@ router.get('/:id/analytics', async (req, res) => {
     };
 
     try {
-      const teamJobs = await Job.find({ team: teamId }).lean();
+      const teamJobs = allTeamJobs;
       hiring.totalJobsPosted = teamJobs.length;
       hiring.totalProposalsReceived = teamJobs.reduce((s, j) => s + (j.proposals?.length || 0), 0);
       hiring.avgProposalsPerJob = hiring.totalJobsPosted > 0
@@ -2218,7 +2149,7 @@ router.get('/:id/analytics', async (req, res) => {
     };
 
     try {
-      const teamJobs = await Job.find({ team: teamId }).lean();
+      const teamJobs = allTeamJobs;
 
       spend.totalAllTime = teamJobs.reduce((s, j) => s + (j.totalPaid || 0), 0);
       spend.last30Days = teamJobs
@@ -2289,7 +2220,7 @@ router.get('/:id/analytics', async (req, res) => {
     };
 
     try {
-      const teamJobs = await Job.find({ team: teamId }).lean();
+      const teamJobs = allTeamJobs;
       const finishedJobs = teamJobs.filter(j => ['completed', 'cancelled'].includes(j.status));
       const completedJobs = finishedJobs.filter(j => j.status === 'completed');
       const disputedJobs = teamJobs.filter(j => j.disputeStatus && j.disputeStatus !== 'none');

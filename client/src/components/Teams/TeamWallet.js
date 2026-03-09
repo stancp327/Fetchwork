@@ -6,12 +6,16 @@ const TeamWallet = ({ teamId, canManageBilling }) => {
   const [billing, setBilling] = useState(null);
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [fundAmount, setFundAmount] = useState('');
   const [fundLoading, setFundLoading] = useState(false);
+  const [fundError, setFundError] = useState('');
   const [actionLoading, setActionLoading] = useState({});
+  const [actionError, setActionError] = useState('');
 
   const fetchData = useCallback(async () => {
+    setError('');
     try {
       const [billingData, approvalsData] = await Promise.all([
         apiRequest(`/api/teams/${teamId}/billing`),
@@ -19,7 +23,8 @@ const TeamWallet = ({ teamId, canManageBilling }) => {
       ]);
       setBilling(billingData);
       setApprovals((approvalsData.approvals || []).filter(a => a.status === 'pending'));
-    } catch {
+    } catch (err) {
+      setError(err.message || 'Failed to load wallet data');
       setBilling(null);
     } finally {
       setLoading(false);
@@ -32,14 +37,15 @@ const TeamWallet = ({ teamId, canManageBilling }) => {
     const amount = parseFloat(fundAmount);
     if (!amount || amount < 5 || amount > 500) return;
     setFundLoading(true);
+    setFundError('');
     try {
       const res = await apiRequest(`/api/teams/${teamId}/billing/add-funds`, {
         method: 'POST',
         body: JSON.stringify({ amount }),
       });
       if (res.url) window.location.href = res.url;
-    } catch {
-      // handled
+    } catch (err) {
+      setFundError(err.message || 'Failed to process payment');
     } finally {
       setFundLoading(false);
     }
@@ -47,18 +53,34 @@ const TeamWallet = ({ teamId, canManageBilling }) => {
 
   const handleApproval = async (approvalId, action) => {
     setActionLoading(prev => ({ ...prev, [approvalId]: action }));
+    setActionError('');
     try {
       await apiRequest(`/api/teams/${teamId}/approvals/${approvalId}/${action}`, { method: 'POST' });
       setApprovals(prev => prev.filter(a => a._id !== approvalId));
-    } catch {
-      // handled
+    } catch (err) {
+      setActionError(err.message || `Failed to ${action} approval`);
     } finally {
       setActionLoading(prev => ({ ...prev, [approvalId]: null }));
     }
   };
 
-  if (loading) return <div className="tw-empty">Loading wallet...</div>;
-  if (!billing) return <div className="tw-empty">Unable to load billing data</div>;
+  if (loading) {
+    return (
+      <div className="tw-loading">
+        <div className="tw-skeleton-card" />
+        <div className="tw-skeleton-card tw-skeleton-card--short" />
+      </div>
+    );
+  }
+
+  if (error || !billing) {
+    return (
+      <div className="tw-empty">
+        <p>{error || 'Unable to load billing data.'}</p>
+        <button className="tw-retry-btn" onClick={fetchData}>Try Again</button>
+      </div>
+    );
+  }
 
   const { balance, credits } = billing;
   const history = credits || [];
@@ -107,6 +129,8 @@ const TeamWallet = ({ teamId, canManageBilling }) => {
         )}
       </div>
 
+      {actionError && <div className="tw-error-banner">{actionError}</div>}
+
       {/* Monthly Spend Summary */}
       <div className="tw-spend-summary">
         <div className="tw-spend-header">
@@ -115,8 +139,8 @@ const TeamWallet = ({ teamId, canManageBilling }) => {
         </div>
         <div className="tw-progress-bar">
           <div
-            className={`tw-progress-fill${monthlySpend > 0 ? '' : ''}`}
-            style={{ width: '0%' }}
+            className="tw-progress-fill"
+            style={{ width: `${balance > 0 ? Math.min(100, Math.round((monthlySpend / balance) * 100)) : 0}%` }}
           />
         </div>
       </div>
@@ -222,8 +246,9 @@ const TeamWallet = ({ teamId, canManageBilling }) => {
               step="1"
               autoFocus
             />
+            {fundError && <p className="tw-fund-error">{fundError}</p>}
             <div className="tw-modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowAddFunds(false)}>
+              <button className="btn btn-secondary" onClick={() => { setShowAddFunds(false); setFundError(''); }}>
                 Cancel
               </button>
               <button

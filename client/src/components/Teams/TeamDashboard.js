@@ -34,11 +34,12 @@ function formatCurrency(amount) {
   return `$${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function TeamDashboard({ teamId, team }) {
+export default function TeamDashboard({ teamId, team, onNavigateTab }) {
   const [billing, setBilling] = useState(null);
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [activity, setActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
   const activeMembers = (team?.members || []).filter(m => m.status === 'active');
   const memberCount = activeMembers.length;
@@ -46,6 +47,7 @@ export default function TeamDashboard({ teamId, team }) {
   const fetchData = useCallback(async () => {
     if (!teamId) return;
     setLoadingActivity(true);
+    setFetchError('');
 
     const [billingRes, approvalsRes, activityRes] = await Promise.allSettled([
       apiRequest(`/api/teams/${teamId}/billing`),
@@ -56,6 +58,10 @@ export default function TeamDashboard({ teamId, team }) {
     if (billingRes.status === 'fulfilled') setBilling(billingRes.value);
     if (approvalsRes.status === 'fulfilled') setPendingApprovals(approvalsRes.value?.count ?? 0);
     if (activityRes.status === 'fulfilled') setActivity(activityRes.value?.events || activityRes.value?.activity || []);
+
+    // Show error if all calls failed
+    const allFailed = [billingRes, approvalsRes, activityRes].every(r => r.status === 'rejected');
+    if (allFailed) setFetchError('Could not load dashboard data. Please try again.');
 
     setLoadingActivity(false);
   }, [teamId]);
@@ -69,6 +75,13 @@ export default function TeamDashboard({ teamId, team }) {
 
   return (
     <div className="td-root">
+      {fetchError && (
+        <div className="td-error-banner">
+          <span>{fetchError}</span>
+          <button className="td-error-retry" onClick={fetchData}>Retry</button>
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="td-stats">
         <div className="td-stat-card">
@@ -93,9 +106,16 @@ export default function TeamDashboard({ teamId, team }) {
       <section className="td-section">
         <h3 className="td-section-title">Recent Activity</h3>
         {loadingActivity ? (
-          <p className="td-muted">Loading activity…</p>
+          <div className="td-activity-skeleton">
+            <div className="td-skeleton-line" />
+            <div className="td-skeleton-line" />
+            <div className="td-skeleton-line" />
+          </div>
         ) : activity.length === 0 ? (
-          <p className="td-muted">No recent activity.</p>
+          <div className="td-empty-state">
+            <p className="td-muted">No recent activity yet.</p>
+            <p className="td-muted-hint">Activity will appear here as your team collaborates.</p>
+          </div>
         ) : (
           <ul className="td-activity-list">
             {activity.slice(0, 10).map((evt, i) => (
@@ -116,37 +136,51 @@ export default function TeamDashboard({ teamId, team }) {
         <div className="td-section-header">
           <h3 className="td-section-title">Members</h3>
           {memberCount > 6 && (
-            <span className="td-view-all">View All ({memberCount})</span>
+            <button className="td-view-all-btn" onClick={() => onNavigateTab?.('members')}>
+              View All ({memberCount})
+            </button>
           )}
         </div>
-        <div className="td-members-grid">
-          {displayMembers.map(m => {
-            const u = m.user || {};
-            const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'Member';
-            const initials = ((u.firstName?.[0] || '') + (u.lastName?.[0] || '')).toUpperCase() || '?';
-            return (
-              <div key={m._id} className="td-member-card">
-                {u.profileImage ? (
-                  <img src={u.profileImage} alt="" className="td-member-avatar" />
-                ) : (
-                  <span className="td-member-avatar td-member-avatar--placeholder">{initials}</span>
-                )}
-                <span className="td-member-name">{name}</span>
-                <span className={`td-role-badge td-role-badge--${m.role}`}>{m.role}</span>
-              </div>
-            );
-          })}
-        </div>
+        {displayMembers.length === 0 ? (
+          <p className="td-muted">No members yet. Invite someone to get started.</p>
+        ) : (
+          <div className="td-members-grid">
+            {displayMembers.map(m => {
+              const u = m.user || {};
+              const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'Member';
+              const initials = ((u.firstName?.[0] || '') + (u.lastName?.[0] || '')).toUpperCase() || '?';
+              return (
+                <div key={m._id} className="td-member-card">
+                  {u.profileImage ? (
+                    <img src={u.profileImage} alt="" className="td-member-avatar" />
+                  ) : (
+                    <span className="td-member-avatar td-member-avatar--placeholder">{initials}</span>
+                  )}
+                  <span className="td-member-name">{name}</span>
+                  <span className={`td-role-badge td-role-badge--${m.role}`}>{m.role}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* Quick Actions */}
+      {/* Quick Actions — wired to tab navigation */}
       <section className="td-section">
         <h3 className="td-section-title">Quick Actions</h3>
         <div className="td-quick-actions">
-          <button className="td-action-btn">Invite Member</button>
-          <button className="td-action-btn">Add Funds</button>
-          <button className="td-action-btn">Post Job as Team</button>
-          <button className="td-action-btn">View Public Profile</button>
+          <button className="td-action-btn" onClick={() => onNavigateTab?.('members')}>
+            Invite Member
+          </button>
+          <button className="td-action-btn" onClick={() => onNavigateTab?.('wallet')}>
+            Add Funds
+          </button>
+          <button className="td-action-btn" onClick={() => onNavigateTab?.('analytics')}>
+            View Analytics
+          </button>
+          <button className="td-action-btn" onClick={() => onNavigateTab?.('activity')}>
+            View Activity
+          </button>
         </div>
       </section>
     </div>

@@ -56,6 +56,7 @@ function groupByDate(events) {
 export default function TeamActivityFeed({ teamId }) {
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filter, setFilter] = useState('All');
   const [expandedId, setExpandedId] = useState(null);
   const [visibleCount, setVisibleCount] = useState(20);
@@ -63,10 +64,12 @@ export default function TeamActivityFeed({ teamId }) {
   const fetchActivity = useCallback(async () => {
     if (!teamId) return;
     setLoading(true);
+    setError('');
     try {
       const data = await apiRequest(`/api/teams/${teamId}/activity`);
       setActivity(data.activity || []);
-    } catch {
+    } catch (err) {
+      setError(err.message || 'Failed to load activity');
       setActivity([]);
     } finally {
       setLoading(false);
@@ -90,6 +93,13 @@ export default function TeamActivityFeed({ teamId }) {
   return (
     <div className="taf-root">
       <h3 className="taf-title">Activity Feed</h3>
+
+      {error && (
+        <div className="taf-error">
+          <span>{error}</span>
+          <button className="taf-retry-btn" onClick={fetchActivity}>Retry</button>
+        </div>
+      )}
 
       {/* Filter bar */}
       <div className="taf-filters">

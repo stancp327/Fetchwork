@@ -21,6 +21,29 @@
   padding: var(--space-xl, 32px) 0;
 }
 
+.taf-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 8px);
+  padding: var(--space-sm, 10px) var(--space-md, 16px);
+  background: var(--color-danger-light, #fef2f2);
+  color: var(--color-danger, #dc2626);
+  border-radius: 8px;
+  font-size: var(--font-size-sm, 0.875rem);
+  margin-bottom: var(--space-md, 16px);
+}
+
+.taf-retry-btn {
+  border: none;
+  background: none;
+  color: var(--color-danger, #dc2626);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
 /* ── Filter bar ── */
 .taf-filters {
   display: flex;

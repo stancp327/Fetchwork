@@ -43,10 +43,13 @@
 }
 .tc-create-btn:hover { background: var(--color-border, #e5e7eb); color: var(--color-text-primary, #111827); }
 
-.tc-loading, .tc-empty {
+.tc-loading, .tc-empty, .tc-error {
   padding: 16px; font-size: 13px; color: var(--color-text-muted, #6b7280); text-align: center;
 }
+.tc-error { color: var(--color-danger, #dc2626); }
+.tc-error p { margin: 0 0 8px; }
 .tc-empty-link { background: none; border: none; color: var(--color-primary, #2563eb); cursor: pointer; font-size: 13px; }
+.tc-create-error { color: var(--color-danger, #dc2626); font-size: 13px; margin: 0 0 8px; }
 
 .tc-channel-list { list-style: none; margin: 0; padding: 6px 0; overflow-y: auto; flex: 1; }
 

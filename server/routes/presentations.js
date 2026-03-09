@@ -26,19 +26,23 @@ async function findTeamAndAuthorize(teamId, requesterId) {
 // GET /api/presentations/view/:slug — public view
 router.get('/view/:slug', async (req, res) => {
   try {
-    const presentation = await Presentation.findOne({ slug: req.params.slug })
+    // Atomically increment view count to avoid race conditions
+    const updateOps = { $inc: { viewCount: 1 } };
+    const presentation = await Presentation.findOne({ slug: req.params.slug });
+    if (!presentation) return res.status(404).json({ error: 'Presentation not found' });
+
+    const setOps = {};
+    if (!presentation.viewedAt) setOps.viewedAt = new Date();
+    if (presentation.status === 'sent') setOps.status = 'viewed';
+    if (Object.keys(setOps).length) updateOps.$set = setOps;
+
+    await Presentation.updateOne({ _id: presentation._id }, updateOps);
+
+    const updated = await Presentation.findById(presentation._id)
       .populate('team', 'name logo slug description')
       .populate('createdBy', 'firstName lastName');
 
-    if (!presentation) return res.status(404).json({ error: 'Presentation not found' });
-
-    // Increment view count
-    presentation.viewCount = (presentation.viewCount || 0) + 1;
-    if (!presentation.viewedAt) presentation.viewedAt = new Date();
-    if (presentation.status === 'sent') presentation.status = 'viewed';
-    await presentation.save();
-
-    res.json({ presentation });
+    res.json({ presentation: updated });
   } catch (err) {
     console.error('Public view error:', err.message);
     res.status(500).json({ error: 'Failed to load presentation' });
@@ -112,8 +116,7 @@ router.get('/', async (req, res) => {
   try {
     const requesterId = resolveRequester(req);
     const teams = await Team.find({
-      'members.user': requesterId,
-      'members.status': 'active',
+      members: { $elemMatch: { user: requesterId, status: 'active' } },
     }).select('_id');
 
     const teamIds = teams.map(t => t._id);

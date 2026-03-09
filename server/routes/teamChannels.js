@@ -136,7 +136,8 @@ router.post('/:channelId/members', async (req, res) => {
 router.get('/:channelId/messages', async (req, res) => {
   try {
     const { channelId } = req.params;
-    const { before, limit = 50 } = req.query;
+    const { before, limit: rawLimit = 50 } = req.query;
+    const limit = Math.min(Math.max(1, Number(rawLimit) || 50), 200); // cap at 200
     const userId = req.user._id || req.user.userId;
 
     const ChatRoom = getChatRoom();
@@ -149,14 +150,12 @@ router.get('/:channelId/messages', async (req, res) => {
     const query = { roomId: channelId };
     if (before) query._id = { $lt: before };
 
-    const messages = await Message.find ? [] : []; // Message model exports ChatRoom + Message
-    // Use raw model lookup
     const Msg = (() => { try { return mongoose.model('Message'); } catch { return null; } })();
     const msgs = Msg
       ? await Msg.find(query)
           .populate('sender', 'firstName lastName avatar')
           .sort({ createdAt: -1 })
-          .limit(Number(limit))
+          .limit(limit)
           .lean()
       : [];
 
@@ -174,6 +173,7 @@ router.post('/:channelId/messages', async (req, res) => {
     const { channelId } = req.params;
     const { content } = req.body;
     if (!content?.trim()) return res.status(400).json({ error: 'content required' });
+    if (content.length > 10000) return res.status(400).json({ error: 'Message too long (max 10,000 characters)' });
 
     const userId = req.user._id || req.user.userId;
     const ChatRoom = getChatRoom();
