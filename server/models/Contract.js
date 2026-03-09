@@ -13,6 +13,7 @@ const contractSchema = new mongoose.Schema({
   client:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   freelancer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   job:        { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
+  team:       { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null, index: true },
 
   // Template
   template: {

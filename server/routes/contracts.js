@@ -188,12 +188,17 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
-    const { status, role } = req.query;
+    const { status, role, teamId } = req.query;
 
-    const query = { $or: [{ client: userId }, { freelancer: userId }] };
+    let query;
+    if (teamId) {
+      query = { team: teamId };
+    } else {
+      query = { $or: [{ client: userId }, { freelancer: userId }] };
+    }
     if (status && status !== 'all') query.status = status;
-    if (role === 'client') { delete query.$or; query.client = userId; }
-    if (role === 'freelancer') { delete query.$or; query.freelancer = userId; }
+    if (!teamId && role === 'client') { delete query.$or; query.client = userId; }
+    if (!teamId && role === 'freelancer') { delete query.$or; query.freelancer = userId; }
 
     const contracts = await Contract.find(query)
       .populate('client', 'firstName lastName')

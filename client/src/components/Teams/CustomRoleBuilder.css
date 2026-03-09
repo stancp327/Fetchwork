@@ -1,0 +1,314 @@
+/* ── CustomRoleBuilder ── prefix: crb- ── */
+
+.crb-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 24px);
+}
+
+.crb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md, 12px);
+  flex-wrap: wrap;
+}
+
+.crb-title {
+  font-size: var(--font-size-lg, 1.25rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.crb-error {
+  padding: var(--space-sm, 8px) var(--space-md, 12px);
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.crb-success {
+  padding: var(--space-sm, 8px) var(--space-md, 12px);
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.crb-empty {
+  text-align: center;
+  padding: var(--space-xl, 40px) var(--space-lg, 24px);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base, 1rem);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+}
+
+/* ── Editor ── */
+.crb-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--space-lg, 24px);
+}
+
+.crb-editor-title {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.crb-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 4px);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+}
+
+.crb-input {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+  background: var(--color-bg-primary);
+  color: var(--color-text);
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.crb-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ── Permissions grid ── */
+.crb-perms-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.crb-perms-label {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.crb-perms-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.crb-perm-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm, 8px);
+  padding: var(--space-sm, 8px);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  min-height: 44px;
+}
+
+.crb-perm-item:hover {
+  border-color: var(--color-primary);
+}
+
+.crb-checkbox {
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.crb-perm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crb-perm-name {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+}
+
+.crb-perm-desc {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+
+.crb-editor-actions {
+  display: flex;
+  gap: var(--space-sm, 8px);
+  flex-wrap: wrap;
+}
+
+/* ── Role list ── */
+.crb-role-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+}
+
+.crb-role-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--space-md, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.crb-role-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 8px);
+}
+
+.crb-role-name {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.crb-in-use {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-muted);
+}
+
+/* ── Permission chips ── */
+.crb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs, 4px);
+}
+
+.crb-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-medium, 500);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* ── Role actions ── */
+.crb-role-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  flex-wrap: wrap;
+}
+
+.crb-confirm-delete {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  flex-wrap: wrap;
+}
+
+.crb-delete-warn {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-warning);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+/* ── Buttons ── */
+.crb-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+}
+
+.crb-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.crb-btn--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.crb-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.crb-btn--secondary {
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.crb-btn--secondary:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.crb-btn--danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.crb-btn--danger:hover:not(:disabled) {
+  background: var(--color-danger-dark);
+}
+
+.crb-btn--danger-outline {
+  background: none;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+
+.crb-btn--danger-outline:hover:not(:disabled) {
+  background: var(--color-danger-light);
+}
+
+.crb-btn--sm {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: var(--font-size-xs, 0.75rem);
+}
+
+/* ── Responsive ── */
+@media (min-width: 640px) {
+  .crb-perms-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .crb-perms-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
