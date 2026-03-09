@@ -16,7 +16,7 @@
     "e2e:maestro:teams:phase3:ps": "powershell -ExecutionPolicy Bypass -File ./scripts/run-maestro-phase3.ps1 -All"
   },
   "dependencies": {
-    "@expo/vector-icons": "^14.0.4",
+    "@expo/vector-icons": "~14.0.4",
     "@hookform/resolvers": "^3.9.1",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/bottom-tabs": "^6.6.1",
@@ -29,8 +29,8 @@
     "expo": "~52.0.0",
     "expo-application": "~6.0.1",
     "expo-auth-session": "~6.0.3",
-    "expo-build-properties": "^55.0.9",
-    "expo-clipboard": "^55.0.8",
+    "expo-build-properties": "^0.13.3",
+    "expo-clipboard": "~7.0.1",
     "expo-constants": "~17.0.3",
     "expo-crypto": "~14.0.1",
     "expo-device": "~7.0.1",
