@@ -213,6 +213,19 @@ const ErrorDashboard = () => {
     }
   };
 
+  const handleResolveAll = async () => {
+    if (!window.confirm('Mark ALL unresolved errors as resolved?')) return;
+    try {
+      const data = await apiRequest('/api/errors/admin/resolve-all', { method: 'POST' });
+      alert(data.message || 'All errors resolved');
+      setSelectedIds(new Set());
+      fetchErrors();
+      fetchStats();
+    } catch (err) {
+      alert('Failed: ' + err.message);
+    }
+  };
+
   const toggleSelect = (id) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -242,6 +255,20 @@ const ErrorDashboard = () => {
           <StatCard label="Total" value={stats.total} color="#2196f3" />
         </div>
       )}
+
+      {/* Resolve All — always visible */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <button
+          onClick={handleResolveAll}
+          style={{
+            background: '#10b981', color: 'white', border: 'none', borderRadius: 8,
+            padding: '10px 18px', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            minHeight: 44,
+          }}
+        >
+          ✅ Resolve All
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="error-filters">

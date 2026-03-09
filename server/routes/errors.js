@@ -157,6 +157,19 @@ router.patch('/admin/:id/resolve', authenticateAdmin, async (req, res) => {
   }
 });
 
+// POST /api/errors/admin/resolve-all — mark ALL unresolved errors as resolved
+router.post('/admin/resolve-all', authenticateAdmin, async (req, res) => {
+  try {
+    const result = await ServerError.updateMany(
+      { resolved: { $ne: true } },
+      { $set: { resolved: true, resolvedAt: new Date() } }
+    );
+    res.json({ message: `${result.modifiedCount} error(s) resolved` });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to resolve all errors' });
+  }
+});
+
 // POST /api/errors/admin/bulk-resolve — bulk resolve errors
 router.post('/admin/bulk-resolve', authenticateAdmin, async (req, res) => {
   try {
