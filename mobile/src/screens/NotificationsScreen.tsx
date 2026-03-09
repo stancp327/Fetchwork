@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { notificationsApi } from '../api/endpoints/notificationsApi';
 import EmptyState from '../components/common/EmptyState';
+import Button from '../components/common/Button';
 import { colors, spacing, typography } from '../theme';
 
 const ICONS: Record<string, string> = {
@@ -29,7 +30,7 @@ function timeAgo(date: string) {
 export default function NotificationsScreen({ navigation }: any) {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsApi.list(1, 50),
   });
@@ -46,6 +47,17 @@ export default function NotificationsScreen({ navigation }: any) {
 
   const notifications = data?.notifications || [];
   const unread = notifications.filter((n: any) => !n.read).length;
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handlePress = (notif: any) => {
     if (!notif.read) markRead.mutate(notif._id);
@@ -118,4 +130,5 @@ const styles = StyleSheet.create({
   notifTime:  { ...typography.caption, color: colors.textMuted },
   dot:        { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 6 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText:  { ...typography.bodySmall, color: colors.danger },
 });

@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
 import Badge, { getJobStatusVariant } from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
+import Button from '../../components/common/Button';
 import { colors, spacing, typography, radius } from '../../theme';
 import { Job } from '@fetchwork/shared';
 
@@ -19,12 +20,23 @@ export default function MyJobsScreen({ navigation }: Props) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
 
-  const { data = [], isLoading, refetch, isRefetching } = useQuery({
+  const { data = [], isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['my-jobs', activeTab],
     queryFn: () => jobsApi.myJobs(activeTab !== 'all' ? { status: activeTab } : {}),
   });
 
   const jobs: Job[] = Array.isArray(data) ? data : [];
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -100,4 +112,5 @@ const styles = StyleSheet.create({
   proposals:     { ...typography.bodySmall, color: colors.primary, marginTop: 4 },
   actionLink:    { ...typography.bodySmall, color: colors.primary, fontWeight: '600', marginTop: 4 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText:     { ...typography.bodySmall, color: colors.danger },
 });

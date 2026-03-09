@@ -57,6 +57,8 @@ export type ProfileStackParamList = {
   Wallet:            undefined;
   Payments:          undefined;
   Contracts:         undefined;
+  Offers:            undefined;
+  Referrals:         undefined;
   Bookings:          undefined;
   BookingDetail:     { id: string };
   GroupSlots:        { serviceId: string };

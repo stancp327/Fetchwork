@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
-  Pressable, RefreshControl,
+  Pressable, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -105,6 +105,16 @@ export default function ReviewListScreen({ route, navigation }: Props) {
     </Card>
   );
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <FlatList
@@ -171,4 +181,5 @@ const styles = StyleSheet.create({
   },
   responseLabel: { ...typography.caption, color: colors.primary, fontWeight: '600', marginBottom: 2 },
   responseText: { ...typography.bodySmall, color: colors.text },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

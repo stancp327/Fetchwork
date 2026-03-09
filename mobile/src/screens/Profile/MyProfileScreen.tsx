@@ -109,6 +109,8 @@ export default function MyProfileScreen({ navigation }: Props) {
             { label: '🔍 Discovery Settings',      onPress: () => navigation.navigate('DiscoverySettings') },
             { label: '📦 Subscriptions & Bundles', onPress: () => (navigation as any).navigate('Services', { screen: 'MyBundles' }) },
             { label: '👥 Teams',                   onPress: () => navigation.navigate('Teams') },
+            { label: '📋 Offers',                  onPress: () => navigation.navigate('Offers') },
+            { label: '🎁 Referrals',               onPress: () => navigation.navigate('Referrals') },
             { label: '💰 Earnings',                 onPress: () => navigation.navigate('Earnings') },
             { label: '🏅 Skill Assessments',        onPress: () => navigation.navigate('Skills') },
             { label: '💼 Wallet',                  onPress: () => navigation.navigate('Wallet') },

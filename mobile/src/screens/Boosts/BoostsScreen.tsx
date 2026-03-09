@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  Pressable, Alert, ActivityIndicator,
+  Pressable, Alert, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { jobsApi } from '../../api/endpoints/jobsApi';
 import { servicesApi } from '../../api/endpoints/servicesApi';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
 import { colors, spacing, typography } from '../../theme';
 
 type Tab = 'jobs' | 'services';
@@ -25,9 +26,14 @@ export default function BoostsScreen() {
   const [selected, setSelected] = useState<{ id: string; type: Tab } | null>(null);
   const qc = useQueryClient();
 
-  const { data: credits } = useQuery({ queryKey: ['boost-credits'], queryFn: boostsApi.getCredits });
-  const { data: jobsData } = useQuery({ queryKey: ['jobs', 'mine'], queryFn: () => jobsApi.browse({ mine: true, limit: 20 }) });
-  const { data: servicesData } = useQuery({ queryKey: ['services', 'me'], queryFn: servicesApi.getMyServices });
+  const { data: credits, isLoading: creditsLoading, error: creditsError, isRefetching: creditsRefetching, refetch: refetchCredits } = useQuery({ queryKey: ['boost-credits'], queryFn: boostsApi.getCredits });
+  const { data: jobsData, isLoading: jobsLoading, error: jobsError, isRefetching: jobsRefetching, refetch: refetchJobs } = useQuery({ queryKey: ['jobs', 'mine'], queryFn: () => jobsApi.browse({ limit: 20 }) });
+  const { data: servicesData, isLoading: servicesLoading, error: servicesError, isRefetching: servicesRefetching, refetch: refetchServices } = useQuery({ queryKey: ['services', 'me'], queryFn: () => servicesApi.myServices() });
+
+  const isLoading = creditsLoading || jobsLoading || servicesLoading;
+  const error = creditsError || jobsError || servicesError;
+  const isRefetching = creditsRefetching || jobsRefetching || servicesRefetching;
+  const refetch = () => { refetchCredits(); refetchJobs(); refetchServices(); };
 
   const boostMut = useMutation({
     mutationFn: ({ id, type, tier }: { id: string; type: Tab; tier: BoostTier }) =>
@@ -51,12 +57,33 @@ export default function BoostsScreen() {
   };
 
   const jobs = jobsData?.jobs ?? [];
-  const services = Array.isArray(servicesData) ? servicesData : servicesData?.services ?? [];
+  const services = Array.isArray(servicesData) ? servicesData : (servicesData as { services?: unknown[] } | undefined)?.services ?? [];
   const items = tab === 'jobs' ? jobs : services;
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.primary} />}>
 
         {/* Credits card */}
         <Card style={styles.creditsCard}>
@@ -194,4 +221,6 @@ const styles = StyleSheet.create({
 
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
   emptyText: { ...typography.body, color: colors.textMuted },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { ...typography.bodySmall, color: colors.danger },
 });

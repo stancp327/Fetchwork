@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  ActivityIndicator, Alert, Pressable,
+  ActivityIndicator, Alert, Pressable, RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -58,7 +58,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
   };
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
-  const { data: job, isLoading } = useQuery({
+  const { data: job, isLoading, error, isRefetching, refetch } = useQuery({
     queryKey: ['job', id],
     queryFn: () => jobsApi.getById(id),
   });
@@ -108,13 +108,14 @@ export default function JobDetailScreen({ route, navigation }: Props) {
   const handleBoost = async () => {
     setBoosting(true);
     try {
-      const res = await boostsApi.boostJob(id, '7day', true);
-      if (res.boosted) {
-        Alert.alert('🚀 Boosted!', `Job boosted until ${new Date(res.expiresAt).toLocaleDateString()}. ${res.creditsRemaining} free boosts remaining.`);
-      } else if (res.clientSecret) {
+      const res = await boostsApi.boostJob(id, 'standard');
+      if (res.boost) {
+        Alert.alert('🚀 Boosted!', `Job boosted until ${new Date(res.boost.expiresAt).toLocaleDateString()}.`);
+      } else if ((res as unknown as { clientSecret?: string }).clientSecret) {
+        const clientSecret = (res as unknown as { clientSecret: string }).clientSecret;
         const { ephemeralKey, customerId } = await paymentsApi.getEphemeralKey();
         const { error: initError } = await initPaymentSheet({
-          paymentIntentClientSecret: res.clientSecret,
+          paymentIntentClientSecret: clientSecret,
           customerEphemeralKeySecret: ephemeralKey,
           customerId,
           merchantDisplayName: 'Fetchwork',
@@ -168,7 +169,17 @@ export default function JobDetailScreen({ route, navigation }: Props) {
     );
   };
 
-  if (isLoading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
+  if (isLoading) return <SafeAreaView style={styles.safe}><View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View></SafeAreaView>;
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
   if (!job) return <View style={styles.center}><Text>Job not found</Text></View>;
 
   const isClient = user?.role === 'client';
@@ -178,7 +189,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.primary} />}>
         {/* Title + status */}
         <View style={styles.titleRow}>
           <Text style={styles.title}>{job.title}</Text>
@@ -354,6 +365,7 @@ const styles = StyleSheet.create({
   safe:        { flex: 1, backgroundColor: colors.bgSubtle },
   scroll:      { padding: spacing.md },
   center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText:   { ...typography.bodySmall, color: colors.danger },
   titleRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.md },
   title:       { ...typography.h2, flex: 1, marginRight: spacing.sm },
   clientCard:  { marginBottom: spacing.sm },

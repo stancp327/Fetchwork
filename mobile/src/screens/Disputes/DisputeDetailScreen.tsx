@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   TextInput, Pressable, KeyboardAvoidingView, Platform,
-  Alert, RefreshControl, ScrollView,
+  Alert, RefreshControl, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -12,6 +12,7 @@ import { ProfileStackParamList } from '../../types/navigation';
 import { useAuthStore } from '../../store/authStore';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
 import { colors, spacing, typography } from '../../theme';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'DisputeDetail'>;
@@ -24,7 +25,7 @@ export default function DisputeDetailScreen({ route }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const listRef = useRef<FlatList>(null);
 
-  const { data: dispute, refetch } = useQuery({
+  const { data: dispute, refetch, isLoading, error } = useQuery({
     queryKey: ['dispute', disputeId],
     queryFn: () => disputesApi.get(disputeId),
   });
@@ -60,6 +61,27 @@ export default function DisputeDetailScreen({ route }: Props) {
       { text: 'Escalate', style: 'destructive', onPress: () => escalateMut.mutate() },
     ]);
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!dispute) return null;
 
@@ -151,6 +173,8 @@ export default function DisputeDetailScreen({ route }: Props) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { ...typography.bodySmall, color: colors.danger },
   flex: { flex: 1 },
   infoScroll: { maxHeight: 260 },
   infoCard: { margin: spacing.md, marginBottom: 0 },

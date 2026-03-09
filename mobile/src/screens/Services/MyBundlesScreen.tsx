@@ -20,12 +20,12 @@ export default function MyBundlesScreen() {
   const [tab, setTab] = useState<Tab>('subscriptions');
   const role = (user?.role === 'freelancer' ? 'freelancer' : 'client') as 'client' | 'freelancer';
 
-  const { data: subs, isLoading: subsLoading, refetch: refetchSubs, isRefetching: subsRefetching } = useQuery({
+  const { data: subs, isLoading: subsLoading, error: subsError, refetch: refetchSubs, isRefetching: subsRefetching } = useQuery({
     queryKey: ['mySubscriptions', role],
     queryFn: () => servicesApi.getMySubscriptions(role),
   });
 
-  const { data: bundles, isLoading: bundlesLoading, refetch: refetchBundles, isRefetching: bundlesRefetching } = useQuery({
+  const { data: bundles, isLoading: bundlesLoading, error: bundlesError, refetch: refetchBundles, isRefetching: bundlesRefetching } = useQuery({
     queryKey: ['myBundles', role],
     queryFn: () => servicesApi.getMyBundles(role),
   });
@@ -38,9 +38,21 @@ export default function MyBundlesScreen() {
   const isLoading = tab === 'subscriptions' ? subsLoading : bundlesLoading;
   const isRefetching = tab === 'subscriptions' ? subsRefetching : bundlesRefetching;
   const refetch = tab === 'subscriptions' ? refetchSubs : refetchBundles;
+  const error = tab === 'subscriptions' ? subsError : bundlesError;
 
   const subscriptions = subs?.subscriptions || subs || [];
   const bundleList = bundles?.purchases || bundles || [];
+
+  if (error) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <View style={s.center}>
+          <Text style={s.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const renderSubscription = ({ item }: { item: any }) => (
     <Card style={s.card}>
@@ -133,4 +145,5 @@ const s = StyleSheet.create({
   progressBar:{ height: 6, backgroundColor: colors.bgMuted, borderRadius: 3, marginTop: spacing.xs },
   progressFill:{ height: 6, backgroundColor: colors.primary, borderRadius: 3 },
   center:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText:  { ...typography.bodySmall, color: colors.danger },
 });

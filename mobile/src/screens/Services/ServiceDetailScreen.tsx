@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  ActivityIndicator, Alert, TouchableOpacity, TextInput,
+  ActivityIndicator, Alert, TouchableOpacity, TextInput, RefreshControl,
 } from 'react-native';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -33,7 +33,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   // ── Fetch service ───────────────────────────────────────────────
-  const { data: service, isLoading } = useQuery({
+  const { data: service, isLoading, error, isRefetching, refetch } = useQuery({
     queryKey: ['service', id],
     queryFn:  () => servicesApi.getById(id),
   });
@@ -114,7 +114,17 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
   };
 
   // ── Loading / error states ──────────────────────────────────────
-  if (isLoading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
+  if (isLoading) return <SafeAreaView style={styles.safe}><View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View></SafeAreaView>;
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load data</Text>
+          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+        </View>
+      </SafeAreaView>
+    );
+  }
   if (!service)  return <View style={styles.center}><Text>Service not found</Text></View>;
 
   const isRecurring  = service.serviceType === 'recurring';
@@ -142,7 +152,7 @@ export default function ServiceDetailScreen({ route, navigation }: Props) {
   // ── Render ──────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.primary} />}>
 
         {/* Provider card */}
         <Card style={styles.providerCard}>
@@ -334,6 +344,7 @@ const styles = StyleSheet.create({
   safe:                 { flex: 1, backgroundColor: colors.bgSubtle },
   scroll:               { padding: spacing.md },
   center:               { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText:            { ...typography.bodySmall, color: colors.danger },
   providerCard:         { marginBottom: spacing.md },
   providerRow:          { flexDirection: 'row', alignItems: 'center' },
   badgeRow:             { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
