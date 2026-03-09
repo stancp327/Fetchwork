@@ -65,6 +65,8 @@ export default function BrowseFreelancersScreen({ navigation }: Props) {
       }),
     getNextPageParam: (last) => last.page < last.pages ? last.page + 1 : undefined,
     initialPageParam: 1,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const freelancers: FreelancerListItem[] = data?.pages.flatMap(p => p.freelancers) ?? [];
@@ -74,7 +76,7 @@ export default function BrowseFreelancersScreen({ navigation }: Props) {
     setDebouncedSearch('');
   }, []);
 
-  const renderFreelancer = ({ item }: { item: FreelancerListItem }) => {
+  const renderFreelancer = useCallback(({ item }: { item: FreelancerListItem }) => {
     const fullName = `${item.firstName} ${item.lastName}`;
     const locationStr = [item.location?.city, item.location?.country].filter(Boolean).join(', ');
 
@@ -126,7 +128,7 @@ export default function BrowseFreelancersScreen({ navigation }: Props) {
         )}
       </Card>
     );
-  };
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -202,6 +204,9 @@ export default function BrowseFreelancersScreen({ navigation }: Props) {
         <FlatList
           data={freelancers}
           keyExtractor={f => f._id}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           renderItem={renderFreelancer}
           contentContainerStyle={styles.list}
           refreshControl={
@@ -217,7 +222,7 @@ export default function BrowseFreelancersScreen({ navigation }: Props) {
             />
           }
           ListFooterComponent={
-            isFetchingNextPage ? <ActivityIndicator style={{ margin: 20 }} color={colors.primary} /> : null
+            isFetchingNextPage ? <ActivityIndicator style={styles.footerLoader} color={colors.primary} /> : null
           }
         />
       )}
@@ -272,5 +277,6 @@ const styles = StyleSheet.create({
   skillTag:    { backgroundColor: colors.bgMuted, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   skillText:   { fontSize: 11, color: colors.textSecondary },
   moreSkills:  { fontSize: 11, color: colors.textMuted, alignSelf: 'center' },
-  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center:       { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  footerLoader: { margin: 20 },
 });

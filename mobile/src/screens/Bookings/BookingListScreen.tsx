@@ -55,6 +55,8 @@ export default function BookingListScreen({ navigation }: Props) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['bookings', role, tab],
     queryFn:  () => bookingsApi.getMyBookings(role, tab),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const bookings: Record<string, unknown>[] =
@@ -129,15 +131,18 @@ export default function BookingListScreen({ navigation }: Props) {
         </View>
       ) : error ? (
         <View style={styles.empty}>
-          <Text style={{ ...typography.bodySmall, color: colors.danger }}>Failed to load bookings.</Text>
+          <Text style={styles.errorText}>Failed to load bookings.</Text>
         </View>
       ) : (
         <FlatList
           data={bookings}
           keyExtractor={b => bid(b) || String(Math.random())}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           renderItem={renderBooking}
           ListEmptyComponent={<ListEmpty />}
-          contentContainerStyle={[styles.listContent, bookings.length === 0 && { flex: 1 }]}
+          contentContainerStyle={[styles.listContent, bookings.length === 0 && styles.listContentEmpty]}
           refreshControl={
             <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.primary} />
           }
@@ -222,4 +227,6 @@ const styles = StyleSheet.create({
   emptyIcon:     { fontSize: 40, marginBottom: spacing.md },
   emptyTitle:    { ...typography.h3, marginBottom: spacing.xs, textAlign: 'center' },
   emptySubtitle: { ...typography.bodySmall, textAlign: 'center' },
+  errorText:     { ...typography.bodySmall, color: colors.danger },
+  listContentEmpty: { flex: 1 },
 });

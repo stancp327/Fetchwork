@@ -28,6 +28,8 @@ export default function DisputeDetailScreen({ route }: Props) {
   const { data: dispute, refetch, isLoading, error } = useQuery({
     queryKey: ['dispute', disputeId],
     queryFn: () => disputesApi.get(disputeId),
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const onRefresh = useCallback(async () => {
@@ -55,12 +57,18 @@ export default function DisputeDetailScreen({ route }: Props) {
     onError: (err: Error) => Alert.alert('Error', err.message),
   });
 
-  const handleEscalate = () => {
+  const handleEscalate = useCallback(() => {
     Alert.alert('Escalate Dispute', 'This will notify our support team to review your dispute. Continue?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Escalate', style: 'destructive', onPress: () => escalateMut.mutate() },
     ]);
-  };
+  }, [escalateMut]);
+
+  const handleSend = useCallback(() => {
+    if (message.trim()) sendMut.mutate(message.trim());
+  }, [message, sendMut]);
+
+  const handleRetry = useCallback(() => { refetch(); }, [refetch]);
 
   if (isLoading) {
     return (
@@ -77,7 +85,7 @@ export default function DisputeDetailScreen({ route }: Props) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={handleRetry} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -140,6 +148,9 @@ export default function DisputeDetailScreen({ route }: Props) {
           ref={listRef}
           data={messages}
           keyExtractor={m => m._id}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           renderItem={renderMessage}
           style={styles.messages}
           contentContainerStyle={styles.messagesList}
@@ -159,7 +170,7 @@ export default function DisputeDetailScreen({ route }: Props) {
             />
             <Pressable
               style={[styles.sendBtn, !message.trim() && styles.sendBtnDisabled]}
-              onPress={() => message.trim() && sendMut.mutate(message.trim())}
+              onPress={handleSend}
               disabled={!message.trim() || sendMut.isPending}
             >
               <Ionicons name="send" size={20} color={message.trim() ? colors.white : colors.textMuted} />
@@ -175,6 +186,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { ...typography.bodySmall, color: colors.danger },
+  retryBtn: { marginTop: spacing.md },
   flex: { flex: 1 },
   infoScroll: { maxHeight: 260 },
   infoCard: { margin: spacing.md, marginBottom: 0 },

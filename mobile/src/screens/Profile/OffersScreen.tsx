@@ -95,6 +95,8 @@ export default function OffersScreen(_props: Props) {
   } = useQuery({
     queryKey: ['mobile-offers', filter],
     queryFn: () => offersApi.list({ type: filter }),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const offers = useMemo(() => data?.offers ?? [], [data?.offers]);
@@ -283,6 +285,9 @@ export default function OffersScreen(_props: Props) {
         <FlatList
           data={offers}
           keyExtractor={keyExtractor}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           renderItem={renderOfferCard}
           contentContainerStyle={styles.listContent}
           refreshControl={

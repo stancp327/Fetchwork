@@ -241,6 +241,9 @@ export default function UniversalSearchScreen() {
       <FlatList
         data={currentData as any[]}
         keyExtractor={item => item._id}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         renderItem={renderItem as any}
         contentContainerStyle={styles.list}
         ListEmptyComponent={ListEmpty}

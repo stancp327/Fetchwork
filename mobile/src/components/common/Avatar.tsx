@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { colors, radius } from '../../theme';
 
@@ -26,18 +26,24 @@ function getColorForName(name = ''): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-export default function Avatar({ uri, name = '', size = 'md', online }: AvatarProps) {
+export default React.memo(function Avatar({ uri, name = '', size = 'md', online }: AvatarProps) {
   const dim = SIZE_MAP[size];
   const initials = getInitials(name);
   const bg = getColorForName(name);
 
+  const containerStyle = useMemo(() => ({ width: dim, height: dim }), [dim]);
+  const imgStyle = useMemo(() => [styles.img, { width: dim, height: dim, borderRadius: dim / 2 }] as const, [dim]);
+  const placeholderStyle = useMemo(() => [styles.placeholder, { width: dim, height: dim, borderRadius: dim / 2, backgroundColor: bg }] as const, [dim, bg]);
+  const initialsStyle = useMemo(() => [styles.initials, { fontSize: dim * 0.38 }] as const, [dim]);
+  const imageSource = useMemo(() => ({ uri: uri!, cache: 'default' as const }), [uri]);
+
   return (
-    <View style={{ width: dim, height: dim }}>
+    <View style={containerStyle}>
       {uri ? (
-        <Image source={{ uri }} style={[styles.img, { width: dim, height: dim, borderRadius: dim / 2 }]} />
+        <Image source={imageSource} style={imgStyle} resizeMode="cover" />
       ) : (
-        <View style={[styles.placeholder, { width: dim, height: dim, borderRadius: dim / 2, backgroundColor: bg }]}>
-          <Text style={[styles.initials, { fontSize: dim * 0.38 }]}>{initials || '?'}</Text>
+        <View style={placeholderStyle}>
+          <Text style={initialsStyle}>{initials || '?'}</Text>
         </View>
       )}
       {online !== undefined && (
@@ -45,7 +51,7 @@ export default function Avatar({ uri, name = '', size = 'md', online }: AvatarPr
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   img:         { resizeMode: 'cover' },

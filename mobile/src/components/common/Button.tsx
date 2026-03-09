@@ -38,7 +38,7 @@ const SIZE_STYLES: Record<Size, { container: ViewStyle; text: TextStyle }> = {
   lg: { container: { paddingHorizontal: spacing.xl,  minHeight: 52,               borderRadius: radius.lg }, text: { fontSize: 16, fontWeight: '700' } },
 };
 
-export default function Button({
+export default React.memo(function Button({
   label, onPress, variant = 'primary', size = 'md',
   loading = false, disabled = false, fullWidth = false,
   style, labelStyle, leftIcon, testID, accessibilityLabel,
@@ -74,7 +74,7 @@ export default function Button({
       )}
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   base:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },

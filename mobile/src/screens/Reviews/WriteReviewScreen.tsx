@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TextInput, Alert, Pressable,
@@ -41,10 +41,10 @@ export default function WriteReviewScreen({ route, navigation }: Props) {
 
   const canSubmit = rating > 0 && comment.trim().length >= MIN_CHARS;
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
     submitMut.mutate();
-  };
+  }, [canSubmit, submitMut]);
 
   return (
     <SafeAreaView style={styles.safe}>

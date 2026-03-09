@@ -53,7 +53,7 @@ export default function MessageThreadScreen({ route, navigation }: Props) {
         ? () => (
             <TouchableOpacity
               onPress={handleVideoCall}
-              style={{ marginRight: 4, padding: 4 }}
+              style={styles.videoCallBtn}
               accessibilityLabel="Start video call"
             >
               <Ionicons name="videocam" size={24} color={colors.primary} />
@@ -66,6 +66,8 @@ export default function MessageThreadScreen({ route, navigation }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => messagesApi.getMessages(conversationId, { limit: 50 }),
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
     select: (d) => (d.messages ?? []).reverse() as Message[], // oldest first for FlatList inverted
   });
 
@@ -117,7 +119,7 @@ export default function MessageThreadScreen({ route, navigation }: Props) {
     sendMutation.mutate(content);
   }, [text]);
 
-  const renderMessage = ({ item: msg }: { item: Message }) => {
+  const renderMessage = useCallback(({ item: msg }: { item: Message }) => {
     const isMe = msg.sender?._id === user?.id || msg.sender?._id === user?._id;
     return (
       <View style={[styles.msgRow, isMe && styles.msgRowMe]}>
@@ -131,11 +133,11 @@ export default function MessageThreadScreen({ route, navigation }: Props) {
         </View>
       </View>
     );
-  };
+  }, [user?.id, user?._id]);
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={90}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex1} keyboardVerticalOffset={90}>
         {isLoading ? (
           <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
         ) : (
@@ -143,6 +145,9 @@ export default function MessageThreadScreen({ route, navigation }: Props) {
             ref={listRef}
             data={messages}
             keyExtractor={m => m._id}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={5}
             renderItem={renderMessage}
             inverted
             contentContainerStyle={styles.list}
@@ -202,4 +207,6 @@ const styles = StyleSheet.create({
   },
   sendBtn:         { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   sendBtnDisabled: { backgroundColor: colors.borderMedium },
+  flex1:           { flex: 1 },
+  videoCallBtn:    { marginRight: 4, padding: 4 },
 });

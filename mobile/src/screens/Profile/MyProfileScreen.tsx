@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   Pressable, RefreshControl,
@@ -16,14 +16,14 @@ import { BadgeType } from '@fetchwork/shared';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'MyProfile'>;
 
-function StatBox({ value, label }: { value: string | number; label: string }) {
+const StatBox = React.memo(function StatBox({ value, label }: { value: string | number; label: string }) {
   return (
     <View style={styles.statBox}>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
-}
+});
 
 export default function MyProfileScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
@@ -31,15 +31,20 @@ export default function MyProfileScreen({ navigation }: Props) {
   const { data: me, isRefetching, refetch } = useQuery({
     queryKey: ['me'],
     queryFn: () => authApi.getMe(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     select: d => d.user ?? d,
   });
 
   const profile = me ?? user;
 
-  const earnedBadges: BadgeType[] = [];
-  if (profile?.isEmailVerified || profile?.isVerified) earnedBadges.push('email_verified');
-  if (profile?.verificationLevel === 'identity' || profile?.verificationLevel === 'full') earnedBadges.push('id_verified');
-  if ((profile?.rating ?? 0) >= 4.5 && (profile?.totalReviews ?? 0) >= 5) earnedBadges.push('top_rated');
+  const earnedBadges = useMemo(() => {
+    const badges: BadgeType[] = [];
+    if (profile?.isEmailVerified || profile?.isVerified) badges.push('email_verified');
+    if (profile?.verificationLevel === 'identity' || profile?.verificationLevel === 'full') badges.push('id_verified');
+    if ((profile?.rating ?? 0) >= 4.5 && (profile?.totalReviews ?? 0) >= 5) badges.push('top_rated');
+    return badges;
+  }, [profile?.isEmailVerified, profile?.isVerified, profile?.verificationLevel, profile?.rating, profile?.totalReviews]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -59,16 +64,16 @@ export default function MyProfileScreen({ navigation }: Props) {
           <Text style={styles.role}>{profile?.role === 'freelancer' ? '💼 Freelancer' : '🏢 Client'}</Text>
 
           {earnedBadges.length > 0 && (
-            <View style={{ marginTop: spacing.sm }}>
+            <View style={styles.badgeRow}>
               <TrustBadgeRow badges={earnedBadges} />
             </View>
           )}
 
           <View style={styles.actions}>
             <Button label="Edit Profile" onPress={() => navigation.navigate('EditProfile')}
-              variant="secondary" size="sm" style={{ flex: 1 }} />
+              variant="secondary" size="sm" style={styles.actionBtn} />
             <Button label="Verification" onPress={() => navigation.navigate('Verification')}
-              variant="secondary" size="sm" style={{ flex: 1 }} />
+              variant="secondary" size="sm" style={styles.actionBtn} />
           </View>
         </View>
 
@@ -122,14 +127,14 @@ export default function MyProfileScreen({ navigation }: Props) {
           ].map(item => (
             <Pressable key={item.label} style={styles.menuRow} onPress={item.onPress}>
               <Text style={styles.menuLabel}>{item.label}</Text>
-              <Text style={{ color: colors.textMuted }}>›</Text>
+              <Text style={styles.menuArrow}>›</Text>
             </Pressable>
           ))}
         </View>
 
         {/* Logout */}
-        <Button label="Log Out" onPress={logout} variant="danger" fullWidth style={{ marginTop: spacing.sm }} />
-        <View style={{ height: spacing.xl }} />
+        <Button label="Log Out" onPress={logout} variant="danger" fullWidth style={styles.logoutBtn} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -166,4 +171,9 @@ const styles = StyleSheet.create({
   skillText:   { fontSize: 12, color: colors.textSecondary },
   menuRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
   menuLabel:   { ...typography.body },
+  menuArrow:   { color: colors.textMuted },
+  badgeRow:    { marginTop: spacing.sm },
+  actionBtn:   { flex: 1 },
+  logoutBtn:   { marginTop: spacing.sm },
+  bottomSpacer:{ height: spacing.xl },
 });

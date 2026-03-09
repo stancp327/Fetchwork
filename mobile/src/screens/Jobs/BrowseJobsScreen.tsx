@@ -29,6 +29,8 @@ export default function BrowseJobsScreen({ navigation }: Props) {
       jobsApi.browse({ search: searchQuery || undefined, page: pageParam as number, limit: 20 }),
     getNextPageParam: (last) => last.page < last.pages ? last.page + 1 : undefined,
     initialPageParam: 1,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const jobs: Job[] = data?.pages.flatMap(p => p.jobs) ?? [];
@@ -36,7 +38,7 @@ export default function BrowseJobsScreen({ navigation }: Props) {
   const handleSearch = useCallback(() => setSearchQuery(search.trim()), [search]);
   const handleClearSearch = () => { setSearch(''); setSearchQuery(''); };
 
-  const renderJob = ({ item: job }: { item: Job }) => (
+  const renderJob = useCallback(({ item: job }: { item: Job }) => (
     <Card
       onPress={() => navigation.navigate('JobDetail', { id: job._id })}
       style={styles.card}
@@ -59,7 +61,7 @@ export default function BrowseJobsScreen({ navigation }: Props) {
         </View>
       )}
     </Card>
-  );
+  ), [navigation]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -95,8 +97,11 @@ export default function BrowseJobsScreen({ navigation }: Props) {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
           onEndReachedThreshold={0.4}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           ListEmptyComponent={<EmptyState emoji="📋" title="No jobs found" subtitle={searchQuery ? 'Try a different search term' : 'Check back soon'} />}
-          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={{ margin: 20 }} color={colors.primary} /> : null}
+          ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={styles.footerLoader} color={colors.primary} /> : null}
         />
       )}
 
@@ -135,4 +140,5 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2, shadowRadius: 6, elevation: 6,
   },
+  footerLoader: { margin: 20 },
 });

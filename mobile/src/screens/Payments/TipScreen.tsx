@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, TextInput,
   TouchableOpacity,
@@ -35,15 +35,23 @@ export default function TipScreen({ route, navigation }: Props) {
     onError: () => {},
   });
 
-  const selectPreset = (value: number) => {
+  const selectPreset = useCallback((value: number) => {
     setSelectedPreset(value);
     setCustomAmount('');
-  };
+  }, []);
 
-  const handleCustomChange = (text: string) => {
+  const handleCustomChange = useCallback((text: string) => {
     setCustomAmount(text.replace(/[^0-9.]/g, ''));
     setSelectedPreset(null);
-  };
+  }, []);
+
+  const handleGoBack = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  const handleSubmitTip = useCallback(() => {
+    tipMutation.mutate();
+  }, [tipMutation]);
 
   if (success) {
     return (
@@ -56,9 +64,9 @@ export default function TipScreen({ route, navigation }: Props) {
           </Text>
           <Button
             label="Done"
-            onPress={() => navigation.goBack()}
+            onPress={handleGoBack}
             size="lg"
-            style={{ marginTop: spacing.lg, minWidth: 160 }}
+            style={styles.doneBtn}
           />
         </View>
       </SafeAreaView>
@@ -109,7 +117,7 @@ export default function TipScreen({ route, navigation }: Props) {
 
         <Button
           label={tipMutation.isPending ? 'Sending…' : `Confirm Tip — $${amount.toFixed(2)}`}
-          onPress={() => tipMutation.mutate()}
+          onPress={handleSubmitTip}
           loading={tipMutation.isPending}
           disabled={tipMutation.isPending || amount <= 0}
           fullWidth
@@ -150,4 +158,5 @@ const styles = StyleSheet.create({
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   successTitle:     { ...typography.h2, color: colors.success, marginTop: spacing.md },
   successSub:       { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
+  doneBtn:          { marginTop: spacing.lg, minWidth: 160 },
 });

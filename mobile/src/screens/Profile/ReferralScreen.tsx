@@ -71,6 +71,8 @@ export default function ReferralScreen(_props: Props) {
   } = useQuery<ReferralData>({
     queryKey: ['mobile-referrals'],
     queryFn: usersApi.getReferrals,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const handleCopyLink = useCallback(async () => {
@@ -229,7 +231,7 @@ export default function ReferralScreen(_props: Props) {
           )}
         </View>
 
-        <View style={{ height: spacing.xl }} />
+        <View style={s.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -389,5 +391,8 @@ const s = StyleSheet.create({
     textAlign: 'center',
     color: colors.textMuted,
     paddingVertical: spacing.lg,
+  },
+  bottomSpacer: {
+    height: spacing.xl,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -23,16 +23,43 @@ export default function MyJobsScreen({ navigation }: Props) {
   const { data = [], isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['my-jobs', activeTab],
     queryFn: () => jobsApi.myJobs(activeTab !== 'all' ? { status: activeTab } : {}),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const jobs: Job[] = Array.isArray(data) ? data : [];
+
+  const renderJob = useCallback(({ item: job }: { item: Job }) => (
+    <Card onPress={() => navigation.navigate('JobDetail', { id: job._id })} style={styles.card}>
+      <View style={styles.cardTop}>
+        <Text style={styles.title} numberOfLines={1}>{job.title}</Text>
+        <Badge label={job.status.replace(/_/g, ' ')} variant={getJobStatusVariant(job.status)} />
+      </View>
+      <Text style={styles.meta}>
+        ${job.budget?.amount}{job.budget?.type === 'hourly' ? '/hr' : ''} · {new Date(job.createdAt).toLocaleDateString()}
+      </Text>
+      {user?.role === 'client' && typeof job.proposalCount === 'number' && (
+        <Text style={styles.proposals}>{job.proposalCount} proposal{job.proposalCount !== 1 ? 's' : ''}</Text>
+      )}
+      {user?.role === 'client' && (job.status === 'open' || job.status === 'accepted') && (
+        <Pressable onPress={() => navigation.navigate('JobProposals', { jobId: job._id, jobTitle: job.title })}>
+          <Text style={styles.actionLink}>View Proposals →</Text>
+        </Pressable>
+      )}
+      {job.status === 'in_progress' && (
+        <Pressable onPress={() => navigation.navigate('JobProgress', { jobId: job._id, jobTitle: job.title })}>
+          <Text style={styles.actionLink}>Track Progress →</Text>
+        </Pressable>
+      )}
+    </Card>
+  ), [navigation, user?.role]);
 
   if (error) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -58,30 +85,10 @@ export default function MyJobsScreen({ navigation }: Props) {
           data={jobs}
           keyExtractor={j => j._id}
           contentContainerStyle={styles.list}
-          renderItem={({ item: job }) => (
-            <Card onPress={() => navigation.navigate('JobDetail', { id: job._id })} style={styles.card}>
-              <View style={styles.cardTop}>
-                <Text style={styles.title} numberOfLines={1}>{job.title}</Text>
-                <Badge label={job.status.replace(/_/g, ' ')} variant={getJobStatusVariant(job.status)} />
-              </View>
-              <Text style={styles.meta}>
-                ${job.budget?.amount}{job.budget?.type === 'hourly' ? '/hr' : ''} · {new Date(job.createdAt).toLocaleDateString()}
-              </Text>
-              {user?.role === 'client' && typeof job.proposalCount === 'number' && (
-                <Text style={styles.proposals}>{job.proposalCount} proposal{job.proposalCount !== 1 ? 's' : ''}</Text>
-              )}
-              {user?.role === 'client' && (job.status === 'open' || job.status === 'accepted') && (
-                <Pressable onPress={() => navigation.navigate('JobProposals', { jobId: job._id, jobTitle: job.title })}>
-                  <Text style={styles.actionLink}>View Proposals →</Text>
-                </Pressable>
-              )}
-              {job.status === 'in_progress' && (
-                <Pressable onPress={() => navigation.navigate('JobProgress', { jobId: job._id, jobTitle: job.title })}>
-                  <Text style={styles.actionLink}>Track Progress →</Text>
-                </Pressable>
-              )}
-            </Card>
-          )}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          renderItem={renderJob}
           ListEmptyComponent={
             <EmptyState emoji="📋" title="No jobs yet"
               subtitle={user?.role === 'client' ? 'Post your first job to get started' : 'Apply to jobs to see them here'}
@@ -113,4 +120,5 @@ const styles = StyleSheet.create({
   actionLink:    { ...typography.bodySmall, color: colors.primary, fontWeight: '600', marginTop: 4 },
   center:        { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText:     { ...typography.bodySmall, color: colors.danger },
+  retryBtn:      { marginTop: spacing.md },
 });

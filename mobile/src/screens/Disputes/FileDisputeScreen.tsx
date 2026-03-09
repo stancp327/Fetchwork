@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TextInput, Alert, Pressable,
@@ -48,6 +48,10 @@ export default function FileDisputeScreen({ route, navigation }: Props) {
     },
     onError: (err: Error) => Alert.alert('Error', err.message),
   });
+
+  const handleSubmit = useCallback(() => {
+    createMut.mutate();
+  }, [createMut]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -106,7 +110,7 @@ export default function FileDisputeScreen({ route, navigation }: Props) {
 
         <Button
           label="Submit Dispute"
-          onPress={() => createMut.mutate()}
+          onPress={handleSubmit}
           loading={createMut.isPending}
           disabled={!canSubmit}
           fullWidth

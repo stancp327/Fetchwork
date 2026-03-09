@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ActivityIndicator,
 } from 'react-native';
@@ -36,6 +36,14 @@ export default function EscrowConfirmScreen({ route, navigation }: Props) {
     };
   }, [success, navigation]);
 
+  const handleRelease = useCallback(() => {
+    releaseMutation.mutate();
+  }, [releaseMutation]);
+
+  const handleRetry = useCallback(() => {
+    releaseMutation.mutate();
+  }, [releaseMutation]);
+
   if (success) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -71,7 +79,7 @@ export default function EscrowConfirmScreen({ route, navigation }: Props) {
 
         <Button
           label={releaseMutation.isPending ? 'Releasing…' : 'Confirm and Release'}
-          onPress={() => releaseMutation.mutate()}
+          onPress={handleRelease}
           loading={releaseMutation.isPending}
           disabled={releaseMutation.isPending}
           fullWidth
@@ -81,11 +89,11 @@ export default function EscrowConfirmScreen({ route, navigation }: Props) {
         {releaseMutation.isError && (
           <Button
             label="Retry"
-            onPress={() => releaseMutation.mutate()}
+            onPress={handleRetry}
             variant="secondary"
             fullWidth
             size="lg"
-            style={{ marginTop: spacing.sm }}
+            style={styles.retryBtn}
           />
         )}
       </View>
@@ -114,6 +122,7 @@ const styles = StyleSheet.create({
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   successTitle:     { ...typography.h2, color: colors.success, marginTop: spacing.md },
   successSub:       { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
+  retryBtn:         { marginTop: spacing.sm },
 });
 
 const drStyles = StyleSheet.create({

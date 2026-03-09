@@ -42,6 +42,8 @@ export default function JobProgressScreen({ route, navigation }: Props) {
   const { data: job, isLoading, error, refetch } = useQuery({
     queryKey: ['job', jobId],
     queryFn: () => jobsApi.getById(jobId) as Promise<JobWithMilestones>,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const completeMilestoneMut = useMutation({
@@ -106,7 +108,7 @@ export default function JobProgressScreen({ route, navigation }: Props) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>{error ? 'Failed to load job' : 'Job not found'}</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -136,15 +138,15 @@ export default function JobProgressScreen({ route, navigation }: Props) {
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Total</Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>${totalBudget}</Text>
+              <Text style={[styles.summaryValue, styles.summaryValueTotal]}>${totalBudget}</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Released</Text>
-              <Text style={[styles.summaryValue, { color: colors.success }]}>${released}</Text>
+              <Text style={[styles.summaryValue, styles.summaryValueReleased]}>${released}</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Remaining</Text>
-              <Text style={[styles.summaryValue, { color: colors.primary }]}>${remaining}</Text>
+              <Text style={[styles.summaryValue, styles.summaryValueRemaining]}>${remaining}</Text>
             </View>
           </View>
         </Card>
@@ -230,7 +232,7 @@ export default function JobProgressScreen({ route, navigation }: Props) {
           />
         )}
 
-        <View style={{ height: spacing.xl }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -254,6 +256,9 @@ const styles = StyleSheet.create({
   summaryItem:     { alignItems: 'center', flex: 1 },
   summaryLabel:    { ...typography.caption, marginBottom: 4 },
   summaryValue:    { ...typography.h3 },
+  summaryValueTotal:     { color: colors.text },
+  summaryValueReleased:  { color: colors.success },
+  summaryValueRemaining: { color: colors.primary },
   milestoneRow:    { paddingVertical: spacing.sm },
   milestoneBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
   milestoneHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -263,4 +268,6 @@ const styles = StyleSheet.create({
   milestoneBtn:    { marginTop: spacing.xs },
   noMilestones:    { ...typography.bodySmall, color: colors.textMuted },
   releaseBtn:      { marginTop: spacing.md },
+  retryBtn:        { marginTop: spacing.md },
+  bottomSpacer:    { height: spacing.xl },
 });

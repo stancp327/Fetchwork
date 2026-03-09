@@ -230,7 +230,7 @@ export default function FreelancerPublicProfileScreen({ route, navigation }: Pro
         </View>
 
         {/* Bottom spacer for sticky bar */}
-        <View style={{ height: 100 }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
       {/* Sticky bottom bar */}
@@ -322,4 +322,5 @@ const styles = StyleSheet.create({
   },
   bottomBtnLeft:  { flex: 1 },
   bottomBtnRight: { flex: 1 },
+  bottomSpacer:   { height: 100 },
 });

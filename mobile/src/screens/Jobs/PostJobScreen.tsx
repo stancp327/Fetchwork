@@ -85,7 +85,7 @@ export default function PostJobScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex1}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
           <Controller control={control} name="title"
@@ -163,7 +163,7 @@ export default function PostJobScreen({ navigation }: Props) {
             )} />
 
           <Button label="Post Job" onPress={handleSubmit(d => mutation.mutate(d))}
-            loading={isSubmitting || mutation.isPending} fullWidth size="lg" style={{ marginTop: spacing.sm }} />
+            loading={isSubmitting || mutation.isPending} fullWidth size="lg" style={styles.postBtn} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -172,6 +172,8 @@ export default function PostJobScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   safe:               { flex: 1, backgroundColor: colors.white },
+  flex1:              { flex: 1 },
+  postBtn:            { marginTop: spacing.sm },
   scroll:             { padding: spacing.lg, flexGrow: 1 },
   fieldLabel:         { ...typography.label, marginBottom: 6 },
   budgetRow:          { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },

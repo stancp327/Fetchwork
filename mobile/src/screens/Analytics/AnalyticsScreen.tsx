@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   Pressable, ActivityIndicator, RefreshControl,
@@ -48,17 +48,28 @@ export default function AnalyticsScreen() {
   const { data, isLoading, error, isRefetching, refetch } = useQuery({
     queryKey: ['analytics', range],
     queryFn: () => analyticsApi.getMyAnalytics(range),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
-  const f: FreelancerAnalytics | null = data?.freelancer ?? null;
-  const maxMonthly = f ? Math.max(...(f.monthlyEarnings?.map(m => m.amount) ?? [0]), 1) : 1;
+  const f: FreelancerAnalytics | null = useMemo(
+    () => data?.freelancer ?? null,
+    [data],
+  );
+
+  const maxMonthly = useMemo(
+    () => f ? Math.max(...(f.monthlyEarnings?.map(m => m.amount) ?? [0]), 1) : 1,
+    [f],
+  );
+
+  const handleRefresh = useCallback(() => { refetch(); }, [refetch]);
 
   if (error) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={handleRefresh} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -66,7 +77,7 @@ export default function AnalyticsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.primary} />}>
+      <ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} tintColor={colors.primary} />}>
         {/* Range picker */}
         <View style={styles.rangePicker}>
           {RANGES.map(r => (
@@ -82,7 +93,7 @@ export default function AnalyticsScreen() {
           ))}
         </View>
 
-        {isLoading && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />}
+        {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
 
         {f && (
           <>
@@ -205,4 +216,6 @@ const styles = StyleSheet.create({
   emptySub: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { ...typography.bodySmall, color: colors.danger },
+  retryBtn: { marginTop: spacing.md },
+  loadingIndicator: { marginTop: spacing.xl },
 });

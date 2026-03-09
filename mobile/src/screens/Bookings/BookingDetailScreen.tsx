@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TouchableOpacity, Modal, FlatList, TextInput,
@@ -120,7 +120,7 @@ function RescheduleModal({
             </TouchableOpacity>
           </View>
 
-          {slotsLoading && <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />}
+          {slotsLoading && <ActivityIndicator color={colors.primary} style={rsStyles.slotsLoading} />}
 
           {!slotsLoading && slots.length > 0 && (
             <>
@@ -178,7 +178,7 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
   const [payLoading, setPayLoading] = useState(false);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
-  const handlePayToConfirm = async (bookingId: string) => {
+  const handlePayToConfirm = useCallback(async (bookingId: string) => {
     setPayLoading(true);
     try {
       const data = await bookingsApi.getPaymentIntent(bookingId);
@@ -213,17 +213,22 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
     } finally {
       setPayLoading(false);
     }
-  };
+  }, [id, queryClient, initPaymentSheet, presentPaymentSheet]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['booking', id],
     queryFn:  () => bookingsApi.getById(id),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const booking: Record<string, unknown> | undefined =
     (data as { booking?: Record<string, unknown> } | undefined)?.booking ?? (data as Record<string, unknown>);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['booking', id] });
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['booking', id] }),
+    [queryClient, id],
+  );
 
   const confirmMutation = useMutation({
     mutationFn: () => bookingsApi.confirm(id),
@@ -243,12 +248,15 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
     onError:   (e: Error) => Alert.alert('Error', e.message),
   });
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     Alert.alert('Cancel Booking', 'Are you sure you want to cancel this booking?', [
       { text: 'No', style: 'cancel' },
       { text: 'Yes, Cancel', style: 'destructive', onPress: () => cancelMutation.mutate(undefined) },
     ]);
-  };
+  }, [cancelMutation]);
+
+  const openReschedule = useCallback(() => setRescheduleVisible(true), []);
+  const closeReschedule = useCallback(() => setRescheduleVisible(false), []);
 
   if (isLoading) {
     return (
@@ -261,7 +269,7 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
   if (error || !booking) {
     return (
       <View style={styles.loader}>
-        <Text style={{ ...typography.bodySmall, color: colors.danger }}>
+        <Text style={styles.errorText}>
           {error ? (error as Error).message : 'Booking not found'}
         </Text>
       </View>
@@ -409,7 +417,7 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
 
             <TouchableOpacity
               style={[styles.actionBtn, styles.btnReschedule]}
-              onPress={() => setRescheduleVisible(true)}
+              onPress={openReschedule}
               disabled={isBusy}
             >
               <Text style={styles.actionBtnTextPrimary}>🗓 Reschedule</Text>
@@ -432,7 +440,7 @@ export default function BookingDetailScreen({ route, navigation }: Props) {
         visible={rescheduleVisible}
         bookingId={id}
         serviceId={serviceId}
-        onClose={() => setRescheduleVisible(false)}
+        onClose={closeReschedule}
         onSuccess={invalidate}
       />
     </SafeAreaView>
@@ -454,6 +462,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.bgSubtle },
   loader:   { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content:  { padding: spacing.md, paddingBottom: spacing.xl },
+  errorText: { ...typography.bodySmall, color: colors.danger },
 
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.xs },
   serviceTitle: { ...typography.h2, flex: 1 },
@@ -505,6 +514,7 @@ const rsStyles = StyleSheet.create({
   dateInput: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, minHeight: 44, fontSize: 15 },
   loadBtn:  { backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, justifyContent: 'center', minHeight: 44, paddingHorizontal: spacing.md },
   loadBtnText: { color: colors.white, fontWeight: '600', fontSize: 13 },
+  slotsLoading: { marginVertical: spacing.md },
 
   slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   slotBtn:   { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, minHeight: 44, justifyContent: 'center' },

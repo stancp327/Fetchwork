@@ -50,6 +50,7 @@ export default function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        lazy: true,
         tabBarActiveTintColor:   colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
@@ -68,7 +69,7 @@ export default function MainTabNavigator() {
     >
       <Tab.Screen name="Home"     component={HomeScreen}             options={{ title: 'Home' }} />
       <Tab.Screen name="Jobs"     component={JobsStackNavigator}     options={{ title: 'Jobs' }} />
-      <Tab.Screen name="Search"   component={SearchStackNavigator}   options={{ title: 'Search' }} />
+      <Tab.Screen name="Search"   component={SearchStackNavigator}   options={{ title: 'Search', unmountOnBlur: true }} />
       <Tab.Screen name="Services" component={ServicesStackNavigator} options={{ title: 'Services' }} />
       <Tab.Screen name="Messages" component={MessagesStackNavigator} options={{ title: 'Messages', tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} />
       <Tab.Screen name="Profile"  component={ProfileStackNavigator}  options={{ title: 'Profile' }} />

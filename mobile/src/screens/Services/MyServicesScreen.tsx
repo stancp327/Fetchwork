@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
   ActivityIndicator, RefreshControl, Pressable,
@@ -25,12 +25,14 @@ export default function MyServicesScreen({ navigation }: any) {
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['myServices'],
     queryFn: () => servicesApi.myServices(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     enabled: !!user,
   });
 
   const services = data?.services || data || [];
 
-  const renderService = ({ item }: { item: any }) => (
+  const renderService = useCallback(({ item }: { item: any }) => (
     <Card
       onPress={() => navigation.navigate('ServiceDetail', { id: item._id })}
       style={styles.card}
@@ -93,14 +95,14 @@ export default function MyServicesScreen({ navigation }: any) {
         })()}
       </View>
     </Card>
-  );
+  ), [navigation]);
 
   if (error) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load data</Text>
-          <Button label="Retry" onPress={() => refetch()} style={{ marginTop: spacing.md }} />
+          <Button label="Retry" onPress={() => refetch()} style={styles.retryBtn} />
         </View>
       </SafeAreaView>
     );
@@ -129,6 +131,9 @@ export default function MyServicesScreen({ navigation }: any) {
           keyExtractor={(s: any) => s._id}
           renderItem={renderService}
           contentContainerStyle={styles.list}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
           ListEmptyComponent={
             <EmptyState
@@ -164,4 +169,5 @@ const styles = StyleSheet.create({
   actions:    { flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
   actionBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.primary + '40', borderRadius: 6, backgroundColor: colors.primaryLight, minHeight: 32 },
   actionBtnText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
+  retryBtn:      { marginTop: spacing.md },
 });

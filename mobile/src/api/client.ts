@@ -5,10 +5,10 @@ import { useAuthStore } from '../store/authStore';
 export const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://fetchwork-1.onrender.com';
 
 // ── Public client (no auth — for login/register/forgot-password) ──
-export const publicClient: AxiosInstance = axios.create({ baseURL: API_BASE });
+export const publicClient: AxiosInstance = axios.create({ baseURL: API_BASE, timeout: 15000 });
 
 // ── Authenticated client ─────────────────────────────────────────
-const client: AxiosInstance = axios.create({ baseURL: API_BASE });
+const client: AxiosInstance = axios.create({ baseURL: API_BASE, timeout: 15000 });
 
 // Inject token on every request
 client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
