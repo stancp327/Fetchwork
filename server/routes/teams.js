@@ -8,6 +8,7 @@ const BillingCredit = require('../models/BillingCredit');
 const TeamAuditLog = require('../models/TeamAuditLog');
 const TeamApproval = require('../models/TeamApproval');
 const TeamClient = require('../models/TeamClient');
+const TeamNote = require('../models/TeamNote');
 const emailService = require('../services/emailService');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { getUserSubscription } = require('../utils/billingUtils');
@@ -1999,6 +2000,110 @@ router.checkTeamApproval = async function(userId, teamId, amount) {
     threshold: team.approvalThreshold,
   };
 };
+
+// ── GET /api/teams/:id/notes ── list team notes (members only)
+router.get('/:id/notes', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_activity' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not a team member' });
+
+    const notes = await TeamNote.find({ team: team._id })
+      .populate('author', 'firstName lastName email profileImage')
+      .sort({ pinned: -1, createdAt: -1 })
+      .lean();
+
+    res.json({ notes });
+  } catch (err) {
+    console.error('List notes error:', err.message);
+    res.status(500).json({ error: 'Failed to load notes' });
+  }
+});
+
+// ── POST /api/teams/:id/notes ── create a team note
+router.post('/:id/notes', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_activity' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not a team member' });
+
+    const { content, relatedTo } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'Content is required' });
+    if (content.length > 1000) return res.status(400).json({ error: 'Content must be 1000 characters or fewer' });
+
+    const note = await TeamNote.create({
+      team: team._id,
+      author: requesterId,
+      content: content.trim(),
+      relatedTo: {
+        type: relatedTo?.type || 'general',
+        id: relatedTo?.id || undefined,
+      },
+    });
+
+    const populated = await TeamNote.findById(note._id)
+      .populate('author', 'firstName lastName email profileImage')
+      .lean();
+
+    res.status(201).json({ note: populated });
+  } catch (err) {
+    console.error('Create note error:', err.message);
+    res.status(500).json({ error: 'Failed to create note' });
+  }
+});
+
+// ── PATCH /api/teams/:id/notes/:noteId ── toggle pin
+router.patch('/:id/notes/:noteId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_activity' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not a team member' });
+
+    const note = await TeamNote.findOne({ _id: req.params.noteId, team: team._id });
+    if (!note) return res.status(404).json({ error: 'Note not found' });
+
+    if (req.body.pinned !== undefined) note.pinned = Boolean(req.body.pinned);
+    await note.save();
+
+    res.json({ note });
+  } catch (err) {
+    console.error('Update note error:', err.message);
+    res.status(500).json({ error: 'Failed to update note' });
+  }
+});
+
+// ── DELETE /api/teams/:id/notes/:noteId ── delete (author or admin only)
+router.delete('/:id/notes/:noteId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const note = await TeamNote.findOne({ _id: req.params.noteId, team: team._id });
+    if (!note) return res.status(404).json({ error: 'Note not found' });
+
+    const isAuthor = String(note.author) === requesterId;
+    const ctx = getTeamAccessContext(team, requesterId);
+    if (!isAuthor && !ctx.isOwner && !ctx.isAdmin) {
+      return res.status(403).json({ error: 'Only the author or an admin can delete this note' });
+    }
+
+    await TeamNote.deleteOne({ _id: note._id });
+    res.json({ message: 'Note deleted' });
+  } catch (err) {
+    console.error('Delete note error:', err.message);
+    res.status(500).json({ error: 'Failed to delete note' });
+  }
+});
 
 module.exports = router;
 

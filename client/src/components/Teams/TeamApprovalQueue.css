@@ -1,0 +1,230 @@
+/* ── TeamApprovalQueue ── prefix: taq- ── */
+
+.taq-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 24px);
+}
+
+.taq-title {
+  font-size: var(--font-size-lg, 1.25rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-heading);
+  margin: 0;
+}
+
+.taq-loading {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm, 0.875rem);
+  padding: var(--space-xl, 32px) 0;
+  text-align: center;
+}
+
+.taq-empty {
+  text-align: center;
+  padding: var(--space-xl, 40px) var(--space-lg, 24px);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base, 1rem);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+}
+
+/* ── Card list ── */
+.taq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+}
+
+.taq-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--space-md, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.taq-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 8px);
+}
+
+.taq-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.taq-badge--payout { background: var(--color-success-light); color: var(--color-success-dark); }
+.taq-badge--spend { background: var(--color-warning-light); color: var(--color-warning-dark); }
+.taq-badge--role { background: var(--color-info-light); color: var(--color-info); }
+.taq-badge--remove { background: var(--color-danger-light); color: var(--color-danger); }
+.taq-badge--small { font-size: 0.65rem; padding: 1px 7px; }
+
+.taq-expiry {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-warning);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.taq-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 4px);
+}
+
+.taq-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.taq-requester { color: var(--color-text); font-weight: var(--font-weight-medium, 500); }
+.taq-amount { color: var(--color-text-heading); font-weight: var(--font-weight-bold, 700); }
+.taq-time { color: var(--color-text-muted); font-size: var(--font-size-xs, 0.75rem); }
+
+.taq-desc {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ── Actions ── */
+.taq-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+  margin-top: var(--space-xs, 4px);
+}
+
+.taq-input-row {
+  display: flex;
+  gap: var(--space-sm, 8px);
+}
+
+.taq-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+  background: var(--color-bg-primary);
+  color: var(--color-text);
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.taq-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.taq-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+}
+
+.taq-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.taq-btn--approve {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+}
+
+.taq-btn--approve:hover:not(:disabled) {
+  background: var(--color-success-dark);
+}
+
+.taq-btn--reject {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.taq-btn--reject:hover:not(:disabled) {
+  background: var(--color-danger-dark);
+}
+
+/* ── History ── */
+.taq-history-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-md, 16px);
+}
+
+.taq-history-toggle {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  padding: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.taq-history-toggle:hover {
+  color: var(--color-primary-dark);
+}
+
+.taq-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+  margin-top: var(--space-md, 12px);
+}
+
+.taq-history-card {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md, 6px);
+  padding: var(--space-sm, 8px) var(--space-md, 12px);
+}
+
+.taq-history-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  flex-wrap: wrap;
+}
+
+.taq-status {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: capitalize;
+}
+
+.taq-status--approved { color: var(--color-success); }
+.taq-status--rejected { color: var(--color-danger); }
+.taq-status--expired { color: var(--color-text-muted); }
+.taq-status--cancelled { color: var(--color-text-secondary); }
+
+.taq-history-body {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs, 4px);
+}
