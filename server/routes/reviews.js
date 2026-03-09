@@ -85,13 +85,13 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
     
-    if (revieweeId === req.user.userId) {
+    if (revieweeId === req.user._id.toString()) {
       return res.status(400).json({ error: 'Cannot review yourself' });
     }
     
     const existingReview = await Review.findOne({
       job: jobId,
-      reviewer: req.user.userId,
+      reviewer: req.user._id,
       reviewee: revieweeId
     });
     
@@ -101,7 +101,7 @@ router.post('/', authenticateToken, async (req, res) => {
     
     const review = new Review({
       job: jobId,
-      reviewer: req.user.userId,
+      reviewer: req.user._id,
       reviewee: revieweeId,
       reviewerType,
       rating,
@@ -136,7 +136,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Review not found' });
     }
     
-    if (review.reviewer.toString() !== req.user.userId) {
+    if (review.reviewer.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Not authorized to edit this review' });
     }
     
@@ -182,7 +182,7 @@ router.post('/:id/response', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Review not found' });
     }
     
-    if (review.reviewee.toString() !== req.user.userId) {
+    if (review.reviewee.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Only the reviewee can respond to this review' });
     }
     
@@ -211,7 +211,7 @@ router.post('/:id/helpful', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Review not found' });
     }
     
-    await review.addHelpfulVote(req.user.userId);
+    await review.addHelpfulVote(req.user._id);
     
     res.json({
       message: 'Helpful vote added',

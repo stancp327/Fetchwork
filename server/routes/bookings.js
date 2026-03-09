@@ -53,7 +53,7 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
   try {
     const service = await Service.findById(req.params.serviceId);
     if (!service) return res.status(404).json({ error: 'Service not found' });
-    if (service.freelancer.toString() !== req.user.userId.toString())
+    if (service.freelancer.toString() !== req.user._id.toString())
       return res.status(403).json({ error: 'Not your service' });
 
     const { enabled, timezone, windows, slotDuration, bufferTime, maxAdvanceDays, maxPerSlot } = req.body;
@@ -61,7 +61,7 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
     // Group bookings (maxPerSlot > 1) require Pro
     if (maxPerSlot && maxPerSlot > 1) {
       const { hasFeature } = require('../services/entitlementEngine');
-      const canGroup = await hasFeature(req.user.userId, 'capacity_controls');
+      const canGroup = await hasFeature(req.user._id, 'capacity_controls');
       if (!canGroup) {
         return res.status(403).json({ error: 'Group booking slots require a Pro plan upgrade' });
       }
@@ -81,9 +81,9 @@ router.put('/availability/:serviceId', authenticateToken, requireFeature('bookin
     const prisma = getPrisma();
 
     await prisma.freelancerAvailability.upsert({
-      where:  { freelancerId: req.user.userId.toString() },
+      where:  { freelancerId: req.user._id.toString() },
       update: payload,
-      create: { freelancerId: req.user.userId.toString(), ...payload },
+      create: { freelancerId: req.user._id.toString(), ...payload },
     });
 
     // Keep the Mongo Service doc's booking.enabled flag in sync so other
@@ -164,7 +164,7 @@ router.patch('/:bookingId/complete', authenticateToken, requireSql((...a) => ctr
 router.post('/:bookingId/payment-intent', authenticateToken, async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const actorId = String(req.user?.userId || req.user?._id);
+    const actorId = String(req.user?._id);
 
     const { getPrisma } = require('../booking-sql/db/client');
     const db = getPrisma();
@@ -230,7 +230,7 @@ router.post('/:bookingId/confirm-payment', authenticateToken, async (req, res) =
     const { paymentIntentId } = req.body;
     if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId required' });
 
-    const actorId = String(req.user?.userId || req.user?._id);
+    const actorId = String(req.user?._id);
 
     const { getPrisma } = require('../booking-sql/db/client');
     const db = getPrisma();

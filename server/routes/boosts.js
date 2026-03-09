@@ -94,18 +94,18 @@ router.post('/job/:id', authenticateToken, async (req, res) => {
 
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ error: 'Job not found' });
-    if (job.client.toString() !== req.user.userId.toString())
+    if (job.client.toString() !== req.user._id.toString())
       return res.status(403).json({ error: 'Not your job' });
     if (job.status !== 'open')
       return res.status(400).json({ error: 'Only open jobs can be boosted' });
 
     // Try free credit (7-day only)
     if (useCredit && plan === '7day') {
-      const credits = await getMonthlyCredits(req.user.userId);
+      const credits = await getMonthlyCredits(req.user._id);
       if (credits.creditsUsed < credits.creditsTotal) {
         credits.creditsUsed += 1;
         await credits.save();
-        const expiresAt = await activateBoost('job', job._id, 7, 'credit', req.user.userId, '7day', true);
+        const expiresAt = await activateBoost('job', job._id, 7, 'credit', req.user._id, '7day', true);
         return res.json({
           boosted: true,
           usedCredit: true,
@@ -123,7 +123,7 @@ router.post('/job/:id', authenticateToken, async (req, res) => {
         type: 'boost',
         targetType: 'job',
         targetId: job._id.toString(),
-        userId: req.user.userId.toString(),
+        userId: req.user._id.toString(),
         boostPlan: plan,
         boostDays: option.days.toString(),
       },
@@ -149,16 +149,16 @@ router.post('/service/:id', authenticateToken, async (req, res) => {
 
     const service = await Service.findById(req.params.id);
     if (!service) return res.status(404).json({ error: 'Service not found' });
-    if (service.freelancer.toString() !== req.user.userId.toString())
+    if (service.freelancer.toString() !== req.user._id.toString())
       return res.status(403).json({ error: 'Not your service' });
 
     // Try free credit (7-day only)
     if (useCredit && plan === '7day') {
-      const credits = await getMonthlyCredits(req.user.userId);
+      const credits = await getMonthlyCredits(req.user._id);
       if (credits.creditsUsed < credits.creditsTotal) {
         credits.creditsUsed += 1;
         await credits.save();
-        const expiresAt = await activateBoost('service', service._id, 7, 'credit', req.user.userId, '7day', true);
+        const expiresAt = await activateBoost('service', service._id, 7, 'credit', req.user._id, '7day', true);
         return res.json({
           boosted: true,
           usedCredit: true,
@@ -175,7 +175,7 @@ router.post('/service/:id', authenticateToken, async (req, res) => {
         type: 'boost',
         targetType: 'service',
         targetId: service._id.toString(),
-        userId: req.user.userId.toString(),
+        userId: req.user._id.toString(),
         boostPlan: plan,
         boostDays: option.days.toString(),
       },
@@ -195,7 +195,7 @@ router.post('/service/:id', authenticateToken, async (req, res) => {
 // ── GET /api/boosts/credits — Check remaining boost credits
 router.get('/credits', authenticateToken, async (req, res) => {
   try {
-    const credits = await getMonthlyCredits(req.user.userId);
+    const credits = await getMonthlyCredits(req.user._id);
     res.json({
       total: credits.creditsTotal,
       used: credits.creditsUsed,
@@ -240,7 +240,7 @@ router.post('/track/click', async (req, res) => {
 // ── GET /api/boosts/analytics — Get boost performance for the user
 router.get('/analytics', authenticateToken, async (req, res) => {
   try {
-    const analytics = await BoostImpression.find({ owner: req.user.userId })
+    const analytics = await BoostImpression.find({ owner: req.user._id })
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();

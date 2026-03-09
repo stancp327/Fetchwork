@@ -21,7 +21,7 @@ router.put('/', authenticateToken, async (req, res) => {
     } = req.body;
 
     const prisma = getPrisma();
-    const freelancerId = req.user.userId.toString();
+    const freelancerId = req.user._id.toString();
 
     const payload = {
       ...(isActive              !== undefined && { isActive }),
@@ -85,7 +85,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const prisma = getPrisma();
     const doc = await prisma.freelancerAvailability.findUnique({
-      where: { freelancerId: req.user.userId.toString() },
+      where: { freelancerId: req.user._id.toString() },
       include: {
         exceptions: { where: { serviceId: null }, orderBy: { date: 'asc' } },
       },
@@ -146,7 +146,7 @@ router.get('/:freelancerId', async (req, res) => {
 router.put('/service/:serviceId', authenticateToken, async (req, res) => {
   try {
     const prisma = getPrisma();
-    const freelancerId = req.user.userId.toString();
+    const freelancerId = req.user._id.toString();
     const serviceId    = req.params.serviceId;
 
     // Verify freelancer owns this service
@@ -254,7 +254,7 @@ router.put('/service/:serviceId/location', authenticateToken, async (req, res) =
     const Service = require('../models/Service');
     const svc = await Service.findById(req.params.serviceId);
     if (!svc) return res.status(404).json({ error: 'Service not found' });
-    if (svc.freelancer.toString() !== req.user.userId.toString())
+    if (svc.freelancer.toString() !== req.user._id.toString())
       return res.status(403).json({ error: 'Not your service' });
 
     const { mode, address, travelRadius, notes } = req.body;
