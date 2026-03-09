@@ -55,27 +55,6 @@ async function getPayoutDelay(userId) {
 }
 
 /**
- * Calculate the scheduled payout date.
- * Skips weekends for business day calculation.
- */
-function schedulePayoutDate(fromDate, businessDays) {
-  if (businessDays === 0) return fromDate;
-
-  const date = new Date(fromDate);
-  let remaining = businessDays;
-
-  while (remaining > 0) {
-    date.setDate(date.getDate() + 1);
-    const day = date.getDay();
-    if (day !== 0 && day !== 6) { // skip Sat/Sun
-      remaining--;
-    }
-  }
-
-  return date;
-}
-
-/**
  * Get payout info for display (frontend / admin).
  */
 async function getPayoutInfo(userId) {
@@ -92,8 +71,5 @@ async function getPayoutInfo(userId) {
 }
 
 module.exports = {
-  getPayoutDelay,
-  schedulePayoutDate,
   getPayoutInfo,
-  PAYOUT_TIERS,
 };

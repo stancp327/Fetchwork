@@ -94,16 +94,6 @@ async function applyWatermark(filePath, filename) {
 }
 
 /**
- * Remove watermark — returns the original file URL.
- * Called when a job/project is completed.
- */
-function getOriginalUrl(watermarkedUrl) {
-  if (!watermarkedUrl) return watermarkedUrl;
-  // /uploads/watermarked/filename.jpg → /uploads/originals/filename.jpg
-  return watermarkedUrl.replace('/uploads/watermarked/', '/uploads/originals/');
-}
-
-/**
  * Process all attachments in a message — watermark images, leave docs alone.
  * Returns updated attachments array with watermarked URLs.
  */
@@ -183,8 +173,6 @@ async function removeWatermarksForJob(jobId) {
 }
 
 module.exports = {
-  applyWatermark,
   watermarkAttachments,
   removeWatermarksForJob,
-  getOriginalUrl,
 };

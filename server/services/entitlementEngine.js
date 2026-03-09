@@ -229,5 +229,4 @@ module.exports = {
   removeUserFeature,
   getUserGrants,
   FEATURES,
-  PLAN_FEATURE_DEFAULTS,
 };

@@ -97,55 +97,6 @@ function generateSlotsForDate(dateStr, availability, existingBookings = []) {
 }
 
 /**
- * Generate slots for a date range — for month/week calendar view.
- * Makes a SINGLE DB query externally; slot math runs in-memory.
- *
- * @param {string} fromDate   - "YYYY-MM-DD"
- * @param {string} toDate     - "YYYY-MM-DD"
- * @param {Object} availability
- * @param {Array}  existingBookings
- * @returns {Array} grouped by date
- */
-function generateSlotsForRange(fromDate, toDate, availability, existingBookings = []) {
-  const tz      = availability.timezone || 'America/Los_Angeles';
-  const maxDays = availability.maxAdvanceBookingDays || 60;
-  const now     = DateTime.now().setZone(tz);
-
-  let cursor = DateTime.fromISO(fromDate, { zone: tz });
-  const end  = DateTime.fromISO(toDate,   { zone: tz });
-  const result = [];
-
-  while (cursor <= end) {
-    const dateStr     = cursor.toFormat('yyyy-MM-dd');
-    const daysFromNow = cursor.diff(now, 'days').days;
-
-    if (daysFromNow <= maxDays) {
-      const times = generateSlotsForDate(dateStr, availability, existingBookings);
-      result.push({
-        date:        dateStr,
-        displayDate: cursor.toFormat('EEE, MMM d'),
-        dayOfWeek:   cursor.weekday % 7,
-        available:   times.some(s => s.available),
-        times,
-      });
-    } else {
-      result.push({
-        date:        dateStr,
-        displayDate: cursor.toFormat('EEE, MMM d'),
-        dayOfWeek:   cursor.weekday % 7,
-        available:   false,
-        beyondWindow: true,
-        times:       [],
-      });
-    }
-
-    cursor = cursor.plus({ days: 1 });
-  }
-
-  return result;
-}
-
-/**
  * Validate that a proposed UTC startTime is a real slot in the freelancer's availability.
  * Prevents slot injection attacks.
  */
@@ -160,4 +111,4 @@ function validateSlot(startUTC, endUTC, availability, existingBookings = []) {
   );
 }
 
-module.exports = { generateSlotsForDate, generateSlotsForRange, validateSlot };
+module.exports = { validateSlot };
