@@ -394,7 +394,7 @@ const AvailabilityManager = () => {
       {holidays.length > 0 && (
         <div className="am-section am-holidays">
           <h2 className="am-section-title">🎉 Public Holidays</h2>
-          <p className="am-section-desc">Toggle holidays off to block bookings on those days. Clients won't see available slots on blocked dates.</p>
+          <p className="am-section-desc">Optionally block bookings on public holidays. Check any dates you want to take off — unchecked holidays remain available.</p>
           <div className="am-holiday-list">
             {holidays.map(h => {
               const blocked = blockedHolidays.includes(h.date);

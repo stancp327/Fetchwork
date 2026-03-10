@@ -204,17 +204,19 @@ router.put('/service/:serviceId', authenticateToken, async (req, res) => {
       },
     });
 
-    // Persist blocked holiday dates as AvailabilityDateOverride rows
-    if (Array.isArray(blockedDates) && blockedDates.length > 0) {
+    // Persist blocked holiday dates as AvailabilityDateOverride rows (optional — empty array clears all)
+    if (Array.isArray(blockedDates)) {
       const validDates = blockedDates.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
-      await Promise.all(validDates.map(date =>
-        prisma.availabilityDateOverride.upsert({
-          where: { freelancerAvailId_serviceId_date: { freelancerAvailId: global.id, serviceId, date } },
-          create: { freelancerAvailId: global.id, serviceId, date, unavailable: true, reason: 'Holiday' },
-          update: { unavailable: true, reason: 'Holiday' },
-        })
-      ));
-      // Remove any previously blocked dates not in the current list
+      if (validDates.length > 0) {
+        await Promise.all(validDates.map(date =>
+          prisma.availabilityDateOverride.upsert({
+            where: { freelancerAvailId_serviceId_date: { freelancerAvailId: global.id, serviceId, date } },
+            create: { freelancerAvailId: global.id, serviceId, date, unavailable: true, reason: 'Holiday' },
+            update: { unavailable: true, reason: 'Holiday' },
+          })
+        ));
+      }
+      // Remove any previously blocked dates not in the current list ([] clears all)
       await prisma.availabilityDateOverride.deleteMany({
         where: { freelancerAvailId: global.id, serviceId, reason: 'Holiday', date: { notIn: validDates } },
       });
