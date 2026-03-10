@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Call = require('../models/Call');
 const { transitionCall } = require('../services/callStateMachine');
 const { detectOffPlatform } = require('../services/offPlatformDetector');
+const { hasFeature } = require('../services/entitlementEngine');
 const ModerationEvent = require('../models/ModerationEvent');
 
 const activeUsers = new Map(); // userId -> Set of socketIds
@@ -727,6 +728,19 @@ module.exports = (io) => {
         if (!consumeRate('call:initiate', 6, 60_000)) {
           return socket.emit('call:rate-limit', { action: 'call:initiate' });
         }
+
+        // Feature gate: audio_calls / video_calls require Plus+
+        const featureSlug = type === 'video' ? 'video_calls' : 'audio_calls';
+        const allowed = await hasFeature(senderId, featureSlug);
+        if (!allowed) {
+          return socket.emit('call:feature-gated', {
+            feature: featureSlug,
+            type,
+            message: `${type === 'video' ? 'Video' : 'Voice'} calls require a Plus plan or higher.`,
+            upgradeUrl: '/billing',
+          });
+        }
+
         const normalizedRecipientId = recipientId ? String(recipientId) : null;
         if (!normalizedRecipientId) return socket.emit('call:error', { message: 'recipientId required' });
         if (!activeUsers.has(normalizedRecipientId)) {

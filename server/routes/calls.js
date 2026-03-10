@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const net = require('net');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
+const { hasFeature } = require('../services/entitlementEngine');
 const Call = require('../models/Call');
 
 const normalizeCallStatus = (status) => {
@@ -17,7 +18,18 @@ const normalizeCallForResponse = (call) => ({
 });
 
 // GET /api/calls/turn-credentials — time-limited TURN credentials (RFC 5389 long-term)
-router.get('/turn-credentials', authenticateToken, (req, res) => {
+router.get('/turn-credentials', authenticateToken, async (req, res) => {
+  // Require audio_calls OR video_calls entitlement (both granted together)
+  const canCall = await hasFeature(req.user.userId || req.user._id, 'audio_calls');
+  if (!canCall) {
+    return res.status(403).json({
+      error: 'Calls require a Plus plan or higher.',
+      reason: 'feature_gated',
+      feature: 'audio_calls',
+      upgradeUrl: '/billing',
+    });
+  }
+
   const secret = process.env.TURN_AUTH_SECRET;
   const urls = process.env.TURN_URLS;
   if (!secret || !urls) {

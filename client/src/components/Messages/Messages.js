@@ -62,6 +62,8 @@ const Messages = () => {
   const { search: locationSearch } = useLocation();
   const navigate = useNavigate();
   const userId = getEntityId(user?._id || user?.id || user?.userId);
+  const [userFeatures, setUserFeatures] = useState([]);
+  const canCall = userFeatures.includes('audio_calls') || userFeatures.includes('video_calls');
   const [conversations, setConversations] = useState([]);
   const [selectedConvo, setSelectedConvo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -86,6 +88,7 @@ const Messages = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [contextProfile, setContextProfile] = useState(null);
   const [contextProfileLoading, setContextProfileLoading] = useState(false);
+  const [callGateModal, setCallGateModal] = useState(null); // { type: 'video'|'audio', message }
 
   // Payment Requests
   const [showPayModal, setShowPayModal] = useState(false);
@@ -308,13 +311,23 @@ const Messages = () => {
     };
     socketRef.current.on('call:initiated', handler);
 
+    // Handle feature gate (upgrade required)
+    const gateHandler = ({ type: callType, message }) => {
+      setCallGateModal({ type: callType, message });
+      socketRef.current.off('call:feature-gated', gateHandler);
+    };
+    socketRef.current.on('call:feature-gated', gateHandler);
+
     // Handle error
     const errHandler = ({ message }) => {
       alert(message || 'Could not start call');
       socketRef.current.off('call:error', errHandler);
     };
     socketRef.current.on('call:error', errHandler);
-    setTimeout(() => socketRef.current.off('call:error', errHandler), 5000);
+    setTimeout(() => {
+      socketRef.current.off('call:error', errHandler);
+      socketRef.current.off('call:feature-gated', gateHandler);
+    }, 5000);
   }, [socketRef, selectedConvo]);
 
   const updateReceiptCursor = useCallback(async (conversationId, { lastReadSeq, lastDeliveredSeq }) => {
@@ -368,6 +381,13 @@ const Messages = () => {
   useEffect(() => {
     if (selectedConvo?._id) fetchAppointments(selectedConvo._id);
   }, [selectedConvo?._id, fetchAppointments]);
+
+  // Fetch user feature flags once on mount
+  useEffect(() => {
+    apiRequest('/api/auth/me/features')
+      .then(data => setUserFeatures(data.features || []))
+      .catch(() => {});
+  }, []);
 
   // Fetch other participant's profile when Details panel opens
   useEffect(() => {
@@ -736,18 +756,18 @@ const Messages = () => {
                 </div>
                 <div className="chat-header-actions">
                   <button
-                    className="call-btn"
-                    title="Voice call"
-                    onClick={() => initiateCall(otherParticipant, 'audio')}
+                    className={`call-btn${!canCall ? ' call-btn--locked' : ''}`}
+                    title={canCall ? 'Voice call' : 'Voice call — Plus plan required'}
+                    onClick={() => canCall ? initiateCall(otherParticipant, 'audio') : setCallGateModal({ type: 'audio' })}
                   >
-                    📞
+                    📞{!canCall && <span className="call-lock">🔒</span>}
                   </button>
                   <button
-                    className="call-btn"
-                    title="Video call"
-                    onClick={() => initiateCall(otherParticipant, 'video')}
+                    className={`call-btn${!canCall ? ' call-btn--locked' : ''}`}
+                    title={canCall ? 'Video call' : 'Video call — Plus plan required'}
+                    onClick={() => canCall ? initiateCall(otherParticipant, 'video') : setCallGateModal({ type: 'video' })}
                   >
-                    🎥
+                    🎥{!canCall && <span className="call-lock">🔒</span>}
                   </button>
                   <button className="context-toggle" onClick={() => setShowContext(!showContext)}>
                     ℹ️
@@ -1484,6 +1504,38 @@ const Messages = () => {
           </div>
         )}
       </div>
+
+      {/* ── Call upgrade gate modal ── */}
+      {callGateModal && (
+        <div className="modal-overlay" onClick={() => setCallGateModal(null)}>
+          <div className="modal-content call-gate-modal" onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 12 }}>
+              {callGateModal.type === 'video' ? '🎥' : '📞'}
+            </div>
+            <h3 style={{ textAlign: 'center', margin: '0 0 8px' }}>
+              {callGateModal.type === 'video' ? 'Video' : 'Voice'} Calls
+            </h3>
+            <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 14, marginBottom: 20 }}>
+              {callGateModal.type === 'video' ? 'Video' : 'Voice'} calls are available on the <strong>Plus plan</strong> and above.
+              Upgrade to connect face-to-face with clients and freelancers.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => { setCallGateModal(null); navigate('/billing'); }}
+              >
+                Upgrade to Plus
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setCallGateModal(null)}
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

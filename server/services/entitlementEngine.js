@@ -44,6 +44,10 @@ const FEATURES = {
   AI_JOB_DESCRIPTION:   'ai_job_description',     // ✨ AI-generated job descriptions (Plus+)
   AI_MATCHING:          'ai_matching',             // 🤖 AI freelancer matching (Pro+)
 
+  // Communication
+  AUDIO_CALLS:          'audio_calls',            // 📞 voice calls in messages (Plus+)
+  VIDEO_CALLS:          'video_calls',            // 🎥 video calls in messages (Plus+)
+
   // Admin-only flags (can also be used to restrict features)
   BETA_ACCESS:          'beta_access',            // early feature access
   UNLIMITED_SERVICES:   'unlimited_services',     // bypass service count limit
@@ -64,6 +68,7 @@ const PLAN_FEATURE_DEFAULTS = {
     'intake_forms', 'repeat_client_tools', 'capacity_controls', 'faster_payout',
     'csv_export', 'saved_providers', 'job_templates', 'proposal_comparison',
     'ai_job_description',
+    'audio_calls', 'video_calls',
   ],
   pro: [
     'recurring_services', 'bundle_creation', 'bundle_expiration', 'booking_calendar',
@@ -71,11 +76,13 @@ const PLAN_FEATURE_DEFAULTS = {
     'faster_payout', 'advanced_analytics', 'csv_export', 'unlimited_services',
     'saved_providers', 'job_templates', 'proposal_comparison', 'spend_dashboard',
     'ai_job_description', 'ai_matching',
+    'audio_calls', 'video_calls',
   ],
   business: [  // client business plan
     'saved_providers', 'job_templates', 'proposal_comparison',
     'spend_dashboard', 'team_accounts', 'csv_export', 'advanced_analytics',
     'ai_job_description', 'ai_matching',
+    'audio_calls', 'video_calls',
   ],
 };
 
