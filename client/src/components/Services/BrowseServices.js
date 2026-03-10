@@ -167,6 +167,46 @@ const BrowseServices = () => {
       >
         <SearchBar value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search services, keywords, or categories..." />
 
+        {/* ── Local / Remote / All toggle ── */}
+        <div className="service-location-bar">
+          {[
+            { value: 'all',    label: '🌐 All' },
+            { value: 'local',  label: '📍 Local' },
+            { value: 'remote', label: '💻 Remote' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              className={`service-loc-pill${filters.locationType === opt.value ? ' active' : ''}`}
+              onClick={() => updateFilter('locationType', opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+
+          {/* Zip + radius inline when Local selected */}
+          {filters.locationType === 'local' && (
+            <div className="service-zip-bar">
+              <input
+                type="text"
+                className="service-zip-input"
+                placeholder="Zip or city (e.g. 94520)"
+                value={filters.near}
+                onChange={e => updateFilter('near', e.target.value)}
+                maxLength={10}
+              />
+              <select
+                className="service-radius-select"
+                value={filters.radius}
+                onChange={e => updateFilter('radius', e.target.value)}
+              >
+                {[5, 10, 25, 50, 100].map(r => (
+                  <option key={r} value={String(r)}>{r} mi</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
         <ResultsControls
           total={pagination.total || 0}
           sortValue={filters.sortBy}

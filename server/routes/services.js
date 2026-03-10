@@ -10,6 +10,22 @@ const { notifyServiceEvent } = require('./services.notification.helpers');
 const { Message, Conversation } = require('../models/Message');
 const { authenticateToken } = require('../middleware/auth');
 const { parsePagination, buildServiceFilters } = require('./services.helpers');
+const { geocode } = require('../config/geocoding');
+
+// Geocode zip/city and attach GeoJSON coordinates so geo queries work
+async function enrichLocation(location) {
+  const loc = location || { locationType: 'remote' };
+  if (loc.locationType === 'remote') return loc;
+  const geoQuery = loc.zipCode || loc.city || loc.address;
+  if (!geoQuery) return loc;
+  try {
+    const coords = await geocode(geoQuery);
+    if (coords) {
+      loc.coordinates = { type: 'Point', coordinates: coords };
+    }
+  } catch (_) {}
+  return loc;
+}
 const stripeService = require('../services/stripeService');
 const { checkServiceLimit } = require('../middleware/entitlements');
 const { getFeeDisplay } = require('../services/feeEngine');
@@ -207,7 +223,7 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       gallery: gallery || [],
       faqs: faqs || [],
       requirements,
-      location: location || { locationType: 'remote' },
+      location: await enrichLocation(location),
       freelancer: req.user._id,
       status: 'active',
       serviceType:  serviceType || 'one_time',

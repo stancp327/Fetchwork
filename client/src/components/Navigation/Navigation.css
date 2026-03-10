@@ -265,6 +265,8 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
+  /* Never let the panel bleed off the left edge on small screens */
+  max-width: calc(100vw - 16px);
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 14px;
@@ -281,9 +283,12 @@
 
 /* Notification panel */
 .notif-dropdown-panel {
-  width: 320px;
-  max-height: 420px;
+  width: min(320px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 80px));
   overflow-y: auto;
+  /* clamp so it never goes off the left edge on mobile */
+  right: 0;
+  left: auto;
 }
 
 /* Profile panel */
