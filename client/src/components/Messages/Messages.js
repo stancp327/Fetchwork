@@ -17,6 +17,12 @@ const getEntityId = (v) => (v && typeof v === 'object' ? (v._id || v.id || v.use
 const idEq = (a, b) => String(getEntityId(a)) === String(getEntityId(b));
 
 const pad2 = (n) => String(n).padStart(2, '0');
+const extractApptId = (text) => {
+  if (!text) return null;
+  const m = String(text).match(/\[appt:([0-9a-fA-F-]{20,})\]/);
+  return m ? m[1] : null;
+};
+
 const nextQuarterLocal = () => {
   const d = new Date();
   d.setSeconds(0, 0);
@@ -25,6 +31,12 @@ const nextQuarterLocal = () => {
   d.setMinutes(next);
   if (d <= new Date()) d.setMinutes(d.getMinutes() + 15);
   return d;
+};
+
+const extractAppointmentId = (content) => {
+  if (!content || typeof content !== 'string') return null;
+  const m = content.match(/\[appt:([0-9a-fA-F-]{10,})\]/);
+  return m?.[1] || null;
 };
 
 const Messages = () => {
@@ -62,6 +74,8 @@ const Messages = () => {
   const [scheduleNotes, setScheduleNotes] = useState('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleError, setScheduleError] = useState('');
+  const [appointmentsById, setAppointmentsById] = useState({});
+  const [actingApptId, setActingApptId] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState({}); // userId → { isOnline, lastSeen }
   const [translations, setTranslations] = useState({}); // msgId → { translated, detectedLanguage, targetLanguage }
   const [translatingId, setTranslatingId] = useState(null); // msgId currently translating
@@ -304,6 +318,23 @@ const Messages = () => {
       setError(err.data?.error || err.message || 'Failed to load messages');
     }
   }, [userId, updateReceiptCursor]);
+
+  const fetchAppointments = useCallback(async (conversationId) => {
+    if (!conversationId) return;
+    try {
+      const data = await apiRequest(`/api/appointments?conversationId=${conversationId}&limit=200`);
+      const list = data.appointments || [];
+      const map = {};
+      list.forEach(a => { map[a.id] = a; });
+      setAppointmentsById(map);
+    } catch {
+      // non-blocking
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedConvo?._id) fetchAppointments(selectedConvo._id);
+  }, [selectedConvo?._id, fetchAppointments]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -596,6 +627,8 @@ const Messages = () => {
                 ) : (
                   messages.map(msg => {
                     const isMine = idEq(msg.sender?._id || msg.sender, userId);
+                    const apptId = extractAppointmentId(msg.content);
+                    const appt = apptId ? appointmentsById[apptId] : null;
                     return (
                       <div key={msg._id} className="msg-ai-tr-wrap">
                         <MsgBubble
@@ -605,6 +638,92 @@ const Messages = () => {
                           userId={userId}
                           onProposalAction={() => fetchMessages(selectedConvo)}
                         />
+
+                        {apptId && (
+                          <div
+                            style={{
+                              border: '1px solid var(--color-border)',
+                              borderRadius: 10,
+                              padding: 12,
+                              marginTop: 6,
+                              background: 'var(--color-bg-primary)',
+                              maxWidth: 520,
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+                              <div style={{ fontWeight: 700 }}>Appointment</div>
+                              <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                                {appt?.status ? appt.status.toUpperCase() : '…'}
+                              </div>
+                            </div>
+
+                            {appt ? (
+                              <>
+                                <div style={{ marginTop: 6, fontSize: 14 }}>
+                                  <div><strong>When:</strong> {new Date(appt.startAtUtc).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</div>
+                                  <div><strong>Duration:</strong> {Math.round((new Date(appt.endAtUtc).getTime() - new Date(appt.startAtUtc).getTime()) / 60000)} min</div>
+                                  <div><strong>Type:</strong> {appt.appointmentType}</div>
+                                  {appt.notes && <div style={{ marginTop: 4 }}><strong>Notes:</strong> {appt.notes}</div>}
+                                </div>
+
+                                {appt.status === 'proposed' && (
+                                  <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                                    {String(appt.proposedById) === String(userId) ? (
+                                      <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Waiting for approval…</div>
+                                    ) : (
+                                      <>
+                                        <button
+                                          type="button"
+                                          className="offer-btn-primary"
+                                          disabled={actingApptId === appt.id}
+                                          onClick={async () => {
+                                            setActingApptId(appt.id);
+                                            try {
+                                              await apiRequest(`/api/appointments/${appt.id}/approve`, { method: 'POST' });
+                                              await fetchAppointments(selectedConvo._id);
+                                              await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, {
+                                                method: 'POST',
+                                                body: JSON.stringify({ content: `✅ Appointment confirmed [appt:${appt.id}]` })
+                                              });
+                                              fetchMessages(selectedConvo);
+                                            } catch (e) {
+                                              alert(e?.message || 'Failed to approve appointment');
+                                            } finally {
+                                              setActingApptId(null);
+                                            }
+                                          }}
+                                        >Approve</button>
+                                        <button
+                                          type="button"
+                                          className="offer-btn-secondary"
+                                          disabled={actingApptId === appt.id}
+                                          onClick={async () => {
+                                            setActingApptId(appt.id);
+                                            try {
+                                              await apiRequest(`/api/appointments/${appt.id}/cancel`, { method: 'POST' });
+                                              await fetchAppointments(selectedConvo._id);
+                                              await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, {
+                                                method: 'POST',
+                                                body: JSON.stringify({ content: `❌ Appointment declined [appt:${appt.id}]` })
+                                              });
+                                              fetchMessages(selectedConvo);
+                                            } catch (e) {
+                                              alert(e?.message || 'Failed to decline appointment');
+                                            } finally {
+                                              setActingApptId(null);
+                                            }
+                                          }}
+                                        >Decline</button>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>Loading appointment…</div>
+                            )}
+                          </div>
+                        )}
                         {!isMine && msg.content && (
                           <div className="msg-ai-tr-row">
                             <button
@@ -821,13 +940,14 @@ const Messages = () => {
                           });
 
                           const appt = resp.appointment;
+                          await fetchAppointments(selectedConvo._id);
                           const startStr = new Date(appt.startAtUtc).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
                           const mins = Math.round((new Date(appt.endAtUtc).getTime() - new Date(appt.startAtUtc).getTime()) / 60000);
 
                           await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, {
                             method: 'POST',
                             body: JSON.stringify({
-                              content: `📅 Appointment proposed: ${startStr} (${mins} min) — ${appt.appointmentType}${scheduleNotes ? `\nNotes: ${scheduleNotes}` : ''}`
+                              content: `📅 Appointment proposed [appt:${appt.id}]: ${startStr} (${mins} min) — ${appt.appointmentType}${scheduleNotes ? `\nNotes: ${scheduleNotes}` : ''}`
                             })
                           });
 
