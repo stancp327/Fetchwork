@@ -103,6 +103,79 @@ router.get('/conversations', authenticateToken, validateQueryParams, async (req,
   }
 });
 
+// GET /search?q=...  — search conversations by name, job title, and message content
+router.get('/search', authenticateToken, async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    if (!q || q.length < 2) return res.json({ results: [] });
+
+    const userId = req.user._id;
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    // 1. Find all user's active conversations
+    const convos = await Conversation.find({ participants: userId, isActive: true })
+      .populate('participants', 'firstName lastName profilePicture')
+      .populate('job', '_id title status')
+      .populate('service', '_id title')
+      .lean();
+
+    const convoIds = convos.map(c => c._id);
+    const convoMap = new Map(convos.map(c => [String(c._id), c]));
+
+    // 2. Filter by name / job title (client-side on small set)
+    const nameMatches = new Set(
+      convos
+        .filter(c => {
+          const other = c.participants?.find(p => String(p._id) !== String(userId));
+          const name = `${other?.firstName || ''} ${other?.lastName || ''}`;
+          return regex.test(name) || regex.test(c.job?.title || '') || regex.test(c.service?.title || '');
+        })
+        .map(c => String(c._id))
+    );
+
+    // 3. Search message content (most recent 3 matching messages per convo)
+    const msgMatches = await Message.find({
+      conversation: { $in: convoIds },
+      content: regex,
+    })
+      .sort({ createdAt: -1 })
+      .select('conversation content createdAt sender')
+      .lean();
+
+    // Group message snippets by conversation
+    const snippetMap = new Map();
+    for (const m of msgMatches) {
+      const cid = String(m.conversation);
+      if (!snippetMap.has(cid)) snippetMap.set(cid, []);
+      if (snippetMap.get(cid).length < 3) snippetMap.get(cid).push(m);
+    }
+
+    // 4. Build result set — union of name + message matches
+    const matchedConvoIds = new Set([...nameMatches, ...snippetMap.keys()]);
+    const results = [...matchedConvoIds].map(cid => {
+      const convo = convoMap.get(cid);
+      if (!convo) return null;
+      return {
+        ...convo,
+        matchedMessages: snippetMap.get(cid) || [],
+        matchType: nameMatches.has(cid) ? (snippetMap.has(cid) ? 'both' : 'name') : 'message',
+      };
+    }).filter(Boolean);
+
+    // Sort: name matches first, then by lastActivity
+    results.sort((a, b) => {
+      if (a.matchType === 'name' && b.matchType !== 'name') return -1;
+      if (b.matchType === 'name' && a.matchType !== 'name') return 1;
+      return new Date(b.lastActivity || 0) - new Date(a.lastActivity || 0);
+    });
+
+    res.json({ results, query: q });
+  } catch (err) {
+    logRouteError(req, 'search_conversations', err);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 router.get('/conversations/:conversationId', authenticateToken, validateConversationIdParam, validateQueryParams, async (req, res) => {
   try {
     const conversation = await Conversation.findById(req.params.conversationId)

@@ -33,6 +33,18 @@ const nextQuarterLocal = () => {
   return d;
 };
 
+// Highlight matched text in a string
+const Highlight = ({ text = '', query = '' }) => {
+  if (!query || !text) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((p, i) =>
+    new RegExp(`^${escaped}$`, 'i').test(p)
+      ? <mark key={i} style={{ background: 'var(--color-warning-light, #fef08a)', borderRadius: 2, padding: '0 1px' }}>{p}</mark>
+      : p
+  );
+};
+
 const extractAppointmentId = (content) => {
   if (!content || typeof content !== 'string') return null;
   const m = content.match(/\[appt:([0-9a-fA-F-]{10,})\]/);
@@ -70,6 +82,8 @@ const Messages = () => {
   const [deliveryStatus, setDeliveryStatus] = useState(new Map());
   const [showContext, setShowContext] = useState(false);
   const [mobileView, setMobileView] = useState('inbox');
+  const [searchResults, setSearchResults] = useState(null); // null = not searching
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Payment Requests
   const [showPayModal, setShowPayModal] = useState(false);
@@ -537,7 +551,27 @@ const Messages = () => {
 
   const otherParticipant = selectedConvo?.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
 
-  // Filter conversations
+  // Debounced search across conversations + message content
+  useEffect(() => {
+    if (!search || search.trim().length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const data = await apiRequest(`/api/messages/search?q=${encodeURIComponent(search.trim())}`);
+        setSearchResults(data.results || []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Filter conversations (used when not in search mode)
   const filtered = conversations.filter(c => {
     if (filter === 'unread' && !c.unreadCount) return false;
     if (search) {
@@ -562,8 +596,8 @@ const Messages = () => {
         </div>
         <div className="messages-header-right">
           <input
-            type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search conversations..." className="messages-search"
+            type="text" value={search} onChange={e => { setSearch(e.target.value); if (!e.target.value.trim()) setSearchResults(null); }}
+            placeholder="Search messages..." className="messages-search"
           />
         </div>
       </div>
@@ -581,9 +615,57 @@ const Messages = () => {
           <div className="inbox-list">
             {loading ? (
               <div className="inbox-loading">Loading...</div>
+            ) : searchResults !== null ? (
+              /* ── Search results mode ── */
+              searchLoading ? (
+                <div className="inbox-loading">Searching…</div>
+              ) : searchResults.length === 0 ? (
+                <div className="inbox-empty"><p>No results for "{search}"</p></div>
+              ) : (
+                searchResults.map(c => {
+                  const other = c.participants?.find(p => String(p._id) !== String(userId));
+                  const name = `${other?.firstName || ''} ${other?.lastName || ''}`.trim();
+                  return (
+                    <div
+                      key={c._id}
+                      className={`convo-item ${selectedConvo?._id === c._id ? 'selected' : ''}`}
+                      onClick={() => fetchMessages(c)}
+                    >
+                      <div className="convo-avatar">
+                        {other?.profilePicture
+                          ? <img src={other.profilePicture} alt="" />
+                          : <span>{other?.firstName?.[0]}{other?.lastName?.[0]}</span>}
+                      </div>
+                      <div className="convo-info">
+                        <div className="convo-top">
+                          <span className="convo-name"><Highlight text={name} query={search} /></span>
+                        </div>
+                        {c.job?.title && (
+                          <div className="convo-job"><Highlight text={`📋 ${c.job.title}`} query={search} /></div>
+                        )}
+                        {/* Show matched message snippets */}
+                        {c.matchedMessages?.map((m, i) => {
+                          const clean = (m.content || '')
+                            .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
+                            .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
+                            .trim();
+                          const idx = clean.toLowerCase().indexOf(search.toLowerCase());
+                          const start = Math.max(0, idx - 30);
+                          const snippet = (start > 0 ? '…' : '') + clean.slice(start, start + 100) + (clean.length > start + 100 ? '…' : '');
+                          return (
+                            <div key={i} className="convo-preview" style={{ marginTop: 2 }}>
+                              <Highlight text={snippet} query={search} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              )
             ) : filtered.length === 0 ? (
               <div className="inbox-empty">
-                <p>{search ? 'No matching conversations' : 'No conversations yet'}</p>
+                <p>No conversations yet</p>
                 <p className="inbox-empty-sub">Start by applying to a job or posting one</p>
               </div>
             ) : (
