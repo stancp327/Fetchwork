@@ -175,8 +175,8 @@
 
 .filters {
   display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
+  flex-direction: column;
+  gap: var(--space-lg);
   margin-bottom: 25px;
   padding: var(--space-px-20);
   background: var(--color-bg-subtle);
@@ -504,6 +504,13 @@
   grid-template-columns: 1fr;
   gap: var(--space-lg);
   margin-bottom: var(--space-xl);
+}
+
+.freelancer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-px-20);
+  margin-bottom: var(--space-px-30);
 }
 
 .service-card {
@@ -1133,20 +1140,7 @@
   gap: var(--space-md);
 }
 
-.filters {
-  flex-direction: column;
-  gap: var(--space-lg);
-}
-
-.filter-group {
-  width: 100%;
-}
-
-.card-header {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-md);
-}
+/* filters + card-header mobile-base rules live in their primary definitions above */
 
 .card-footer {
   flex-direction: column;
@@ -1200,12 +1194,6 @@
 }
 
 /* Freelancer Discovery Styles */
-.freelancer-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--space-px-20);
-  margin-bottom: var(--space-px-30);
-}
 
 .freelancer-card {
   background: var(--background-white);
