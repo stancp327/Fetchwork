@@ -84,6 +84,8 @@ const Messages = () => {
   const [mobileView, setMobileView] = useState('inbox');
   const [searchResults, setSearchResults] = useState(null); // null = not searching
   const [searchLoading, setSearchLoading] = useState(false);
+  const [contextProfile, setContextProfile] = useState(null);
+  const [contextProfileLoading, setContextProfileLoading] = useState(false);
 
   // Payment Requests
   const [showPayModal, setShowPayModal] = useState(false);
@@ -366,6 +368,16 @@ const Messages = () => {
   useEffect(() => {
     if (selectedConvo?._id) fetchAppointments(selectedConvo._id);
   }, [selectedConvo?._id, fetchAppointments]);
+
+  // Fetch other participant's profile when Details panel opens
+  useEffect(() => {
+    if (!showContext || !otherParticipant?._id) { setContextProfile(null); return; }
+    setContextProfileLoading(true);
+    apiRequest(`/api/freelancers/${getEntityId(otherParticipant._id)}`)
+      .then(data => setContextProfile(data))
+      .catch(() => setContextProfile(null))
+      .finally(() => setContextProfileLoading(false));
+  }, [showContext, otherParticipant?._id]);
 
   const fetchPaymentRequests = useCallback(async (conversationId) => {
     if (!conversationId) return;
@@ -1362,17 +1374,92 @@ const Messages = () => {
               <h3>Details</h3>
               <button onClick={() => setShowContext(false)}>×</button>
             </div>
+
+            {/* Profile summary */}
             <div className="context-profile">
               <div className="context-avatar">
-                {otherParticipant?.profilePicture ? (
-                  <img src={otherParticipant.profilePicture} alt="" />
-                ) : (
-                  <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>
-                )}
+                {otherParticipant?.profilePicture
+                  ? <img src={otherParticipant.profilePicture} alt="" />
+                  : <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>}
               </div>
               <h4>{otherParticipant?.firstName} {otherParticipant?.lastName}</h4>
-              <Link to={`/freelancers/${otherParticipant?._id}`} className="context-link">View Profile</Link>
+              {contextProfileLoading && <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>Loading…</div>}
+
+              {contextProfile && (
+                <>
+                  {/* Rating */}
+                  {contextProfile.stats?.rating > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, justifyContent: 'center' }}>
+                      <span style={{ color: '#f59e0b', fontSize: 14 }}>{'★'.repeat(Math.round(contextProfile.stats.rating))}{'☆'.repeat(5 - Math.round(contextProfile.stats.rating))}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>{contextProfile.stats.rating.toFixed(1)}</span>
+                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>({contextProfile.stats.totalReviews})</span>
+                    </div>
+                  )}
+
+                  {/* Stats row */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+                    {contextProfile.stats?.completedJobs > 0 && (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>{contextProfile.stats.completedJobs}</div>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Jobs done</div>
+                      </div>
+                    )}
+                    {contextProfile.freelancer?.memberSince && (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>{new Date(contextProfile.freelancer.memberSince).getFullYear()}</div>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Member since</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bio */}
+                  {contextProfile.freelancer?.bio && (
+                    <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 10, lineHeight: 1.5, textAlign: 'left' }}>
+                      {contextProfile.freelancer.bio.length > 180
+                        ? contextProfile.freelancer.bio.slice(0, 180) + '…'
+                        : contextProfile.freelancer.bio}
+                    </p>
+                  )}
+
+                  {/* Skills */}
+                  {contextProfile.freelancer?.skills?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                      {contextProfile.freelancer.skills.slice(0, 8).map((s, i) => (
+                        <span key={i} style={{ fontSize: 11, background: 'var(--color-bg-muted)', border: '1px solid var(--color-border)', borderRadius: 20, padding: '2px 8px', color: 'var(--color-text-medium)' }}>{s}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Recent reviews */}
+                  {contextProfile.reviews?.length > 0 && (
+                    <div className="context-section" style={{ marginTop: 16 }}>
+                      <h4>Recent Reviews</h4>
+                      {contextProfile.reviews.slice(0, 3).map((r, i) => (
+                        <div key={i} style={{ borderTop: i > 0 ? '1px solid var(--color-border)' : 'none', paddingTop: i > 0 ? 10 : 0, marginTop: i > 0 ? 10 : 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-darker)' }}>
+                              {r.reviewer?.firstName} {r.reviewer?.lastName?.slice(0, 1)}.
+                            </span>
+                            <span style={{ color: '#f59e0b', fontSize: 12 }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                          </div>
+                          {r.comment && (
+                            <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 3, lineHeight: 1.4 }}>
+                              {r.comment.length > 120 ? r.comment.slice(0, 120) + '…' : r.comment}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              <Link to={`/freelancers/${otherParticipant?._id}`} className="context-link" style={{ marginTop: 12, display: 'inline-block' }}>
+                View full profile →
+              </Link>
             </div>
+
+            {/* Linked job */}
             {selectedConvo.job && (
               <div className="context-section">
                 <h4>Linked Job</h4>
@@ -1382,6 +1469,8 @@ const Messages = () => {
                 </Link>
               </div>
             )}
+
+            {/* Linked service */}
             {selectedConvo.service && (
               <div className="context-section">
                 <h4>Linked Service</h4>
