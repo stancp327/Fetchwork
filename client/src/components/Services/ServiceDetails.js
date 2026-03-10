@@ -9,6 +9,7 @@ import EscrowModal from '../Payments/EscrowModal';
 import BookingCalendar from '../Bookings/BookingCalendar';
 import IntakeFormFill from './IntakeFormFill';
 import SEO from '../common/SEO';
+import ShareQR from '../common/ShareQR';
 import './ServiceDetails.css';
 
 const ServiceDetails = () => {
@@ -264,6 +265,7 @@ const ServiceDetails = () => {
             <span>⭐ {service.rating.toFixed(1)} ({service.totalReviews} reviews)</span>
             <span>👁️ {service.views} views</span>
           </div>
+          <ShareQR url={`/services/${service._id}`} title={`${service.title} on Fetchwork`} />
         </div>
 
         <div className="service-content-grid">

@@ -13,6 +13,7 @@ import { createPersonSchema } from '../../utils/structuredData';
 import { useAuth } from '../../context/AuthContext';
 import OnlineStatus, { formatResponseTime } from '../common/OnlineStatus';
 import { SkillBadge } from '../Skills/SkillAssessmentHub';
+import ShareQR from '../common/ShareQR';
 import './PublicProfile.css';
 
 const StarRating = ({ rating }) => {
@@ -155,6 +156,7 @@ const PublicProfile = () => {
               <OnlineStatus isOnline={f.isOnline} lastSeen={f.lastSeen} size="sm" />
               {!isOwnProfile && <SaveButton itemId={f._id} itemType="freelancer" size="lg" />}
             </div>
+            <ShareQR url={`/freelancers/${f._id}`} title={`${f.firstName} ${f.lastName} on Fetchwork`} />
             {f.hourlyRate > 0 && <div className="pp-rate">${f.hourlyRate}<span>/hr</span></div>}
             {!isOwnProfile && (
               <>

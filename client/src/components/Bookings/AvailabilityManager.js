@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useFeatures } from '../../hooks/useFeatures';
+import { usePublicHolidays } from '../../hooks/usePublicHolidays';
 import './AvailabilityManager.css';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -27,6 +28,9 @@ const AvailabilityManager = () => {
   const navigate      = useNavigate();
   const { hasFeature } = useFeatures();
   const canGroupBooking = hasFeature('capacity_controls');
+  const currentYear = new Date().getFullYear();
+  const { holidays } = usePublicHolidays(currentYear);
+  const [blockedHolidays, setBlockedHolidays] = useState([]);
 
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
@@ -169,6 +173,7 @@ const AvailabilityManager = () => {
             maxAdvanceBookingDays: maxAdvance,
             weeklySchedule,
             isActive: enabled,
+            blockedDates: blockedHolidays,
           }),
         });
       }
@@ -382,6 +387,38 @@ const AvailabilityManager = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Public Holidays */}
+      {holidays.length > 0 && (
+        <div className="am-section am-holidays">
+          <h2 className="am-section-title">🎉 Public Holidays</h2>
+          <p className="am-section-desc">Toggle holidays off to block bookings on those days. Clients won't see available slots on blocked dates.</p>
+          <div className="am-holiday-list">
+            {holidays.map(h => {
+              const blocked = blockedHolidays.includes(h.date);
+              return (
+                <label key={h.date} className={`am-holiday-row${blocked ? ' am-holiday-row--blocked' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={blocked}
+                    onChange={() => setBlockedHolidays(prev =>
+                      blocked ? prev.filter(d => d !== h.date) : [...prev, h.date]
+                    )}
+                  />
+                  <span className="am-holiday-date">
+                    {new Date(h.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                  <span className="am-holiday-name">{h.name}</span>
+                  {blocked && <span className="am-holiday-badge">Blocked</span>}
+                </label>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
+            Blocked holidays are saved with your availability settings.
+          </p>
+        </div>
       )}
 
       {/* Save */}

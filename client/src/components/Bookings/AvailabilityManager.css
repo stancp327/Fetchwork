@@ -461,3 +461,41 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* -- Public Holidays --------------------------------------------- */
+.am-holidays { }
+
+.am-holiday-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: var(--space-sm);
+  background: var(--color-bg-primary);
+}
+
+.am-holiday-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px var(--space-sm);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background 0.1s;
+}
+
+.am-holiday-row:hover { background: var(--color-bg-subtle); }
+.am-holiday-row--blocked { background: #fef3cd; }
+.am-holiday-row--blocked:hover { background: #fef3cd; }
+
+.am-holiday-row input { accent-color: var(--color-warning); cursor: pointer; }
+.am-holiday-date { font-weight: 700; min-width: 56px; color: var(--color-text-secondary); }
+.am-holiday-name { flex: 1; color: var(--color-text-darker); }
+.am-holiday-badge {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  background: #f59e0b; color: #fff; padding: 2px 6px; border-radius: 20px;
+}

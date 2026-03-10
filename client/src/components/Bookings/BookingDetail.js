@@ -6,6 +6,7 @@ import { apiRequest } from '../../utils/api';
 import SEO from '../common/SEO';
 import RecurringSeriesPanel from './RecurringSeriesPanel';
 import BookingPayModal from './BookingPayModal';
+import WeatherWidget from '../common/WeatherWidget';
 import './BookingDetail.css';
 
 /* ─── Helpers ─── */
@@ -275,6 +276,14 @@ const BookingDetail = () => {
           {statusMeta.icon} {statusMeta.label}
         </span>
       </div>
+
+      {/* Weather — only for local/in-person services with a date set */}
+      {booking.date && booking.serviceLocation?.coordinates?.coordinates?.length === 2 && (
+        <WeatherWidget
+          coords={{ lat: booking.serviceLocation.coordinates.coordinates[1], lon: booking.serviceLocation.coordinates.coordinates[0] }}
+          targetDate={booking.date}
+        />
+      )}
 
       {/* Details grid */}
       <div className="bd-card">
