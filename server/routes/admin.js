@@ -1842,10 +1842,8 @@ router.get('/bookings', authenticateAdmin, requirePermission('job_management'), 
   try {
     const { status, page = 1, limit = 50 } = req.query;
 
-    const BOOKING_SQL_ENABLED = process.env.BOOKING_SQL_ENABLED === 'true';
-
-    // Prefer SQL bookings when enabled (Mongo booking path was removed).
-    if (BOOKING_SQL_ENABLED && process.env.DATABASE_URL) {
+    // Admin should always be able to see SQL bookings when DATABASE_URL is configured.
+    if (process.env.DATABASE_URL) {
       const { PrismaClient } = require('@prisma/client');
       const prisma = new PrismaClient();
       const User = require('../models/User');
@@ -1931,9 +1929,8 @@ router.get('/bookings/:id', authenticateAdmin, requirePermission('job_management
 // PATCH /admin/bookings/:id/cancel — admin cancel a booking (Mongo legacy OR SQL current)
 router.patch('/bookings/:id/cancel', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
   try {
-    const BOOKING_SQL_ENABLED = process.env.BOOKING_SQL_ENABLED === 'true';
-
-    if (BOOKING_SQL_ENABLED && process.env.DATABASE_URL) {
+    // Admin cancel should work for SQL bookings whenever SQL is configured.
+    if (process.env.DATABASE_URL) {
       const { PrismaClient } = require('@prisma/client');
       const prisma = new PrismaClient();
 
