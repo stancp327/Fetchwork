@@ -230,28 +230,10 @@
   background: var(--color-bg-primary);
 }
 
-.btn {
-  min-height: 44px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-}
-
-/* Compact button modifier */
-.btn-sm {
-  padding: 6px 14px;
-  font-size: var(--font-size-sm, 0.875rem);
-  min-height: 44px;   /* Keep 44px touch target */
-}
+/*
+  Buttons: base variants are defined in `styles/shared.css`.
+  Keep ONLY variants that aren't in shared.css.
+*/
 
 /* Job card action row */
 .job-card-actions {
@@ -262,44 +244,7 @@
   flex-shrink: 0;
 }
 
-.btn-primary {
-  background: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #5a6fd8;
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  background: var(--color-text-secondary);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: #5a6268;
-}
-
-.btn-success {
-  background: var(--color-success);
-  color: white;
-}
-
-.btn-success:hover {
-  background: #218838;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 2px solid var(--color-primary);
-  color: var(--color-primary);
-}
-
-.btn-outline:hover {
-  background: var(--color-primary);
-  color: white;
-}
+/* Outline button variant is defined in `styles/shared.css` */
 
 .card {
   background: var(--color-bg-primary);
@@ -346,60 +291,14 @@
 
 .card-footer {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column; /* mobile-first */
+  align-items: stretch;
+  gap: var(--space-lg);
   padding-top: 15px;
   border-top: 1px solid var(--color-bg-muted);
 }
 
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0;
-}
-
-.tag {
-  background: var(--color-bg-muted);
-  color: var(--color-text-secondary);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.tag-clickable {
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  min-height: 0;  /* Tags are intentionally compact — override global 44px */
-}
-.tag-clickable:hover {
-  background: var(--color-border-medium);
-  color: var(--color-text-darker);
-}
-
-.tag.primary {
-  background: var(--color-primary);
-  color: white;
-}
-
-.tag.success {
-  background: var(--color-success);
-  color: white;
-}
-
-.tag.warning {
-  background: #ffc107;
-  color: #212529;
-}
-
-.tag.danger {
-  background: #dc3545;
-  color: white;
-}
+/* Tags are defined in `styles/shared.css` */
 
 .loading {
   display: flex;
@@ -427,79 +326,11 @@
   margin-bottom: var(--space-px-20);
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: 30px;
-}
+/* Pagination is defined in `styles/shared.css` */
 
-.pagination button {
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  background: var(--color-bg-primary);
-  color: var(--color-text-secondary);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.pagination button:hover:not(:disabled) {
-  background: var(--color-bg-muted);
-}
-
-.pagination button.active {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.pagination button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.form-group {
-  margin-bottom: var(--space-px-20);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  font-size: var(--font-size-base);
-  transition: border-color 0.2s ease;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-.form-group .error-text {
-  color: #dc3545;
-  font-size: 0.8rem;
-  margin-top: 5px;
-}
+/* Form primitives live in `styles/shared.css`.
+   Avoid redefining `.form-group` globally in this file.
+*/
 
 .services-grid {
   display: grid;
@@ -745,8 +576,9 @@
   gap: 20px;
 }
 
-.freelancer-card,
-.pricing-card {
+/* Service details sidebar cards (scoped to avoid colliding with freelancer discovery cards) */
+.service-sidebar .freelancer-card,
+.service-sidebar .pricing-card {
   background: var(--color-bg-primary);
   padding: 25px;
   border-radius: var(--radius-lg);
@@ -754,20 +586,20 @@
   border: 1px solid var(--color-border);
 }
 
-.freelancer-info {
+.service-sidebar .freelancer-info {
   display: flex;
   gap: 15px;
   align-items: center;
 }
 
-.freelancer-avatar-large {
+.service-sidebar .freelancer-avatar-large {
   width: 60px;
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.freelancer-stats {
+.service-sidebar .freelancer-stats {
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -775,28 +607,28 @@
   color: var(--color-text-secondary);
 }
 
-.freelancer-bio {
-  color: var(--text-secondary);
+.service-sidebar .freelancer-bio {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  margin: var(--space-px-8) 0;
+  margin: 8px 0;
   line-height: 1.4;
 }
 
-.freelancer-links {
+.service-sidebar .freelancer-links {
   margin-top: var(--space-px-10);
 }
 
-.portfolio-link {
+.service-sidebar .portfolio-link {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-px-4);
-  color: var(--primary-color);
+  gap: 4px;
+  color: var(--color-primary);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: 500;
 }
 
-.portfolio-link:hover {
+.service-sidebar .portfolio-link:hover {
   text-decoration: underline;
 }
 
@@ -846,13 +678,14 @@
   margin-bottom: var(--space-px-20);
 }
 
-.feature {
+/* Package features (scoped — avoid global .feature collisions) */
+.package-features .feature {
   padding: 8px 0;
   border-bottom: 1px solid #f1f3f4;
   font-size: 0.9rem;
 }
 
-.feature:last-child {
+.package-features .feature:last-child {
   border-bottom: none;
 }
 
@@ -989,7 +822,7 @@
 
 .apply-form .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr; /* mobile-first */
   gap: 15px;
 }
 
@@ -1060,8 +893,9 @@
 /* Job Details Status Badge */
 .job-title-section {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column; /* mobile-first */
+  align-items: flex-start;
+  gap: var(--space-md);
   margin-bottom: var(--space-px-20);
   flex-wrap: wrap;
 }
@@ -1106,23 +940,9 @@
   color: white;
 }
 
-/* Dispute System Styles */
-.btn-danger {
-  background: var(--color-danger);
-  color: white;
-  border: 1px solid var(--color-danger);
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.btn-danger:hover {
-  background: #d32f2f;
-  border-color: #d32f2f;
-}
+/* Dispute System Styles
+   NOTE: `.btn-danger` is defined in `styles/shared.css`.
+*/
 
 .dispute-section {
   margin-top: 1rem;
@@ -1135,34 +955,14 @@
   padding: 8px 16px;
 }
 
-/* Mobile base styles — these are the default (mobile-first) */
-.job-title-section {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-md);
-}
+/* Mobile base styles — these are the default (mobile-first)
+   NOTE: prefer keeping “mobile base” rules in the primary selector definitions.
+*/
 
-/* filters + card-header mobile-base rules live in their primary definitions above */
-
-.card-footer {
-  flex-direction: column;
-  gap: var(--space-lg);
-  align-items: stretch;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  font-size: 16px; /* Prevents iOS zoom */
-  min-height: 44px;
-}
+./* form-group input sizing handled in `styles/shared.css` */
 
 .checkbox-group {
   min-height: 44px;
-}
-
-.apply-form .form-row {
-  grid-template-columns: 1fr;
 }
 
 @media (min-width: 768px) {
@@ -1188,7 +988,10 @@
 
   .card-footer {
     flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
+    gap: 8px;
   }
 
   .apply-form .form-row {
@@ -1199,8 +1002,8 @@
 /* Freelancer Discovery Styles */
 
 .freelancer-card {
-  background: var(--background-white);
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-px-20);
   transition: all 0.2s ease;
@@ -1214,7 +1017,7 @@
 .freelancer-header {
   display: flex;
   align-items: center;
-  margin-bottom: var(--space-px-15);
+  margin-bottom: 15px;
 }
 
 /* Discovery card stat badges */
@@ -1238,7 +1041,7 @@
 /* Discovery filter helper text and budget range layout */
 .filters .helper-text {
   margin-top: 6px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
@@ -1253,145 +1056,146 @@
 }
 
 .filters .range-sep {
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
-.freelancer-avatar {
+/* Scope discovery card internals to avoid global collisions with other pages */
+.freelancer-card .freelancer-avatar {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  margin-right: var(--space-px-15);
+  margin-right: 15px;
   object-fit: cover;
 }
 
-.freelancer-info h3 {
-  margin: 0 0 var(--space-px-5) 0;
-  color: var(--text-primary);
+.freelancer-card .freelancer-info h3 {
+  margin: 0 0 5px 0;
+  color: var(--color-text-primary);
   font-size: var(--font-size-lg);
 }
 
-.freelancer-rating {
+.freelancer-card .freelancer-rating {
   display: flex;
   align-items: center;
-  gap: var(--space-px-8);
-  margin-bottom: var(--space-px-5);
+  gap: 8px;
+  margin-bottom: 5px;
 }
 
-.rating {
-  color: var(--warning-color);
+.freelancer-card .rating {
+  color: var(--color-warning);
   font-weight: 600;
 }
 
-.reviews {
-  color: var(--text-secondary);
+.freelancer-card .reviews {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
-.freelancer-rate {
-  color: var(--primary-color);
+.freelancer-card .freelancer-rate {
+  color: var(--color-primary);
   font-weight: 600;
   font-size: var(--font-size-lg);
 }
 
-.freelancer-bio {
-  margin-bottom: var(--space-px-15);
+.freelancer-card .freelancer-bio {
+  margin-bottom: 15px;
 }
 
-.freelancer-bio p {
-  color: var(--text-secondary);
+.freelancer-card .freelancer-bio p {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   line-height: 1.5;
   margin: 0;
 }
 
-.freelancer-skills {
+.freelancer-card .freelancer-skills {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-px-8);
-  margin-bottom: var(--space-px-15);
+  gap: 8px;
+  margin-bottom: 15px;
 }
 
-.skill-tag {
-  background: var(--primary-light);
-  color: var(--primary-color);
-  padding: var(--space-px-4) var(--space-px-8);
+.freelancer-card .skill-tag {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
   font-weight: 500;
 }
 
-.skill-more {
-  color: var(--text-secondary);
+.freelancer-card .skill-more {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   font-style: italic;
 }
 
-.freelancer-stats {
+.freelancer-card .freelancer-stats {
   display: flex;
   justify-content: space-between;
-  margin-bottom: var(--space-px-15);
+  margin-bottom: 15px;
   padding: var(--space-px-10) 0;
-  border-top: 1px solid var(--border-light);
-  border-bottom: 1px solid var(--border-light);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.stat {
+.freelancer-card .stat {
   text-align: center;
 }
 
-.stat-value {
+.freelancer-card .stat-value {
   display: block;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   font-size: var(--font-size-base);
 }
 
-.stat-label {
+.freelancer-card .stat-label {
   display: block;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
-  margin-top: var(--space-px-2);
+  margin-top: 2px;
 }
 
-.freelancer-location {
-  color: var(--text-secondary);
+.freelancer-card .freelancer-location {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-  margin-bottom: var(--space-px-15);
+  margin-bottom: 15px;
 }
 
-.freelancer-actions {
+.freelancer-card .freelancer-actions {
   display: flex;
   gap: var(--space-px-10);
 }
 
-.freelancer-actions .btn {
+.freelancer-card .freelancer-actions .btn {
   flex: 1;
   text-align: center;
-  padding: var(--space-px-8) var(--space-px-12);
+  padding: 8px 12px;
   font-size: var(--font-size-sm);
 }
 
-/* Search Suggestions Styles */
+/* Search Suggestions Styles (scoped) */
 .search-suggestions {
   position: relative;
 }
 
-.search-input {
+.search-suggestions .search-input {
   width: 100%;
-  padding: var(--space-px-12);
-  border: 1px solid var(--border-color);
+  padding: 12px;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);
 }
 
-.suggestions-dropdown {
+.search-suggestions .suggestions-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--background-white);
-  border: 1px solid var(--border-color);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   box-shadow: var(--shadow-md);
@@ -1400,8 +1204,8 @@
   overflow-y: auto;
 }
 
-.suggestion-item {
-  padding: var(--space-px-10) var(--space-px-12);
+.search-suggestions .suggestion-item {
+  padding: var(--space-px-10) 12px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -1409,34 +1213,23 @@
   transition: background-color 0.2s ease;
 }
 
-.suggestion-item:hover {
-  background: var(--background-light);
+.search-suggestions .suggestion-item:hover {
+  background: var(--color-bg-muted);
 }
 
-.suggestion-item.loading {
-  color: var(--text-secondary);
+.search-suggestions .suggestion-item.loading {
+  color: var(--color-text-secondary);
   cursor: default;
 }
 
-.suggestion-text {
-  color: var(--text-primary);
+.search-suggestions .suggestion-text {
+  color: var(--color-text-primary);
 }
 
-.suggestion-type {
-  color: var(--text-secondary);
+.search-suggestions .suggestion-type {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   font-weight: 500;
 }
 
-/* Mobile base: touch targets and readability */
-.pagination {
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-sm);
-}
-
-.pagination button {
-  min-height: 44px;
-  min-width: 44px;
-}

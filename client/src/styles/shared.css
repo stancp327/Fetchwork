@@ -375,3 +375,99 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+
+/* ── Additional shared primitives (promoted from UserComponents.css) ── */
+
+/* Outline button variant */
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+/* Tags */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.tag {
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.tag.primary { background: var(--color-primary); color: var(--color-text-inverse); }
+.tag.success { background: var(--color-success); color: var(--color-text-inverse); }
+.tag.warning { background: var(--color-warning); color: var(--color-warning-dark); }
+.tag.danger  { background: var(--color-danger);  color: var(--color-text-inverse); }
+
+.tag-clickable {
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  min-height: 0; /* intentionally compact */
+}
+
+.tag-clickable:hover {
+  background: var(--color-border-medium);
+  color: var(--color-text-darker);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.pagination button {
+  padding: 8px 12px;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.pagination button:hover:not(:disabled) {
+  background: var(--color-bg-muted);
+}
+
+.pagination button.active {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Prevent iOS Safari auto-zoom on small inputs */
+@media (pointer: coarse) {
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
