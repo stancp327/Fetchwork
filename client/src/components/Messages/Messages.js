@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
 import { apiRequest } from '../../utils/api';
@@ -18,6 +18,7 @@ const idEq = (a, b) => String(getEntityId(a)) === String(getEntityId(b));
 const Messages = () => {
   const { user } = useAuth();
   const { search: locationSearch } = useLocation();
+  const navigate = useNavigate();
   const userId = getEntityId(user?._id || user?.id || user?.userId);
   const [conversations, setConversations] = useState([]);
   const [selectedConvo, setSelectedConvo] = useState(null);
@@ -694,8 +695,26 @@ const Messages = () => {
                 {selectedConvo.job && (
                   <Link to={`/disputes`} className="quick-act">⚖️ Dispute</Link>
                 )}
-                <button className="quick-act">💳 Request Payment</button>
-                <button className="quick-act">📅 Schedule</button>
+                <button
+                  type="button"
+                  className="quick-act"
+                  onClick={() => {
+                    if (selectedConvo?.job?._id) return navigate(`/jobs/${selectedConvo.job._id}/progress`);
+                    if (selectedConvo?.job) return navigate(`/jobs/${selectedConvo.job}`);
+                    alert('This conversation is not linked to a job yet.');
+                  }}
+                >💳 Request Payment</button>
+                <button
+                  type="button"
+                  className="quick-act"
+                  onClick={() => {
+                    if (selectedConvo?.service?._id) return navigate(`/bookings/group?serviceId=${selectedConvo.service._id}`);
+                    if (selectedConvo?.service) return navigate(`/bookings/group?serviceId=${selectedConvo.service}`);
+                    if (selectedConvo?.job?._id) return navigate(`/jobs/${selectedConvo.job._id}`);
+                    if (selectedConvo?.job) return navigate(`/jobs/${selectedConvo.job}`);
+                    alert('Nothing to schedule — link this conversation to a service or job first.');
+                  }}
+                >📅 Schedule</button>
                 <button
                   className="quick-act msg-ai-risk-btn"
                   disabled={disputeRiskLoading || messages.length === 0}
