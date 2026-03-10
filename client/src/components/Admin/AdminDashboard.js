@@ -27,6 +27,7 @@ import AdminOrdersTab from './AdminOrdersTab';
 import AdminAISettingsTab from './AdminAISettingsTab';
 import AdminFeedbackTab from './AdminFeedbackTab';
 import AdminWalletsTab from './AdminWalletsTab';
+import AdminSEOTab from './AdminSEOTab';
 import AdminTeamsTab from './AdminTeamsTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
@@ -616,6 +617,12 @@ const AdminDashboard = () => {
           active={activeTab === 'feedback'}
           onClick={setActiveTab}
         />
+        <TabButton
+          id="seo"
+          label="🔍 SEO"
+          active={activeTab === 'seo'}
+          onClick={setActiveTab}
+        />
       </div>
 
       <div className="dashboard-content">
@@ -828,6 +835,12 @@ const AdminDashboard = () => {
         {activeTab === 'feedback' && (
           <TracingErrorBoundary componentName="AdminFeedbackTab">
             <AdminFeedbackTab />
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'seo' && (
+          <TracingErrorBoundary componentName="AdminSEOTab">
+            <AdminSEOTab />
           </TracingErrorBoundary>
         )}
       </div>

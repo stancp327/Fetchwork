@@ -262,8 +262,8 @@ idParamNames.forEach(paramName => {
   });
 });
 
-// ── SEO Routes (before other routes, no auth) ──────────────────
-app.use(require('./routes/seo'));
+// ── SEO Routes ─────────────────────────────────────────────────
+app.use('/api/seo', require('./routes/seo'));
 
 // ── Analytics Middleware ─────────────────────────────────────────
 const { trackPageView } = require('./middleware/analytics');

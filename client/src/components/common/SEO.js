@@ -1,24 +1,37 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useSeo } from '../../context/SeoContext';
 
 const SITE_NAME = 'Fetchwork';
 const DEFAULT_DESC = 'Find local freelancers and jobs near you. Fetchwork connects skilled professionals with clients for both remote and local projects.';
 const SITE_URL = 'https://fetchwork.net';
 
 const SEO = ({
-  title,
-  description = DEFAULT_DESC,
-  keywords,
+  title: propTitle,
+  description: propDescription = DEFAULT_DESC,
+  keywords: propKeywords,
   path = '',
   type = 'website',
-  image,
-  noIndex = false,
+  image: propImage,
+  noIndex: propNoIndex = false,
   jsonLd,
-  structuredData // backward compat
+  structuredData, // backward compat
 }) => {
+  const { pages, globalEnabled } = useSeo();
+
+  // Dynamic override from admin (if global SEO is on and page has an entry)
+  const override = globalEnabled ? pages[path] : null;
+  const pageEnabled = override ? override.enabled !== false : true;
+
+  // Merge: admin values take priority over component props
+  const title       = (pageEnabled && override?.title)       || propTitle;
+  const description = (pageEnabled && override?.description) || propDescription;
+  const keywords    = (pageEnabled && override?.keywords)    || propKeywords;
+  const ogImage     = (pageEnabled && override?.ogImage)     || propImage || `${SITE_URL}/og-default.png`;
+  const noIndex     = propNoIndex || (pageEnabled && override?.noIndex) || !globalEnabled;
+
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — Find Local Freelancers & Jobs`;
   const url = `${SITE_URL}${path}`;
-  const ogImage = image || `${SITE_URL}/og-default.png`;
   const sd = jsonLd || structuredData;
 
   return (

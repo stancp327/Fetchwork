@@ -8,6 +8,7 @@ import { setupGlobalErrorHandlers } from './utils/errorReporter';
 import { RoleProvider } from './context/RoleContext';
 import { QueryProvider } from './context/QueryProvider';
 import { MessagingProvider } from './context/MessagingContext';
+import { SeoProvider } from './context/SeoContext';
 import { ToastProvider } from './components/common/Toast';
 import usePageTracker from './hooks/usePageTracker';
 // Shell components — always rendered, must stay in main bundle
@@ -400,6 +401,7 @@ function App() {
   return (
     <QueryProvider>
     <HelmetProvider>
+      <SeoProvider>
       <AppErrorBoundary>
         <AuthErrorBoundary>
           <AuthProvider>
@@ -415,6 +417,7 @@ function App() {
           </AuthProvider>
         </AuthErrorBoundary>
       </AppErrorBoundary>
+      </SeoProvider>
     </HelmetProvider>
     </QueryProvider>
   );

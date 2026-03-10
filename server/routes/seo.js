@@ -1,115 +1,94 @@
 const express = require('express');
 const router = express.Router();
-const Job = require('../models/Job');
-const User = require('../models/User');
-const Service = require('../models/Service');
+const SeoPage = require('../models/SeoPage');
+const { authenticateToken, authenticateAdmin } = require('../middleware/auth');
 
-const SITE_URL = process.env.CLIENT_URL || 'https://fetchwork.net';
-
-// robots.txt — server-side version (takes precedence over static public/robots.txt in prod)
-router.get('/robots.txt', (req, res) => {
-  res.type('text/plain').send(`User-agent: *
-Allow: /
-Allow: /jobs
-Allow: /services
-Allow: /freelancers
-Allow: /categories
-Allow: /pricing
-
-Disallow: /dashboard
-Disallow: /messages
-Disallow: /projects
-Disallow: /profile
-Disallow: /settings
-Disallow: /admin
-Disallow: /billing
-Disallow: /wallet
-Disallow: /payments
-Disallow: /disputes
-Disallow: /bookings
-Disallow: /post-job
-Disallow: /offers
-Disallow: /availability
-Disallow: /calendar-connect
-Disallow: /api/
-
-Sitemap: ${SITE_URL}/sitemap.xml
-`);
-});
-
-const CATEGORIES = [
-  'web-development', 'mobile-development', 'design', 'writing',
-  'marketing', 'video-editing', 'photography', 'music',
-  'business', 'finance', 'legal', 'engineering',
-  'home-services', 'cleaning', 'moving', 'tutoring', 'fitness',
+// Default pages seeded if none exist
+const DEFAULT_PAGES = [
+  { path: '/',            label: 'Home',                title: 'Fetchwork — Find Local Freelancers & Jobs', description: 'Find local freelancers and jobs near you. Fetchwork connects skilled professionals with clients for both remote and local projects.' },
+  { path: '/jobs',        label: 'Browse Jobs',         title: 'Browse Freelance Jobs | Fetchwork',          description: 'Find your next freelance project on Fetchwork. Browse hundreds of local and remote jobs.' },
+  { path: '/services',    label: 'Browse Services',     title: 'Browse Services | Fetchwork',                description: 'Find ready-made freelance services. Hire skilled professionals for any task.' },
+  { path: '/freelancers', label: 'Discover Freelancers',title: 'Discover Freelancers | Fetchwork',           description: 'Find skilled freelancers for your project. Browse profiles, ratings, and reviews.' },
+  { path: '/search',      label: 'Search',              title: 'Search | Fetchwork',                         description: 'Search jobs, services, and freelancers on Fetchwork.' },
+  { path: '/contact',     label: 'Contact Us',          title: 'Contact Us | Fetchwork',                     description: 'Get in touch with the Fetchwork team.' },
+  { path: '/support',     label: 'Support',             title: 'Support | Fetchwork',                        description: 'Get help with your Fetchwork account.' },
+  { path: '/agencies',    label: 'Agency Directory',    title: 'Agency Directory | Fetchwork',               description: 'Browse professional agencies and teams on Fetchwork.' },
 ];
 
-// sitemap.xml
-router.get('/sitemap.xml', async (req, res) => {
+// ── Public: GET /api/seo/pages — returns all enabled pages + global flag
+router.get('/pages', async (req, res) => {
   try {
-    res.set('Cache-Control', 'public, max-age=3600');
-    const now = new Date().toISOString();
+    const pages = await SeoPage.find({}).lean();
 
-    // Static pages
-    const staticPages = [
-      { url: '/',            priority: '1.0', changefreq: 'daily'   },
-      { url: '/jobs',        priority: '0.9', changefreq: 'hourly'  },
-      { url: '/services',    priority: '0.9', changefreq: 'hourly'  },
-      { url: '/freelancers', priority: '0.8', changefreq: 'daily'   },
-      { url: '/pricing',     priority: '0.7', changefreq: 'monthly' },
-      { url: '/register',    priority: '0.6', changefreq: 'monthly' },
-    ];
-
-    // Category pages
-    CATEGORIES.forEach(slug => {
-      staticPages.push({ url: `/categories/${slug}`, priority: '0.6', changefreq: 'weekly' });
-    });
-
-    // Active jobs (open, not archived)
-    const jobs = await Job.find({
-      status: 'open', isActive: true, isArchived: { $ne: true }
-    }).select('_id updatedAt').sort({ updatedAt: -1 }).limit(1000);
-
-    // Active freelancers with public profiles
-    const freelancers = await User.find({
-      accountType: { $in: ['freelancer', 'both'] },
-      isActive: true,
-      isSuspended: { $ne: true },
-    }).select('_id updatedAt').sort({ updatedAt: -1 }).limit(1000);
-
-    // Active services (not archived)
-    const services = await Service.find({
-      isActive: true, isArchived: { $ne: true }
-    }).select('_id updatedAt').sort({ updatedAt: -1 }).limit(1000);
-
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-
-    // Static
-    for (const p of staticPages) {
-      xml += `  <url><loc>${SITE_URL}${p.url}</loc><lastmod>${now}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>\n`;
+    // Auto-seed defaults if DB is empty
+    if (pages.length === 0) {
+      const toInsert = [
+        { path: '__global__', label: 'Global Toggle', noIndex: false, enabled: true },
+        ...DEFAULT_PAGES,
+      ];
+      await SeoPage.insertMany(toInsert, { ordered: false }).catch(() => {});
+      const seeded = await SeoPage.find({}).lean();
+      return res.json({ pages: seeded });
     }
 
-    // Jobs
-    for (const j of jobs) {
-      xml += `  <url><loc>${SITE_URL}/jobs/${j._id}</loc><lastmod>${j.updatedAt?.toISOString() || now}</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>\n`;
+    res.json({ pages });
+  } catch (err) {
+    console.error('[seo:pages]', err.message);
+    res.status(500).json({ error: 'Failed to load SEO pages' });
+  }
+});
+
+// ── Admin: GET /api/seo/admin/pages — same but always returns all
+router.get('/admin/pages', authenticateAdmin, async (req, res) => {
+  try {
+    let pages = await SeoPage.find({}).lean();
+
+    if (pages.length === 0) {
+      const toInsert = [
+        { path: '__global__', label: 'Global Toggle', noIndex: false, enabled: true },
+        ...DEFAULT_PAGES,
+      ];
+      await SeoPage.insertMany(toInsert, { ordered: false }).catch(() => {});
+      pages = await SeoPage.find({}).lean();
     }
 
-    // Freelancers
-    for (const f of freelancers) {
-      xml += `  <url><loc>${SITE_URL}/freelancers/${f._id}</loc><lastmod>${f.updatedAt?.toISOString() || now}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>\n`;
-    }
+    res.json({ pages });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load SEO pages' });
+  }
+});
 
-    // Services
-    for (const s of services) {
-      xml += `  <url><loc>${SITE_URL}/services/${s._id}</loc><lastmod>${s.updatedAt?.toISOString() || now}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>\n`;
-    }
+// ── Admin: PUT /api/seo/admin/pages/:path — upsert a page's SEO
+router.put('/admin/pages/:pagePath(*)', authenticateAdmin, async (req, res) => {
+  try {
+    const path = decodeURIComponent(req.params.pagePath);
+    const { title, description, keywords, ogImage, noIndex, enabled, label } = req.body;
 
-    xml += '</urlset>';
-    res.type('application/xml').send(xml);
-  } catch (error) {
-    console.error('Sitemap error:', error);
-    res.status(500).type('text/plain').send('Error generating sitemap');
+    const updated = await SeoPage.findOneAndUpdate(
+      { path },
+      { $set: { title, description, keywords, ogImage, noIndex, enabled, ...(label ? { label } : {}) } },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    res.json({ page: updated });
+  } catch (err) {
+    console.error('[seo:put]', err.message);
+    res.status(500).json({ error: 'Failed to update SEO page' });
+  }
+});
+
+// ── Admin: POST /api/seo/admin/global-toggle — flip global enabled flag
+router.post('/admin/global-toggle', authenticateAdmin, async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    const updated = await SeoPage.findOneAndUpdate(
+      { path: '__global__' },
+      { $set: { enabled } },
+      { upsert: true, new: true }
+    );
+    res.json({ enabled: updated.enabled });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to toggle SEO' });
   }
 });
 
