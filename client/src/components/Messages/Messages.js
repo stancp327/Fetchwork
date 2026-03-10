@@ -5,6 +5,7 @@ import { useSocket } from '../../socket/useSocket';
 import { apiRequest } from '../../utils/api';
 import OnlineStatus, { formatLastSeen } from '../common/OnlineStatus';
 import CustomOfferModal from '../Offers/CustomOfferModal';
+import '../Offers/CustomOffer.css'; // reuse modal base styles for Schedule modal
 import './Messages.css';
 import SEO from '../common/SEO';
 
@@ -14,6 +15,17 @@ import SafetyNudge from './parts/SafetyNudge';
 // ── Main Messages ───────────────────────────────────────────────
 const getEntityId = (v) => (v && typeof v === 'object' ? (v._id || v.id || v.userId || v.toString?.()) : v);
 const idEq = (a, b) => String(getEntityId(a)) === String(getEntityId(b));
+
+const pad2 = (n) => String(n).padStart(2, '0');
+const nextQuarterLocal = () => {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  const mins = d.getMinutes();
+  const next = Math.ceil(mins / 15) * 15;
+  d.setMinutes(next);
+  if (d <= new Date()) d.setMinutes(d.getMinutes() + 15);
+  return d;
+};
 
 const Messages = () => {
   const { user } = useAuth();
@@ -40,6 +52,16 @@ const Messages = () => {
   const [deliveryStatus, setDeliveryStatus] = useState(new Map());
   const [showContext, setShowContext] = useState(false);
   const [mobileView, setMobileView] = useState('inbox');
+
+  // Scheduling (SQL appointments)
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleType, setScheduleType] = useState('consultation');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [scheduleDuration, setScheduleDuration] = useState(30);
+  const [scheduleNotes, setScheduleNotes] = useState('');
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleError, setScheduleError] = useState('');
   const [onlineUsers, setOnlineUsers] = useState({}); // userId → { isOnline, lastSeen }
   const [translations, setTranslations] = useState({}); // msgId → { translated, detectedLanguage, targetLanguage }
   const [translatingId, setTranslatingId] = useState(null); // msgId currently translating
@@ -390,6 +412,30 @@ const Messages = () => {
     }
   }, [locationSearch, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Init schedule modal defaults when opened
+  useEffect(() => {
+    if (!showScheduleModal) return;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const d = nextQuarterLocal();
+    const isoDate = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    const isoTime = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+    setScheduleError('');
+    setScheduleSaving(false);
+    setScheduleDate(prev => prev || isoDate);
+    setScheduleTime(prev => prev || isoTime);
+    setScheduleDuration(prev => prev || 30);
+    setScheduleNotes('');
+
+    if (selectedConvo?.service) setScheduleType('service');
+    else if (selectedConvo?.job) setScheduleType('job');
+    else setScheduleType('consultation');
+
+    // store tz in notes line if needed later; server stores timezone separately in payload
+    setScheduleNotes('');
+    // eslint-disable-next-line
+  }, [showScheduleModal]);
+
   const translateLanguages = [
     { code: 'es', label: 'Spanish' }, { code: 'fr', label: 'French' },
     { code: 'de', label: 'German' }, { code: 'zh', label: 'Chinese' },
@@ -707,13 +753,7 @@ const Messages = () => {
                 <button
                   type="button"
                   className="quick-act"
-                  onClick={() => {
-                    if (selectedConvo?.service?._id) return navigate(`/bookings/group?serviceId=${selectedConvo.service._id}`);
-                    if (selectedConvo?.service) return navigate(`/bookings/group?serviceId=${selectedConvo.service}`);
-                    if (selectedConvo?.job?._id) return navigate(`/jobs/${selectedConvo.job._id}`);
-                    if (selectedConvo?.job) return navigate(`/jobs/${selectedConvo.job}`);
-                    alert('Nothing to schedule — link this conversation to a service or job first.');
-                  }}
+                  onClick={() => setShowScheduleModal(true)}
                 >📅 Schedule</button>
                 <button
                   className="quick-act msg-ai-risk-btn"
@@ -738,6 +778,124 @@ const Messages = () => {
                   {disputeRiskLoading ? '🛡️ Checking…' : '🛡️ Risk Check'}
                 </button>
               </div>
+
+              {/* Schedule Modal */}
+              {showScheduleModal && (
+                <div className="offer-modal-overlay" onClick={() => !scheduleSaving && setShowScheduleModal(false)}>
+                  <div className="offer-modal" onClick={e => e.stopPropagation()}>
+                    <div className="offer-modal-header">
+                      <h2>📅 Schedule</h2>
+                      <button className="offer-modal-close" onClick={() => setShowScheduleModal(false)} disabled={scheduleSaving}>✕</button>
+                    </div>
+
+                    {scheduleError && (
+                      <div className="offer-error" style={{ marginBottom: '12px' }}>{scheduleError}</div>
+                    )}
+
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!selectedConvo?._id) return;
+
+                        setScheduleSaving(true);
+                        setScheduleError('');
+                        try {
+                          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+                          const startLocal = new Date(`${scheduleDate}T${scheduleTime}:00`);
+                          if (Number.isNaN(startLocal.getTime())) throw new Error('Invalid date/time');
+
+                          const payload = {
+                            conversationId: selectedConvo._id,
+                            appointmentType: scheduleType,
+                            startAtUtc: startLocal.toISOString(),
+                            durationMinutes: Number(scheduleDuration),
+                            timezone: tz,
+                            notes: scheduleNotes,
+                            jobId: selectedConvo?.job?._id || selectedConvo?.job || undefined,
+                            serviceId: selectedConvo?.service?._id || selectedConvo?.service || undefined,
+                          };
+
+                          const resp = await apiRequest('/api/appointments', {
+                            method: 'POST',
+                            body: JSON.stringify(payload),
+                          });
+
+                          const appt = resp.appointment;
+                          const startStr = new Date(appt.startAtUtc).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                          const mins = Math.round((new Date(appt.endAtUtc).getTime() - new Date(appt.startAtUtc).getTime()) / 60000);
+
+                          await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              content: `📅 Appointment proposed: ${startStr} (${mins} min) — ${appt.appointmentType}${scheduleNotes ? `\nNotes: ${scheduleNotes}` : ''}`
+                            })
+                          });
+
+                          setShowScheduleModal(false);
+                          fetchConversations();
+                          if (selectedConvo?._id) fetchMessages(selectedConvo);
+                        } catch (err) {
+                          setScheduleError(err?.message || 'Failed to schedule');
+                        } finally {
+                          setScheduleSaving(false);
+                        }
+                      }}
+                      className="offer-form"
+                    >
+                      <div className="offer-form-row">
+                        <div className="offer-field">
+                          <label>Type *</label>
+                          <select value={scheduleType} onChange={e => setScheduleType(e.target.value)} disabled={scheduleSaving}>
+                            <option value="service">Service session</option>
+                            <option value="job">Job-related session</option>
+                            <option value="phone">Phone call</option>
+                            <option value="video">Video call</option>
+                            <option value="consultation">General consultation</option>
+                          </select>
+                        </div>
+                        <div className="offer-field">
+                          <label>Date *</label>
+                          <input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} required disabled={scheduleSaving} />
+                        </div>
+                      </div>
+
+                      <div className="offer-form-row">
+                        <div className="offer-field">
+                          <label>Time *</label>
+                          <input type="time" step="900" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} required disabled={scheduleSaving} />
+                          <small style={{ color: 'var(--color-text-muted)' }}>15-min increments</small>
+                        </div>
+                        <div className="offer-field">
+                          <label>Duration *</label>
+                          <select value={scheduleDuration} onChange={e => setScheduleDuration(Number(e.target.value))} disabled={scheduleSaving}>
+                            {Array.from({ length: 16 }, (_, i) => (i + 1) * 15).map(m => (
+                              <option key={m} value={m}>{m} min</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="offer-field" style={{ marginTop: '8px' }}>
+                        <label>Notes</label>
+                        <textarea
+                          rows={3}
+                          value={scheduleNotes}
+                          onChange={e => setScheduleNotes(e.target.value)}
+                          placeholder="Optional notes (address, agenda, call link, etc.)"
+                          disabled={scheduleSaving}
+                        />
+                      </div>
+
+                      <div className="offer-actions">
+                        <button type="button" className="offer-btn-secondary" onClick={() => setShowScheduleModal(false)} disabled={scheduleSaving}>Cancel</button>
+                        <button type="submit" className="offer-btn-primary" disabled={scheduleSaving || !scheduleDate || !scheduleTime}>
+                          {scheduleSaving ? 'Proposing…' : 'Propose'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="chat-placeholder">
