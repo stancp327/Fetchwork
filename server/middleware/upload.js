@@ -4,7 +4,8 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const path = require('path');
 const fs = require('fs');
 
-if (process.env.CLOUDINARY_URL) {
+// Configure Cloudinary using individual vars (CLOUDINARY_URL not required)
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
   cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -70,7 +71,7 @@ const localStorage = multer.diskStorage({
 });
 
 const uploadProfilePicture = multer({
-  storage: process.env.CLOUDINARY_URL ? cloudinaryStorage : localStorage,
+  storage: (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) ? cloudinaryStorage : localStorage,
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }
 }).single('profilePicture');
@@ -94,7 +95,7 @@ const uploadDisputeEvidence = multer({
 }).array('evidence', 3);
 
 const uploadVerificationDocs = multer({
-  storage: process.env.CLOUDINARY_URL ? verifyStorage : localStorage,
+  storage: (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) ? verifyStorage : localStorage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }
 }).fields([
@@ -141,3 +142,4 @@ module.exports = {
   uploadMessageAttachments,
   uploadContractDoc
 };
+

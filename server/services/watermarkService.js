@@ -6,7 +6,7 @@ const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 const WATERMARKED_DIR = path.join(UPLOADS_DIR, 'watermarked');
 const ORIGINALS_DIR = path.join(UPLOADS_DIR, 'originals');
 
-const USE_CLOUDINARY = !!process.env.CLOUDINARY_URL;
+const USE_CLOUDINARY = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 
 // Ensure local directories exist (used when Cloudinary not configured)
 [WATERMARKED_DIR, ORIGINALS_DIR].forEach(dir => {
