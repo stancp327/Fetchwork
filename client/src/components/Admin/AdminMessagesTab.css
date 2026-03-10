@@ -1,0 +1,116 @@
+.admin-messages-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+@media (min-width: 480px) {
+  .admin-messages-filters {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.admin-messages-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 420px;
+}
+
+@media (min-width: 768px) {
+  .admin-messages-layout {
+    flex-direction: row;
+    gap: 16px;
+  }
+}
+
+.admin-messages-sidebar {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .admin-messages-sidebar {
+    flex: 0 0 320px;
+  }
+}
+
+.admin-messages-sidebar-inner {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+@media (min-width: 768px) {
+  .admin-messages-sidebar-inner {
+    max-height: 600px;
+  }
+}
+
+.admin-messages-thread {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.admin-messages-thread-inner {
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+@media (min-width: 768px) {
+  .admin-messages-thread-inner {
+    max-height: 600px;
+    padding: 16px;
+  }
+}
+
+.admin-convo-card {
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-convo-card.is-selected {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.admin-message-card {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-message-card.is-moderated {
+  background: #fef2f2;
+}
+
+.admin-message-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+@media (min-width: 480px) {
+  .admin-message-meta {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
