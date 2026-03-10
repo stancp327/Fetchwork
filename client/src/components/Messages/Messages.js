@@ -40,7 +40,7 @@ const Highlight = ({ text = '', query = '' }) => {
   const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
   return parts.map((p, i) =>
     new RegExp(`^${escaped}$`, 'i').test(p)
-      ? <mark key={i} style={{ background: 'var(--color-warning-light, #fef08a)', borderRadius: 2, padding: '0 1px' }}>{p}</mark>
+      ? <mark key={i} className="search-highlight">{p}</mark>
       : p
   );
 };
@@ -63,7 +63,8 @@ const Messages = () => {
   const navigate = useNavigate();
   const userId = getEntityId(user?._id || user?.id || user?.userId);
   const [userFeatures, setUserFeatures] = useState([]);
-  const canCall = userFeatures.includes('audio_calls') || userFeatures.includes('video_calls');
+  const [featuresLoaded, setFeaturesLoaded] = useState(false);
+  const canCall = !featuresLoaded || userFeatures.includes('audio_calls') || userFeatures.includes('video_calls');
   const [conversations, setConversations] = useState([]);
   const [selectedConvo, setSelectedConvo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -385,8 +386,8 @@ const Messages = () => {
   // Fetch user feature flags once on mount
   useEffect(() => {
     apiRequest('/api/auth/me/features')
-      .then(data => setUserFeatures(data.features || []))
-      .catch(() => {});
+      .then(data => { setUserFeatures(data.features || []); setFeaturesLoaded(true); })
+      .catch(() => setFeaturesLoaded(true));
   }, []);
 
   // Fetch other participant's profile when Details panel opens

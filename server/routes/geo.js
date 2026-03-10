@@ -92,4 +92,16 @@ router.get('/zip/:zip', async (req, res) => {
   }
 });
 
+// GET /api/geo/gravatar-img?email=...&size=80 — proxy that redirects to Gravatar with correct MD5
+router.get('/gravatar-img', (req, res) => {
+  const email = (req.query.email || '').trim().toLowerCase();
+  const size = parseInt(req.query.size, 10) || 80;
+  if (!email) return res.status(400).json({ error: 'email required' });
+
+  const crypto = require('crypto');
+  const hash = crypto.createHash('md5').update(email).digest('hex');
+  // 302 redirect to Gravatar — cached by the browser
+  res.redirect(302, `https://www.gravatar.com/avatar/${hash}?s=${size}&d=404`);
+});
+
 module.exports = router;

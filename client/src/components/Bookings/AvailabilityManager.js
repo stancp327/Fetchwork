@@ -72,6 +72,7 @@ const AvailabilityManager = () => {
       } else {
         setHasGlobal(true);
         setResolvedInfo(a);
+        setBlockedHolidays(data.blockedDates || []);
         setTimezone(a.timezone || 'America/Los_Angeles');
         setSlotDuration(a.slotDuration || 60);
         setBufferTime(a.bufferTime || 0);

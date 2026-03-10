@@ -11,6 +11,7 @@ import BrowseLayout, {
 } from '../common/BrowseLayout';
 import SaveButton from '../common/SaveButton';
 import { useUserLocation } from '../../hooks/useUserLocation';
+import { useZipLookup } from '../../hooks/useZipLookup';
 import QuickApply from './QuickApply';
 import SaveSearchModal from '../JobAlerts/SaveSearchModal';
 import { useAuth } from '../../context/AuthContext';
@@ -138,6 +139,7 @@ const BrowseJobs = () => {
   const [viewMode, setViewMode] = useState('list');
   const locationApplied = useRef(false);
   const userLocation = useUserLocation();
+  const zipLookup = useZipLookup(filters.near);
   const [showSaveSearch, setShowSaveSearch] = useState(false);
 
   const fetchJobs = useCallback(async () => {
@@ -227,6 +229,42 @@ const BrowseJobs = () => {
         sidebar={sidebar}
       >
         <SearchBar value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search jobs, skills, or keywords..." />
+
+        {/* ── Local / Remote / All toggle ── */}
+        <div className="service-location-bar">
+          {[
+            { value: 'all',    label: '🌐 All' },
+            { value: 'local',  label: '📍 Local' },
+            { value: 'remote', label: '💻 Remote' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              className={`service-loc-pill${filters.workLocation === opt.value ? ' active' : ''}`}
+              onClick={() => updateFilter('workLocation', opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {filters.workLocation === 'local' && (
+            <div className="service-zip-bar">
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className={`service-zip-input${zipLookup.error ? ' zip-error' : zipLookup.result ? ' zip-ok' : ''}`}
+                  placeholder="Zip or city (e.g. 94520)"
+                  value={filters.near}
+                  onChange={e => updateFilter('near', e.target.value)}
+                  maxLength={10}
+                />
+                {zipLookup.result && <span className="zip-city-hint">📍 {zipLookup.result.city}, {zipLookup.result.state}</span>}
+                {zipLookup.error && <span className="zip-city-hint zip-city-hint--error">✕ {zipLookup.error}</span>}
+              </div>
+              <select className="service-radius-select" value={filters.radius} onChange={e => updateFilter('radius', e.target.value)}>
+                {[5, 10, 25, 50, 100].map(r => <option key={r} value={String(r)}>{r} mi</option>)}
+              </select>
+            </div>
+          )}
+        </div>
 
         <ResultsControls
           total={pagination.total || 0}

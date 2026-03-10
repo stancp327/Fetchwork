@@ -39,8 +39,10 @@ async function buildServiceFilters(query) {
     const radius = parseInt(query.radius, 10) || 25;
     const coords = await geocode(query.near.trim());
     if (coords) {
-      // Use $geoWithin (not $nearSphere) so we can still apply other sorts
-      filters['location.coordinates'] = geoWithinQuery(coords, radius);
+      // $centerSphere needs the raw [lng, lat] array field, not the GeoJSON object.
+      // Schema: location.coordinates = { type, coordinates: [lng, lat] }
+      // So the raw array lives at 'location.coordinates.coordinates'
+      filters['location.coordinates.coordinates'] = geoWithinQuery(coords, radius);
       // Auto-restrict to local/hybrid unless caller explicitly requested remote
       if (!filters['location.locationType']) {
         filters['location.locationType'] = { $in: ['local', 'hybrid'] };

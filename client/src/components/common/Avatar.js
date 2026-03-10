@@ -12,19 +12,17 @@
  */
 import React, { useState } from 'react';
 
-function md5(str) {
-  // Lightweight MD5 for Gravatar — uses SubtleCrypto async would be ideal,
-  // but Gravatar accepts any hex string, so we use a simple djb2-to-hex fallback
-  // that produces a consistent hash per email (good enough for Gravatar lookup).
-  // For real MD5 we'd need a library; instead use the email directly via a
-  // URL-safe hash approach supported by newer Gravatar API.
-  return str.trim().toLowerCase();
-}
-
+// Gravatar requires MD5 of the lowercase email.
+// We compute it via a server-side proxy to avoid shipping a crypto library to the client.
+// /api/geo/gravatar-hash?email=... returns { hash } — lightweight, cached at edge.
+// Fallback: skip Gravatar if email unavailable.
 function gravatarUrl(email, size = 80) {
-  // Gravatar supports ?d=404 to return 404 if no account (so we can try next fallback)
-  const hash = encodeURIComponent(md5(email || ''));
-  return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=404`;
+  if (!email) return null;
+  // Use the new /api/geo/gravatar-hash endpoint (returns MD5)
+  // We pass the email; the server returns the correct MD5 hash as a redirect URL
+  // For simplicity we use the server as a proxy to avoid client-side MD5 deps
+  const encoded = encodeURIComponent(email.trim().toLowerCase());
+  return `/api/geo/gravatar-img?email=${encoded}&size=${size}`;
 }
 
 function dicebearUrl(seed, size = 80) {

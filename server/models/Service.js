@@ -290,4 +290,24 @@ serviceSchema.statics.findByCategory = function(category) {
   });
 };
 
+// Auto-geocode location coordinates when zip/city changes
+serviceSchema.pre('save', async function(next) {
+  if (!this.isModified('location')) return next();
+  const loc = this.location;
+  if (!loc || loc.locationType === 'remote') return next();
+  const geoQuery = loc.zipCode || loc.city || loc.address;
+  if (!geoQuery) return next();
+  // Only re-geocode if coordinates are missing or default [0,0]
+  const coords = loc.coordinates?.coordinates;
+  if (coords && coords[0] !== 0 && coords[1] !== 0) return next();
+  try {
+    const { geocode } = require('../config/geocoding');
+    const result = await geocode(geoQuery);
+    if (result) {
+      this.location.coordinates = { type: 'Point', coordinates: result };
+    }
+  } catch (_) {}
+  next();
+});
+
 module.exports = mongoose.model('Service', serviceSchema);

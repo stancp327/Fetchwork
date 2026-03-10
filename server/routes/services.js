@@ -223,7 +223,7 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       gallery: gallery || [],
       faqs: faqs || [],
       requirements,
-      location: await enrichLocation(location),
+      location: location || { locationType: 'remote' },
       freelancer: req.user._id,
       status: 'active',
       serviceType:  serviceType || 'one_time',

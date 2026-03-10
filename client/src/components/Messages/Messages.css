@@ -960,3 +960,10 @@
   color: var(--color-text-muted, #6b7280);
   font-style: italic;
 }
+
+/* -- Search highlight -------------------------------------------- */
+.search-highlight {
+  background: var(--color-warning-light, #fef08a);
+  border-radius: 2px;
+  padding: 0 1px;
+}

@@ -8,6 +8,7 @@
  *   <ServiceAreaMap lat={37.9} lon={-122.0} radius={25} mode="at_client" address="Concord, CA" />
  */
 import React, { useEffect, useRef } from 'react';
+import 'leaflet/dist/leaflet.css';
 import './ServiceAreaMap.css';
 
 // Leaflet must be imported lazily to avoid SSR issues
@@ -25,7 +26,6 @@ const ServiceAreaMap = ({ lat, lon, radius = 25, mode = 'at_client', address = '
     let cleanup = () => {};
 
     import('leaflet').then(leaflet => {
-      import('leaflet/dist/leaflet.css').then(() => {
         L = leaflet.default;
 
         // Fix default marker icons (Webpack asset path issue)
@@ -67,7 +67,6 @@ const ServiceAreaMap = ({ lat, lon, radius = 25, mode = 'at_client', address = '
         }
 
         cleanup = () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
-      });
     });
 
     return () => cleanup();

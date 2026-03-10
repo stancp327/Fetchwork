@@ -170,6 +170,7 @@ router.put('/service/:serviceId', authenticateToken, async (req, res) => {
     const {
       timezone, slotDuration, bufferTime, capacity,
       minNoticeHours, maxAdvanceBookingDays, weeklySchedule, isActive,
+      blockedDates,  // array of 'YYYY-MM-DD' strings to mark as unavailable
     } = req.body;
 
     const override = await prisma.serviceAvailabilityOverride.upsert({
@@ -203,6 +204,22 @@ router.put('/service/:serviceId', authenticateToken, async (req, res) => {
       },
     });
 
+    // Persist blocked holiday dates as AvailabilityDateOverride rows
+    if (Array.isArray(blockedDates) && blockedDates.length > 0) {
+      const validDates = blockedDates.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+      await Promise.all(validDates.map(date =>
+        prisma.availabilityDateOverride.upsert({
+          where: { freelancerAvailId_serviceId_date: { freelancerAvailId: global.id, serviceId, date } },
+          create: { freelancerAvailId: global.id, serviceId, date, unavailable: true, reason: 'Holiday' },
+          update: { unavailable: true, reason: 'Holiday' },
+        })
+      ));
+      // Remove any previously blocked dates not in the current list
+      await prisma.availabilityDateOverride.deleteMany({
+        where: { freelancerAvailId: global.id, serviceId, reason: 'Holiday', date: { notIn: validDates } },
+      });
+    }
+
     res.json({ message: 'Service availability override saved', override });
   } catch (err) {
     console.error('[availability] service override PUT error:', err);
@@ -227,7 +244,19 @@ router.get('/service/:serviceId', authenticateToken, async (req, res) => {
       serviceId,
     });
 
-    if (!resolved) return res.json({ availability: null, serviceLocation: svc.serviceLocation || null });
+    if (!resolved) return res.json({ availability: null, serviceLocation: svc.serviceLocation || null, blockedDates: [] });
+
+    // Fetch blocked holiday dates
+    const prisma = getPrisma();
+    const globalAvail = await prisma.freelancerAvailability.findUnique({ where: { freelancerId: svc.freelancer.toString() }, select: { id: true } });
+    let blockedDates = [];
+    if (globalAvail) {
+      const overrides = await prisma.availabilityDateOverride.findMany({
+        where: { freelancerAvailId: globalAvail.id, serviceId, reason: 'Holiday', unavailable: true },
+        select: { date: true },
+      });
+      blockedDates = overrides.map(o => o.date);
+    }
 
     res.json({
       availability: {
@@ -242,6 +271,7 @@ router.get('/service/:serviceId', authenticateToken, async (req, res) => {
         isOverride:            !!resolved._overrideId,
       },
       serviceLocation: svc.serviceLocation || null,
+      blockedDates,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
