@@ -217,7 +217,8 @@
 
 .search-bar {
   flex: 1;
-  min-width: 250px;
+  width: 100%;
+  min-width: 0;
 }
 
 .search-bar input {
@@ -896,9 +897,17 @@
 @media (min-width: 768px) {
   .content-grid { display: grid; grid-template-columns: 2fr 1fr; }
   .service-content-grid { display: grid; grid-template-columns: 2fr 1fr; }
-  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-  .services-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-  .freelancer-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+  /* Use explicit fr tracks (minmax(0,1fr)) to prevent content-min overflow */
+  .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .freelancer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .services-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .freelancer-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .checkbox-group {
