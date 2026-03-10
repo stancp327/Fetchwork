@@ -1837,12 +1837,67 @@ router.put('/boosts/:type/:id/cancel', authenticateAdmin, requirePermission('job
 
 const Booking = require('../models/Booking');
 
-// GET /admin/bookings — list all bookings
+// GET /admin/bookings — list all bookings (Mongo legacy OR SQL current)
 router.get('/bookings', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
   try {
     const { status, page = 1, limit = 50 } = req.query;
+
+    const BOOKING_SQL_ENABLED = process.env.BOOKING_SQL_ENABLED === 'true';
+
+    // Prefer SQL bookings when enabled (Mongo booking path was removed).
+    if (BOOKING_SQL_ENABLED && process.env.DATABASE_URL) {
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+      const User = require('../models/User');
+      const Service = require('../models/Service');
+
+      const where = status ? { currentState: status } : {};
+      const skip = (Number(page) - 1) * Number(limit);
+
+      const [rows, total] = await Promise.all([
+        prisma.booking.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: Number(limit),
+        }),
+        prisma.booking.count({ where }),
+      ]);
+
+      // Hydrate Mongo-linked entities for admin display
+      const clientIds = [...new Set(rows.map(r => r.clientId).filter(Boolean))];
+      const freelancerIds = [...new Set(rows.map(r => r.freelancerId).filter(Boolean))];
+      const serviceIds = [...new Set(rows.map(r => r.policySnapshotJson?.serviceId).filter(Boolean))];
+
+      const [clients, freelancers, services] = await Promise.all([
+        User.find({ _id: { $in: clientIds } }).select('firstName lastName email').lean(),
+        User.find({ _id: { $in: freelancerIds } }).select('firstName lastName email').lean(),
+        Service.find({ _id: { $in: serviceIds } }).select('title').lean(),
+      ]);
+
+      const clientMap = new Map(clients.map(u => [u._id.toString(), u]));
+      const freelancerMap = new Map(freelancers.map(u => [u._id.toString(), u]));
+      const serviceMap = new Map(services.map(s => [s._id.toString(), s]));
+
+      const bookings = rows.map(r => ({
+        _id: r.id, // keep frontend table happy
+        id: r.id,
+        bookingRef: r.bookingRef,
+        status: r.currentState,
+        createdAt: r.createdAt,
+        client: clientMap.get(r.clientId) || null,
+        freelancer: freelancerMap.get(r.freelancerId) || null,
+        service: serviceMap.get(r.policySnapshotJson?.serviceId) || (r.policySnapshotJson?.serviceTitle ? { title: r.policySnapshotJson.serviceTitle } : null),
+      }));
+
+      await prisma.$disconnect();
+      res.json({ bookings, total, page: Number(page), pages: Math.ceil(total / limit) });
+      return;
+    }
+
+    // Fallback legacy Mongo bookings (only if still present)
     const query = status ? { status } : {};
-    
+
     const [bookings, total] = await Promise.all([
       Booking.find(query)
         .populate('client', 'firstName lastName email')
