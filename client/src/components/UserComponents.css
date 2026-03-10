@@ -231,6 +231,7 @@
 }
 
 .btn {
+  min-height: 44px;
   padding: 10px 20px;
   border: none;
   border-radius: 6px;
@@ -1423,10 +1424,6 @@
 }
 
 /* Mobile base: touch targets and readability */
-.btn {
-  min-height: 44px;
-}
-
 .pagination {
   flex-wrap: wrap;
   justify-content: center;
