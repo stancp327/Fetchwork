@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useFeatures } from '../../hooks/useFeatures';
 import UpgradePrompt from '../Billing/UpgradePrompt';
@@ -20,6 +20,8 @@ import JobFeatureModal from './JobFeatureModal';
 const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || null;
   const { user } = useAuth();
   const { hasFeature } = useFeatures();
   const canAIMatching = hasFeature('ai_matching');
@@ -254,9 +256,15 @@ const JobDetails = () => {
         structuredData={jobStructuredData}
       />
       <div className="job-details-page">
-        <button onClick={() => navigate('/browse-jobs')} className="back-button">
-          ← Back to Jobs
-        </button>
+        {returnTo ? (
+          <button onClick={() => navigate(returnTo)} className="back-button">
+            ← Back to Messages
+          </button>
+        ) : (
+          <button onClick={() => navigate('/browse-jobs')} className="back-button">
+            ← Back to Jobs
+          </button>
+        )}
         <div className="job-meta">
           <span className="job-category">{job.category}</span>
           <span className="job-posted">Posted {formatDate(job.createdAt)}</span>

@@ -632,6 +632,7 @@ const Messages = () => {
                     {selectedConvo.job && (
                       <Link
                         to={`/jobs/${selectedConvo.job._id}`}
+                        state={{ returnTo: `/messages?conversation=${selectedConvo._id}` }}
                         className="chat-job-link"
                       >
                         📋 {selectedConvo.job.title} →
@@ -1293,7 +1294,7 @@ const Messages = () => {
             {selectedConvo.job && (
               <div className="context-section">
                 <h4>Linked Job</h4>
-                <Link to={`/jobs/${selectedConvo.job._id}`} className="context-job-card">
+                <Link to={`/jobs/${selectedConvo.job._id}`} state={{ returnTo: `/messages?conversation=${selectedConvo._id}` }} className="context-job-card">
                   <span>{selectedConvo.job.title}</span>
                   <span className="context-job-budget">{selectedConvo.job.budget?.amount ? `$${selectedConvo.job.budget.amount}` : ''}</span>
                 </Link>
