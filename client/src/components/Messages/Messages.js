@@ -417,12 +417,14 @@ const Messages = () => {
         setMessages(prev => prev.map(m => m._id === optimistic._id ? res.data : m));
         fetchConversations();
         if (selectedConvo?._id) fetchMessages(selectedConvo);
+        // Show non-blocking warning banner if server flagged contact info
+        if (res.warning) setOffPlatformWarning(res.warning);
       }
     } catch (err) {
       console.error('[Messages] send failed', err);
-      // Off-platform blocked message
+      // Hard-blocked message (explicit off-platform solicitation / external payment)
       if (err?.status === 422 || err?.error === 'off_platform_detected') {
-        setOffPlatformWarning(err?.message || 'Message blocked: off-platform contact info detected.');
+        setOffPlatformWarning(err?.message || '🚫 Message blocked: asking to work or pay outside Fetchwork is not allowed.');
         setMessages(prev => prev.filter(m => m._id !== optimistic._id));
         setNewMessage(content); // restore draft so user can edit
       } else {

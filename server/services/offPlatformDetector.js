@@ -50,10 +50,15 @@ function detectOffPlatform(text = '') {
   score = Math.min(score, 100);
 
   const confidence = score >= 65 ? 'high' : score >= 35 ? 'medium' : 'low';
-  // high   → block  (clear contact info / explicit off-platform attempt)
-  // medium → warn   (suspicious but might be legit, send with warning)
-  // low    → allow
-  const action = confidence === 'high' ? 'block' : confidence === 'medium' ? 'warn' : 'allow';
+
+  // Policy:
+  //   block  → only for explicit off-platform solicitation or external payment bypass
+  //   warn   → contact info (phone/email/messaging apps) — message sends, user sees banner
+  //   allow  → everything else
+  const hardBlockHits = ['R_MOVE_OFF', 'R_EXT_PAYMENT'];
+  const isHardBlock = hits.some(h => hardBlockHits.includes(h));
+  const action = isHardBlock ? 'block' : confidence === 'high' || confidence === 'medium' ? 'warn' : 'allow';
+
   return { score, confidence, action, hits };
 }
 
@@ -67,9 +72,9 @@ function getWarningMessage(safety) {
   if (hits.includes('R_MOVE_OFF'))       return 'This message appears to ask someone to work outside Fetchwork. That violates our Terms of Service.';
   if (hits.includes('R_EXT_PAYMENT'))    return 'Payments must go through Fetchwork to protect both parties. External payment requests are not allowed.';
   if (hits.includes('R_EMAIL') || hits.includes('R_PHONE_US') || hits.includes('R_PHONE_INTL'))
-    return 'Sharing personal contact info before a contract is against Fetchwork policy. Use Fetchwork messaging and video calls instead.';
+    return '📞 Heads up: this message contains contact info. For your protection, we recommend keeping communication on Fetchwork until a contract is agreed.';
   if (hits.includes('R_MESSAGING_APP') || hits.includes('R_CONTACT_INTENT'))
-    return 'Please keep communication on Fetchwork until a contract is in place. This protects you and ensures payment security.';
+    return '💬 Heads up: this message references an external app. Keeping communication on Fetchwork protects both parties and ensures payment security.';
   return 'This message may violate Fetchwork\'s off-platform policy. Please keep communication and payments within the platform.';
 }
 
