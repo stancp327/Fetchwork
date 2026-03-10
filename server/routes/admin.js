@@ -1928,9 +1928,66 @@ router.get('/bookings/:id', authenticateAdmin, requirePermission('job_management
   }
 });
 
-// PATCH /admin/bookings/:id/cancel — admin cancel a booking
+// PATCH /admin/bookings/:id/cancel — admin cancel a booking (Mongo legacy OR SQL current)
 router.patch('/bookings/:id/cancel', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
   try {
+    const BOOKING_SQL_ENABLED = process.env.BOOKING_SQL_ENABLED === 'true';
+
+    if (BOOKING_SQL_ENABLED && process.env.DATABASE_URL) {
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+
+      const id = req.params.id;
+      const reason = req.body.reason || 'Cancelled by admin';
+
+      const existing = await prisma.booking.findUnique({ where: { id } });
+      if (!existing) {
+        await prisma.$disconnect();
+        return res.status(404).json({ error: 'Booking not found' });
+      }
+
+      const terminal = ['completed', 'cancelled_by_client', 'cancelled_by_freelancer', 'resolved'];
+      if (terminal.includes(existing.currentState)) {
+        await prisma.$disconnect();
+        return res.status(400).json({ error: `Booking already ${existing.currentState}` });
+      }
+
+      const updated = await prisma.booking.update({
+        where: { id },
+        data: {
+          currentState: 'cancelled_by_client', // closest available enum for admin cancel
+          auditEvents: {
+            create: {
+              actorType: 'admin',
+              actorId: req.admin?._id?.toString?.() || null,
+              eventType: 'admin_cancel',
+              payloadJson: { reason },
+              payloadHash: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            },
+          },
+          occurrences: {
+            updateMany: {
+              where: { status: { notIn: ['completed', 'cancelled_by_client', 'cancelled_by_freelancer', 'resolved'] } },
+              data: { status: 'cancelled_by_client' },
+            },
+          },
+        },
+      });
+
+      await prisma.$disconnect();
+
+      await logAdminAction({
+        adminId: req.admin._id, adminEmail: req.admin.email,
+        targetId: existing.clientId, action: 'booking.cancel',
+        reason,
+        metadata: { bookingId: id, bookingRef: existing.bookingRef, sql: true },
+        ip: req.ip,
+      });
+
+      return res.json({ message: 'Booking cancelled', booking: { id: updated.id, status: updated.currentState } });
+    }
+
+    // Legacy Mongo booking cancel
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
     if (['cancelled', 'completed'].includes(booking.status)) {

@@ -40,7 +40,16 @@ const AdminBookingsTab = () => {
   };
 
   const statusColors = {
-    confirmed: '#22c55e', pending: '#eab308', cancelled: '#ef4444', completed: '#3b82f6',
+    pending_payment: '#eab308',
+    held: '#f97316',
+    confirmed: '#22c55e',
+    in_progress: '#6366f1',
+    completed: '#3b82f6',
+    cancelled_by_client: '#ef4444',
+    cancelled_by_freelancer: '#ef4444',
+    cancelled: '#ef4444',
+    disputed: '#a855f7',
+    resolved: '#10b981',
   };
 
   return (
@@ -53,10 +62,15 @@ const AdminBookingsTab = () => {
       <div className="admin-filters">
         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
           <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
+          <option value="pending_payment">Pending payment</option>
+          <option value="held">Held</option>
           <option value="confirmed">Confirmed</option>
+          <option value="in_progress">In progress</option>
           <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="cancelled_by_client">Cancelled (client)</option>
+          <option value="cancelled_by_freelancer">Cancelled (freelancer)</option>
+          <option value="disputed">Disputed</option>
+          <option value="resolved">Resolved</option>
         </select>
         <button onClick={fetchBookings} className="btn btn-ghost btn-sm">Refresh</button>
       </div>
@@ -91,7 +105,7 @@ const AdminBookingsTab = () => {
                   </td>
                   <td>{new Date(b.createdAt).toLocaleDateString()}</td>
                   <td>
-                    {!['cancelled', 'completed'].includes(b.status) && (
+                    {!['completed', 'cancelled', 'cancelled_by_client', 'cancelled_by_freelancer', 'resolved'].includes(b.status) && (
                       <button onClick={() => cancelBooking(b._id)} className="btn btn-danger btn-sm">Cancel</button>
                     )}
                   </td>
