@@ -1863,14 +1863,17 @@ router.get('/bookings', authenticateAdmin, requirePermission('job_management'), 
       ]);
 
       // Hydrate Mongo-linked entities for admin display
-      const clientIds = [...new Set(rows.map(r => r.clientId).filter(Boolean))];
-      const freelancerIds = [...new Set(rows.map(r => r.freelancerId).filter(Boolean))];
-      const serviceIds = [...new Set(rows.map(r => r.policySnapshotJson?.serviceId).filter(Boolean))];
+      // Filter to valid ObjectIds only — test/seed bookings may have non-ObjectId strings
+      const mongoose = require('mongoose');
+      const isOid = id => mongoose.Types.ObjectId.isValid(id) && /^[a-f0-9]{24}$/i.test(id);
+      const clientIds = [...new Set(rows.map(r => r.clientId).filter(Boolean).filter(isOid))];
+      const freelancerIds = [...new Set(rows.map(r => r.freelancerId).filter(Boolean).filter(isOid))];
+      const serviceIds = [...new Set(rows.map(r => r.policySnapshotJson?.serviceId).filter(Boolean).filter(isOid))];
 
       const [clients, freelancers, services] = await Promise.all([
-        User.find({ _id: { $in: clientIds } }).select('firstName lastName email').lean(),
-        User.find({ _id: { $in: freelancerIds } }).select('firstName lastName email').lean(),
-        Service.find({ _id: { $in: serviceIds } }).select('title').lean(),
+        clientIds.length ? User.find({ _id: { $in: clientIds } }).select('firstName lastName email').lean() : [],
+        freelancerIds.length ? User.find({ _id: { $in: freelancerIds } }).select('firstName lastName email').lean() : [],
+        serviceIds.length ? Service.find({ _id: { $in: serviceIds } }).select('title').lean() : [],
       ]);
 
       const clientMap = new Map(clients.map(u => [u._id.toString(), u]));
@@ -1929,10 +1932,12 @@ router.get('/bookings/:id', authenticateAdmin, requirePermission('job_management
       return res.status(404).json({ error: 'Booking not found' });
     }
 
+    const mongoose = require('mongoose');
+    const isOid = id => id && mongoose.Types.ObjectId.isValid(id) && /^[a-f0-9]{24}$/i.test(id);
     const [client, freelancer, service] = await Promise.all([
-      User.findById(b.clientId).select('firstName lastName email').lean(),
-      User.findById(b.freelancerId).select('firstName lastName email').lean(),
-      b.policySnapshotJson?.serviceId ? Service.findById(b.policySnapshotJson.serviceId).select('title').lean() : null,
+      isOid(b.clientId) ? User.findById(b.clientId).select('firstName lastName email').lean() : null,
+      isOid(b.freelancerId) ? User.findById(b.freelancerId).select('firstName lastName email').lean() : null,
+      isOid(b.policySnapshotJson?.serviceId) ? Service.findById(b.policySnapshotJson.serviceId).select('title').lean() : null,
     ]);
 
     await prisma.$disconnect();
