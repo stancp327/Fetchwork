@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import OnlineStatus, { formatResponseTime } from '../common/OnlineStatus';
 import { SkillBadge } from '../Skills/SkillAssessmentHub';
 import ShareQR from '../common/ShareQR';
+import CompanyLogo from '../common/CompanyLogo';
 import './PublicProfile.css';
 
 const StarRating = ({ rating }) => {
@@ -283,8 +284,11 @@ const PublicProfile = () => {
                   <h2>Experience</h2>
                   {experience.map((e, i) => (
                     <div key={i} className="pp-timeline-item">
-                      <strong>{e.role || e.title}</strong>
-                      {e.company && <span> at {e.company}</span>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {e.company && <CompanyLogo company={e.company} size={20} />}
+                        <strong>{e.role || e.title}</strong>
+                        {e.company && <span style={{ color: 'var(--color-text-secondary)' }}>at {e.company}</span>}
+                      </div>
                       {(e.startDate || e.endDate) && (
                         <div className="pp-muted">{e.startDate} — {e.endDate || 'Present'}</div>
                       )}

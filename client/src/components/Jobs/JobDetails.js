@@ -16,6 +16,8 @@ import './JobDetails.css';
 import { getApiBaseUrl } from '../../utils/api';
 import { aiApi } from '../../api/ai';
 import JobFeatureModal from './JobFeatureModal';
+import Avatar from '../common/Avatar';
+import CompanyLogo from '../common/CompanyLogo';
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -363,8 +365,19 @@ const JobDetails = () => {
           <div className="job-sidebar-col">
             <div className="sidebar-card">
               <h3>About the Client</h3>
-              <div className="client-name">
-                {job.client.firstName} {job.client.lastName}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <Avatar user={job.client} size={40} />
+                <div>
+                  <div className="client-name" style={{ margin: 0 }}>
+                    {job.client.firstName} {job.client.lastName}
+                  </div>
+                  {job.client.company && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                      <CompanyLogo company={job.client.company} size={16} />
+                      <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{job.client.company}</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="client-stats">
                 <div className="client-stat">⭐ {job.client.rating || 'No rating'}</div>

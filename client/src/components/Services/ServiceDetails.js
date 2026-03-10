@@ -10,6 +10,7 @@ import BookingCalendar from '../Bookings/BookingCalendar';
 import IntakeFormFill from './IntakeFormFill';
 import SEO from '../common/SEO';
 import ShareQR from '../common/ShareQR';
+import ServiceAreaMap from '../common/ServiceAreaMap';
 import './ServiceDetails.css';
 
 const ServiceDetails = () => {
@@ -532,23 +533,32 @@ const ServiceDetails = () => {
             </div>
           )}
 
-          {/* Service location */}
-          {service.serviceLocation?.mode && service.serviceLocation.mode !== 'remote' && (
-            <div className="service-location-info" style={{ margin: '1rem 0', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)' }}>
-              {service.serviceLocation.mode === 'at_freelancer' && (
-                <p style={{ margin: 0 }}>📍 <strong>At freelancer's location</strong>{service.serviceLocation.address ? ` — ${service.serviceLocation.address}` : ''}</p>
-              )}
-              {service.serviceLocation.mode === 'at_client' && (
-                <p style={{ margin: 0 }}>🚗 <strong>Freelancer travels to you</strong>{service.serviceLocation.travelRadius > 0 ? ` (within ${service.serviceLocation.travelRadius} miles)` : ''}</p>
-              )}
-              {service.serviceLocation.mode === 'flexible' && (
-                <p style={{ margin: 0 }}>🔄 <strong>Flexible</strong> — remote, at their location{service.serviceLocation.address ? ` (${service.serviceLocation.address})` : ''}, or they travel to you{service.serviceLocation.travelRadius > 0 ? ` (${service.serviceLocation.travelRadius} mi)` : ''}</p>
-              )}
-              {service.serviceLocation.notes && (
-                <p style={{ margin: '0.25rem 0 0', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>💬 {service.serviceLocation.notes}</p>
-              )}
-            </div>
-          )}
+          {/* Service location + map */}
+          {service.serviceLocation?.mode && service.serviceLocation.mode !== 'remote' && (() => {
+            const loc = service.serviceLocation;
+            const coords = loc.coordinates?.coordinates;
+            const lat = coords?.[1];
+            const lon = coords?.[0];
+            return (
+              <>
+                {lat && lon ? (
+                  <ServiceAreaMap
+                    lat={lat} lon={lon}
+                    radius={loc.travelRadius || 25}
+                    mode={loc.mode}
+                    address={loc.address || ''}
+                  />
+                ) : (
+                  <div style={{ margin: '1rem 0', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)' }}>
+                    {loc.mode === 'at_freelancer' && <p style={{ margin: 0 }}>📍 <strong>At freelancer's location</strong>{loc.address ? ` — ${loc.address}` : ''}</p>}
+                    {loc.mode === 'at_client' && <p style={{ margin: 0 }}>🚗 <strong>Freelancer travels to you</strong>{loc.travelRadius > 0 ? ` (within ${loc.travelRadius} miles)` : ''}</p>}
+                    {loc.mode === 'flexible' && <p style={{ margin: 0 }}>🔄 <strong>Flexible</strong>{loc.travelRadius > 0 ? ` — up to ${loc.travelRadius} mi` : ''}</p>}
+                  </div>
+                )}
+                {loc.notes && <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>💬 {loc.notes}</p>}
+              </>
+            );
+          })()}
           {service.serviceLocation?.mode === 'remote' && (
             <p style={{ margin: '0.5rem 0', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>💻 This service is delivered remotely</p>
           )}
