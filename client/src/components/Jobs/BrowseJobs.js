@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { formatBudget, formatDuration, formatCategory } from '../../utils/formatters';
@@ -10,6 +10,7 @@ import BrowseLayout, {
   ResultsControls, BrowsePagination, BrowseEmpty
 } from '../common/BrowseLayout';
 import SaveButton from '../common/SaveButton';
+import { useUserLocation } from '../../hooks/useUserLocation';
 import QuickApply from './QuickApply';
 import SaveSearchModal from '../JobAlerts/SaveSearchModal';
 import { useAuth } from '../../context/AuthContext';
@@ -135,6 +136,8 @@ const BrowseJobs = () => {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
   const [viewMode, setViewMode] = useState('list');
+  const locationApplied = useRef(false);
+  const userLocation = useUserLocation();
   const [showSaveSearch, setShowSaveSearch] = useState(false);
 
   const fetchJobs = useCallback(async () => {
@@ -158,6 +161,16 @@ const BrowseJobs = () => {
   }, [search, filters, page]);
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
+
+  // Auto-fill location once detected
+  useEffect(() => {
+    if (locationApplied.current) return;
+    if (userLocation.loading) return;
+    const near = userLocation.zip || (userLocation.lat ? `${userLocation.lat},${userLocation.lon}` : '');
+    if (!near) return;
+    locationApplied.current = true;
+    setFilters(prev => prev.near ? prev : { ...prev, near });
+  }, [userLocation]);
 
   // Sync search when URL ?search= changes (e.g. clicking a skill tag on a job card)
   useEffect(() => {

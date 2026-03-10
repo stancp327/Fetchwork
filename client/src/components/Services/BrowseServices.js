@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { categoryOptions } from '../../utils/categories';
@@ -9,6 +9,9 @@ import BrowseLayout, {
   ResultsControls, BrowsePagination, BrowseEmpty
 } from '../common/BrowseLayout';
 import SaveButton from '../common/SaveButton';
+import Avatar from '../common/Avatar';
+import { useUserLocation } from '../../hooks/useUserLocation';
+import { useZipLookup } from '../../hooks/useZipLookup';
 import '../common/BrowseLayout.css';
 
 const CATEGORIES = [
@@ -38,7 +41,8 @@ const ServiceCard = ({ service }) => {
           background: `url(${service.images[0]}) center/cover no-repeat`, width: 'calc(100% + 2.5rem)'
         }} />
       )}
-      <div className="browse-card-header" style={{ paddingRight: '2rem' }}>
+      <div className="browse-card-header" style={{ paddingRight: '2rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <Avatar user={service.freelancer || service.seller} size={36} style={{ marginTop: 2, flexShrink: 0 }} />
         <div>
           <h3 className="browse-card-title">{service.title}</h3>
           <div className="browse-card-meta">
@@ -104,6 +108,9 @@ const BrowseServices = () => {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
   const [viewMode, setViewMode] = useState('grid');
+  const locationApplied = useRef(false);
+  const userLocation = useUserLocation();
+  const zipLookup = useZipLookup(filters.near);
 
   const fetchServices = useCallback(async () => {
     try {
@@ -126,6 +133,16 @@ const BrowseServices = () => {
   }, [search, filters, page]);
 
   useEffect(() => { fetchServices(); }, [fetchServices]);
+
+  // Auto-fill location once detected — only if user hasn't typed a location yet
+  useEffect(() => {
+    if (locationApplied.current) return;
+    if (userLocation.loading) return;
+    const near = userLocation.zip || (userLocation.lat ? `${userLocation.lat},${userLocation.lon}` : '');
+    if (!near) return;
+    locationApplied.current = true;
+    setFilters(prev => prev.near ? prev : { ...prev, near });
+  }, [userLocation]);
 
   const updateFilter = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -186,14 +203,22 @@ const BrowseServices = () => {
           {/* Zip + radius inline when Local selected */}
           {filters.locationType === 'local' && (
             <div className="service-zip-bar">
-              <input
-                type="text"
-                className="service-zip-input"
-                placeholder="Zip or city (e.g. 94520)"
-                value={filters.near}
-                onChange={e => updateFilter('near', e.target.value)}
-                maxLength={10}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className={`service-zip-input${zipLookup.error ? ' zip-error' : zipLookup.result ? ' zip-ok' : ''}`}
+                  placeholder="Zip or city (e.g. 94520)"
+                  value={filters.near}
+                  onChange={e => updateFilter('near', e.target.value)}
+                  maxLength={10}
+                />
+                {zipLookup.result && (
+                  <span className="zip-city-hint">📍 {zipLookup.result.city}, {zipLookup.result.state}</span>
+                )}
+                {zipLookup.error && (
+                  <span className="zip-city-hint zip-city-hint--error">✕ {zipLookup.error}</span>
+                )}
+              </div>
               <select
                 className="service-radius-select"
                 value={filters.radius}

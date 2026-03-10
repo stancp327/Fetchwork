@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { categoryOptions } from '../../utils/categories';
 import { getLocationDisplay } from '../../utils/location';
 import SEO from '../common/SEO';
+import Avatar from '../common/Avatar';
+import { useUserLocation } from '../../hooks/useUserLocation';
 import BrowseLayout, {
   SearchBar, FilterSelect, FilterInput,
   ResultsControls, BrowsePagination, BrowseEmpty
@@ -35,15 +37,9 @@ const FreelancerCard = ({ freelancer, onInvite }) => {
       <div className="browse-card-header">
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <div style={{
-            width: 48, height: 48, borderRadius: '50%', background: '#eff6ff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.2rem', fontWeight: 700, color: '#2563eb', flexShrink: 0,
-            overflow: 'hidden'
+            width: 48, height: 48, borderRadius: '50%', flexShrink: 0, overflow: 'hidden'
           }}>
-            {freelancer.profilePicture
-              ? <img src={freelancer.profilePicture} alt={`${freelancer.firstName || ''} ${freelancer.lastName || ''}`.trim() || 'Freelancer'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : `${freelancer.firstName?.[0] || ''}${freelancer.lastName?.[0] || ''}`
-            }
+            <Avatar user={freelancer} size={48} />
           </div>
           <div>
             <h3 className="browse-card-title">{freelancer.firstName} {freelancer.lastName}</h3>
@@ -118,6 +114,8 @@ const FreelancerDiscovery = () => {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
   const [viewMode, setViewMode] = useState('grid');
+  const locationApplied = useRef(false);
+  const userLocation = useUserLocation();
 
   const fetchFreelancers = useCallback(async () => {
     try {
@@ -140,6 +138,16 @@ const FreelancerDiscovery = () => {
   }, [search, filters, page]);
 
   useEffect(() => { fetchFreelancers(); }, [fetchFreelancers]);
+
+  // Auto-fill location once detected
+  useEffect(() => {
+    if (locationApplied.current) return;
+    if (userLocation.loading) return;
+    const near = userLocation.zip || (userLocation.lat ? `${userLocation.lat},${userLocation.lon}` : '');
+    if (!near) return;
+    locationApplied.current = true;
+    setFilters(prev => prev.near ? prev : { ...prev, near });
+  }, [userLocation]);
 
   // Sync search box when URL ?search= changes (e.g. clicking another skill tag)
   useEffect(() => {

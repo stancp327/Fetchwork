@@ -1,96 +1,42 @@
-import { useState, useCallback, useRef } from 'react';
-
 /**
- * useZipLookup — zip code → city/state autofill via Zippopotam.us
- * Free, no API key, no rate limit.
- *
- * Usage:
- *   const { lookupZip, zipLoading, zipError } = useZipLookup();
- *
- *   // Call on zip input change (debounced internally):
- *   const handleZipChange = (e) => {
- *     const zip = e.target.value;
- *     setFormData(f => ({ ...f, zipCode: zip }));
- *     lookupZip(zip, ({ city, state, stateCode, lat, lon }) => {
- *       setFormData(f => ({ ...f, city, state: stateCode }));
- *     });
- *   };
+ * useZipLookup
+ * Validates a 5-digit US zip code via /api/geo/zip/:zip (zippopotam.us)
+ * Returns { city, state, lat, lon } or null if invalid.
+ * Debounced 500ms to avoid hammering on keystroke.
  */
+import { useState, useEffect } from 'react';
+import { apiRequest } from '../utils/api';
 
-const cache = new Map(); // simple in-memory cache per session
+export function useZipLookup(zip) {
+  const [result, setResult] = useState(null);   // { city, state, lat, lon }
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-export function useZipLookup() {
-  const [zipLoading, setZipLoading] = useState(false);
-  const [zipError, setZipError] = useState(null);
-  const debounceRef = useRef(null);
-
-  const lookupZip = useCallback((zip, onResult, countryCode = 'us') => {
-    // Only look up when zip is exactly 5 digits
-    if (!zip || !/^\d{5}$/.test(zip)) {
-      setZipError(null);
+  useEffect(() => {
+    const clean = (zip || '').replace(/\D/g, '');
+    if (clean.length !== 5) {
+      setResult(null);
+      setError(null);
       return;
     }
 
-    // Clear previous debounce
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    debounceRef.current = setTimeout(async () => {
-      const cacheKey = `${countryCode}:${zip}`;
-
-      // Return cached result immediately
-      if (cache.has(cacheKey)) {
-        const cached = cache.get(cacheKey);
-        if (cached) onResult(cached);
-        else setZipError('ZIP code not found');
-        return;
-      }
-
-      setZipLoading(true);
-      setZipError(null);
-
+    setLoading(true);
+    setError(null);
+    const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`https://api.zippopotam.us/${countryCode}/${zip}`);
-
-        if (res.status === 404) {
-          cache.set(cacheKey, null);
-          setZipError('ZIP code not found');
-          setZipLoading(false);
-          return;
-        }
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = await res.json();
-        const place = data.places?.[0];
-        if (!place) {
-          cache.set(cacheKey, null);
-          setZipError('ZIP code not found');
-          setZipLoading(false);
-          return;
-        }
-
-        const result = {
-          city: place['place name'],
-          state: place['state'],
-          stateCode: place['state abbreviation'],
-          lat: parseFloat(place.latitude),
-          lon: parseFloat(place.longitude),
-          country: data.country,
-          countryCode: data['country abbreviation'],
-        };
-
-        cache.set(cacheKey, result);
-        setZipError(null);
-        onResult(result);
-      } catch (err) {
-        // Don't block the user — just don't autofill
-        console.warn('[useZipLookup] lookup failed:', err.message);
-        setZipError(null); // silent fail
+        const data = await apiRequest(`/api/geo/zip/${clean}`);
+        setResult(data);
+        setError(null);
+      } catch {
+        setResult(null);
+        setError('Invalid zip code');
       } finally {
-        setZipLoading(false);
+        setLoading(false);
       }
-    }, 400); // 400ms debounce
-  }, []);
+    }, 500);
 
-  return { lookupZip, zipLoading, zipError };
+    return () => clearTimeout(timer);
+  }, [zip]);
+
+  return { result, loading, error };
 }

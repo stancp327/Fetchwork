@@ -525,3 +525,17 @@
   outline: none;
   border-color: var(--color-primary);
 }
+
+/* -- Zip validation hint ---------------------------------------- */
+.service-zip-input.zip-ok    { border-color: var(--color-success); }
+.service-zip-input.zip-error { border-color: var(--color-danger); }
+
+.zip-city-hint {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-success-dark);
+  margin-top: 2px;
+  padding-left: 2px;
+}
+.zip-city-hint--error { color: var(--color-danger); }

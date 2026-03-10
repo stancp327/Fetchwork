@@ -285,6 +285,7 @@ app.use('/api/chatrooms', require('./routes/chatrooms'));
 app.use('/api/disputes', require('./routes/disputes'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/calls', require('./routes/calls'));
+app.use('/api/geo',   require('./routes/geo'));
 app.use('/api/teams', require('./routes/teams'));
 app.use('/api/team-milestones', require('./routes/teamMilestones'));
 app.use('/api/organizations', require('./routes/organizations'));
