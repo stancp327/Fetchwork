@@ -48,7 +48,7 @@ const ConvoItem = ({ convo, selected, userId, onClick, onlineStatus }) => {
           </Link>
         )}
         {convo.lastMessage && (
-          <div className="convo-preview">{((convo.lastMessage.content || '').replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '').trim()).substring(0, 60)}{convo.lastMessage.content?.replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '').trim().length > 60 ? '...' : ''}</div>
+          <div className="convo-preview">{(() => { const c = (convo.lastMessage.content || '').replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '').replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '').trim(); return c.length > 60 ? c.substring(0, 60) + '...' : c; })()}</div>
         )}
       </div>
       {unread && <span className="convo-badge">{convo.unreadCount}</span>}
@@ -296,7 +296,10 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
           </div>
         ) : (
           <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>
-            {(msg.content || '').replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '').trim()}
+            {(msg.content || '')
+              .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
+              .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
+              .trim()}
           </div>
         )}
 

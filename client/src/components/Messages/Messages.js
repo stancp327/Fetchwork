@@ -39,6 +39,12 @@ const extractAppointmentId = (content) => {
   return m?.[1] || null;
 };
 
+const extractPayReqId = (content) => {
+  if (!content || typeof content !== 'string') return null;
+  const m = content.match(/\[pr:([a-fA-F0-9]{24})\]/);
+  return m?.[1] || null;
+};
+
 const Messages = () => {
   const { user } = useAuth();
   const { search: locationSearch } = useLocation();
@@ -64,6 +70,16 @@ const Messages = () => {
   const [deliveryStatus, setDeliveryStatus] = useState(new Map());
   const [showContext, setShowContext] = useState(false);
   const [mobileView, setMobileView] = useState('inbox');
+
+  // Payment Requests
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payDescription, setPayDescription] = useState('');
+  const [payType, setPayType] = useState('service_rendered');
+  const [paySaving, setPaySaving] = useState(false);
+  const [payError, setPayError] = useState('');
+  const [payRequestsById, setPayRequestsById] = useState({});
+  const [actingPrId, setActingPrId] = useState(null);
 
   // Scheduling (SQL appointments)
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -336,6 +352,22 @@ const Messages = () => {
   useEffect(() => {
     if (selectedConvo?._id) fetchAppointments(selectedConvo._id);
   }, [selectedConvo?._id, fetchAppointments]);
+
+  const fetchPaymentRequests = useCallback(async (conversationId) => {
+    if (!conversationId) return;
+    try {
+      const data = await apiRequest(`/api/payment-requests?conversationId=${conversationId}`);
+      const map = {};
+      (data.paymentRequests || []).forEach(pr => { map[pr._id] = pr; });
+      setPayRequestsById(map);
+    } catch {
+      // non-blocking
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedConvo?._id) fetchPaymentRequests(selectedConvo._id);
+  }, [selectedConvo?._id, fetchPaymentRequests]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -642,6 +674,8 @@ const Messages = () => {
                     const isMine = idEq(msg.sender?._id || msg.sender, userId);
                     const apptId = extractAppointmentId(msg.content);
                     const appt = apptId ? appointmentsById[apptId] : null;
+                    const prId = extractPayReqId(msg.content);
+                    const pr = prId ? payRequestsById[prId] : null;
                     return (
                       <div key={msg._id} className="msg-ai-tr-wrap">
                         <MsgBubble
@@ -752,6 +786,84 @@ const Messages = () => {
                             )}
                           </div>
                         )}
+                        {/* Payment Request Card */}
+                        {prId && (
+                          <div style={{ border: '1px solid var(--color-border)', borderRadius: 10, padding: 12, marginTop: 8, background: 'var(--color-bg-primary)', maxWidth: 480 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                              <div style={{ fontWeight: 700 }}>💳 Payment Request</div>
+                              <div style={{ fontSize: 12, color: pr?.status === 'paid' ? 'var(--color-success)' : pr?.status === 'cancelled' ? 'var(--color-text-muted)' : 'var(--color-warning)', fontWeight: 600 }}>
+                                {pr ? pr.status.toUpperCase() : '…'}
+                              </div>
+                            </div>
+
+                            {pr ? (
+                              <>
+                                <div style={{ marginTop: 6, fontSize: 14 }}>
+                                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-text-darker)' }}>${parseFloat(pr.amount).toFixed(2)}</div>
+                                  <div style={{ color: 'var(--color-text-secondary)', marginTop: 2 }}>{pr.description}</div>
+                                  <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                                    {pr.type === 'service_rendered' ? 'Service rendered' : 'Additional funds'}
+                                  </div>
+                                </div>
+
+                                {pr.status === 'pending' && (
+                                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                                    {String(getEntityId(pr.requestedById)) === String(userId) ? (
+                                      <>
+                                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)', alignSelf: 'center' }}>Awaiting payment…</div>
+                                        <button
+                                          type="button"
+                                          className="offer-btn-secondary"
+                                          disabled={actingPrId === prId}
+                                          onClick={async () => {
+                                            setActingPrId(prId);
+                                            try {
+                                              await apiRequest(`/api/payment-requests/${prId}/cancel`, { method: 'POST' });
+                                              await fetchPaymentRequests(selectedConvo._id);
+                                              await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, {
+                                                method: 'POST',
+                                                body: JSON.stringify({ content: `❌ Payment request cancelled [pr:${prId}]` }),
+                                              });
+                                              fetchMessages(selectedConvo);
+                                            } catch (err) { alert(err?.message || 'Failed to cancel'); }
+                                            finally { setActingPrId(null); }
+                                          }}
+                                        >Cancel</button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        className="offer-btn-primary"
+                                        disabled={actingPrId === prId}
+                                        onClick={async () => {
+                                          setActingPrId(prId);
+                                          try {
+                                            const { clientSecret } = await apiRequest(`/api/payment-requests/${prId}/pay`, { method: 'POST' });
+                                            // Redirect to Stripe-hosted page for now (simple, no Stripe Elements needed)
+                                            // A full Elements integration can be added later.
+                                            if (clientSecret) {
+                                              const piId = clientSecret.split('_secret_')[0];
+                                              const confirmUrl = `https://checkout.stripe.com/pay/${piId}?client_secret=${encodeURIComponent(clientSecret)}`;
+                                              window.open(confirmUrl, '_blank');
+                                            }
+                                          } catch (err) { alert(err?.message || 'Failed to initiate payment'); }
+                                          finally { setActingPrId(null); }
+                                        }}
+                                      >Pay ${parseFloat(pr.amount).toFixed(2)}</button>
+                                    )}
+                                  </div>
+                                )}
+
+                                {pr.status === 'paid' && (
+                                  <div style={{ marginTop: 8, color: 'var(--color-success)', fontSize: 13, fontWeight: 600 }}>✅ Paid {pr.paidAt ? `on ${new Date(pr.paidAt).toLocaleDateString()}` : ''}</div>
+                                )}
+                              </>
+                            ) : (
+                              <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>Loading…</div>
+                            )}
+                          </div>
+                        )}
+
                         {!isMine && msg.content && (
                           <div className="msg-ai-tr-row">
                             <button
@@ -892,9 +1004,11 @@ const Messages = () => {
                   type="button"
                   className="quick-act"
                   onClick={() => {
-                    if (selectedConvo?.job?._id) return navigate(`/jobs/${selectedConvo.job._id}/progress`);
-                    if (selectedConvo?.job) return navigate(`/jobs/${selectedConvo.job}`);
-                    alert('This conversation is not linked to a job yet.');
+                    setPayAmount('');
+                    setPayDescription('');
+                    setPayType('service_rendered');
+                    setPayError('');
+                    setShowPayModal(true);
                   }}
                 >💳 Request Payment</button>
                 <button
@@ -1050,6 +1164,96 @@ const Messages = () => {
                         <button type="button" className="offer-btn-secondary" onClick={() => { setShowScheduleModal(false); setEditingApptId(null); }} disabled={scheduleSaving}>Cancel</button>
                         <button type="submit" className="offer-btn-primary" disabled={scheduleSaving || !scheduleDate || !scheduleTime}>
                           {scheduleSaving ? 'Proposing…' : 'Propose'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Request Modal */}
+              {showPayModal && (
+                <div className="offer-modal-overlay" onClick={() => !paySaving && setShowPayModal(false)}>
+                  <div className="offer-modal" onClick={e => e.stopPropagation()}>
+                    <div className="offer-modal-header">
+                      <h2>💳 Request Payment</h2>
+                      <button className="offer-modal-close" onClick={() => setShowPayModal(false)} disabled={paySaving}>✕</button>
+                    </div>
+
+                    {payError && <div className="offer-error" style={{ marginBottom: 12 }}>{payError}</div>}
+
+                    <form
+                      className="offer-form"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!selectedConvo?._id) return;
+                        setPaySaving(true);
+                        setPayError('');
+                        try {
+                          const resp = await apiRequest('/api/payment-requests', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              conversationId: selectedConvo._id,
+                              amount: parseFloat(payAmount),
+                              description: payDescription,
+                              type: payType,
+                              jobId: selectedConvo?.job?._id || selectedConvo?.job || undefined,
+                              serviceId: selectedConvo?.service?._id || selectedConvo?.service || undefined,
+                            }),
+                          });
+                          const pr = resp.paymentRequest;
+                          await fetchPaymentRequests(selectedConvo._id);
+                          await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              content: `💳 Payment requested [pr:${pr._id}]: $${parseFloat(payAmount).toFixed(2)} — ${payType === 'service_rendered' ? 'Service rendered' : 'Additional funds'}${payDescription ? `\n${payDescription}` : ''}`,
+                            }),
+                          });
+                          setShowPayModal(false);
+                          fetchConversations();
+                          fetchMessages(selectedConvo);
+                        } catch (err) {
+                          setPayError(err?.message || 'Failed to create payment request');
+                        } finally {
+                          setPaySaving(false);
+                        }
+                      }}
+                    >
+                      <div className="offer-form-row">
+                        <div className="offer-field">
+                          <label>Amount ($) *</label>
+                          <input
+                            type="number" min="1" step="0.01"
+                            value={payAmount}
+                            onChange={e => setPayAmount(e.target.value)}
+                            placeholder="150.00"
+                            required
+                            disabled={paySaving}
+                          />
+                        </div>
+                        <div className="offer-field">
+                          <label>Type *</label>
+                          <select value={payType} onChange={e => setPayType(e.target.value)} disabled={paySaving}>
+                            <option value="service_rendered">Service rendered</option>
+                            <option value="additional_funds">Additional funds</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="offer-field">
+                        <label>Description *</label>
+                        <textarea
+                          rows={3}
+                          value={payDescription}
+                          onChange={e => setPayDescription(e.target.value)}
+                          placeholder="What is this payment for?"
+                          required
+                          disabled={paySaving}
+                        />
+                      </div>
+                      <div className="offer-actions">
+                        <button type="button" className="offer-btn-secondary" onClick={() => setShowPayModal(false)} disabled={paySaving}>Cancel</button>
+                        <button type="submit" className="offer-btn-primary" disabled={paySaving || !payAmount || !payDescription}>
+                          {paySaving ? 'Sending…' : 'Send Request'}
                         </button>
                       </div>
                     </form>
