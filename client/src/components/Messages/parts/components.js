@@ -325,12 +325,47 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
                 <div key={i} className="msg-attach-item">
                   {isImage ? (
                     <div className="msg-attach-image-wrap">
-                      <img src={a.url} alt={a.filename} className="msg-attach-image" loading="lazy" />
-                      {a.watermarked && <span className="msg-watermark-badge">🔒 Watermarked</span>}
+                      <img
+                        src={a.url}
+                        alt={a.filename || 'Image'}
+                        className="msg-attach-image"
+                        loading="lazy"
+                        onError={e => {
+                          // Fallback if URL fails — show broken-image placeholder
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex');
+                        }}
+                      />
+                      {/* Hidden fallback placeholder */}
+                      <div className="msg-attach-image-fallback" style={{ display: 'none' }}>
+                        🖼️ <span>{a.filename || 'Image'}</span>
+                      </div>
+                      <div className="msg-attach-image-footer">
+                        {a.watermarked && (
+                          <span className="msg-watermark-badge">🔒 Preview only</span>
+                        )}
+                        <a
+                          href={a.url}
+                          download={a.filename || 'image'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="msg-attach-download"
+                          title={a.watermarked ? 'Download watermarked preview' : 'Download'}
+                        >
+                          ⬇ {a.watermarked ? 'Download preview' : 'Download'}
+                        </a>
+                      </div>
                     </div>
                   ) : (
-                    <a href={a.url} target="_blank" rel="noopener noreferrer" className="msg-attach-link">
+                    <a
+                      href={a.url}
+                      download={a.filename}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="msg-attach-link"
+                    >
                       📄 {a.filename || 'Attachment'}
+                      <span className="msg-attach-size">{a.size ? ` (${Math.round(a.size / 1024)}KB)` : ''}</span>
                     </a>
                   )}
                 </div>

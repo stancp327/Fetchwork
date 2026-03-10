@@ -6,10 +6,25 @@ const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 const WATERMARKED_DIR = path.join(UPLOADS_DIR, 'watermarked');
 const ORIGINALS_DIR = path.join(UPLOADS_DIR, 'originals');
 
-// Ensure directories exist
+const USE_CLOUDINARY = !!process.env.CLOUDINARY_URL;
+
+// Ensure local directories exist (used when Cloudinary not configured)
 [WATERMARKED_DIR, ORIGINALS_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
+
+// ── Cloudinary URL-based watermark ───────────────────────────────
+// Instead of processing locally we append a Cloudinary transformation to the URL.
+// Original: https://res.cloudinary.com/{cloud}/image/upload/{public_id}
+// Watermarked: appends /l_text:Arial_40_bold:FETCHWORK,o_20,a_-30,co_white/
+function buildCloudinaryWatermarkUrl(originalUrl) {
+  if (!originalUrl || !originalUrl.includes('cloudinary.com')) return originalUrl;
+  // Insert transformation before the public_id segment (after /upload/)
+  return originalUrl.replace(
+    '/upload/',
+    '/upload/l_text:Arial_40_bold:FETCHWORK,o_20,a_-30,co_white,g_center/'
+  );
+}
 
 /**
  * Generate a text-based watermark SVG overlay.
@@ -96,6 +111,9 @@ async function applyWatermark(filePath, filename) {
 /**
  * Process all attachments in a message — watermark images, leave docs alone.
  * Returns updated attachments array with watermarked URLs.
+ *
+ * Cloudinary path: watermark is a URL transformation (no local processing).
+ * Local path: watermark applied via sharp.
  */
 async function watermarkAttachments(files, filenames) {
   const results = [];
@@ -103,27 +121,54 @@ async function watermarkAttachments(files, filenames) {
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const filename = filenames?.[i] || file.filename;
-    const filePath = file.path || path.join(UPLOADS_DIR, file.filename);
+    const isImage = file.mimetype?.startsWith('image/');
 
-    if (file.mimetype?.startsWith('image/')) {
-      const result = await applyWatermark(filePath, filename);
-      results.push({
-        filename: file.originalname || filename,
-        url: result.watermarked ? result.url : `/uploads/${file.filename}`,
-        originalUrl: result.watermarked ? result.originalUrl : null,
-        size: file.size,
-        mimeType: file.mimetype,
-        watermarked: result.watermarked,
-      });
+    if (USE_CLOUDINARY) {
+      // Cloudinary: file.path is the public Cloudinary URL
+      const originalUrl = file.path || file.secure_url || '';
+      if (isImage && originalUrl) {
+        const watermarkedUrl = buildCloudinaryWatermarkUrl(originalUrl);
+        results.push({
+          filename: file.originalname || filename,
+          url: watermarkedUrl,          // served until job complete
+          originalUrl,                  // restored when job completes
+          size: file.size,
+          mimeType: file.mimetype,
+          watermarked: true,
+        });
+      } else {
+        results.push({
+          filename: file.originalname || filename,
+          url: originalUrl,
+          originalUrl: null,
+          size: file.size,
+          mimeType: file.mimetype,
+          watermarked: false,
+        });
+      }
     } else {
-      results.push({
-        filename: file.originalname || filename,
-        url: `/uploads/${file.filename}`,
-        originalUrl: null,
-        size: file.size,
-        mimeType: file.mimetype,
-        watermarked: false,
-      });
+      // Local disk path (dev / no Cloudinary)
+      const filePath = file.path || path.join(UPLOADS_DIR, file.filename);
+      if (isImage) {
+        const result = await applyWatermark(filePath, filename);
+        results.push({
+          filename: file.originalname || filename,
+          url: result.watermarked ? result.url : `/uploads/${file.filename}`,
+          originalUrl: result.watermarked ? result.originalUrl : null,
+          size: file.size,
+          mimeType: file.mimetype,
+          watermarked: result.watermarked,
+        });
+      } else {
+        results.push({
+          filename: file.originalname || filename,
+          url: `/uploads/${file.filename}`,
+          originalUrl: null,
+          size: file.size,
+          mimeType: file.mimetype,
+          watermarked: false,
+        });
+      }
     }
   }
 

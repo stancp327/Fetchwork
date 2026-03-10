@@ -102,8 +102,22 @@ const uploadVerificationDocs = multer({
   { name: 'selfie',   maxCount: 1 }
 ]);
 
+// Message attachments — use Cloudinary in production so files persist across deploys.
+// raw resource_type handles docs/PDFs; images go as image resource_type.
+const messageImageStorage = process.env.CLOUDINARY_URL
+  ? new CloudinaryStorage({
+      cloudinary: cloudinary,
+      params: async (req, file) => ({
+        folder: 'fetchwork/messages',
+        resource_type: file.mimetype.startsWith('image/') ? 'image' : 'raw',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt'],
+        // No client-side crop transform — we apply watermark via URL at serve time
+      }),
+    })
+  : localStorage;
+
 const uploadMessageAttachments = multer({
-  storage: localStorage,
+  storage: messageImageStorage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }
 }).array('attachments', 5);
