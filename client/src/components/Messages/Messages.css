@@ -83,6 +83,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0; /* allow .inbox-list to scroll inside grid/flex constraints */
 }
 
 .inbox-filters {
@@ -113,7 +114,7 @@
 
 .inbox-filter.active { background: var(--color-primary); border-color: var(--color-primary); color: white; }
 
-.inbox-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.inbox-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; }
 
 .inbox-loading, .inbox-empty { padding: var(--space-2xl); text-align: center; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .inbox-empty-sub { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs); }
@@ -230,6 +231,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  min-height: 0; /* ensures scroll works reliably in nested flex/grid */
+  overscroll-behavior: contain;
 }
 
 .chat-empty { text-align: center; padding: var(--space-3xl); color: var(--color-text-muted); }
