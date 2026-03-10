@@ -48,7 +48,7 @@ const ConvoItem = ({ convo, selected, userId, onClick, onlineStatus }) => {
           </Link>
         )}
         {convo.lastMessage && (
-          <div className="convo-preview">{convo.lastMessage.content?.substring(0, 60)}{convo.lastMessage.content?.length > 60 ? '...' : ''}</div>
+          <div className="convo-preview">{((convo.lastMessage.content || '').replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '').trim()).substring(0, 60)}{convo.lastMessage.content?.replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '').trim().length > 60 ? '...' : ''}</div>
         )}
       </div>
       {unread && <span className="convo-badge">{convo.unreadCount}</span>}
@@ -295,7 +295,9 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
             {meta.type === 'call_ended' && `📴 Call ended${meta.duration ? ` • ${Math.max(0, Number(meta.duration || 0))}s` : ''}`}
           </div>
         ) : (
-          <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+          <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>
+            {(msg.content || '').replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '').trim()}
+          </div>
         )}
 
         {/* Service order link */}

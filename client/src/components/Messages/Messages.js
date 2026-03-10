@@ -74,6 +74,7 @@ const Messages = () => {
   const [scheduleNotes, setScheduleNotes] = useState('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleError, setScheduleError] = useState('');
+  const [editingApptId, setEditingApptId] = useState(null);
   const [appointmentsById, setAppointmentsById] = useState({});
   const [actingApptId, setActingApptId] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState({}); // userId → { isOnline, lastSeen }
@@ -443,16 +444,32 @@ const Messages = () => {
     }
   }, [locationSearch, conversations]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Init schedule modal defaults when opened
+  // Init schedule modal defaults (create vs edit)
   useEffect(() => {
     if (!showScheduleModal) return;
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+    setScheduleError('');
+    setScheduleSaving(false);
+
+    const editing = editingApptId ? appointmentsById[editingApptId] : null;
+    if (editing) {
+      const start = new Date(editing.startAtUtc);
+      const localDate = `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())}`;
+      const localTime = `${pad2(start.getHours())}:${pad2(start.getMinutes())}`;
+      const mins = Math.round((new Date(editing.endAtUtc).getTime() - new Date(editing.startAtUtc).getTime()) / 60000);
+
+      setScheduleType(editing.appointmentType || 'consultation');
+      setScheduleDate(localDate);
+      setScheduleTime(localTime);
+      setScheduleDuration(mins || 30);
+      setScheduleNotes(editing.notes || '');
+      return;
+    }
+
     const d = nextQuarterLocal();
     const isoDate = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
     const isoTime = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
-    setScheduleError('');
-    setScheduleSaving(false);
     setScheduleDate(prev => prev || isoDate);
     setScheduleTime(prev => prev || isoTime);
     setScheduleDuration(prev => prev || 30);
@@ -461,11 +478,7 @@ const Messages = () => {
     if (selectedConvo?.service) setScheduleType('service');
     else if (selectedConvo?.job) setScheduleType('job');
     else setScheduleType('consultation');
-
-    // store tz in notes line if needed later; server stores timezone separately in payload
-    setScheduleNotes('');
-    // eslint-disable-next-line
-  }, [showScheduleModal]);
+  }, [showScheduleModal, editingApptId, appointmentsById, selectedConvo]);
 
   const translateLanguages = [
     { code: 'es', label: 'Spanish' }, { code: 'fr', label: 'French' },
@@ -718,6 +731,21 @@ const Messages = () => {
                                     )}
                                   </div>
                                 )}
+
+                                {/* Edit — available on proposed (by proposer) and confirmed (both parties) */}
+                                {(appt.status === 'proposed' || appt.status === 'confirmed') && (
+                                  <div style={{ marginTop: appt.status === 'confirmed' ? 10 : 0 }}>
+                                    <button
+                                      type="button"
+                                      className="offer-btn-secondary"
+                                      disabled={actingApptId === appt.id}
+                                      onClick={() => {
+                                        setEditingApptId(appt.id);
+                                        setShowScheduleModal(true);
+                                      }}
+                                    >✏️ Edit</button>
+                                  </div>
+                                )}
                               </>
                             ) : (
                               <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>Loading appointment…</div>
@@ -900,11 +928,11 @@ const Messages = () => {
 
               {/* Schedule Modal */}
               {showScheduleModal && (
-                <div className="offer-modal-overlay" onClick={() => !scheduleSaving && setShowScheduleModal(false)}>
+                <div className="offer-modal-overlay" onClick={() => { if (!scheduleSaving) { setShowScheduleModal(false); setEditingApptId(null); } }}>
                   <div className="offer-modal" onClick={e => e.stopPropagation()}>
                     <div className="offer-modal-header">
-                      <h2>📅 Schedule</h2>
-                      <button className="offer-modal-close" onClick={() => setShowScheduleModal(false)} disabled={scheduleSaving}>✕</button>
+                      <h2>📅 {editingApptId ? 'Edit appointment' : 'Schedule'}</h2>
+                      <button className="offer-modal-close" onClick={() => { setShowScheduleModal(false); setEditingApptId(null); }} disabled={scheduleSaving}>✕</button>
                     </div>
 
                     {scheduleError && (
@@ -924,22 +952,33 @@ const Messages = () => {
                           if (Number.isNaN(startLocal.getTime())) throw new Error('Invalid date/time');
 
                           const payload = {
-                            conversationId: selectedConvo._id,
                             appointmentType: scheduleType,
                             startAtUtc: startLocal.toISOString(),
                             durationMinutes: Number(scheduleDuration),
                             timezone: tz,
                             notes: scheduleNotes,
-                            jobId: selectedConvo?.job?._id || selectedConvo?.job || undefined,
-                            serviceId: selectedConvo?.service?._id || selectedConvo?.service || undefined,
                           };
 
-                          const resp = await apiRequest('/api/appointments', {
-                            method: 'POST',
-                            body: JSON.stringify(payload),
-                          });
+                          let appt;
+                          if (editingApptId) {
+                            const resp = await apiRequest(`/api/appointments/${editingApptId}`, {
+                              method: 'PUT',
+                              body: JSON.stringify(payload),
+                            });
+                            appt = resp.appointment;
+                          } else {
+                            const resp = await apiRequest('/api/appointments', {
+                              method: 'POST',
+                              body: JSON.stringify({
+                                conversationId: selectedConvo._id,
+                                ...payload,
+                                jobId: selectedConvo?.job?._id || selectedConvo?.job || undefined,
+                                serviceId: selectedConvo?.service?._id || selectedConvo?.service || undefined,
+                              }),
+                            });
+                            appt = resp.appointment;
+                          }
 
-                          const appt = resp.appointment;
                           await fetchAppointments(selectedConvo._id);
                           const startStr = new Date(appt.startAtUtc).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
                           const mins = Math.round((new Date(appt.endAtUtc).getTime() - new Date(appt.startAtUtc).getTime()) / 60000);
@@ -947,11 +986,12 @@ const Messages = () => {
                           await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, {
                             method: 'POST',
                             body: JSON.stringify({
-                              content: `📅 Appointment proposed [appt:${appt.id}]: ${startStr} (${mins} min) — ${appt.appointmentType}${scheduleNotes ? `\nNotes: ${scheduleNotes}` : ''}`
+                              content: `${editingApptId ? '✏️ Appointment update proposed' : '📅 Appointment proposed'} [appt:${appt.id}]: ${startStr} (${mins} min) — ${appt.appointmentType}${scheduleNotes ? `\nNotes: ${scheduleNotes}` : ''}`
                             })
                           });
 
                           setShowScheduleModal(false);
+                          setEditingApptId(null);
                           fetchConversations();
                           if (selectedConvo?._id) fetchMessages(selectedConvo);
                         } catch (err) {
@@ -1007,7 +1047,7 @@ const Messages = () => {
                       </div>
 
                       <div className="offer-actions">
-                        <button type="button" className="offer-btn-secondary" onClick={() => setShowScheduleModal(false)} disabled={scheduleSaving}>Cancel</button>
+                        <button type="button" className="offer-btn-secondary" onClick={() => { setShowScheduleModal(false); setEditingApptId(null); }} disabled={scheduleSaving}>Cancel</button>
                         <button type="submit" className="offer-btn-primary" disabled={scheduleSaving || !scheduleDate || !scheduleTime}>
                           {scheduleSaving ? 'Proposing…' : 'Propose'}
                         </button>
