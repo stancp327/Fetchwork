@@ -369,31 +369,82 @@
 .chat-placeholder p { margin: 0; font-size: var(--font-size-sm); }
 
 /* ── Context Panel (hidden on mobile) ─────────────────────────── */
+/* ── Context / Details Panel (mobile-first) ───────────────────── */
+
+/* Mobile: full-width overlay drawer from the right */
 .messages-context {
-  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  animation: ctx-fade-in 0.18s ease;
+}
+
+@keyframes ctx-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.context-panel-inner {
+  width: min(320px, 92vw);
+  height: 100%;
+  background: var(--color-bg-primary);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+  animation: ctx-slide-in 0.2s ease;
+}
+
+@keyframes ctx-slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
 }
 
 .context-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: var(--space-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
 }
-.context-header h3 { margin: 0; font-size: var(--font-size-base); font-weight: 600; }
-.context-header button { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--color-text-secondary); min-width: 44px; min-height: 44px; }
+.context-header h3 { margin: 0; font-size: var(--font-size-base); font-weight: 700; }
+.context-header button {
+  background: none; border: none; font-size: 1.2rem; cursor: pointer;
+  color: var(--color-text-secondary); min-width: 44px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center; border-radius: 8px;
+}
+.context-header button:hover { background: var(--color-bg-muted); }
 
-.context-profile { text-align: center; margin-bottom: var(--space-xl); }
+.context-profile { text-align: center; }
 .context-avatar {
-  width: 64px; height: 64px; border-radius: 50%;
+  width: 80px; height: 80px; border-radius: 50%;
   background: var(--color-primary-light); margin: 0 auto var(--space-md);
   display: flex; align-items: center; justify-content: center;
-  overflow: hidden; font-size: 1.2rem; font-weight: 700; color: var(--color-primary);
+  overflow: hidden; font-size: 1.6rem; font-weight: 700; color: var(--color-primary);
+  border: 3px solid var(--color-border);
 }
 .context-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.context-profile h4 { margin: 0 0 var(--space-xs); font-size: var(--font-size-base); }
-.context-link { color: var(--color-primary); font-size: var(--font-size-xs); text-decoration: none; }
+.context-profile h4 { margin: 0 0 var(--space-xs); font-size: var(--font-size-lg); font-weight: 700; }
+.context-link {
+  color: var(--color-primary); font-size: var(--font-size-sm);
+  text-decoration: none; font-weight: 500;
+}
 .context-link:hover { text-decoration: underline; }
 
-.context-section { margin-bottom: var(--space-lg); }
-.context-section h4 { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 var(--space-sm); }
+.context-section { display: flex; flex-direction: column; gap: var(--space-sm); }
+.context-section h4 {
+  font-size: var(--font-size-xs); font-weight: 700;
+  color: var(--color-text-secondary); text-transform: uppercase;
+  letter-spacing: 0.6px; margin: 0;
+}
 .context-job-card {
   display: block; padding: var(--space-md); background: var(--color-bg-subtle);
   border: 1px solid var(--color-border); border-radius: 10px; text-decoration: none;
@@ -425,16 +476,26 @@
   .msg-row { max-width: 75%; }
 }
 
-/* ── Desktop (1100px+) — show context panel ───────────────────── */
+/* ── Desktop (1100px+) — inline panel (no overlay) ───────────── */
 @media (min-width: 1100px) {
   .messages-context {
-    display: block;
-    width: 280px;
-    border-left: 1px solid var(--color-border);
-    padding: var(--space-lg);
-    overflow-y: auto;
+    position: static;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    animation: none;
+    z-index: auto;
+    display: block; /* always visible when showContext=true */
   }
-
+  .context-panel-inner {
+    width: 280px;
+    height: 100%;
+    box-shadow: none;
+    border-left: 1px solid var(--color-border);
+    border-radius: 0;
+    animation: none;
+    padding: var(--space-lg);
+  }
   .messages-layout {
     grid-template-columns: 320px 1fr 280px;
   }

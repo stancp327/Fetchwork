@@ -1367,9 +1367,10 @@ const Messages = () => {
           )}
         </div>
 
-        {/* ── Context Panel ──────────────────────────────────── */}
+        {/* ── Context Panel (drawer on mobile, inline on desktop) ── */}
         {selectedConvo && showContext && (
-          <div className="messages-context">
+          <div className="messages-context" onClick={() => setShowContext(false)}>
+          <div className="context-panel-inner" onClick={e => e.stopPropagation()}>
             <div className="context-header">
               <h3>Details</h3>
               <button onClick={() => setShowContext(false)}>×</button>
@@ -1479,6 +1480,7 @@ const Messages = () => {
                 </Link>
               </div>
             )}
+          </div>
           </div>
         )}
       </div>
