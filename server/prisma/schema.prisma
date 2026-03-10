@@ -28,6 +28,50 @@ enum ActorType {
   system
 }
 
+enum AppointmentType {
+  service
+  job
+  phone
+  video
+  consultation
+}
+
+enum AppointmentStatus {
+  proposed
+  confirmed
+  cancelled
+  completed
+}
+
+model Appointment {
+  id             String            @id @default(uuid()) @db.Uuid
+  conversationId String
+  clientId       String
+  freelancerId   String
+  appointmentType AppointmentType
+  status          AppointmentStatus @default(proposed)
+  proposedById    String
+  approvedById    String?
+  approvedAt      DateTime?         @db.Timestamptz(6)
+
+  // Optional links (Mongo IDs)
+  jobId           String?
+  serviceId       String?
+
+  startAtUtc      DateTime          @db.Timestamptz(6)
+  endAtUtc        DateTime          @db.Timestamptz(6)
+  timezone        String
+  notes           String?
+
+  createdAt      DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(6)
+
+  @@index([conversationId, startAtUtc])
+  @@index([clientId, startAtUtc])
+  @@index([freelancerId, startAtUtc])
+  @@index([status, startAtUtc])
+}
+
 model Booking {
   id                  String        @id @default(uuid()) @db.Uuid
   bookingRef          String        @unique

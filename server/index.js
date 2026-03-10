@@ -276,6 +276,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/job-templates', require('./routes/jobTemplates'));
 app.use('/api/boosts', require('./routes/boosts'));
 app.use('/api/messages', require('./routes/messages'));
