@@ -342,9 +342,26 @@ jobSchema.index({ freelancer: 1, isActive: 1, status: 1 });
 jobSchema.index({ isArchived: 1, archivedAt: -1 });
 jobSchema.index({ team: 1, status: 1, createdAt: -1 });
 
-jobSchema.pre('save', function(next) {
+jobSchema.pre('save', async function(next) {
   if (this.isModified('proposals')) {
     this.proposalCount = this.proposals.length;
+  }
+  // Auto-geocode location when zip/city is set but coordinates are missing/default
+  if (this.isModified('location') || this.isNew) {
+    const loc = this.location;
+    if (loc && loc.locationType !== 'remote') {
+      const geoQuery = loc.zipCode || loc.city || loc.address;
+      const coords = loc.coordinates?.coordinates;
+      if (geoQuery && (!coords || (coords[0] === 0 && coords[1] === 0))) {
+        try {
+          const { geocode } = require('../config/geocoding');
+          const result = await geocode(geoQuery);
+          if (result) {
+            this.location.coordinates = { type: 'Point', coordinates: result };
+          }
+        } catch (_) {}
+      }
+    }
   }
   next();
 });

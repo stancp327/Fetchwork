@@ -22,14 +22,14 @@ const CATEGORIES = [
   ...categoryOptions
 ];
 
-const SORT_OPTIONS = [
+const BASE_SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
   { value: 'oldest', label: 'Oldest First' },
-  { value: 'distance', label: '📍 Nearest First' },
   { value: 'budget_high', label: 'Highest Budget' },
   { value: 'budget_low', label: 'Lowest Budget' },
   { value: 'most_proposals', label: 'Most Proposals' },
 ];
+const DISTANCE_SORT = { value: 'distance', label: '📍 Nearest First' };
 
 const deadlineLabel = (date) => {
   if (!date) return null;
@@ -192,28 +192,7 @@ const BrowseJobs = () => {
       <FilterSelect label="Category" value={filters.category} onChange={v => updateFilter('category', v)} options={CATEGORIES} />
       <FilterSelect label="Experience" value={filters.experienceLevel} onChange={v => updateFilter('experienceLevel', v)}
         options={[{ value: 'all', label: 'All Levels' }, { value: 'entry', label: 'Entry' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'expert', label: 'Expert' }]} />
-      <FilterSelect label="Work Type" value={filters.workLocation} onChange={v => updateFilter('workLocation', v)}
-        options={[{ value: 'all', label: 'All Types' }, { value: 'remote', label: '🌐 Remote' }, { value: 'local', label: '📍 Local' }, { value: 'hybrid', label: '🔄 Hybrid' }]} />
-      <FilterInput label="Near (zip or city)" value={filters.near} onChange={v => updateFilter('near', v)} placeholder="e.g. 94520 or Concord" />
-      {!filters.near && (
-        <button
-          type="button"
-          onClick={() => {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (pos) => updateFilter('near', `${pos.coords.latitude},${pos.coords.longitude}`),
-                () => alert('Location denied. Enter a zip code instead.'),
-                { enableHighAccuracy: false, timeout: 5000 }
-              );
-            }
-          }}
-          style={{ width: '100%', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '0.6rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, color: '#2563eb', marginTop: '-0.5rem' }}
-        >📍 Use My Location</button>
-      )}
-      {filters.near && (
-        <FilterSelect label="Distance" value={filters.radius} onChange={v => updateFilter('radius', v)}
-          options={[{ value: '5', label: '5 miles' }, { value: '10', label: '10 miles' }, { value: '25', label: '25 miles' }, { value: '50', label: '50 miles' }, { value: '100', label: '100 miles' }]} />
-      )}
+      {/* Work Type + location handled by pill bar above results */}
       <FilterInput label="Min Budget" value={filters.minBudget} onChange={v => updateFilter('minBudget', v)} placeholder="$0" type="number" />
       <FilterInput label="Max Budget" value={filters.maxBudget} onChange={v => updateFilter('maxBudget', v)} placeholder="No limit" type="number" />
       <FilterCheckbox label="Urgent only" checked={filters.urgentOnly} onChange={v => updateFilter('urgentOnly', v)} />
@@ -270,7 +249,7 @@ const BrowseJobs = () => {
           total={pagination.total || 0}
           sortValue={filters.sortBy}
           onSortChange={v => updateFilter('sortBy', v)}
-          sortOptions={SORT_OPTIONS}
+          sortOptions={filters.near ? [DISTANCE_SORT, ...BASE_SORT_OPTIONS] : BASE_SORT_OPTIONS}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />

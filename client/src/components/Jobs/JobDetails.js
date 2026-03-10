@@ -746,7 +746,7 @@ const JobDetails = () => {
             )}
 
             {job.status === 'disputed' && 
-             user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
+             user && (String(job.client._id) === String(user._id || user.id || user.userId) || String(job.freelancer?._id) === String(user._id || user.id || user.userId)) && (
               <div className="sidebar-card">
                 <h3>⚠️ Dispute Active</h3>
                 <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
@@ -759,7 +759,7 @@ const JobDetails = () => {
             )}
 
             {(job.status === 'in_progress' || job.status === 'completed') && 
-             user && (job.client._id === user._id || job.freelancer?._id === user._id) && (
+             user && (String(job.client._id) === String(user._id || user.id || user.userId) || String(job.freelancer?._id) === String(user._id || user.id || user.userId)) && (
               <div className="sidebar-card">
                 <Link to={`/jobs/${job._id}/progress`} className="btn-full btn-primary-jd" style={{ textDecoration: 'none', display: 'block', marginBottom: '0.5rem' }}>
                   📊 Track Progress
