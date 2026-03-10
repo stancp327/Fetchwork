@@ -1835,7 +1835,7 @@ router.put('/boosts/:type/:id/cancel', authenticateAdmin, requirePermission('job
 // BOOKING MANAGEMENT
 // ═══════════════════════════════════════════════════════════════
 
-const Booking = require('../models/Booking');
+// NOTE: Booking is SQL-backed (Neon/Prisma). Mongo Booking model is legacy and not used in admin.
 
 // GET /admin/bookings — list all bookings (Mongo legacy OR SQL current)
 router.get('/bookings', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
@@ -1893,34 +1893,65 @@ router.get('/bookings', authenticateAdmin, requirePermission('job_management'), 
       return;
     }
 
-    // Fallback legacy Mongo bookings (only if still present)
-    const query = status ? { status } : {};
-
-    const [bookings, total] = await Promise.all([
-      Booking.find(query)
-        .populate('client', 'firstName lastName email')
-        .populate('freelancer', 'firstName lastName email')
-        .populate('service', 'title')
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit).limit(Number(limit)).lean(),
-      Booking.countDocuments(query)
-    ]);
-
-    res.json({ bookings, total, page: Number(page), pages: Math.ceil(total / limit) });
+    return res.status(503).json({
+      error: 'booking_sql_not_configured',
+      message: 'Admin bookings require DATABASE_URL (SQL). Legacy Mongo bookings are not supported.',
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /admin/bookings/:id — booking detail
+// GET /admin/bookings/:id — booking detail (SQL)
 router.get('/bookings/:id', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id)
-      .populate('client', 'firstName lastName email')
-      .populate('freelancer', 'firstName lastName email')
-      .populate('service', 'title price');
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
-    res.json({ booking });
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({
+        error: 'booking_sql_not_configured',
+        message: 'Admin bookings require DATABASE_URL (SQL).',
+      });
+    }
+
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    const User = require('../models/User');
+    const Service = require('../models/Service');
+
+    const id = req.params.id;
+
+    const b = await prisma.booking.findUnique({
+      where: { id },
+      include: { occurrences: { orderBy: { occurrenceNo: 'asc' }, take: 50 } },
+    });
+
+    if (!b) {
+      await prisma.$disconnect();
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const [client, freelancer, service] = await Promise.all([
+      User.findById(b.clientId).select('firstName lastName email').lean(),
+      User.findById(b.freelancerId).select('firstName lastName email').lean(),
+      b.policySnapshotJson?.serviceId ? Service.findById(b.policySnapshotJson.serviceId).select('title').lean() : null,
+    ]);
+
+    await prisma.$disconnect();
+
+    res.json({
+      booking: {
+        id: b.id,
+        bookingRef: b.bookingRef,
+        status: b.currentState,
+        createdAt: b.createdAt,
+        updatedAt: b.updatedAt,
+        client,
+        freelancer,
+        service: service || (b.policySnapshotJson?.serviceTitle ? { title: b.policySnapshotJson.serviceTitle } : null),
+        policySnapshotJson: b.policySnapshotJson,
+        pricingSnapshotJson: b.pricingSnapshotJson,
+        occurrences: b.occurrences,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1984,28 +2015,10 @@ router.patch('/bookings/:id/cancel', authenticateAdmin, requirePermission('job_m
       return res.json({ message: 'Booking cancelled', booking: { id: updated.id, status: updated.currentState } });
     }
 
-    // Legacy Mongo booking cancel
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
-    if (['cancelled', 'completed'].includes(booking.status)) {
-      return res.status(400).json({ error: `Booking already ${booking.status}` });
-    }
-
-    booking.status = 'cancelled';
-    booking.cancelledBy = 'admin';
-    booking.cancelReason = req.body.reason || 'Cancelled by admin';
-    booking.cancelledAt = new Date();
-    await booking.save();
-
-    await logAdminAction({
-      adminId: req.admin._id, adminEmail: req.admin.email,
-      targetId: booking.client, action: 'booking.cancel',
-      reason: req.body.reason || 'Cancelled by admin',
-      metadata: { bookingId: booking._id },
-      ip: req.ip,
+    return res.status(503).json({
+      error: 'booking_sql_not_configured',
+      message: 'Admin booking cancel requires DATABASE_URL (SQL). Legacy Mongo bookings are not supported.',
     });
-
-    res.json({ message: 'Booking cancelled', booking });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
