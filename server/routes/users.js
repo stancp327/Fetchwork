@@ -31,6 +31,8 @@ function computeProfileCompletion(user) {
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
+    const mongoose = require('mongoose');
+    const userOid = new mongoose.Types.ObjectId(userId);
     
     const activeJobsAsClient = await Job.countDocuments({
       client: userId,
@@ -47,7 +49,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     const totalEarnings = await Payment.aggregate([
       {
         $match: {
-          freelancer: userId,
+          freelancer: userOid,
           status: 'completed',
           type: { $in: ['release', 'bonus'] }
         }
@@ -63,7 +65,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     const totalSpent = await Payment.aggregate([
       {
         $match: {
-          client: userId,
+          client: userOid,
           status: 'completed',
           type: { $in: ['escrow', 'bonus'] }
         }
@@ -101,7 +103,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     const pendingProposals = await Job.aggregate([
       {
         $match: {
-          'proposals.freelancer': userId,
+          'proposals.freelancer': userOid,
           'proposals.status': 'pending',
           isActive: true
         }
@@ -114,7 +116,7 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
           proposals: {
             $filter: {
               input: '$proposals',
-              cond: { $eq: ['$$this.freelancer', userId] }
+              cond: { $eq: ['$$this.freelancer', userOid] }
             }
           }
         }

@@ -115,7 +115,7 @@ const PublicProfile = () => {
   const certifications = f.certifications || [];
   const experience = f.experience || [];
   const education = f.education || [];
-  const isOwnProfile = currentUser?._id === f._id;
+  const isOwnProfile = currentUser && String(currentUser._id || currentUser.id || currentUser.userId) === String(f._id);
 
   const initials = `${f.firstName?.[0] || ''}${f.lastName?.[0] || ''}`.toUpperCase();
 
