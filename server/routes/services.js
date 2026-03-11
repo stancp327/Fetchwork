@@ -59,9 +59,22 @@ router.get('/', async (req, res) => {
     const { page, limit, skip } = parsePagination(req.query);
     const filters = await buildServiceFilters(req.query);
 
+    // Build sort from query params
+    let sortOptions = { isBoosted: -1, createdAt: -1, rating: -1 };
+    if (req.query.sortBy) {
+      switch (req.query.sortBy) {
+        case 'newest':        sortOptions = { createdAt: -1 }; break;
+        case 'popular':       sortOptions = { totalOrders: -1, views: -1 }; break;
+        case 'price_low':     sortOptions = { 'pricing.basic.price': 1 }; break;
+        case 'price_high':    sortOptions = { 'pricing.basic.price': -1 }; break;
+        case 'rating':        sortOptions = { rating: -1, totalReviews: -1 }; break;
+        default:              sortOptions = { isBoosted: -1, createdAt: -1, rating: -1 };
+      }
+    }
+
     const services = await Service.find(filters)
       .populate('freelancer', 'firstName lastName profilePicture rating totalJobs')
-      .sort({ isBoosted: -1, createdAt: -1, rating: -1 })
+      .sort(sortOptions)
       .skip(skip)
       .limit(limit);
     

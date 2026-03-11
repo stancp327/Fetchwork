@@ -64,6 +64,14 @@ async function buildServiceFilters(query) {
     }
   }
 
+  // Delivery time filter
+  if (query.deliveryTime && query.deliveryTime !== 'all') {
+    const maxDays = { '1_day': 1, '3_days': 3, '7_days': 7, '14_days': 14, '30_days': 30 }[query.deliveryTime];
+    if (maxDays) {
+      filters['pricing.basic.deliveryTime'] = { $lte: maxDays };
+    }
+  }
+
   if (query.search) {
     const safeSearch = escapeRegex(query.search);
     filters.$or = [

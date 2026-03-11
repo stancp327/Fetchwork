@@ -9,6 +9,7 @@ import EscrowModal from '../Payments/EscrowModal';
 import BookingCalendar from '../Bookings/BookingCalendar';
 import IntakeFormFill from './IntakeFormFill';
 import SEO from '../common/SEO';
+import Avatar from '../common/Avatar';
 import ShareQR from '../common/ShareQR';
 import ServiceAreaMap from '../common/ServiceAreaMap';
 import './ServiceDetails.css';
@@ -222,7 +223,7 @@ const ServiceDetails = () => {
   }
 
   const currentPackage = service.pricing[selectedPackage];
-  const isOwnService = user && service.freelancer._id === user._id;
+  const isOwnService = user && String(service.freelancer?._id) === String(user._id || user.id || user.userId);
 
   const freelancerName = service.user
     ? `${service.user.firstName} ${service.user.lastName}`
@@ -313,11 +314,7 @@ const ServiceDetails = () => {
           <div className="service-sidebar">
             <div className="freelancer-card">
               <div className="freelancer-info">
-                <img 
-                  src={service.freelancer.profilePicture || '/default-avatar.png'} 
-                  alt={`${service.freelancer.firstName} ${service.freelancer.lastName}`}
-                  className="freelancer-avatar-large"
-                />
+                <Avatar user={service.freelancer} size={56} className="freelancer-avatar-large" />
                 <div>
                   <h3>{service.freelancer.firstName} {service.freelancer.lastName}</h3>
                   {service.freelancer.bio && (
@@ -536,9 +533,10 @@ const ServiceDetails = () => {
           {/* Service location + map */}
           {service.serviceLocation?.mode && service.serviceLocation.mode !== 'remote' && (() => {
             const loc = service.serviceLocation;
-            const coords = loc.coordinates?.coordinates;
-            const lat = coords?.[1];
-            const lon = coords?.[0];
+            // Geo coordinates live on service.location (the main GeoJSON field), not serviceLocation
+            const geoCoords = service.location?.coordinates?.coordinates;
+            const lat = geoCoords?.[1];
+            const lon = geoCoords?.[0];
             return (
               <>
                 {lat && lon ? (
