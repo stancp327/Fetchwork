@@ -475,9 +475,13 @@
   .mobile-back-btn { display: none; }
 
   /* Override mobile show/hide for two-pane */
-  .messages-inbox { display: flex !important; }
-  .messages-chat { display: flex !important; }
-  .mobile-show, .mobile-hide { display: initial !important; }
+  .messages-inbox,
+  .messages-inbox.mobile-show,
+  .messages-inbox.mobile-hide { display: flex !important; }
+
+  .messages-chat,
+  .messages-chat.mobile-show,
+  .messages-chat.mobile-hide { display: flex !important; }
 
   .msg-row { max-width: 75%; }
 }
