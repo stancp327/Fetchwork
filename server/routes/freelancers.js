@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const { validateQueryParams } = require('../middleware/validation');
-const { geocode, nearSphereQuery } = require('../config/geocoding');
+const { geocode, geoWithinQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
 
 router.get('/', validateQueryParams, async (req, res) => {
@@ -40,8 +40,26 @@ router.get('/', validateQueryParams, async (req, res) => {
       const radius = parseInt(req.query.radius) || 25;
       const coords = await geocode(req.query.near.trim());
       if (coords) {
-        filters['location.coordinates'] = nearSphereQuery(coords, radius);
+        // Use $geoWithin/$centerSphere (not $nearSphere) to avoid sort conflict
+        filters['location.coordinates.coordinates'] = geoWithinQuery(coords, radius);
       }
+    }
+
+    // Category filter — match against user's categories or skills
+    if (req.query.category && req.query.category !== 'all') {
+      const cat = req.query.category;
+      filters.$and = filters.$and || [];
+      filters.$and.push({
+        $or: [
+          { categories: cat },
+          { skills: { $in: [new RegExp(escapeRegex(cat.replace(/_/g, ' ')), 'i')] } }
+        ]
+      });
+    }
+
+    // Availability filter
+    if (req.query.availability && req.query.availability !== 'all') {
+      filters.availabilityStatus = req.query.availability;
     }
     
     if (req.query.minRate || req.query.maxRate) {
@@ -85,6 +103,7 @@ router.get('/', validateQueryParams, async (req, res) => {
           sortOptions = { hourlyRate: -1 };
           break;
         case 'experience':
+        case 'most_jobs':
           sortOptions = { completedJobs: -1 };
           break;
         case 'earnings':
