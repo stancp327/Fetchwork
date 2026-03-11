@@ -171,6 +171,10 @@ const Messages = () => {
   const userIdRef = useRef(userId);
   useEffect(() => { userIdRef.current = userId; }, [userId]);
 
+  const otherParticipant = selectedConvo?.participants?.find(
+    p => String(getEntityId(p?._id || p)) !== String(userId)
+  );
+
   const syncConversationSinceLastSeq = useCallback(async (conversationId) => {
     const sinceSeq = Number(lastSeqByConvoRef.current[conversationId] || 0);
     const data = await apiRequest(`/api/messages/conversations/${conversationId}/sync?sinceSeq=${sinceSeq}&limit=200`);
@@ -581,8 +585,6 @@ const Messages = () => {
       alert('Failed to translate message.');
     } finally { setTranslatingId(null); }
   };
-
-  const otherParticipant = selectedConvo?.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
 
   // Debounced search across conversations + message content
   useEffect(() => {
