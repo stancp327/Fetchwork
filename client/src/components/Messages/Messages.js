@@ -64,7 +64,8 @@ const Messages = () => {
   const userId = getEntityId(user?._id || user?.id || user?.userId);
   const [userFeatures, setUserFeatures] = useState([]);
   const [featuresLoaded, setFeaturesLoaded] = useState(false);
-  const canCall = !featuresLoaded || userFeatures.includes('audio_calls') || userFeatures.includes('video_calls');
+  const userFeatureList = Array.isArray(userFeatures) ? userFeatures : Object.keys(userFeatures || {});
+  const canCall = !featuresLoaded || userFeatureList.includes('audio_calls') || userFeatureList.includes('video_calls');
   const [conversations, setConversations] = useState([]);
   const [selectedConvo, setSelectedConvo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -390,7 +391,16 @@ const Messages = () => {
   // Fetch user feature flags once on mount
   useEffect(() => {
     apiRequest('/api/auth/me/features')
-      .then(data => { setUserFeatures(data.features || []); setFeaturesLoaded(true); })
+      .then(data => {
+        const raw = data?.features;
+        const normalized = Array.isArray(raw)
+          ? raw
+          : (raw && typeof raw === 'object')
+            ? Object.keys(raw).filter((k) => !!raw[k])
+            : [];
+        setUserFeatures(normalized);
+        setFeaturesLoaded(true);
+      })
       .catch(() => setFeaturesLoaded(true));
   }, []);
 
