@@ -213,8 +213,9 @@ const JobProgress = () => {
   if (error) return <div className="jp-container"><div className="jp-error">{error}</div></div>;
   if (!data) return null;
 
-  const isClient = user?._id === data.job?.client?._id;
-  const isFreelancer = user?._id === data.job?.freelancer?._id;
+  const myId = String(user?._id || user?.id || user?.userId);
+  const isClient = myId === String(data.job?.client?._id);
+  const isFreelancer = myId === String(data.job?.freelancer?._id);
   const milestones = data.milestones || [];
   const updates = [...(data.progress || [])].reverse();
   const completedMilestones = milestones.filter(m => m.status === 'approved').length;

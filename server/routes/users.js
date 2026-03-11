@@ -623,7 +623,9 @@ router.delete('/push-token', authenticateToken, async (req, res) => {
 // ── GET /api/users/me/earnings ────────────────────────────────────────────────
 router.get('/me/earnings', authenticateToken, async (req, res) => {
   try {
+    const mongoose = require('mongoose');
     const userId = req.user._id || req.user.userId;
+    const userOid = new mongoose.Types.ObjectId(userId);
     const year   = parseInt(req.query.year) || new Date().getFullYear();
 
     const start = new Date(`${year}-01-01T00:00:00Z`);
@@ -633,7 +635,7 @@ router.get('/me/earnings', authenticateToken, async (req, res) => {
     const monthly = await Payment.aggregate([
       {
         $match: {
-          freelancer: userId,
+          freelancer: userOid,
           type:       'release',
           status:     'completed',
           createdAt:  { $gte: start, $lt: end },
@@ -651,13 +653,13 @@ router.get('/me/earnings', authenticateToken, async (req, res) => {
 
     // All-time totals
     const allTime = await Payment.aggregate([
-      { $match: { freelancer: userId, type: 'release', status: 'completed' } },
+      { $match: { freelancer: userOid, type: 'release', status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
     ]);
 
     // Pending (escrow held)
     const pending = await Payment.aggregate([
-      { $match: { freelancer: userId, type: 'escrow', status: 'pending' } },
+      { $match: { freelancer: userOid, type: 'escrow', status: 'pending' } },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]);
 

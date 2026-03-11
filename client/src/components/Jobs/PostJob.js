@@ -16,7 +16,7 @@ const PostJob = () => {
   const { hasFeature } = useFeatures();
   const canTemplates      = hasFeature('job_templates');
   const canAIDescription  = hasFeature('ai_job_description');
-  const { lookupZip, zipLoading, zipError } = useZipLookup();
+  // Reactive zip lookup — auto-fills city/state when user enters a valid zip
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -195,6 +195,18 @@ const PostJob = () => {
     recurringEndDate:  '',
   });
   const [errors, setErrors] = useState({});
+  const zipLookup = useZipLookup(formData.zipCode);
+
+  // Auto-fill city/state from zip lookup result
+  useEffect(() => {
+    if (zipLookup.result && formData.zipCode.length >= 5) {
+      setFormData(prev => ({
+        ...prev,
+        city: zipLookup.result.city || prev.city,
+        state: zipLookup.result.state || prev.state,
+      }));
+    }
+  }, [zipLookup.result]);
 
   const validateForm = () => {
     const newErrors = validateFormData(formData);
@@ -771,21 +783,13 @@ const PostJob = () => {
                       id="zipCode"
                       name="zipCode"
                       value={formData.zipCode}
-                      onChange={(e) => {
-                        handleInputChange(e);
-                        lookupZip(e.target.value, ({ city, stateCode }) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            city: city || prev.city,
-                            state: stateCode || prev.state,
-                          }));
-                        });
-                      }}
+                      onChange={handleInputChange}
                       placeholder="94520"
                       maxLength={10}
                     />
-                    {zipLoading && <span className="zip-loading">Looking up...</span>}
-                    {zipError && <span className="zip-error">{zipError}</span>}
+                    {zipLookup.loading && <span className="zip-loading">Looking up...</span>}
+                    {zipLookup.error && <span className="zip-error">{zipLookup.error}</span>}
+                    {zipLookup.result && <span className="zip-city-hint">📍 {zipLookup.result.city}, {zipLookup.result.state}</span>}
                   </div>
                 </div>
               </>
