@@ -10,7 +10,7 @@ router.get('/public', async (req, res) => {
   try {
     const [jobs, freelancers, services, reviews] = await Promise.all([
       Job.countDocuments({ isActive: true, status: { $in: ['open', 'in_progress', 'completed'] } }),
-      User.countDocuments({ isActive: true, 'modes.freelancer': true }),
+      User.countDocuments({ isActive: true, accountType: { $in: ['freelancer', 'both'] } }),
       Service.countDocuments({ isActive: true }),
       Review.countDocuments({ rating: { $gte: 4 } }),
     ]);

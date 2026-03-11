@@ -14,6 +14,8 @@ const Login = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMsg, setResendMsg] = useState('');
   const [resendCooldownUntil, setResendCooldownUntil] = useState(0);
+  const cooldownMs = 15000;
+  const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,9 +73,6 @@ const Login = () => {
       setResendLoading(false);
     }
   };
-  const cooldownMs = 15000;
-  const canResend = !resendLoading && Date.now() >= resendCooldownUntil;
-
   const handleGoogleLogin = () => {
     window.location.href = `${getApiBaseUrl()}/api/auth/google`;
   };
@@ -163,14 +162,13 @@ const Login = () => {
             <Link to="/forgot-password" className="forgot-password-link">
               Forgot your password?
             </Link>
+          </div>
           <div className="form-actions" style={{ marginTop: '8px' }}>
             <button type="button" className="link-button" onClick={handleResend} disabled={!canResend}>
               {resendLoading ? 'Resending…' : 'Resend verification email'}
             </button>
-          </div>
-          {resendMsg && <div className="info-message">{resendMsg}</div>}
-          {!canResend && <div className="info-message">Please wait a moment before requesting again.</div>}
-
+            {resendMsg && <div className="info-message">{resendMsg}</div>}
+            {!canResend && <div className="info-message">Please wait a moment before requesting again.</div>}
           </div>
 
           {error && <div className="error-message">{error}</div>}
