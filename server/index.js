@@ -122,8 +122,15 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
   validate: { trustProxy: false, xForwardedForHeader: false }, // we handle IP ourselves
   skip: (req) => {
+    // Preflight requests can be noisy on web/mobile and should not consume rate budget
+    if (req.method === 'OPTIONS') return true;
+
     if (req.path.includes('/webhook')) return true;
     if (req.path === '/health' || req.path === '/') return true;
+
+    // Keep auth bootstrap endpoints available even during bursty client startup
+    if (req.path === '/api/auth/me' || req.path === '/api/auth/me/features') return true;
+
     return false;
   },
   message: { error: 'Too many requests. Please slow down.' },

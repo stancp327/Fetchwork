@@ -68,6 +68,18 @@ router.get('/status', authenticateToken, async (req, res) => {
       requirements:   account.requirements
     });
   } catch (error) {
+    const stripeAuthError = error?.type === 'StripeAuthenticationError' || /Invalid API Key/i.test(error?.message || '');
+    if (stripeAuthError) {
+      console.error('Stripe auth error in /api/payments/status:', error.message);
+      return res.status(200).json({
+        connected: false,
+        chargesEnabled: false,
+        payoutsEnabled: false,
+        unavailable: true,
+        reason: 'stripe_auth_error',
+      });
+    }
+
     console.error('Error getting payment status:', error);
     res.status(500).json({ error: 'Failed to get payment status' });
   }
