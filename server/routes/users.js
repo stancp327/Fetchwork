@@ -9,6 +9,7 @@ const { uploadProfilePicture, uploadVerificationDocs } = require('../middleware/
 const { validateProfilePictureUpdate } = require('../middleware/validation');
 const { normalize, isValid } = require('../utils/username');
 const path = require('path');
+const mongoose = require('mongoose');
 function computeProfileCompletion(user) {
   let total = 0;
   let achieved = 0;
@@ -31,7 +32,6 @@ function computeProfileCompletion(user) {
 router.get('/dashboard', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const mongoose = require('mongoose');
     const userOid = new mongoose.Types.ObjectId(userId);
     
     const activeJobsAsClient = await Job.countDocuments({
@@ -623,7 +623,6 @@ router.delete('/push-token', authenticateToken, async (req, res) => {
 // ── GET /api/users/me/earnings ────────────────────────────────────────────────
 router.get('/me/earnings', authenticateToken, async (req, res) => {
   try {
-    const mongoose = require('mongoose');
     const userId = req.user._id || req.user.userId;
     const userOid = new mongoose.Types.ObjectId(userId);
     const year   = parseInt(req.query.year) || new Date().getFullYear();

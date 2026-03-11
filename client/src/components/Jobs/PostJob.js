@@ -206,6 +206,7 @@ const PostJob = () => {
         state: zipLookup.result.state || prev.state,
       }));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zipLookup.result]);
 
   const validateForm = () => {
