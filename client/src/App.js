@@ -143,7 +143,11 @@ const ProtectedRoute = ({ children }) => {
   
   if (!user) {
     localStorage.removeItem('token');
-    return <Navigate to="/login" replace />;
+    // Avoid unnecessary redirect if already on login page
+    if (window.location.pathname !== '/login') {
+      return <Navigate to="/login" replace />;
+    }
+    return null;
   }
   
   return children;
@@ -161,7 +165,8 @@ const PublicRoute = ({ children }) => {
     );
   }
   
-  return user ? <Navigate to="/dashboard" replace /> : children;
+  // Avoid unnecessary redirect if already on dashboard
+  return user && window.location.pathname !== '/dashboard' ? <Navigate to="/dashboard" replace /> : children;
 };
 
 const AdminRoute = () => {
