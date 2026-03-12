@@ -19,6 +19,9 @@ const FreelancerCard = ({ freelancer }) => {
               alt={`${freelancer.firstName} ${freelancer.lastName}`}
               className="freelancer-avatar"
               loading="lazy"
+              width="80"
+              height="80"
+              decoding="async"
             />
           </picture>
           {freelancer.isOnline && <span className="avatar-online-badge" title="Available now" />}

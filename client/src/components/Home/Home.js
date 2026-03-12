@@ -317,7 +317,7 @@ const Home = () => {
                 {featuredServices.map(svc => (
                   <Link key={svc._id} to={`/services/${svc._id}`} className="fs-card">
                     {svc.gallery?.[0]?.url ? (
-                      <img src={svc.gallery[0].url} alt={svc.title} className="fs-img" loading="lazy" />
+                      <img src={svc.gallery[0].url} alt={svc.title} className="fs-img" loading="lazy" width="320" height="160" decoding="async" />
                     ) : (
                       <div className="fs-img-placeholder">
                         {CATEGORIES.find(c => c.id === svc.category)?.icon || '🛠️'}

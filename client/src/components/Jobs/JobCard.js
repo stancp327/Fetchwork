@@ -44,7 +44,7 @@ const JobCard = ({ job }) => {
                 {job.team?.logo ? (
                   <picture>
                     <source srcSet={job.team.logo} type="image/webp" />
-                    <img src={job.team.logo} alt="" className="jc-team-badge-logo" loading="lazy" />
+                    <img src={job.team.logo} alt="" className="jc-team-badge-logo" loading="lazy" width="16" height="16" decoding="async" />
                   </picture>
                 ) : (
                   (job.team?.name || 'T')[0]
