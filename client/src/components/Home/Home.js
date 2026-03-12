@@ -59,6 +59,7 @@ const Home = () => {
   const [stats, setStats] = useState({ jobs: 0, freelancers: 0, services: 0, reviews: 0 });
   const [featuredServices, setFeaturedServices] = useState([]);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const [heroExtrasReady, setHeroExtrasReady] = useState(false);
 
   useEffect(() => {
     const loadHomeData = () => {
@@ -71,13 +72,21 @@ const Home = () => {
         .catch(() => {});
     };
 
-    // Defer non-critical below-the-fold data fetches to prioritize hero render
+    const readyHeroExtras = () => setHeroExtrasReady(true);
+
+    // Defer non-critical below-the-fold data fetches and hero extras to prioritize hero title render
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      const idleId = window.requestIdleCallback(loadHomeData, { timeout: 2000 });
+      const idleId = window.requestIdleCallback(() => {
+        readyHeroExtras();
+        loadHomeData();
+      }, { timeout: 2000 });
       return () => window.cancelIdleCallback?.(idleId);
     }
 
-    const t = setTimeout(loadHomeData, 1200);
+    const t = setTimeout(() => {
+      readyHeroExtras();
+      loadHomeData();
+    }, 1200);
     return () => clearTimeout(t);
   }, []);
 
@@ -156,38 +165,42 @@ const Home = () => {
               </button>
             </form>
 
-            <div className="hero-quick-links">
-              <span className="hero-popular">Popular:</span>
-              {(activeTab === 'client'
-                ? ['Home Cleaning', 'Web Design', 'Moving Help', 'Pet Care', 'Lawn Care']
-                : ['Remote Design', 'Web Dev', 'Tutoring', 'Copywriting', 'Video Editing']
-              ).map(term => (
-                <Link
-                  key={term}
-                  to={activeTab === 'client'
-                    ? `/browse-services?search=${encodeURIComponent(term)}`
-                    : `/browse-jobs?search=${encodeURIComponent(term)}`}
-                  className="hero-quick-tag"
-                >
-                  {term}
-                </Link>
-              ))}
-            </div>
+            {heroExtrasReady && (
+              <>
+                <div className="hero-quick-links">
+                  <span className="hero-popular">Popular:</span>
+                  {(activeTab === 'client'
+                    ? ['Home Cleaning', 'Web Design', 'Moving Help', 'Pet Care', 'Lawn Care']
+                    : ['Remote Design', 'Web Dev', 'Tutoring', 'Copywriting', 'Video Editing']
+                  ).map(term => (
+                    <Link
+                      key={term}
+                      to={activeTab === 'client'
+                        ? `/browse-services?search=${encodeURIComponent(term)}`
+                        : `/browse-jobs?search=${encodeURIComponent(term)}`}
+                      className="hero-quick-tag"
+                    >
+                      {term}
+                    </Link>
+                  ))}
+                </div>
 
-            {!isAuthenticated && (
-              <div className="hero-actions">
-                {activeTab === 'client' ? (
-                  <>
-                    <Link to="/register" className="btn btn-primary btn-large">Post a Job Free</Link>
-                    <Link to="/browse-services" className="btn btn-ghost btn-large">Browse Services</Link>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/register" className="btn btn-primary btn-large">Join as Freelancer</Link>
-                    <Link to="/browse-jobs" className="btn btn-ghost btn-large">Browse Jobs</Link>
-                  </>
+                {!isAuthenticated && (
+                  <div className="hero-actions">
+                    {activeTab === 'client' ? (
+                      <>
+                        <Link to="/register" className="btn btn-primary btn-large">Post a Job Free</Link>
+                        <Link to="/browse-services" className="btn btn-ghost btn-large">Browse Services</Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link to="/register" className="btn btn-primary btn-large">Join as Freelancer</Link>
+                        <Link to="/browse-jobs" className="btn btn-ghost btn-large">Browse Jobs</Link>
+                      </>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </div>
         </section>
