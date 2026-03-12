@@ -342,3 +342,4 @@ const ProjectCard = ({ job, onAcceptProposal, onComplete, onMilestoneUpdate, onF
 };
 
 export default ProjectCard;
+
