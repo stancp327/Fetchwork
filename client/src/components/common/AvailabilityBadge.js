@@ -1,7 +1,7 @@
 import React from 'react';
 
 const STATUS_MAP = {
-  available: { label: 'Available Now', color: '#10b981', dot: '#10b981' },
+  available: { label: 'Available Now', color: '#3b82f6', dot: '#3b82f6' },
   busy: { label: 'Busy', color: '#f59e0b', dot: '#f59e0b' },
   not_taking_work: { label: 'Not Taking Work', color: '#dc2626', dot: '#dc2626' },
   away: { label: 'Away', color: '#6b7280', dot: '#6b7280' },
