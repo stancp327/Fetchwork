@@ -1,0 +1,9 @@
+/* ProjectCard CSS */
+/* CLS Fix: Explicit dimensions for images to prevent layout shift */
+.pm-partner-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
