@@ -1653,3 +1653,13 @@
   background: var(--color-primary-dark, #1d4ed8);
 }
 
+
+/* CLS Fix: Explicit dimensions for images to prevent layout shift */
+.pm-partner-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
