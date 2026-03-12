@@ -67,16 +67,20 @@ const Avatar = ({
   ].filter(Boolean);
 
   const src = sources[step] || sources[sources.length - 1];
+  const webpSrc = pic && pic.includes('/webp/') ? pic : '/webp/default-avatar.webp';
 
   return (
-    <img
-      src={src}
-      alt={alt || `${first} ${last}`.trim() || 'User'}
-      className={className}
-      style={baseStyle}
-      loading="lazy"
-      onError={() => setStep(s => Math.min(s + 1, sources.length - 1))}
-    />
+    <picture>
+      <source srcSet={webpSrc} type="image/webp" />
+      <img
+        src={src}
+        alt={alt || `${first} ${last}`.trim() || 'User'}
+        className={className}
+        style={baseStyle}
+        loading="lazy"
+        onError={() => setStep(s => Math.min(s + 1, sources.length - 1))}
+      />
+    </picture>
   );
 };
 
