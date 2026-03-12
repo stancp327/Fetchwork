@@ -165,43 +165,45 @@ const Home = () => {
               </button>
             </form>
 
-            {heroExtrasReady && (
-              <>
-                <div className="hero-quick-links">
-                  <span className="hero-popular">Popular:</span>
-                  {(activeTab === 'client'
-                    ? ['Home Cleaning', 'Web Design', 'Moving Help', 'Pet Care', 'Lawn Care']
-                    : ['Remote Design', 'Web Dev', 'Tutoring', 'Copywriting', 'Video Editing']
-                  ).map(term => (
-                    <Link
-                      key={term}
-                      to={activeTab === 'client'
-                        ? `/browse-services?search=${encodeURIComponent(term)}`
-                        : `/browse-jobs?search=${encodeURIComponent(term)}`}
-                      className="hero-quick-tag"
-                    >
-                      {term}
-                    </Link>
-                  ))}
-                </div>
-
-                {!isAuthenticated && (
-                  <div className="hero-actions">
-                    {activeTab === 'client' ? (
-                      <>
-                        <Link to="/register" className="btn btn-primary btn-large">Post a Job Free</Link>
-                        <Link to="/browse-services" className="btn btn-ghost btn-large">Browse Services</Link>
-                      </>
-                    ) : (
-                      <>
-                        <Link to="/register" className="btn btn-primary btn-large">Join as Freelancer</Link>
-                        <Link to="/browse-jobs" className="btn btn-ghost btn-large">Browse Jobs</Link>
-                      </>
-                    )}
+            <div className="hero-extras" aria-hidden={!heroExtrasReady}>
+              {heroExtrasReady && (
+                <>
+                  <div className="hero-quick-links">
+                    <span className="hero-popular">Popular:</span>
+                    {(activeTab === 'client'
+                      ? ['Home Cleaning', 'Web Design', 'Moving Help', 'Pet Care', 'Lawn Care']
+                      : ['Remote Design', 'Web Dev', 'Tutoring', 'Copywriting', 'Video Editing']
+                    ).map(term => (
+                      <Link
+                        key={term}
+                        to={activeTab === 'client'
+                          ? `/browse-services?search=${encodeURIComponent(term)}`
+                          : `/browse-jobs?search=${encodeURIComponent(term)}`}
+                        className="hero-quick-tag"
+                      >
+                        {term}
+                      </Link>
+                    ))}
                   </div>
-                )}
-              </>
-            )}
+
+                  {!isAuthenticated && (
+                    <div className="hero-actions">
+                      {activeTab === 'client' ? (
+                        <>
+                          <Link to="/register" className="btn btn-primary btn-large">Post a Job Free</Link>
+                          <Link to="/browse-services" className="btn btn-ghost btn-large">Browse Services</Link>
+                        </>
+                      ) : (
+                        <>
+                          <Link to="/register" className="btn btn-primary btn-large">Join as Freelancer</Link>
+                          <Link to="/browse-jobs" className="btn btn-ghost btn-large">Browse Jobs</Link>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </section>
 

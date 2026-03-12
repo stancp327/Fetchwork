@@ -148,6 +148,11 @@
   gap: var(--space-sm);
 }
 
+/* Reserve space for deferred hero extras to avoid CLS spikes */
+.hero-extras {
+  min-height: 132px;
+}
+
 /* -- Stats Bar ------------------------------------------------- */
 .stats-bar {
   display: flex;
