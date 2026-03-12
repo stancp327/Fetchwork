@@ -101,7 +101,12 @@ router.get('/gravatar-img', (req, res) => {
   const crypto = require('crypto');
   const hash = crypto.createHash('md5').update(email).digest('hex');
   // 302 redirect to Gravatar — cached by the browser
-  res.redirect(302, `https://www.gravatar.com/avatar/${hash}?s=${size}&d=404`);
+  // Avoid redirect if already attempted to prevent loops
+  if (req.headers.referer && req.headers.referer.includes('gravatar.com')) {
+    res.status(404).json({ error: 'Gravatar not found' });
+  } else {
+    res.redirect(302, `https://www.gravatar.com/avatar/${hash}?s=${size}&d=404`);
+  }
 });
 
 module.exports = router;

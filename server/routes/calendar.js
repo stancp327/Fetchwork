@@ -33,10 +33,20 @@ router.get('/google/callback', async (req, res) => {
     }
 
     await calendarService.handleCallback(code, userId);
-    res.redirect(`${process.env.CLIENT_URL}/profile?tab=verification&calendar=connected`);
+    // Avoid redirect if already on profile with success
+    if (req.headers.referer && req.headers.referer.includes('/profile?tab=verification')) {
+      res.json({ success: true });
+    } else {
+      res.redirect(`${process.env.CLIENT_URL}/profile?tab=verification&calendar=connected`);
+    }
   } catch (err) {
     console.error('google callback error:', err);
-    res.redirect(`${process.env.CLIENT_URL}/profile?tab=verification&calendar=error`);
+    // Avoid redirect if already on profile with error
+    if (req.headers.referer && req.headers.referer.includes('/profile?tab=verification')) {
+      res.json({ success: false, error: err.message });
+    } else {
+      res.redirect(`${process.env.CLIENT_URL}/profile?tab=verification&calendar=error`);
+    }
   }
 });
 
