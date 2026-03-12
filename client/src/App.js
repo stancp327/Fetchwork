@@ -11,14 +11,9 @@ import { MessagingProvider } from './context/MessagingContext';
 import { SeoProvider } from './context/SeoContext';
 import { ToastProvider } from './components/common/Toast';
 import usePageTracker from './hooks/usePageTracker';
-// Shell components — always rendered, must stay in main bundle
+// Shell components — keep critical layout in main bundle
 import Navigation from './components/Navigation/Navigation';
 import Footer from './components/common/Footer';
-import ChatBot from './components/ChatBot/ChatBot';
-import FeedbackWidget from './components/common/FeedbackWidget';
-import NotificationListener from './components/common/NotificationListener';
-import MessagePreview from './components/common/MessagePreview';
-import IncomingCallOverlay from './components/Calls/IncomingCallOverlay';
 import './App.css';
 
 // Route components — lazy-loaded, only downloaded when the route is visited
@@ -88,6 +83,13 @@ const DiscoverySettings    = React.lazy(() => import('./components/Settings/Disc
 const JobAlertsPage        = React.lazy(() => import('./components/JobAlerts/JobAlertsPage'));
 const ReferralPage         = React.lazy(() => import('./components/Referrals/ReferralPage'));
 const PresentationView     = React.lazy(() => import('./components/Teams/PresentationView'));
+
+// Non-critical global UI — lazy-load after initial content paint
+const ChatBot              = React.lazy(() => import('./components/ChatBot/ChatBot'));
+const FeedbackWidget       = React.lazy(() => import('./components/common/FeedbackWidget'));
+const NotificationListener = React.lazy(() => import('./components/common/NotificationListener'));
+const MessagePreview       = React.lazy(() => import('./components/common/MessagePreview'));
+const IncomingCallOverlay  = React.lazy(() => import('./components/Calls/IncomingCallOverlay'));
 
 class AuthErrorBoundary extends React.Component {
   constructor(props) {
@@ -197,15 +199,32 @@ function ScrollToTop() {
 
 function AppContent() {
   usePageTracker();
+  const { user } = useAuth();
+  const [enhancementsReady, setEnhancementsReady] = React.useState(false);
+
+  useEffect(() => {
+    const run = () => setEnhancementsReady(true);
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(run, { timeout: 2000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(run, 1200);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className="App">
       <ScrollToTop />
       <Navigation />
-      <ChatBot />
-      <FeedbackWidget />
-      <NotificationListener />
-      <MessagePreview />
-      <IncomingCallOverlay />
+      {enhancementsReady && (
+        <Suspense fallback={null}>
+          <ChatBot />
+          <FeedbackWidget />
+          {user && <NotificationListener />}
+          {user && <MessagePreview />}
+          {user && <IncomingCallOverlay />}
+        </Suspense>
+      )}
       <main className="page-content">
       <Suspense fallback={
         <div className="loading-container">
