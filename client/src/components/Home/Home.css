@@ -521,3 +521,12 @@
 }
 
 
+
+/* CLS Fix: Explicit dimensions for images to prevent layout shift */
+.hero img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+

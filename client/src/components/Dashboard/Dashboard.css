@@ -501,3 +501,12 @@
 .dash-action-item:hover { text-decoration: underline; }
 
 
+
+/* CLS Fix: Explicit dimensions for images to prevent layout shift */
+.dash-stat-card img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
