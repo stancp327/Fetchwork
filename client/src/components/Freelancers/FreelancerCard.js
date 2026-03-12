@@ -12,11 +12,15 @@ const FreelancerCard = ({ freelancer }) => {
     <div className="freelancer-card">
       <div className="freelancer-header">
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <img 
-            src={freelancer.profilePicture || '/default-avatar.png'} 
-            alt={`${freelancer.firstName} ${freelancer.lastName}`}
-            className="freelancer-avatar"
-          />
+          <picture>
+            <source srcSet={freelancer.profilePicture ? freelancer.profilePicture : '/webp/default-avatar.webp'} type="image/webp" />
+            <img 
+              src={freelancer.profilePicture || '/default-avatar.png'} 
+              alt={`${freelancer.firstName} ${freelancer.lastName}`}
+              className="freelancer-avatar"
+              loading="lazy"
+            />
+          </picture>
           {freelancer.isOnline && <span className="avatar-online-badge" title="Available now" />}
         </div>
         <div className="freelancer-info">
