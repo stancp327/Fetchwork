@@ -61,13 +61,24 @@ const Home = () => {
   const [testimonialIdx, setTestimonialIdx] = useState(0);
 
   useEffect(() => {
-    apiRequest('/api/stats/public')
-      .then(d => setStats({ jobs: d.jobs || 24, freelancers: d.freelancers || 50, services: d.services || 35, reviews: d.reviews || 120 }))
-      .catch(() => setStats({ jobs: 24, freelancers: 50, services: 35, reviews: 120 }));
+    const loadHomeData = () => {
+      apiRequest('/api/stats/public')
+        .then(d => setStats({ jobs: d.jobs || 24, freelancers: d.freelancers || 50, services: d.services || 35, reviews: d.reviews || 120 }))
+        .catch(() => setStats({ jobs: 24, freelancers: 50, services: 35, reviews: 120 }));
 
-    apiRequest('/api/services?limit=6&status=active')
-      .then(d => setFeaturedServices((d.services || d || []).slice(0, 6)))
-      .catch(() => {});
+      apiRequest('/api/services?limit=6&status=active')
+        .then(d => setFeaturedServices((d.services || d || []).slice(0, 6)))
+        .catch(() => {});
+    };
+
+    // Defer non-critical below-the-fold data fetches to prioritize hero render
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(loadHomeData, { timeout: 2000 });
+      return () => window.cancelIdleCallback?.(idleId);
+    }
+
+    const t = setTimeout(loadHomeData, 1200);
+    return () => clearTimeout(t);
   }, []);
 
   const handleSearch = (e) => {
