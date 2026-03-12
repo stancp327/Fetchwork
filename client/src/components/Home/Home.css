@@ -530,3 +530,15 @@
   flex-shrink: 0;
 }
 
+/* LCP/TBT optimization: defer layout/paint work for below-the-fold sections */
+.how-it-works,
+.categories-section,
+.featured-services,
+.trust-section,
+.testimonials,
+.final-cta,
+.footer-cta {
+  content-visibility: auto;
+  contain-intrinsic-size: 800px;
+}
+
