@@ -163,8 +163,8 @@
   background: var(--color-bg-primary);
   border-bottom: 1px solid var(--color-border);
 }
-.stat-item { text-align: center; }
-.stat-number { display: block; font-size: var(--font-size-2xl); font-weight: 800; color: var(--color-primary); }
+.stat-item { text-align: center; min-width: 92px; }
+.stat-number { display: block; font-size: var(--font-size-2xl); font-weight: 800; color: var(--color-primary); font-variant-numeric: tabular-nums; }
 .stat-label { font-size: var(--font-size-xs); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* -- Section scaffold ------------------------------------------ */

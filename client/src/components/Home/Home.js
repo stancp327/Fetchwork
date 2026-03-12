@@ -56,7 +56,8 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('client'); // 'client' | 'freelancer'
   const [catTab, setCatTab] = useState('all'); // 'all' | 'local' | 'remote'
-  const [stats, setStats] = useState({ jobs: 0, freelancers: 0, services: 0, reviews: 0 });
+  // Start with realistic placeholders to avoid above-the-fold layout shift when stats hydrate
+  const [stats, setStats] = useState({ jobs: 24, freelancers: 50, services: 35, reviews: 120 });
   const [featuredServices, setFeaturedServices] = useState([]);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const [heroExtrasReady, setHeroExtrasReady] = useState(false);
