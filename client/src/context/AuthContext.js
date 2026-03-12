@@ -63,7 +63,11 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ AuthContext - fetchUser error:', error);
       const status = error.response?.status;
-      if (status === 401 || status === 403) logout();
+      if (status === 401 || status === 403) {
+        logout();
+        console.log('Session expired or unauthorized. Redirecting to login.');
+        alert('Your session has expired or you are not authorized. You will be redirected to the login page.');
+      }
       else setLoading(false);
     } finally {
       setLoading(false);
