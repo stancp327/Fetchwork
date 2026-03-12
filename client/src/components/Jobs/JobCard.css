@@ -258,3 +258,12 @@
   padding: 2px 9px;
   white-space: nowrap;
 }
+
+/* CLS Fix: Explicit dimensions for images to prevent layout shift */
+.jc-team-badge-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
