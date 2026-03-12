@@ -147,7 +147,15 @@ const BrowseJobs = () => {
       setLoading(true);
       const params = new URLSearchParams({ page, limit: 12 });
       if (search) params.set('search', search);
-      Object.entries(filters).forEach(([k, v]) => {
+
+      const effectiveFilters = { ...filters };
+      // Near/radius should only apply for local mode; otherwise it hides remote/all unexpectedly.
+      if (effectiveFilters.workLocation !== 'local') {
+        delete effectiveFilters.near;
+        delete effectiveFilters.radius;
+      }
+
+      Object.entries(effectiveFilters).forEach(([k, v]) => {
         if (v && v !== 'all' && v !== false) params.set(k, v);
       });
 

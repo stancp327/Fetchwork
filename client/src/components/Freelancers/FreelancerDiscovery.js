@@ -109,7 +109,7 @@ const FreelancerDiscovery = () => {
   // Pre-populate search from URL ?search= param (e.g. clicking a skill tag)
   const [search, setSearch] = useState(() => new URLSearchParams(urlQueryString).get('search') || '');
   const [filters, setFilters] = useState({
-    category: 'all', near: '', radius: '25', minRate: '', maxRate: '', availability: 'all', sortBy: 'rating'
+    category: 'all', workLocation: 'all', near: '', radius: '25', minRate: '', maxRate: '', availability: 'all', sortBy: 'rating'
   });
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
@@ -122,7 +122,15 @@ const FreelancerDiscovery = () => {
       setLoading(true);
       const params = new URLSearchParams({ page, limit: 12 });
       if (search) params.set('search', search);
-      Object.entries(filters).forEach(([k, v]) => {
+
+      const effectiveFilters = { ...filters };
+      // Near/radius should only apply for local mode; otherwise it hides remote/all unexpectedly.
+      if (effectiveFilters.workLocation !== 'local') {
+        delete effectiveFilters.near;
+        delete effectiveFilters.radius;
+      }
+
+      Object.entries(effectiveFilters).forEach(([k, v]) => {
         if (v && v !== 'all') params.set(k, v);
       });
 
@@ -165,11 +173,7 @@ const FreelancerDiscovery = () => {
     <>
       <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 600 }}>Filters</h3>
       <FilterSelect label="Category" value={filters.category} onChange={v => updateFilter('category', v)} options={CATEGORIES} />
-      <FilterInput label="Near (zip or city)" value={filters.near} onChange={v => updateFilter('near', v)} placeholder="e.g. 94520 or Concord" />
-      {filters.near && (
-        <FilterSelect label="Distance" value={filters.radius} onChange={v => updateFilter('radius', v)}
-          options={[{ value: '5', label: '5 miles' }, { value: '10', label: '10 miles' }, { value: '25', label: '25 miles' }, { value: '50', label: '50 miles' }, { value: '100', label: '100 miles' }]} />
-      )}
+      {/* Work Type + location handled by pill bar above results */}
       <FilterInput label="Min Rate ($/hr)" value={filters.minRate} onChange={v => updateFilter('minRate', v)} placeholder="$0" type="number" />
       <FilterInput label="Max Rate ($/hr)" value={filters.maxRate} onChange={v => updateFilter('maxRate', v)} placeholder="No limit" type="number" />
       <FilterSelect label="Availability" value={filters.availability} onChange={v => updateFilter('availability', v)}
@@ -190,6 +194,38 @@ const FreelancerDiscovery = () => {
         sidebar={sidebar}
       >
         <SearchBar value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search by name, skills, or expertise..." />
+
+        {/* ── Local / Remote / All toggle ── */}
+        <div className="service-location-bar">
+          {[
+            { value: 'all',    label: '🌐 All' },
+            { value: 'local',  label: '📍 Local' },
+            { value: 'remote', label: '💻 Remote' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              className={`service-loc-pill${filters.workLocation === opt.value ? ' active' : ''}`}
+              onClick={() => updateFilter('workLocation', opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {filters.workLocation === 'local' && (
+            <div className="service-zip-bar">
+              <input
+                type="text"
+                className="service-zip-input"
+                placeholder="Zip or city (e.g. 94520)"
+                value={filters.near}
+                onChange={e => updateFilter('near', e.target.value)}
+                maxLength={10}
+              />
+              <select className="service-radius-select" value={filters.radius} onChange={e => updateFilter('radius', e.target.value)}>
+                {[5, 10, 25, 50, 100].map(r => <option key={r} value={String(r)}>{r} mi</option>)}
+              </select>
+            </div>
+          )}
+        </div>
 
         <ResultsControls
           total={pagination.total || 0}

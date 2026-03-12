@@ -35,13 +35,30 @@ router.get('/', validateQueryParams, async (req, res) => {
       });
     }
 
-    // Distance-based search: ?near=94520&radius=25
+    // Work location filter
+    if (req.query.workLocation && req.query.workLocation !== 'all') {
+      switch (req.query.workLocation) {
+        case 'remote':
+          filters['location.locationType'] = 'remote';
+          break;
+        case 'local':
+          filters['location.locationType'] = { $in: ['local', 'hybrid'] };
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Distance-based search: ?near=94520&radius=25 (only meaningful for local/hybrid)
     if (req.query.near && req.query.near.trim() !== '') {
       const radius = parseInt(req.query.radius) || 25;
       const coords = await geocode(req.query.near.trim());
       if (coords) {
         // Use $geoWithin/$centerSphere (not $nearSphere) to avoid sort conflict
         filters['location.coordinates.coordinates'] = geoWithinQuery(coords, radius);
+        if (!filters['location.locationType']) {
+          filters['location.locationType'] = { $in: ['local', 'hybrid'] };
+        }
       }
     }
 
