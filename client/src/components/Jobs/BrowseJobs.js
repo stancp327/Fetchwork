@@ -190,7 +190,15 @@ const BrowseJobs = () => {
   }, [urlQueryString]);
 
   const updateFilter = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => {
+      const updated = { ...prev, [key]: value };
+      // Reset near/radius when switching away from local, to avoid stale location data affecting All/Remote.
+      if (key === 'workLocation' && value !== 'local') {
+        updated.near = '';
+        updated.radius = '25';
+      }
+      return updated;
+    });
     setPage(1);
   };
 
