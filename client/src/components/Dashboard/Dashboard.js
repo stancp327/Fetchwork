@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
 import { apiRequest } from '../../utils/api';
@@ -6,7 +6,10 @@ import { Link } from 'react-router-dom';
 import ProfileCompletion from '../Onboarding/ProfileCompletion';
 import { formatBudget } from '../../utils/formatters';
 import './Dashboard.css';
-import SEO from '../common/SEO';
+import SEO from '../common/SEO';\n\n// Dynamically import chart components to reduce initial bundle size\nconst ChartComponent = lazy(() => import('../Charts/LineChart'));
+
+// Dynamically import chart components to reduce initial bundle size
+const ChartComponent = lazy(() => import('../Charts/LineChart'));
 
 // ── Stat Card ───────────────────────────────────────────────────
 const StatCard = ({ icon, label, value, sub, color = '#2563eb', to }) => {
@@ -368,5 +371,8 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+
+
 
 
