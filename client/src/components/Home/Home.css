@@ -3,18 +3,35 @@
 
 /* -- Hero ------------------------------------------------------ */
 .hero {
+  padding: var(--space-2xl) var(--container-padding) var(--space-3xl);
+  text-align: center;
+  color: white;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   position: relative;
-  padding: var(--space-3xl) var(--container-padding) var(--space-2xl);
-  margin-bottom: var(--space-3xl);
-  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-bg) 100%);
-  color: var(--color-text-on-primary);
   overflow: hidden;
-  min-height: 400px;
 }
 
-/* Removed hero-bg-decor to reduce render delay */
+.hero-bg-decor {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(52, 211, 153, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
 
-/* Simplified hero-content */
+.hero-content { max-width: 700px; margin: 0 auto; position: relative; z-index: 2; }
+
+.hero-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.9);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: 20px;
+  font-size: var(--font-size-xs);
+  margin-bottom: var(--space-lg);
+}
 
 .hero-title {
   font-size: clamp(1.75rem, 5vw, 3.25rem);
@@ -488,14 +505,15 @@
 }
 
 @media (min-width: 768px) {
-  .hero {
-  position: relative;
-  padding: var(--space-3xl) var(--container-padding) var(--space-2xl);
-  margin-bottom: var(--space-3xl);
-  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-bg) 100%);
-  color: var(--color-text-on-primary);
-  overflow: hidden;
-  min-height: 400px;
+  .hero { padding: 4rem var(--container-padding) 4rem; }
+  .hero-search { flex-direction: row; }
+  .hero-search-btn { flex-shrink: 0; }
+  .hero-actions, .cta-actions { flex-direction: row; justify-content: center; }
+  .btn-large { width: auto; max-width: none; }
+  .steps-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .features-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .section-title { font-size: var(--font-size-2xl); }
+  .cta-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1024px) {
@@ -528,5 +546,4 @@
   content-visibility: auto;
   contain-intrinsic-size: 800px;
 }
-
 

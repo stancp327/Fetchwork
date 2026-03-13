@@ -121,51 +121,50 @@ const Home = () => {
 
         {/* ── Hero ───────────────────────────────────────────────── */}
         <section className="hero">
-          <h1 className="hero-title">
-            Get anything done,<br />
-            <span className="hero-highlight">fast &amp; safely.</span>
-          </h1>
-          <p className="hero-subtitle">
-            From home repair to logo design — find local help or remote talent, with payments secured every step of the way.
-          </p>
+          <div className="hero-bg-decor" aria-hidden="true" />
+          <div className="hero-content">
+            <div className="hero-badge">🚀 Trusted by freelancers &amp; clients across the US</div>
+            <h1 className="hero-title">
+              Get anything done,<br />
+              <span className="hero-highlight">fast &amp; safely.</span>
+            </h1>
+            <p className="hero-subtitle">
+              From home repair to logo design — find local help or remote talent, with payments secured every step of the way.
+            </p>
 
             {/* Tab switcher */}
-            {heroExtrasReady && (
-              <div className="hero-tabs" role="tablist">
-                <button
-                  role="tab"
-                  aria-selected={activeTab === 'client'}
-                  className={`hero-tab ${activeTab === 'client' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('client')}
-                >
-                  I need help
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={activeTab === 'freelancer'}
-                  className={`hero-tab ${activeTab === 'freelancer' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('freelancer')}
-                >
-                  I'm a freelancer
-                </button>
-              </div>
-            )}
+            <div className="hero-tabs" role="tablist">
+              <button
+                role="tab"
+                aria-selected={activeTab === 'client'}
+                className={`hero-tab ${activeTab === 'client' ? 'active' : ''}`}
+                onClick={() => setActiveTab('client')}
+              >
+                I need help
+              </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === 'freelancer'}
+                className={`hero-tab ${activeTab === 'freelancer' ? 'active' : ''}`}
+                onClick={() => setActiveTab('freelancer')}
+              >
+                I'm a freelancer
+              </button>
+            </div>
 
-            {heroExtrasReady && (
-              <form className="hero-search" onSubmit={handleSearch}>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={activeTab === 'client' ? 'What do you need done?' : 'What skills do you offer?'}
-                  className="hero-search-input"
-                  aria-label="Search"
-                />
-                <button type="submit" className="hero-search-btn">
-                  {activeTab === 'client' ? 'Find Help' : 'Find Jobs'}
-                </button>
-              </form>
-            )}
+            <form className="hero-search" onSubmit={handleSearch}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={activeTab === 'client' ? 'What do you need done?' : 'What skills do you offer?'}
+                className="hero-search-input"
+                aria-label="Search"
+              />
+              <button type="submit" className="hero-search-btn">
+                {activeTab === 'client' ? 'Find Help' : 'Find Jobs'}
+              </button>
+            </form>
 
             <div className="hero-extras" aria-hidden={!heroExtrasReady}>
               {heroExtrasReady && (
