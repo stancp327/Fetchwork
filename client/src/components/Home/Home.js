@@ -80,14 +80,14 @@ const Home = () => {
       const idleId = window.requestIdleCallback(() => {
         readyHeroExtras();
         loadHomeData();
-      }, { timeout: 2000 });
+      }, { timeout: 3000 });
       return () => window.cancelIdleCallback?.(idleId);
     }
 
     const t = setTimeout(() => {
       readyHeroExtras();
       loadHomeData();
-    }, 1200);
+    }, 1500);
     return () => clearTimeout(t);
   }, []);
 
@@ -335,13 +335,13 @@ const Home = () => {
         </section>
 
         {/* ── Featured Services ──────────────────────────────────── */}
-        {featuredServices.length > 0 && (
-          <section className="featured-services">
-            <div className="container">
-              <h2 className="section-title">Featured Services</h2>
-              <p className="section-subtitle">Top-rated freelancers ready to work</p>
-              <div className="fs-grid">
-                {featuredServices.map(svc => (
+        <section className="featured-services">
+          <div className="container">
+            <h2 className="section-title">Featured Services</h2>
+            <p className="section-subtitle">Top-rated freelancers ready to work</p>
+            <div className="fs-grid">
+              {featuredServices.length > 0 ? (
+                featuredServices.map(svc => (
                   <Link key={svc._id} to={`/services/${svc._id}`} className="fs-card">
                     {svc.gallery?.[0]?.url ? (
                       <img src={svc.gallery[0].url} alt={svc.title} className="fs-img" loading="lazy" width="320" height="160" decoding="async" />
@@ -363,14 +363,29 @@ const Home = () => {
                       </div>
                     </div>
                   </Link>
-                ))}
-              </div>
-              <div className="section-more">
-                <Link to="/browse-services" className="link-more">View all services →</Link>
-              </div>
+                ))
+              ) : (
+                // Skeleton placeholders for featured services while loading
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="fs-card skeleton">
+                    <div className="fs-img-placeholder skeleton-img"></div>
+                    <div className="fs-body">
+                      <p className="fs-freelancer skeleton-text"></p>
+                      <h4 className="fs-title skeleton-text"></h4>
+                      <div className="fs-meta">
+                        <span className="fs-rating skeleton-text"></span>
+                        <span className="fs-price skeleton-text"></span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          </section>
-        )}
+            <div className="section-more">
+              <Link to="/browse-services" className="link-more">View all services →</Link>
+            </div>
+          </div>
+        </section>
 
         {/* ── Testimonials ──────────────────────────────────────── */}
         <section className="testimonials">

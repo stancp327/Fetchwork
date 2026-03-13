@@ -228,6 +228,35 @@
   margin-bottom: 1rem;
 }
 
+/* Skeleton styles for loading placeholders to prevent CLS */
+.skeleton {
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-img {
+  height: 160px;
+  background-color: #e0e0e0;
+}
+
+.skeleton-text {
+  height: 16px;
+  background-color: #e0e0e0;
+  margin: 8px 0;
+  width: 80%;
+}
+
+.fs-card.skeleton .fs-body {
+  padding: 12px;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
 
 /* -- Stats Bar ------------------------------------------------- */
 .stats-bar {
