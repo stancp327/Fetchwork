@@ -27,7 +27,8 @@
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.10.0",
-    "msw": "^2.12.10"
+    "msw": "^2.12.10",
+    "react-snap": "^1.23.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -62,3 +63,4 @@
     ]
   }
 }
+
