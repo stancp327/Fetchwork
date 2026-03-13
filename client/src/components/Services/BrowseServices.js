@@ -42,7 +42,9 @@ const ServiceCard = ({ service }) => {
         }} />
       )}
       <div className="browse-card-header" style={{ paddingRight: '2rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-        <Avatar user={service.freelancer || service.seller} size={36} style={{ marginTop: 2, flexShrink: 0 }} />
+        <a href={"/freelancers/" + ((service.freelancer || service.seller)?.username || (service.freelancer || service.seller)?._id)} onClick={e => e.stopPropagation()} className="card-avatar-link" style={{ display: 'flex', flexShrink: 0 }}>
+          <Avatar user={service.freelancer || service.seller} size={36} style={{ marginTop: 2 }} />
+        </a>
         <div>
           <h3 className="browse-card-title">{service.title}</h3>
           <div className="browse-card-meta">

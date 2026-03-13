@@ -396,6 +396,16 @@ const JobDetails = () => {
                       <>
                         <h3>🎉 Proposal Accepted!</h3>
                         <p>You've been hired for this job. Check your active work.</p>
+                        {Number(myProposal?.proposedBudget) >= 500 && (
+                          <div style={{
+                            marginTop: '0.75rem', padding: '0.75rem 1rem',
+                            background: '#fffbeb', border: '1px solid #fcd34d',
+                            borderRadius: '8px', fontSize: '0.85rem'
+                          }}>
+                            📄 <strong>This job is $500+</strong> — consider creating a contract to protect both parties.
+                            {' '}<a href={`/contracts/new?jobId=${job._id}&freelancerId=${job.client?._id}`} style={{ color: '#2563eb' }}>Create contract →</a>
+                          </div>
+                        )}
                       </>
                     ) : myProposal?.status === 'declined' ? (
                       <>

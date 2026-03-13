@@ -72,7 +72,7 @@ const JobCard = ({ job, onQuickApply }) => {
         <div>
           <h3 className="browse-card-title">{job.title}</h3>
           <div className="browse-card-meta">
-            {job.client?.firstName} {job.client?.lastName} • {timeAgo(job.createdAt)}
+            <a href={"/freelancers/" + (job.client?.username || job.client?._id)} onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 500 }}>{job.client?.firstName} {job.client?.lastName}</a> • {timeAgo(job.createdAt)}
             {dl && <> • <span style={{ color: dl.color, fontWeight: 600 }}>⏰ {dl.text}</span></>}
           </div>
         </div>

@@ -41,7 +41,14 @@ const contractSchema = new mongoose.Schema({
     ndaDuration:   String,   // e.g. "2 years" for NDAs
     jurisdiction:  String,   // e.g. "State of California"
     terminationClause: String,
+    // Concern-based AI generation
+    concerns:      String,   // User's concerns about the job
+    checklist:     [String], // Selected checklist items (e.g. IP, NDA, cancellation)
+    tools:         String,   // Tools/equipment notes (bring own / provided)
   },
+
+  // AI generation metadata
+  aiGenerated: { type: Boolean, default: false },
 
   // Signatures
   signatures: [signatureSchema],

@@ -17,6 +17,9 @@ const ContractDetail = () => {
   const [aiSummary, setAiSummary] = useState(null);
   const [aiSumLoading, setAiSumLoading] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(false);
+  const [revisePrompt, setRevisePrompt] = useState('');
+  const [revising, setRevising] = useState(false);
+  const [showRevise, setShowRevise] = useState(false);
 
   const userId = user?._id || user?.id;
 
@@ -91,6 +94,23 @@ const ContractDetail = () => {
     } finally { setAiSumLoading(false); }
   };
 
+  const handleAiRevise = async () => {
+    if (!revisePrompt.trim()) return;
+    setRevising(true);
+    try {
+      const data = await apiRequest(`/api/contracts/${id}/ai-revise`, {
+        method: 'POST',
+        body: JSON.stringify({ prompt: revisePrompt }),
+      });
+      setContract(prev => ({ ...prev, content: data.content }));
+      setRevisePrompt('');
+      setShowRevise(false);
+    } catch (err) {
+      if (err.status === 403) alert('AI editing requires a Plus plan or above.');
+      else alert(err.message || 'Failed to revise contract');
+    } finally { setRevising(false); }
+  };
+
   if (loading) return <div className="contracts-container"><div className="contracts-loading">Loading...</div></div>;
   if (!contract) return null;
 
@@ -155,6 +175,37 @@ const ContractDetail = () => {
             </div>
           )}
         </div>
+
+        {/* AI Revise — only for draft/pending contracts */}
+        {['draft', 'pending'].includes(contract.status) && (
+          <div className="cd-ai-revise-wrap">
+            <button className="cd-ai-sum-btn" onClick={() => setShowRevise(r => !r)}>
+              {showRevise ? '✏️ Hide Revision' : '✏️ Request AI Changes'}
+            </button>
+            {showRevise && (
+              <div className="cd-ai-revise-panel">
+                <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  Tell AI what to change — it will rewrite the contract and save the revision.
+                </p>
+                <textarea
+                  className="contract-textarea"
+                  rows={3}
+                  placeholder='e.g. "Add a late payment penalty clause" or "Make the cancellation terms more balanced for the freelancer"'
+                  value={revisePrompt}
+                  onChange={e => setRevisePrompt(e.target.value)}
+                />
+                <button
+                  className="contract-action-btn primary"
+                  style={{ marginTop: '0.5rem' }}
+                  onClick={handleAiRevise}
+                  disabled={revising || !revisePrompt.trim()}
+                >
+                  {revising ? '⏳ Revising…' : '🤖 Apply Changes'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Signatures */}
         <div className="contract-signatures">

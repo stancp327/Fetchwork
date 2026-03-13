@@ -1,14 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
+import { useFeatures } from '../../hooks/useFeatures';
 import SEO from '../common/SEO';
 import './Contracts.css';
+
+const CHECKLIST_ITEMS = [
+  'Scope of work clearly defined',
+  'Payment schedule (upfront deposit, milestones, or upon completion)',
+  'Intellectual property ownership',
+  'Confidentiality / NDA',
+  'Cancellation and termination policy',
+  'Revision and correction policy',
+  'Timeline and deadlines',
+  'Dispute resolution process',
+  'Tools and equipment responsibilities',
+  'Travel or on-site requirements',
+];
 
 const CreateContract = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const prefillFreelancer = searchParams.get('freelancerId');
   const prefillJob = searchParams.get('jobId');
+  const { hasFeature } = useFeatures();
+  const canAI = hasFeature('ai_job_description');
 
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('standard_service');
@@ -16,15 +32,22 @@ const CreateContract = () => {
   const [freelancerId, setFreelancerId] = useState(prefillFreelancer || '');
   const [freelancerSearch, setFreelancerSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [concerns, setConcerns] = useState('');
+  const [checklist, setChecklist] = useState([]);
+  const [tools, setTools] = useState('');
   const [terms, setTerms] = useState({
     scope: '', compensation: '', paymentTerms: 'Upon completion',
     startDate: '', endDate: '', ndaDuration: '2 years',
     jurisdiction: '', terminationClause: ''
   });
   const [creating, setCreating] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
   const [aiMilestones, setAiMilestones] = useState([]);
   const [aiMsLoading, setAiMsLoading] = useState(false);
   const [selectedMs, setSelectedMs] = useState(new Set());
+  // After creation, we need the contract ID for AI generation
+  const [createdContractId, setCreatedContractId] = useState(null);
+  const [aiPreview, setAiPreview] = useState(null);
 
   useEffect(() => {
     apiRequest('/api/contracts/templates').then(d => setTemplates(d.templates || [])).catch(() => {});
@@ -41,6 +64,12 @@ const CreateContract = () => {
     return () => clearTimeout(timeout);
   }, [freelancerSearch]);
 
+  const toggleChecklist = (item) => {
+    setChecklist(prev =>
+      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+    );
+  };
+
   const handleSuggestMilestones = async () => {
     setAiMsLoading(true);
     try {
@@ -48,7 +77,7 @@ const CreateContract = () => {
         method: 'POST',
         body: JSON.stringify({
           title: title || 'Service Agreement',
-          description: terms.scope,
+          description: terms.scope || concerns,
           budget: Number(terms.compensation) || 0,
           duration: terms.endDate && terms.startDate
             ? `${Math.ceil((new Date(terms.endDate) - new Date(terms.startDate)) / 86400000)} days`
@@ -64,6 +93,36 @@ const CreateContract = () => {
     } finally { setAiMsLoading(false); }
   };
 
+  // Step 1: Create the draft contract, then trigger AI generation
+  const handleCreateAndGenerate = async (e) => {
+    e.preventDefault();
+    if (!freelancerId) return alert('Please select a freelancer');
+    if (!canAI) { alert('AI contract generation requires a Plus plan or above.'); return; }
+    setAiGenerating(true);
+    try {
+      // Create draft first
+      const contract = await apiRequest('/api/contracts', {
+        method: 'POST',
+        body: JSON.stringify({
+          template: selectedTemplate,
+          title: title || templates.find(t => t.id === selectedTemplate)?.title || 'Service Agreement',
+          freelancerId,
+          jobId: prefillJob || undefined,
+          terms,
+          concerns,
+          checklist,
+          tools,
+        }),
+      });
+      // Now AI-generate the content
+      const generated = await apiRequest(`/api/contracts/${contract._id}/ai-generate`, { method: 'POST' });
+      setCreatedContractId(contract._id);
+      setAiPreview(generated.content);
+    } catch (err) {
+      alert(err.message || 'Failed to generate contract');
+    } finally { setAiGenerating(false); }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!freelancerId) return alert('Please select a freelancer');
@@ -77,6 +136,9 @@ const CreateContract = () => {
           freelancerId,
           jobId: prefillJob || undefined,
           terms,
+          concerns,
+          checklist,
+          tools,
         }),
       });
       navigate(`/contracts/${contract._id}`);
@@ -85,6 +147,35 @@ const CreateContract = () => {
     } finally { setCreating(false); }
   };
 
+  if (aiPreview && createdContractId) {
+    return (
+      <div className="contracts-container">
+        <SEO title="Review Generated Contract" noIndex />
+        <h1 style={{ marginBottom: '1rem' }}>📄 Review AI-Generated Contract</h1>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+          Review the generated contract below. You can request changes on the next page.
+        </p>
+        <div className="contract-ai-preview">
+          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6 }}>{aiPreview}</pre>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+          <button
+            className="contract-action-btn primary"
+            onClick={() => navigate(`/contracts/${createdContractId}`)}
+          >
+            ✅ Looks Good — View Contract
+          </button>
+          <button
+            className="contract-action-btn"
+            onClick={() => { setAiPreview(null); setCreatedContractId(null); }}
+          >
+            ← Back to Edit
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="contracts-container">
       <SEO title="Create Contract" noIndex />
@@ -92,6 +183,33 @@ const CreateContract = () => {
       <h1 style={{ marginBottom: '1.5rem' }}>Create Contract</h1>
 
       <form className="contract-form" onSubmit={handleCreate}>
+        {/* ── Concerns & Checklist ── */}
+        <div className="contract-form-section">
+          <h3>Your Concerns <span style={{ fontWeight: 400, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>(optional — helps AI draft a better contract)</span></h3>
+          <textarea
+            value={concerns}
+            onChange={e => setConcerns(e.target.value)}
+            placeholder="What are you most concerned about with this job? E.g. payment timing, scope creep, IP ownership, client going dark..."
+            className="contract-textarea"
+            rows={3}
+          />
+
+          <label style={{ marginTop: '1rem', display: 'block', fontWeight: 600 }}>What should this contract cover?</label>
+          <div className="contract-checklist">
+            {CHECKLIST_ITEMS.map(item => (
+              <label key={item} className={`checklist-item ${checklist.includes(item) ? 'checked' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={checklist.includes(item)}
+                  onChange={() => toggleChecklist(item)}
+                />
+                {item}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Template ── */}
         <div className="contract-form-section">
           <h3>Template</h3>
           <div className="template-options">
@@ -99,12 +217,13 @@ const CreateContract = () => {
               <button key={t.id} type="button"
                 className={`template-option ${selectedTemplate === t.id ? 'selected' : ''}`}
                 onClick={() => { setSelectedTemplate(t.id); if (!title) setTitle(t.title); }}>
-                {t.id === 'nda' ? '🔒' : t.id === 'non_compete' ? '🚫' : '📋'} {t.title}
+                {t.id === 'nda' ? '🤐' : t.id === 'non_compete' ? '🔒' : '📄'} {t.title}
               </button>
             ))}
           </div>
         </div>
 
+        {/* ── Contract Details ── */}
         <div className="contract-form-section">
           <h3>Contract Details</h3>
           <label>Title</label>
@@ -135,6 +254,7 @@ const CreateContract = () => {
           )}
         </div>
 
+        {/* ── Terms ── */}
         <div className="contract-form-section">
           <h3>Terms</h3>
           <label>Scope of Work</label>
@@ -143,7 +263,7 @@ const CreateContract = () => {
 
           <div className="cc-ai-ms-wrap">
             <button type="button" className="cc-ai-ms-btn" onClick={handleSuggestMilestones} disabled={aiMsLoading}>
-              {aiMsLoading ? '✨ Generating…' : '✨ Suggest Milestones'}
+              {aiMsLoading ? '⏳ Generating…' : '🤖 Suggest Milestones'}
             </button>
             {aiMilestones.length > 0 && (
               <div className="cc-ai-ms-list">
@@ -181,10 +301,11 @@ const CreateContract = () => {
               <label>Payment Terms</label>
               <select value={terms.paymentTerms} onChange={e => setTerms(p => ({ ...p, paymentTerms: e.target.value }))} className="contract-input">
                 <option>Upon completion</option>
-                <option>Net 15</option>
-                <option>Net 30</option>
+                <option>Job acceptance (deposit)</option>
                 <option>50% upfront, 50% on completion</option>
                 <option>Milestone-based</option>
+                <option>Net 15</option>
+                <option>Net 30</option>
               </select>
             </div>
           </div>
@@ -216,11 +337,41 @@ const CreateContract = () => {
           <label>Jurisdiction</label>
           <input type="text" value={terms.jurisdiction} onChange={e => setTerms(p => ({ ...p, jurisdiction: e.target.value }))}
             placeholder="e.g. State of California" className="contract-input" />
+
+          <label style={{ marginTop: '1rem' }}>Tools / Equipment</label>
+          <select
+            value={tools}
+            onChange={e => setTools(e.target.value)}
+            className="contract-input"
+          >
+            <option value="">Not specified</option>
+            <option value="Freelancer must bring own tools">Freelancer must bring own tools</option>
+            <option value="Tools provided by client">Tools provided by client</option>
+            <option value="Some tools provided — see scope">Some tools provided — see scope</option>
+            <option value="Remote work — no tools required">Remote work — no tools required</option>
+          </select>
         </div>
 
-        <button type="submit" className="contract-action-btn primary" disabled={creating || !freelancerId}>
-          {creating ? 'Creating...' : '📋 Create Contract'}
-        </button>
+        {/* ── Actions ── */}
+        <div className="contract-create-actions">
+          {canAI ? (
+            <button
+              type="button"
+              className="contract-action-btn ai-btn"
+              disabled={aiGenerating || !freelancerId}
+              onClick={handleCreateAndGenerate}
+            >
+              {aiGenerating ? '⏳ Generating…' : '🤖 Generate with AI'}
+            </button>
+          ) : (
+            <div className="contract-ai-upsell">
+              🤖 <strong>AI Contract Generation</strong> — upgrade to Plus to let AI draft the contract from your concerns.
+            </div>
+          )}
+          <button type="submit" className="contract-action-btn primary" disabled={creating || !freelancerId}>
+            {creating ? 'Creating...' : '📄 Create from Template'}
+          </button>
+        </div>
       </form>
     </div>
   );

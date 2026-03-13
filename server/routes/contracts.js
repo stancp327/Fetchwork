@@ -167,10 +167,16 @@ router.post('/', authenticateToken, async (req, res) => {
       client: req.user._id,
       freelancer: freelancerId,
       job: jobId || undefined,
+      team: req.body.teamId || undefined,
       template: template || 'standard_service',
       title,
       content,
-      terms: terms || {},
+      terms: {
+        ...(terms || {}),
+        concerns: req.body.concerns || undefined,
+        checklist: req.body.checklist || [],
+        tools: req.body.tools || undefined,
+      },
       customFields: customFields || [],
       createdBy: req.user._id,
       status: 'draft',
@@ -340,6 +346,146 @@ router.post('/:id/sign', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error signing contract:', error);
     res.status(500).json({ error: 'Failed to sign contract' });
+  }
+});
+
+// POST /api/contracts/:id/ai-generate — generate contract content from concerns + checklist (Plus+)
+router.post('/:id/ai-generate', authenticateToken, async (req, res) => {
+  try {
+    const contract = await Contract.findById(req.params.id)
+      .populate('client', 'firstName lastName')
+      .populate('freelancer', 'firstName lastName')
+      .populate('job', 'title');
+
+    if (!contract) return res.status(404).json({ error: 'Contract not found' });
+    if (contract.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the creator can generate this contract' });
+    }
+    if (contract.status !== 'draft') {
+      return res.status(400).json({ error: 'Can only generate content for draft contracts' });
+    }
+
+    const { hasFeature, FEATURES } = require('../services/entitlementEngine');
+    const { hasAI } = require('../services/aiService');
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_JOB_DESCRIPTION);
+    if (!allowed) {
+      return res.status(403).json({
+        error: 'upgrade_required',
+        message: 'AI contract generation is available on Plus and above.',
+      });
+    }
+    if (!hasAI()) {
+      return res.status(503).json({ error: 'AI service is not available right now.' });
+    }
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const clientName = `${contract.client.firstName} ${contract.client.lastName}`;
+    const freelancerName = `${contract.freelancer.firstName} ${contract.freelancer.lastName}`;
+    const { terms } = contract;
+
+    const prompt = [
+      `You are a legal assistant drafting a freelance service contract.`,
+      `Draft a professional, plain-language contract based on the following details.`,
+      ``,
+      `Parties: Client: ${clientName} / Freelancer: ${freelancerName}`,
+      terms.scope ? `Scope of Work: ${terms.scope}` : '',
+      terms.compensation ? `Compensation: $${terms.compensation} USD` : '',
+      terms.paymentTerms ? `Payment Terms: ${terms.paymentTerms}` : '',
+      terms.startDate ? `Start Date: ${new Date(terms.startDate).toLocaleDateString()}` : '',
+      terms.endDate ? `End Date: ${new Date(terms.endDate).toLocaleDateString()}` : '',
+      terms.jurisdiction ? `Jurisdiction: ${terms.jurisdiction}` : '',
+      terms.tools ? `Tools/Equipment: ${terms.tools}` : '',
+      terms.concerns ? `User Concerns to Address: ${terms.concerns}` : '',
+      terms.checklist?.length > 0 ? `Required Clauses: ${terms.checklist.join(', ')}` : '',
+      contract.job ? `Related Job: ${contract.job.title}` : '',
+      ``,
+      `Format the contract with clear numbered sections using Markdown headings (##).`,
+      `Keep language professional but readable. Do not include legal boilerplate warnings.`,
+      `Return ONLY the contract text — no preamble or explanation.`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      temperature: 0.4,
+      messages: [
+        { role: 'system', content: 'You are a professional contract drafter for a freelance marketplace. Write clear, fair, enforceable contracts.' },
+        { role: 'user', content: prompt },
+      ],
+    });
+
+    const generatedContent = completion.choices[0].message.content.trim();
+    contract.content = generatedContent;
+    contract.aiGenerated = true;
+    await contract.save();
+
+    res.json({ content: generatedContent, message: 'Contract generated successfully' });
+  } catch (err) {
+    console.error('Error generating contract with AI:', err);
+    res.status(500).json({ error: 'Failed to generate contract' });
+  }
+});
+
+// POST /api/contracts/:id/ai-revise — revise contract content based on user prompt (Plus+)
+router.post('/:id/ai-revise', authenticateToken, async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt?.trim()) return res.status(400).json({ error: 'Revision prompt is required' });
+
+    const contract = await Contract.findById(req.params.id);
+    if (!contract) return res.status(404).json({ error: 'Contract not found' });
+
+    const userId = req.user._id.toString();
+    if (contract.client.toString() !== userId && contract.freelancer.toString() !== userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    if (!['draft', 'pending'].includes(contract.status)) {
+      return res.status(400).json({ error: 'Cannot revise a signed or cancelled contract' });
+    }
+
+    const { hasFeature, FEATURES } = require('../services/entitlementEngine');
+    const { hasAI } = require('../services/aiService');
+    const allowed = await hasFeature(req.user.id, FEATURES.AI_JOB_DESCRIPTION);
+    if (!allowed) {
+      return res.status(403).json({
+        error: 'upgrade_required',
+        message: 'AI contract editing is available on Plus and above.',
+      });
+    }
+    if (!hasAI()) {
+      return res.status(503).json({ error: 'AI service is not available right now.' });
+    }
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      temperature: 0.4,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a legal assistant revising a freelance contract. Apply the requested changes while keeping the contract professional, fair, and complete. Return ONLY the revised contract text — no explanation.',
+        },
+        {
+          role: 'user',
+          content: `Current contract:\n\n${contract.content}\n\n---\nRevision request: ${prompt.trim()}`,
+        },
+      ],
+    });
+
+    const revisedContent = completion.choices[0].message.content.trim();
+    contract.content = revisedContent;
+    contract.aiGenerated = true;
+    await contract.save();
+
+    res.json({ content: revisedContent, message: 'Contract revised successfully' });
+  } catch (err) {
+    console.error('Error revising contract with AI:', err);
+    res.status(500).json({ error: 'Failed to revise contract' });
   }
 });
 
