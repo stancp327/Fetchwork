@@ -165,7 +165,7 @@ const PublicProfile = () => {
                   {messagingLoading ? '...' : '💬 Message'}
                 </button>
                 <button className="pp-btn-secondary" onClick={() => setShowOfferModal(true)}>📋 Make Offer</button>
-                <button className="pp-btn-secondary" onClick={() => setShowBooking(b => !b)}>📅 Book Session</button>
+                {services.length > 0 && (<button className="pp-btn-secondary" onClick={() => setShowBooking(b => !b)}>📅 Book Session</button>)}
               </>
             )}
           </div>
@@ -190,6 +190,12 @@ const PublicProfile = () => {
           <div className="pp-stat-value">{services.length}</div>
           <div className="pp-stat-label">Services</div>
         </div>
+        {stats.activeJobs > 0 && (
+          <div className="pp-stat">
+            <div className="pp-stat-value" style={{ color: '#2563eb' }}>{stats.activeJobs}</div>
+            <div className="pp-stat-label">In Progress</div>
+          </div>
+        )}
         {f.completionRate > 0 && (
           <div className="pp-stat">
             <div className="pp-stat-value" style={{ color: f.completionRate >= 90 ? '#059669' : f.completionRate >= 70 ? '#d97706' : '#dc2626' }}>
@@ -548,3 +554,4 @@ const PublicProfile = () => {
 };
 
 export default PublicProfile;
+

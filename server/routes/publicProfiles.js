@@ -1,12 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Job = require('../models/Job');
 
 router.get('/:username', async (req, res) => {
   try {
     const username = String(req.params.username || '').trim().toLowerCase();
     const user = await User.findOne({ username }).lean();
     if (!user) return res.status(404).json({ error: 'Not found' });
+
+    // Count jobs currently in progress (assigned to this freelancer, status in_progress)
+    const activeJobsCount = await Job.countDocuments({
+      assignedTo: user._id,
+      status: { $in: ['in_progress', 'active'] }
+    });
     const safe = {
       firstName: user.firstName,
       lastName: user.lastName,
@@ -39,6 +46,7 @@ router.get('/:username', async (req, res) => {
       rating: user.rating || 0,
       totalReviews: user.totalReviews || 0,
       completedJobs: user.completedJobs || 0,
+      activeJobs: activeJobsCount,
       badges: user.badges || [],
       username: user.username
     };

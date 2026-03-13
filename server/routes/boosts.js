@@ -55,6 +55,9 @@ async function getMonthlyCredits(userId) {
 
 // ── Helper: activate a boost on a target
 async function activateBoost(targetType, targetId, days, paymentId, ownerId, plan, usedCredit) {
+  if (!['service', 'job'].includes(targetType)) {
+    throw new Error('Boosting is only available for services and jobs');
+  }
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   const Model = targetType === 'service' ? Service : Job;
   await Model.findByIdAndUpdate(targetId, {

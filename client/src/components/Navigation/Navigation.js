@@ -249,7 +249,7 @@ const Navigation = () => {
         <div className="nav-inner">
 
           {/* ── Brand ── */}
-          <Link to="/" className="nav-brand" onClick={closeMenu}>
+          <Link to={isAuthenticated ? '/dashboard' : '/'} className="nav-brand" onClick={closeMenu}>
             <img src="/fetchwork-logo.png" alt="FetchWork" className="nav-logo" />
             <span className="brand-text">FetchWork</span>
           </Link>
