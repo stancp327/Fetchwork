@@ -62,6 +62,12 @@ app.use(helmet({
   } : false, // Disable CSP in development
 }));
 
+// Set caching headers for static assets
+app.use(express.static('public', {
+  maxAge: '1d', // Cache for 1 day
+  immutable: true // For assets with versioned filenames
+}));
+
 // CORS — lock to allowed origins only
 const allowedOrigins = (() => {
   const clientUrl = process.env.CLIENT_URL || '';
