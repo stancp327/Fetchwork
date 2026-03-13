@@ -192,6 +192,21 @@
   min-height: 150px;
 }
 
+.job-listing-section {
+  min-height: 300px;
+  margin-bottom: 2rem;
+}
+
+.job-card {
+  min-height: 180px;
+  margin-bottom: 1rem;
+}
+
+.cta-section {
+  min-height: 200px;
+  margin-bottom: 2rem;
+}
+
 
 /* -- Stats Bar ------------------------------------------------- */
 .stats-bar {
