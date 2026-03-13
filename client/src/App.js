@@ -210,10 +210,10 @@ function AppContent() {
   useEffect(() => {
     const run = () => setEnhancementsReady(true);
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      const id = window.requestIdleCallback(run, { timeout: 2000 });
+      const id = window.requestIdleCallback(run, { timeout: 3000 });
       return () => window.cancelIdleCallback?.(id);
     }
-    const t = setTimeout(run, 1500); // Increased delay to prioritize hero render
+    const t = setTimeout(run, 2000); // Further increased delay to prioritize hero render
     return () => clearTimeout(t);
   }, []);
 
