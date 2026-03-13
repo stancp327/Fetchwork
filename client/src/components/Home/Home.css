@@ -172,6 +172,27 @@
   min-height: 100px;
 }
 
+/* Reserve space for below-the-fold dynamic content to prevent CLS */
+.featured-services {
+  min-height: 300px;
+  margin-bottom: 2rem;
+}
+
+.service-card {
+  min-height: 200px;
+  margin-bottom: 1rem;
+}
+
+.testimonials-section {
+  min-height: 250px;
+  margin-bottom: 2rem;
+}
+
+.testimonial-card {
+  min-height: 150px;
+}
+
+
 /* -- Stats Bar ------------------------------------------------- */
 .stats-bar {
   display: flex;
@@ -565,4 +586,5 @@
   content-visibility: auto;
   contain-intrinsic-size: 800px;
 }
+
 
