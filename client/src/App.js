@@ -91,6 +91,11 @@ const NotificationListener = React.lazy(() => import('./components/common/Notifi
 const MessagePreview       = React.lazy(() => import('./components/common/MessagePreview'));
 const IncomingCallOverlay  = React.lazy(() => import('./components/Calls/IncomingCallOverlay'));
 
+// Defer non-critical widget mounting until browser idle to reduce initial main-thread work
+const widgetMountDelay = typeof window !== 'undefined' && 'requestIdleCallback' in window
+  ? (fn) => window.requestIdleCallback(fn, { timeout: 2000 })
+  : (fn) => setTimeout(fn, 1200);
+
 class AuthErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -448,3 +453,4 @@ function App() {
 }
 
 export default App;
+
