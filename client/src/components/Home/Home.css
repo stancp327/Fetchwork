@@ -207,6 +207,27 @@
   margin-bottom: 2rem;
 }
 
+/* Additional placeholders for dynamic content to ensure no CLS */
+.featured-jobs {
+  min-height: 300px;
+  margin-bottom: 2rem;
+}
+
+.job-card-container {
+  min-height: 200px;
+  margin-bottom: 1rem;
+}
+
+.category-section {
+  min-height: 250px;
+  margin-bottom: 2rem;
+}
+
+.category-card {
+  min-height: 120px;
+  margin-bottom: 1rem;
+}
+
 
 /* -- Stats Bar ------------------------------------------------- */
 .stats-bar {
