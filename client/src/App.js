@@ -213,7 +213,7 @@ function AppContent() {
       const id = window.requestIdleCallback(run, { timeout: 2000 });
       return () => window.cancelIdleCallback?.(id);
     }
-    const t = setTimeout(run, 1200);
+    const t = setTimeout(run, 1500); // Increased delay to prioritize hero render
     return () => clearTimeout(t);
   }, []);
 
@@ -453,4 +453,5 @@ function App() {
 }
 
 export default App;
+
 
