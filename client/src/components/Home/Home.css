@@ -153,6 +153,25 @@
   min-height: 132px;
 }
 
+.hero-tabs {
+  min-height: 44px;
+  margin-bottom: 1rem;
+}
+
+.hero-search {
+  min-height: 48px;
+  margin-bottom: 1rem;
+}
+
+.hero-quick-links {
+  min-height: 40px;
+  margin-bottom: 1rem;
+}
+
+.hero-actions {
+  min-height: 100px;
+}
+
 /* -- Stats Bar ------------------------------------------------- */
 .stats-bar {
   display: flex;
