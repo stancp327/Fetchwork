@@ -758,15 +758,21 @@ const Messages = () => {
               )}
               <div className="chat-header">
                 <div className="chat-header-info">
-                  <div className="chat-avatar">
-                    {otherParticipant?.profilePicture ? (
-                      <img src={otherParticipant.profilePicture} alt="" />
-                    ) : (
-                      <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>
-                    )}
-                  </div>
+                  <Link to={`/freelancers/${getEntityId(otherParticipant?._id || otherParticipant)}`} style={{ textDecoration: 'none', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    <div className="chat-avatar">
+                      {otherParticipant?.profilePicture ? (
+                        <img src={otherParticipant.profilePicture} alt="" />
+                      ) : (
+                        <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>
+                      )}
+                    </div>
+                  </Link>
                   <div>
-                    <h3>{otherParticipant?.firstName} {otherParticipant?.lastName}</h3>
+                    <h3>
+                      <Link to={`/freelancers/${getEntityId(otherParticipant?._id || otherParticipant)}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        {otherParticipant?.firstName} {otherParticipant?.lastName}
+                      </Link>
+                    </h3>
                     {getEntityId(otherParticipant?._id || otherParticipant) && onlineUsers[getEntityId(otherParticipant?._id || otherParticipant)] !== undefined && (
                       <OnlineStatus
                         isOnline={onlineUsers[getEntityId(otherParticipant?._id || otherParticipant)]?.isOnline ?? false}
@@ -1496,12 +1502,18 @@ const Messages = () => {
 
             {/* Profile summary */}
             <div className="context-profile">
-              <div className="context-avatar">
-                {otherParticipant?.profilePicture
-                  ? <img src={otherParticipant.profilePicture} alt="" />
-                  : <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>}
-              </div>
-              <h4>{otherParticipant?.firstName} {otherParticipant?.lastName}</h4>
+              <Link to={`/freelancers/${getEntityId(otherParticipant?._id || otherParticipant)}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                <div className="context-avatar">
+                  {otherParticipant?.profilePicture
+                    ? <img src={otherParticipant.profilePicture} alt="" />
+                    : <span>{otherParticipant?.firstName?.[0]}{otherParticipant?.lastName?.[0]}</span>}
+                </div>
+              </Link>
+              <h4>
+                <Link to={`/freelancers/${getEntityId(otherParticipant?._id || otherParticipant)}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  {otherParticipant?.firstName} {otherParticipant?.lastName}
+                </Link>
+              </h4>
               {contextProfileLoading && <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>Loading…</div>}
 
               {contextProfile && (

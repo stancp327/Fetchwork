@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import DisputeTimeline from './DisputeTimeline';
@@ -17,12 +18,14 @@ const MessageBubble = ({ msg, currentUserId }) => {
   return (
     <div className={`msg-row ${isMine ? 'msg-mine' : 'msg-other'} ${msg.senderRole === 'admin' ? 'msg-admin' : ''}`}>
       {!isMine && (
-        <div className="msg-avatar">
-          {msg.sender?.profilePicture
-            ? <img src={msg.sender.profilePicture} alt="" />
-            : <span>{msg.sender?.firstName?.[0] || '?'}</span>
-          }
-        </div>
+        <Link to={`/freelancers/${msg.sender?._id}`} style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+          <div className="msg-avatar">
+            {msg.sender?.profilePicture
+              ? <img src={msg.sender.profilePicture} alt="" />
+              : <span>{msg.sender?.firstName?.[0] || '?'}</span>
+            }
+          </div>
+        </Link>
       )}
       <div className="msg-bubble">
         <div className="msg-header">

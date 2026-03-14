@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getLocationDisplay } from '../../utils/location';
 import { useAuth } from '../../context/AuthContext';
 import { formatCategory } from '../../utils/formatters';
@@ -314,9 +314,13 @@ const ServiceDetails = () => {
           <div className="service-sidebar">
             <div className="freelancer-card">
               <div className="freelancer-info">
-                <Avatar user={service.freelancer} size={56} className="freelancer-avatar-large" />
+                <Avatar user={service.freelancer} size={56} className="freelancer-avatar-large" userId={service.freelancer?._id} />
                 <div>
-                  <h3>{service.freelancer.firstName} {service.freelancer.lastName}</h3>
+                  <h3>
+                    <Link to={`/freelancers/${service.freelancer?._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      {service.freelancer.firstName} {service.freelancer.lastName}
+                    </Link>
+                  </h3>
                   {service.freelancer.bio && (
                     <p className="freelancer-bio">{service.freelancer.bio.substring(0, 100)}...</p>
                   )}

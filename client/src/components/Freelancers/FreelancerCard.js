@@ -11,7 +11,7 @@ const FreelancerCard = ({ freelancer }) => {
   return (
     <div className="freelancer-card">
       <div className="freelancer-header">
-        <div style={{ position: 'relative', flexShrink: 0 }}>
+        <Link to={profilePath} onClick={e => e.stopPropagation()} style={{ display: 'block', position: 'relative', flexShrink: 0 }}>
           <picture>
             <source srcSet={freelancer.profilePicture ? freelancer.profilePicture : '/webp/default-avatar.webp'} type="image/webp" />
             <img 
@@ -25,10 +25,12 @@ const FreelancerCard = ({ freelancer }) => {
             />
           </picture>
           {freelancer.isOnline && <span className="avatar-online-badge" title="Available now" />}
-        </div>
+        </Link>
         <div className="freelancer-info">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {freelancer.firstName} {freelancer.lastName}
+            <Link to={profilePath} onClick={e => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit' }}>
+              {freelancer.firstName} {freelancer.lastName}
+            </Link>
             <PlanBadge planSlug={freelancer.planSlug} tier={freelancer.planTier} />
           </h3>
           <OnlineStatus

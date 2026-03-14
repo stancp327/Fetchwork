@@ -11,6 +11,7 @@
  *   <Avatar firstName="John" lastName="Doe" email="j@example.com" size={32} />
  */
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 // Gravatar requires MD5 of the lowercase email.
 // We compute it via a server-side proxy to avoid shipping a crypto library to the client.
@@ -40,6 +41,7 @@ const Avatar = ({
   className = '',
   style = {},
   alt = '',
+  userId,
 }) => {
   const [step, setStep] = useState(0); // 0=pic, 1=gravatar, 2=dicebear
 
@@ -68,8 +70,9 @@ const Avatar = ({
 
   const src = sources[step] || sources[sources.length - 1];
   const webpSrc = pic && pic.includes('/webp/') ? pic : '/webp/default-avatar.webp';
+  const resolvedUserId = userId || user?._id || user?.id;
 
-  return (
+  const picture = (
     <picture>
       <source srcSet={webpSrc} type="image/webp" />
       <img
@@ -82,6 +85,21 @@ const Avatar = ({
       />
     </picture>
   );
+
+  if (resolvedUserId) {
+    return (
+      <Link
+        to={`/freelancers/${resolvedUserId}`}
+        style={{ display: 'inline-flex', flexShrink: 0, borderRadius: '50%', outline: 'none' }}
+        title={`${first} ${last}`.trim() || 'View profile'}
+        onClick={e => e.stopPropagation()}
+      >
+        {picture}
+      </Link>
+    );
+  }
+
+  return picture;
 };
 
 export default Avatar;

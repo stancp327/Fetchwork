@@ -373,11 +373,11 @@ const JobDetails = () => {
             <div className="sidebar-card">
               <h3>About the Client</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <Avatar user={job.client} size={40} />
+                <Avatar user={job.client} size={40} userId={job.client?._id} />
                 <div>
-                  <div className="client-name" style={{ margin: 0 }}>
+                  <Link to={`/freelancers/${job.client?._id}`} className="client-name" style={{ margin: 0, textDecoration: 'none', color: 'inherit' }}>
                     {job.client.firstName} {job.client.lastName}
-                  </div>
+                  </Link>
                   {job.client.company && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                       <CompanyLogo company={job.client.company} size={16} />

@@ -57,14 +57,18 @@ const ProposalCard = ({ proposal, jobId, jobStatus, onAccept, onDecline, ranking
 
       {/* Freelancer identity */}
       <div className="jp-freelancer-row">
-        <div className="jp-avatar">
-          {fl.profilePhoto
-            ? <img src={fl.profilePhoto} alt={fl.firstName} />
-            : initials}
-        </div>
+        <Link to={`/freelancers/${fl._id}`} style={{ textDecoration: 'none', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+          <div className="jp-avatar">
+            {fl.profilePhoto
+              ? <img src={fl.profilePhoto} alt={fl.firstName} />
+              : initials}
+          </div>
+        </Link>
         <div className="jp-freelancer-info">
           <p className="jp-freelancer-name">
-            {fl.firstName} {fl.lastName}
+            <Link to={`/freelancers/${fl._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              {fl.firstName} {fl.lastName}
+            </Link>
             {proposal.team && (
               <span className="jp-team-badge" title="Submitted as a team">🏢 Team bid</span>
             )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import './Reviews.css';
@@ -91,15 +91,23 @@ const ReviewCard = ({ review, currentUserId, onHelpful }) => {
     <div className="review-card">
       <div className="review-card-header">
         <div className="review-card-author">
-          <div className="review-card-avatar">
-            {reviewer.profilePicture ? (
-              <img src={reviewer.profilePicture} alt={name} />
-            ) : (
-              initials
-            )}
-          </div>
+          <Link
+            to={`/freelancers/${reviewer._id}`}
+            style={{ textDecoration: 'none', flexShrink: 0 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="review-card-avatar">
+              {reviewer.profilePicture ? (
+                <img src={reviewer.profilePicture} alt={name} />
+              ) : (
+                initials
+              )}
+            </div>
+          </Link>
           <div className="review-card-author-info">
-            <div className="name">{name}</div>
+            <Link to={`/freelancers/${reviewer._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="name">{name}</div>
+            </Link>
             <div className="meta">
               {review.reviewerType === 'client' ? 'Client' : 'Freelancer'} · {date}
               {review.isEdited && ' · Edited'}

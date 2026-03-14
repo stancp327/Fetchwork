@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import './TeamChannelView.css';
 
@@ -108,14 +109,18 @@ export default function TeamChannelView({ channel, teamMembers = [], onChannelUp
           ) : (
             grouped.map((msg) => (
               <div key={msg._id} className={`tcv-msg${msg.isGrouped ? ' tcv-msg--grouped' : ''}`}>
-                {!msg.isGrouped && <Avatar user={msg.sender} />}
+                {!msg.isGrouped && (
+                  <Link to={`/freelancers/${msg.sender?._id}`} style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    <Avatar user={msg.sender} />
+                  </Link>
+                )}
                 {msg.isGrouped && <div className="tcv-msg-spacer" />}
                 <div className="tcv-msg-body">
                   {!msg.isGrouped && (
                     <div className="tcv-msg-meta">
-                      <span className="tcv-msg-name">
+                      <Link to={`/freelancers/${msg.sender?._id}`} className="tcv-msg-name" style={{ textDecoration: 'none', color: 'inherit' }}>
                         {msg.sender?.firstName} {msg.sender?.lastName}
-                      </span>
+                      </Link>
                       <span className="tcv-msg-time">{formatTime(msg.createdAt)}</span>
                     </div>
                   )}
@@ -136,9 +141,13 @@ export default function TeamChannelView({ channel, teamMembers = [], onChannelUp
               const name = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Member';
               return (
                 <div key={m._id || m.user?._id} className="tcv-member-row">
-                  <Avatar user={user} size={28} />
+                  <Link to={`/freelancers/${user?._id}`} style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    <Avatar user={user} size={28} />
+                  </Link>
                   <div>
-                    <span className="tcv-member-name">{name}</span>
+                    <Link to={`/freelancers/${user?._id}`} className="tcv-member-name" style={{ textDecoration: 'none', color: 'inherit' }}>
+                      {name}
+                    </Link>
                     {m.role !== 'member' && <span className="tcv-member-role">{m.role}</span>}
                   </div>
                 </div>
