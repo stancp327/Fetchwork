@@ -2422,6 +2422,47 @@ router.delete('/:id/pipeline/:entryId', async (req, res) => {
   }
 });
 
+// ── GET /:id/jobs ── Jobs this team is working on (or has proposals for)
+router.get('/:id/jobs', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) {
+      return res.status(403).json({ error: 'Not a team member' });
+    }
+
+    const Job = require('../models/Job');
+
+    // Jobs assigned to this team (won proposals)
+    const assignedJobs = await Job.find({ team: team._id, status: { $in: ['accepted','pending_start','in_progress','delivered'] } })
+      .select('title status budget assignedTo client createdAt deliveredAt autoReleaseAt')
+      .populate('client', 'firstName lastName username avatar')
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    // Jobs where team submitted a proposal (still pending)
+    const proposalJobs = await Job.find({ 'proposals.team': team._id, status: 'open' })
+      .select('title status budget client proposals createdAt')
+      .populate('client', 'firstName lastName username avatar')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    // For proposal jobs, extract only this team's proposal
+    const pendingProposals = proposalJobs.map(job => {
+      const tp = job.proposals.find(p => p.team && p.team.toString() === team._id.toString());
+      return { ...job, teamProposal: tp, proposals: undefined };
+    });
+
+    res.json({ assignedJobs, pendingProposals });
+  } catch (err) {
+    console.error('team jobs error:', err);
+    res.status(500).json({ error: 'Failed to fetch team jobs' });
+  }
+});
+
 module.exports = router;
 
 

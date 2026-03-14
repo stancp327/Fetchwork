@@ -51,9 +51,20 @@ const JobDetails = () => {
   const [aiMatchLoading, setAiMatchLoading] = useState(false);
   const [featureModal, setFeatureModal]     = useState(false);
   const [promoteModal, setPromoteModal]     = useState(null); // { proposalId, freelancerName }
+  const [userTeams, setUserTeams]           = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState('');  // '' = individual
   const [aiMatchError, setAiMatchError]     = useState('');
 
   const API_BASE_URL = getApiBaseUrl();
+
+  // Load teams for "bid as team" option
+  useEffect(() => {
+    if (!user) return;
+    apiRequest('/api/teams/').then(res => {
+      const teams = Array.isArray(res) ? res : (res.teams || []);
+      setUserTeams(teams);
+    }).catch(() => {});
+  }, [user]);
 
   const loadMatches = async () => {
     if (!job?._id) return;
@@ -124,6 +135,7 @@ const JobDetails = () => {
       formData.append('coverLetter', proposal.coverLetter);
       formData.append('proposedBudget', proposal.proposedBudget);
       formData.append('proposedDuration', proposal.proposedDuration);
+      if (selectedTeamId) formData.append('teamId', selectedTeamId);
 
       // Attach milestone proposals if any were added
       if (showMilestones) {
@@ -485,7 +497,20 @@ const JobDetails = () => {
                           />
                         </div>
                         
-                        <div className="form-group">
+                        {/* Team picker */}
+                          {userTeams.length > 0 && (
+                            <div className="form-group">
+                              <label>Submit As</label>
+                              <select value={selectedTeamId} onChange={e => setSelectedTeamId(e.target.value)}>
+                                <option value="">👤 Myself (individual)</option>
+                                {userTeams.map(team => (
+                                  <option key={team._id} value={team._id}>🏢 {team.name}</option>
+                                ))}
+                              </select>
+                              {selectedTeamId && <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.25rem" }}>This proposal will be submitted on behalf of your team.</p>}
+                            </div>
+                          )}
+                          <div className="form-group">
                           <label htmlFor="proposedDuration">Timeline *</label>
                           <select
                             id="proposedDuration"

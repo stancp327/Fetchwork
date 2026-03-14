@@ -117,6 +117,7 @@ const jobSchema = new mongoose.Schema({
       amount:      { type: Number, required: true, min: 0 },
       description: String,
     }],
+    team:        { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
     submittedAt: {
       type: Date,
       default: Date.now
@@ -394,6 +395,10 @@ jobSchema.methods.acceptProposal = async function(proposalId, freelancerId) {
   this.freelancer = freelancerId;
   this.status = 'accepted';  // freelancer still needs to hit "Start Job"
   this.acceptedAt = new Date();
+  // If proposal was submitted as a team, link the job to that team
+  if (proposal.team) {
+    this.team = proposal.team;
+  }
 
   // Copy freelancer-proposed milestones to job milestones (if any)
   if (proposal.proposedMilestones && proposal.proposedMilestones.length > 0) {

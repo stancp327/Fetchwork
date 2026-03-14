@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import TeamNav from './TeamNav';
+import TeamJobs from './TeamJobs';
 import TeamDashboard from './TeamDashboard';
 import TeamMembersPanel from './TeamMembersPanel';
 import TeamChannels from './TeamChannels';
@@ -208,7 +209,10 @@ export default function TeamsShell() {
           <>
             <TeamNav activeTab={activeTab} setActiveTab={setActiveTab} />
             <div className="tsh-content">
-              {activeTab === 'dashboard' && (
+              {activeTab === 'jobs' && activeTeamId && (
+          <TeamJobs teamId={activeTeamId} />
+        )}
+        {activeTab === 'dashboard' && (
                 <TeamDashboard
                   teamId={activeTeam._id}
                   team={activeTeam}

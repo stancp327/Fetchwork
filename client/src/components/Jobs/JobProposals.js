@@ -65,6 +65,9 @@ const ProposalCard = ({ proposal, jobId, jobStatus, onAccept, onDecline, ranking
         <div className="jp-freelancer-info">
           <p className="jp-freelancer-name">
             {fl.firstName} {fl.lastName}
+            {proposal.team && (
+              <span className="jp-team-badge" title="Submitted as a team">🏢 Team bid</span>
+            )}
           </p>
           <div className="jp-freelancer-meta">
             {fl.rating > 0 && (

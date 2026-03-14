@@ -633,7 +633,23 @@ router.post('/:id/proposals/:proposalId/promote/verify', authenticateToken, vali
 
 router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateMongoId, validateProposal, async (req, res) => {
   try {
-    const { coverLetter, proposedBudget, proposedDuration } = req.body;
+    const { coverLetter, proposedBudget, proposedDuration, teamId } = req.body;
+
+    // If submitting as a team, validate membership + permission
+    let teamDoc = null;
+    if (teamId) {
+      const Team = require('../models/Team');
+      teamDoc = await Team.findById(teamId);
+      if (!teamDoc) return res.status(404).json({ error: 'Team not found' });
+      const member = teamDoc.members.find(m => m.user.toString() === req.user._id.toString() && m.status === 'active');
+      if (!member) return res.status(403).json({ error: 'You are not an active member of this team' });
+      if (!member.permissions.includes('create_jobs') && teamDoc.owner.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ error: 'You do not have permission to submit proposals for this team' });
+      }
+      // Check team hasn't already proposed
+      const teamProposal = job.proposals.find(p => p.team && p.team.toString() === teamId);
+      if (teamProposal) return res.status(400).json({ error: 'This team has already submitted a proposal' });
+    }
     
     const job = await Job.findById(req.params.id);
     
@@ -679,6 +695,7 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
       proposedDuration,
       attachments,
       ...(proposedMilestones.length > 0 ? { proposedMilestones } : {}),
+      ...(teamId ? { team: teamId } : {}),
     };
     
     await job.addProposal(proposal);
@@ -749,7 +766,8 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
 router.get('/:id/proposals', authenticateToken, validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
-      .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs');
+      .populate('proposals.freelancer', 'firstName lastName profilePicture rating totalJobs')
+      .populate('proposals.team', 'name slug avatar');
     
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });

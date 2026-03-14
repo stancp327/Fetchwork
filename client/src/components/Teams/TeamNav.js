@@ -3,6 +3,7 @@ import './TeamNav.css';
 
 const TABS = [
   { key: 'dashboard',     label: 'Dashboard' },
+  { key: 'jobs',          label: 'Jobs' },
   { key: 'members',       label: 'Members' },
   { key: 'channels',      label: 'Channels' },
   { key: 'milestones',    label: 'Milestones' },
