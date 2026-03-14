@@ -8,7 +8,7 @@ const Job     = require('../models/Job');
 const Service = require('../models/Service');
 
 // ── Fallback limits when no plan found ─────────────────────────
-const FALLBACK_LIMITS = { activeJobs: 3, activeServices: 1, analyticsLevel: 'basic' };
+const FALLBACK_LIMITS = { activeJobs: 3, activeServices: null, analyticsLevel: 'basic' }; // null = unlimited services (re-enable per plan when ready)
 
 /**
  * Get a user's resolved plan limits.

@@ -23,6 +23,11 @@ const CustomOfferModal = ({
     revisions: prefillTerms.revisions || 1,
     currency: prefillTerms.currency || 'USD'
   });
+  const [workType, setWorkType] = useState(prefillTerms.workType || 'remote');
+  const [scheduledDate, setScheduledDate] = useState(prefillTerms.scheduledDate ? new Date(prefillTerms.scheduledDate).toISOString().split('T')[0] : '');
+  const [timePreference, setTimePreference] = useState(prefillTerms.timePreference || 'flexible');
+  const [specificTime, setSpecificTime] = useState(prefillTerms.specificTime || '');
+  const [flexibleSchedule, setFlexibleSchedule] = useState(!!prefillTerms.flexibleSchedule);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -45,7 +50,7 @@ const CustomOfferModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!terms.amount || !terms.deliveryTime || !terms.description) {
+    if (!terms.amount || (workType === 'remote' && !terms.deliveryTime) || !terms.description) {
       setError('Amount, delivery time, and description are required');
       return;
     }
@@ -64,9 +69,14 @@ const CustomOfferModal = ({
           deliveryTime: parseInt(terms.deliveryTime),
           deadline: terms.deadline || null,
           description: terms.description,
-          revisions: parseInt(terms.revisions) || 1,
+          revisions: workType === 'local' ? 0 : (parseInt(terms.revisions) || 1),
           currency: terms.currency,
-          milestones: validMilestones.length > 0 ? validMilestones : undefined
+          milestones: validMilestones.length > 0 ? validMilestones : undefined,
+          workType,
+          scheduledDate: workType === 'local' && scheduledDate ? scheduledDate : null,
+          timePreference: workType === 'local' ? timePreference : null,
+          specificTime: workType === 'local' && timePreference === 'specific' ? specificTime : null,
+          flexibleSchedule: workType === 'local' ? flexibleSchedule : false,
         },
         message
       };
@@ -126,27 +136,18 @@ const CustomOfferModal = ({
                 required
               />
             </div>
-            <div className="offer-field">
-              <label>Delivery (days) *</label>
-              <input
-                type="number"
-                value={terms.deliveryTime}
-                onChange={e => setTerms(prev => ({ ...prev, deliveryTime: e.target.value }))}
-                placeholder="7"
-                min="1"
-                required
-              />
-            </div>
-            <div className="offer-field">
-              <label>Revisions</label>
-              <input
-                type="number"
-                value={terms.revisions}
-                onChange={e => setTerms(prev => ({ ...prev, revisions: e.target.value }))}
-                placeholder="1"
-                min="0"
-              />
-            </div>
+            {workType === 'remote' && (
+              <div className="offer-field">
+                <label>Delivery (days) *</label>
+                <input type="number" value={terms.deliveryTime} onChange={e => setTerms(prev => ({ ...prev, deliveryTime: e.target.value }))} placeholder="7" min="1" required={workType === 'remote'} />
+              </div>
+            )}
+            {workType === 'remote' && (
+              <div className="offer-field">
+                <label>Revisions</label>
+                <input type="number" value={terms.revisions} onChange={e => setTerms(prev => ({ ...prev, revisions: e.target.value }))} placeholder="1" min="0" />
+              </div>
+            )}
           </div>
 
           <div className="offer-field">
@@ -158,6 +159,38 @@ const CustomOfferModal = ({
               min={new Date().toISOString().split('T')[0]}
             />
           </div>
+
+          {/* Work Type */}
+          <div className="offer-field">
+            <label>Work Type</label>
+            <div className="offer-worktype-row">
+              <button type="button" className={`offer-worktype-btn ${workType === 'remote' ? 'selected' : ''}`} onClick={() => setWorkType('remote')}>
+                💻 Remote
+              </button>
+              <button type="button" className={`offer-worktype-btn ${workType === 'local' ? 'selected' : ''}`} onClick={() => setWorkType('local')}>
+                📍 In-Person / Local
+              </button>
+            </div>
+          </div>
+
+          {workType === 'local' && (
+            <div className="offer-field">
+              <label>Schedule</label>
+              <input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
+              <div className="offer-time-pref" style={{ marginTop: '0.5rem', display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+                {[{v:'morning',l:'🌅 Morning',s:'before noon'},{v:'afternoon',l:'☀️ Afternoon',s:'12–5 PM'},{v:'evening',l:'🌙 Evening',s:'6–11 PM'},{v:'specific',l:'🕐 Specific',s:''},{v:'flexible',l:'🔄 Flexible',s:'any time'}].map(opt => (
+                  <button key={opt.v} type="button" className={`offer-time-btn ${timePreference === opt.v ? 'selected' : ''}`} onClick={() => setTimePreference(opt.v)}>
+                    {opt.l}{opt.s && <span style={{ fontSize: 10, display: 'block' }}>{opt.s}</span>}
+                  </button>
+                ))}
+              </div>
+              {timePreference === 'specific' && <input type="time" value={specificTime} onChange={e => setSpecificTime(e.target.value)} style={{ marginTop: '0.5rem' }} />}
+              <label style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+                <input type="checkbox" checked={flexibleSchedule} onChange={e => setFlexibleSchedule(e.target.checked)} />
+                Flexible on date/time — open to discussion
+              </label>
+            </div>
+          )}
 
           <div className="offer-field">
             <label>What's included *</label>

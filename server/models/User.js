@@ -246,6 +246,7 @@ const userSchema = new mongoose.Schema({
   portfolio: [{
     title: String,
     description: String,
+    category: String,  // freeform project category e.g. "Web Development", "Branding"
     mediaUrls: [String],
     mediaType: { type: String, enum: ['image', 'video', 'pdf', 'other'], default: 'image' },
     links: [String],

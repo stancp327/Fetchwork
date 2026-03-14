@@ -296,3 +296,27 @@
   cursor: pointer;
   min-height: 32px;
 }
+
+/* -- Work Type Toggle -- */
+.offer-worktype-row { display: flex; gap: 0.5rem; margin-top: 0.25rem; }
+.offer-worktype-btn {
+  flex: 1; padding: 0.5rem; border: 1.5px solid var(--color-border, #e5e7eb);
+  border-radius: 8px; background: none; cursor: pointer; font-size: 0.85rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.offer-worktype-btn.selected {
+  border-color: var(--color-primary, #2563eb);
+  background: #eff6ff; font-weight: 600; color: #1d4ed8;
+}
+
+/* -- Time Preference -- */
+.offer-time-pref { display: flex; gap: 0.375rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.offer-time-btn {
+  padding: 0.375rem 0.625rem; border: 1.5px solid var(--color-border, #e5e7eb);
+  border-radius: 8px; background: none; cursor: pointer; font-size: 0.8rem;
+  text-align: center; transition: border-color 0.15s, background 0.15s;
+}
+.offer-time-btn.selected {
+  border-color: var(--color-primary, #2563eb);
+  background: #eff6ff; font-weight: 600; color: #1d4ed8;
+}

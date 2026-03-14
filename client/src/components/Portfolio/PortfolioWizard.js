@@ -20,6 +20,7 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
     description: '',
     mediaUrls: [],
     mediaType: 'image',
+    category: '',
     links: [''],
     tags: [],
     tagInput: ''
@@ -53,6 +54,7 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
         description: item.description,
         mediaUrls: item.mediaUrls.filter(Boolean),
         mediaType: item.mediaType,
+        category: item.category || undefined,
         links: item.links.filter(Boolean)
       };
       
@@ -111,14 +113,32 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
                 />
               </div>
               <div className="pw-field">
-                <label>Category</label>
+                <label>Media Type</label>
                 <select value={item.mediaType} onChange={e => updateField('mediaType', e.target.value)}>
-                  <option value="image">🖼️ Design / Visual</option>
+                  <option value="image">🖼 Design / Visual / Photo</option>
                   <option value="video">🎬 Video</option>
-                  <option value="pdf">📄 Document / PDF</option>
-                  <option value="other">🔗 Other</option>
+                  <option value="pdf">📄 Document / PDF / Case Study</option>
+                  <option value="other">🔗 Other / Code / Link</option>
                 </select>
               </div>
+              <div className="pw-field">
+                <label>Project Category <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                <input
+                  type="text"
+                  value={item.category || ''}
+                  onChange={e => updateField('category', e.target.value)}
+                  placeholder="e.g. Web Development, Branding, Photography, Interior Design..."
+                  list="pw-category-suggestions"
+                />
+                <datalist id="pw-category-suggestions">
+                  {['Web Development','Mobile App','UI/UX Design','Branding & Identity','Logo Design','Graphic Design',
+                    'Photography','Videography','Motion Graphics','Illustration','Copywriting','Content Writing',
+                    'SEO / Marketing','Social Media','Interior Design','Architecture','Music / Audio',
+                    'Data Analysis','Machine Learning','Backend API','E-Commerce','Game Development',
+                    'Education / Course','Coaching / Consulting','Event Planning','Catering / Food'].map(c => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>       </div>
             </div>
           )}
 

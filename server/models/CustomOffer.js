@@ -33,7 +33,13 @@ const offerTermsSchema = {
     type: Number,
     default: 1,
     min: 0
-  }
+  },
+  // Work type + scheduling (for local/in-person offers)
+  workType: { type: String, enum: ['remote', 'local'], default: 'remote' },
+  scheduledDate: { type: Date, default: null },
+  timePreference: { type: String, enum: ['morning', 'afternoon', 'evening', 'specific', 'flexible'], default: null },
+  specificTime: { type: String, default: null },  // e.g. "2:30 PM"
+  flexibleSchedule: { type: Boolean, default: false }
 };
 
 const customOfferSchema = new mongoose.Schema({
