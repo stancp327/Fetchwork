@@ -12,6 +12,7 @@ const CustomOfferModal = ({
   proposalId,
   offerType = 'direct_offer',
   prefillTerms = {},
+  counterId = null, // if set, this is a counter-offer to an existing offer
   onSuccess 
 }) => {
   const [terms, setTerms] = useState({
@@ -57,26 +58,39 @@ const CustomOfferModal = ({
         ? milestones.filter(m => m.title.trim())
         : [];
 
-      await apiRequest('/api/offers', {
-        method: 'POST',
-        body: JSON.stringify({
-          recipientId,
-          jobId: jobId || undefined,
-          serviceId: serviceId || undefined,
-          proposalId: proposalId || undefined,
-          offerType,
-          terms: {
-            amount: parseFloat(terms.amount),
-            deliveryTime: parseInt(terms.deliveryTime),
-            deadline: terms.deadline || null,
-            description: terms.description,
-            revisions: parseInt(terms.revisions) || 1,
-            currency: terms.currency,
-            milestones: validMilestones.length > 0 ? validMilestones : undefined
-          },
-          message
-        })
-      });
+      const payload = {
+        terms: {
+          amount: parseFloat(terms.amount),
+          deliveryTime: parseInt(terms.deliveryTime),
+          deadline: terms.deadline || null,
+          description: terms.description,
+          revisions: parseInt(terms.revisions) || 1,
+          currency: terms.currency,
+          milestones: validMilestones.length > 0 ? validMilestones : undefined
+        },
+        message
+      };
+
+      if (counterId) {
+        // Counter an existing offer
+        await apiRequest(`/api/offers/${counterId}/counter`, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // New offer
+        await apiRequest('/api/offers', {
+          method: 'POST',
+          body: JSON.stringify({
+            recipientId,
+            jobId: jobId || undefined,
+            serviceId: serviceId || undefined,
+            proposalId: proposalId || undefined,
+            offerType,
+            ...payload,
+          }),
+        });
+      }
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -90,7 +104,7 @@ const CustomOfferModal = ({
     <div className="offer-modal-overlay" onClick={onClose}>
       <div className="offer-modal" onClick={e => e.stopPropagation()}>
         <div className="offer-modal-header">
-          <h2>📋 {offerType === 'counter_proposal' || offerType === 'counter_offer' ? 'Counter Offer' : 'Custom Offer'}</h2>
+          <h2>📋 {counterId ? 'Counter Offer' : offerType === 'counter_proposal' || offerType === 'counter_offer' ? 'Counter Offer' : 'Custom Offer'}</h2>
           <button className="offer-modal-close" onClick={onClose}>✕</button>
         </div>
 

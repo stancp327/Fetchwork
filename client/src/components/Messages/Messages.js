@@ -57,6 +57,12 @@ const extractPayReqId = (content) => {
   return m?.[1] || null;
 };
 
+const extractOfferId = (content) => {
+  if (!content || typeof content !== 'string') return null;
+  const m = content.match(/\[offer:([a-fA-F0-9]{24})\]/);
+  return m?.[1] || null;
+};
+
 const Messages = () => {
   const { user } = useAuth();
   const { search: locationSearch } = useLocation();
@@ -100,6 +106,9 @@ const Messages = () => {
   const [paySaving, setPaySaving] = useState(false);
   const [payError, setPayError] = useState('');
   const [payRequestsById, setPayRequestsById] = useState({});
+  const [offersById, setOffersById] = useState({});
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerModalOpts, setOfferModalOpts] = useState({});
   const [actingPrId, setActingPrId] = useState(null);
 
   // Scheduling (SQL appointments)
@@ -426,6 +435,14 @@ const Messages = () => {
     }
   }, []);
 
+  const fetchOffer = async (offerId) => {
+    if (!offerId || offersById[offerId]) return;
+    try {
+      const data = await apiRequest(`/api/offers/${offerId}`);
+      setOffersById(prev => ({ ...prev, [offerId]: data.offer || data }));
+    } catch { /* non-blocking */ }
+  };
+
   useEffect(() => {
     if (selectedConvo?._id) fetchPaymentRequests(selectedConvo._id);
   }, [selectedConvo?._id, fetchPaymentRequests]);
@@ -692,6 +709,7 @@ const Messages = () => {
                         {c.matchedMessages?.map((m, i) => {
                           const clean = (m.content || '')
                             .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
+                            .replace(/\s*\[offer:[a-fA-F0-9]{24}\]/g, '')
                             .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
                             .trim();
                           const idx = clean.toLowerCase().indexOf(search.toLowerCase());
@@ -993,6 +1011,73 @@ const Messages = () => {
                             )}
                           </div>
                         )}
+
+                        {/* Offer Card */}
+                        {(() => {
+                          const offerId = extractOfferId(msg.content);
+                          if (!offerId) return null;
+                          if (!offersById[offerId]) { fetchOffer(offerId); return null; }
+                          const offer = offersById[offerId];
+                          const isSender = String(offer.sender?._id || offer.sender) === String(userId);
+                          const isRecipient = String(offer.recipient?._id || offer.recipient) === String(userId);
+                          const canAct = isRecipient && ['pending', 'countered'].includes(offer.status);
+                          const canWithdraw = isSender && ['pending', 'countered'].includes(offer.status);
+                          return (
+                            <div style={{ border: '2px solid var(--color-primary, #2563eb)', borderRadius: 12, padding: 14, marginTop: 8, background: 'var(--color-bg-primary)', maxWidth: 420 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                                <div style={{ fontWeight: 700 }}>📋 Custom Offer</div>
+                                <div style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 12, background: offer.status === 'accepted' ? '#dcfce7' : offer.status === 'declined' ? '#fee2e2' : offer.status === 'countered' ? '#fef3c7' : '#eff6ff', color: offer.status === 'accepted' ? '#166534' : offer.status === 'declined' ? '#991b1b' : offer.status === 'countered' ? '#92400e' : '#1d4ed8' }}>
+                                  {offer.status?.toUpperCase()}
+                                </div>
+                              </div>
+                              <div style={{ marginTop: 10 }}>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-text-darker)' }}>${parseFloat(offer.terms?.amount || 0).toFixed(2)}</div>
+                                <div style={{ color: 'var(--color-text-secondary)', marginTop: 2, fontSize: 14 }}>{offer.terms?.description}</div>
+                                <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                  <span>⏱ {offer.terms?.deliveryTime} day{offer.terms?.deliveryTime !== 1 ? 's' : ''}</span>
+                                  {offer.terms?.revisions > 0 && <span>✏️ {offer.terms.revisions} revision{offer.terms.revisions !== 1 ? 's' : ''}</span>}
+                                  {offer.terms?.deadline && <span>📅 Due {new Date(offer.terms.deadline).toLocaleDateString()}</span>}
+                                </div>
+                              </div>
+                              {(canAct || canWithdraw) && (
+                                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                                  {canAct && (
+                                    <>
+                                      <button className="offer-btn-primary" onClick={async () => {
+                                        try {
+                                          await apiRequest(`/api/offers/${offerId}/accept`, { method: 'POST' });
+                                          setOffersById(prev => ({ ...prev, [offerId]: { ...prev[offerId], status: 'accepted' } }));
+                                          await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, { method: 'POST', body: JSON.stringify({ content: '✅ Offer accepted!' }) });
+                                          fetchMessages(selectedConvo);
+                                        } catch (e) { alert(e?.message || 'Failed to accept offer'); }
+                                      }}>Accept</button>
+                                      <button className="offer-btn-secondary" onClick={async () => {
+                                        try {
+                                          await apiRequest(`/api/offers/${offerId}/decline`, { method: 'POST' });
+                                          setOffersById(prev => ({ ...prev, [offerId]: { ...prev[offerId], status: 'declined' } }));
+                                          await apiRequest(`/api/messages/conversations/${selectedConvo._id}/messages`, { method: 'POST', body: JSON.stringify({ content: '❌ Offer declined.' }) });
+                                          fetchMessages(selectedConvo);
+                                        } catch (e) { alert(e?.message || 'Failed to decline offer'); }
+                                      }}>Decline</button>
+                                      <button className="offer-btn-secondary" onClick={() => {
+                                        setShowOfferModal(true);
+                                        setOfferModalOpts({ counterId: offerId, recipientId: isSender ? String(offer.recipient?._id || offer.recipient) : String(offer.sender?._id || offer.sender), recipientName: '', prefillTerms: offer.terms || {} });
+                                      }}>Counter ↩</button>
+                                    </>
+                                  )}
+                                  {canWithdraw && (
+                                    <button className="offer-btn-secondary" onClick={async () => {
+                                      try {
+                                        await apiRequest(`/api/offers/${offerId}/withdraw`, { method: 'POST' });
+                                        setOffersById(prev => ({ ...prev, [offerId]: { ...prev[offerId], status: 'withdrawn' } }));
+                                      } catch (e) { alert(e?.message || 'Failed to withdraw'); }
+                                    }}>Withdraw</button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         {!isMine && msg.content && (
                           <div className="msg-ai-tr-row">
@@ -1548,6 +1633,24 @@ const Messages = () => {
             </div>
           </div>
         </div>
+
+        {/* Offer Modal (counter-offers from inline message cards) */}
+        {showOfferModal && (
+          <CustomOfferModal
+            isOpen={showOfferModal}
+            onClose={() => { setShowOfferModal(false); setOfferModalOpts({}); }}
+            recipientId={offerModalOpts.recipientId}
+            recipientName={offerModalOpts.recipientName || ''}
+            prefillTerms={offerModalOpts.prefillTerms || {}}
+            counterId={offerModalOpts.counterId}
+            onSuccess={() => {
+              setShowOfferModal(false);
+              setOfferModalOpts({});
+              if (selectedConvo) fetchMessages(selectedConvo);
+              if (offerModalOpts.counterId) setOffersById(prev => { const n = {...prev}; delete n[offerModalOpts.counterId]; return n; });
+            }}
+          />
+        )}
       )}
     </div>
   );

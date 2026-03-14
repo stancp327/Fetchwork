@@ -169,7 +169,7 @@ router.post('/', authenticateToken, async (req, res) => {
         conversation: conversation._id,
         sender: senderId,
         recipient: recipientId,
-        content: `📋 New Custom Offer\n\nAmount: $${terms.amount}\nDelivery: ${terms.deliveryTime} day${terms.deliveryTime > 1 ? 's' : ''}\n${terms.deadline ? `Deadline: ${new Date(terms.deadline).toLocaleDateString()}\n` : ''}Revisions: ${terms.revisions || 1}\n\n${terms.description.substring(0, 200)}${terms.description.length > 200 ? '...' : ''}\n\n${message ? `Message: ${message}` : ''}`,
+        content: `📋 New Custom Offer\n\nAmount: $${terms.amount}\nDelivery: ${terms.deliveryTime} day${terms.deliveryTime > 1 ? 's' : ''}\n${terms.deadline ? `Deadline: ${new Date(terms.deadline).toLocaleDateString()}\n` : ''}Revisions: ${terms.revisions || 1}\n\n${terms.description.substring(0, 200)}${terms.description.length > 200 ? '...' : ''}\n\n${message ? `Message: ${message}` : ''}\n\n[offer:${offer._id}]`,
         messageType: 'system'
       });
       await sysMsg.save();
