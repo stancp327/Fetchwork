@@ -45,7 +45,7 @@ const CalendarConnect = () => {
   const fetchIcalUrl = useCallback(async () => {
     setLoadingIcal(true);
     try {
-      const data = await apiRequest('/api/calendar/ical/url');
+      const data = await apiRequest('/api/calendar/ical-url');
       setIcalUrl(data.url || '');
     } catch {
       // Not available
@@ -62,7 +62,7 @@ const CalendarConnect = () => {
   const handleConnectGoogle = async () => {
     setActionLoading(true);
     try {
-      const data = await apiRequest('/api/calendar/google/auth');
+      const data = await apiRequest('/api/calendar/google/connect');
       if (data.authUrl) {
         window.location.href = data.authUrl;
       }
@@ -100,7 +100,7 @@ const CalendarConnect = () => {
     if (!window.confirm('Rotate the iCal URL? Your current subscriptions will stop working and you\'ll need to re-subscribe.')) return;
     setActionLoading(true);
     try {
-      const data = await apiRequest('/api/calendar/ical/rotate', { method: 'POST' });
+      const data = await apiRequest('/api/calendar/ical-rotate', { method: 'POST' });
       setIcalUrl(data.url || '');
       showToast('success', 'iCal URL rotated. Update your subscriptions.');
     } catch (err) {

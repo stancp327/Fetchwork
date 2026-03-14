@@ -6,10 +6,19 @@ const { authenticateToken } = require('../middleware/auth');
 const calendarService = require('../services/calendarService');
 
 // ── POST /api/calendar/google/connect ─────────────────────────────────────
+// Also accept /google/auth as alias for backward compat
+router.post('/google/auth', authenticateToken, async (req, res, next) => {
+  req.url = '/google/connect';
+  next('route');
+});
+
 router.post('/google/connect', authenticateToken, async (req, res) => {
   try {
-    if (!process.env.GOOGLE_CAL_CLIENT_ID) {
-      return res.status(503).json({ error: 'Google Calendar integration not configured' });
+    if (!process.env.GOOGLE_CAL_CLIENT_ID || !process.env.GOOGLE_CAL_CLIENT_SECRET) {
+      return res.status(503).json({
+        error: 'Google Calendar is not configured on this server yet.',
+        setupRequired: true,
+      });
     }
     const authUrl = calendarService.getAuthUrl(req.user.userId);
     res.json({ authUrl });
@@ -74,6 +83,9 @@ router.get('/google/status', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to get calendar status' });
   }
 });
+
+// Alias: /ical/url → /ical-url
+router.get('/ical/url', (req, res, next) => { req.url = '/ical-url'; next('route'); });
 
 // ── GET /api/calendar/ical-url ────────────────────────────────────────────
 // Returns the iCal subscription URL for the authenticated user
