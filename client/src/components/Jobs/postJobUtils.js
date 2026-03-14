@@ -71,7 +71,6 @@ export const buildJobPayload = (formData, selectedTeam) => {
     },
     deadline: formData.deadline || null,
     scheduledDate: formData.scheduledDate || null,
-    cancellationPolicy: formData.locationType !== 'remote' ? formData.cancellationPolicy : 'flexible',
     isUrgent: formData.isUrgent,
     recurring: formData.recurringEnabled
       ? {

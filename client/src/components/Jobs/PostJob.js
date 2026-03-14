@@ -188,7 +188,6 @@ const PostJob = () => {
     zipCode: '',
     deadline: '',
     scheduledDate: '',
-    cancellationPolicy: 'flexible',
     isUrgent: false,
     recurringEnabled:  false,
     recurringInterval: 'monthly',
@@ -814,26 +813,7 @@ const PostJob = () => {
                 <span className="field-hint">Leave blank if you're flexible on timing</span>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="cancellationPolicy">Cancellation Policy</label>
-                <div className="cancellation-cards">
-                  {[
-                    { value: 'flexible', icon: '🟢', label: 'Flexible', desc: 'Cancel anytime, no fee' },
-                    { value: 'moderate', icon: '🟡', label: 'Moderate', desc: '10% fee if cancelled under 1 hour before' },
-                    { value: 'strict', icon: '🔴', label: 'Strict', desc: '25–50% fee depending on notice given' },
-                  ].map(p => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      className={`cancellation-card ${formData.cancellationPolicy === p.value ? 'selected' : ''}`}
-                      onClick={() => handleInputChange({ target: { name: 'cancellationPolicy', value: p.value } })}
-                    >
-                      <span>{p.icon} <strong>{p.label}</strong></span>
-                      <span className="cancellation-desc">{p.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+
             </div>
           )}
 

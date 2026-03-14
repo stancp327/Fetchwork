@@ -458,23 +458,10 @@ router.delete('/:id', authenticateToken, validateMongoId, async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to delete this job' });
     }
     
-    // For in-progress jobs, check cancellation policy
+    // For in-progress jobs, cancel directly — no fee enforcement on jobs
     if (job.status === 'in_progress') {
-      if (job.scheduledDate) {
-        const hoursUntil = (job.scheduledDate - new Date()) / (1000 * 60 * 60);
-        
-        // Check if cancellation is allowed
-        if (job.cancellationPolicy === 'strict' && hoursUntil < 0) {
-          return res.status(400).json({ error: 'Cannot cancel a job after its scheduled time' });
-        }
-      }
-      
       await job.cancelJob(req.body.reason);
-      return res.json({
-        message: 'Job cancelled',
-        cancellationFee: job.cancellationFee,
-        policy: job.cancellationPolicy
-      });
+      return res.json({ message: 'Job cancelled' });
     }
     
     job.isActive = false;

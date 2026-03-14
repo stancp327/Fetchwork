@@ -100,19 +100,6 @@
 /* Label optional hint */
 .label-optional { font-size: var(--font-size-xs); color: var(--color-text-muted); font-weight: 400; }
 
-/* Cancellation policy cards */
-.cancellation-cards {
-  display: flex; flex-direction: column; gap: var(--space-xs);
-}
-.cancellation-card {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: var(--space-sm) var(--space-md); border: 2px solid var(--color-border); border-radius: 8px;
-  background: var(--color-bg-primary); cursor: pointer; text-align: left; transition: all 0.15s; width: 100%;
-  min-height: 44px;
-}
-.cancellation-card:hover { border-color: var(--color-border-medium); background: var(--color-bg-subtle); }
-.cancellation-card.selected { border-color: var(--color-primary); background: var(--color-primary-light); }
-.cancellation-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
 
 @media (min-width: 480px) {
   .work-type-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
