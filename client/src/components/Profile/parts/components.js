@@ -221,14 +221,61 @@ const TabAbout = ({ data, onChange, onFileSelect }) => {
 };
 
 // ── Tab: Skills ─────────────────────────────────────────────────
+const SKILL_SUGGESTIONS = [
+  // Tech
+  'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'Python', 'Django', 'Flask',
+  'PHP', 'Laravel', 'Ruby', 'Rails', 'Java', 'Spring Boot', 'C#', '.NET', 'C++', 'Rust', 'Go',
+  'Swift', 'Kotlin', 'Flutter', 'React Native', 'iOS Development', 'Android Development',
+  'HTML', 'CSS', 'Sass', 'Tailwind CSS', 'Bootstrap', 'SQL', 'MySQL', 'PostgreSQL', 'MongoDB',
+  'Redis', 'GraphQL', 'REST API', 'Docker', 'Kubernetes', 'AWS', 'Google Cloud', 'Azure',
+  'Firebase', 'Git', 'Linux', 'DevOps', 'CI/CD', 'Terraform', 'Nginx', 'WordPress', 'Shopify',
+  'Next.js', 'Nuxt.js', 'Express.js', 'FastAPI', 'Prisma', 'Elasticsearch', 'Stripe API',
+  // Design
+  'UI Design', 'UX Design', 'Figma', 'Adobe XD', 'Sketch', 'Photoshop', 'Illustrator', 'InDesign',
+  'After Effects', 'Premiere Pro', 'Final Cut Pro', 'Canva', 'Logo Design', 'Brand Identity',
+  'Motion Graphics', 'Video Editing', '3D Modeling', 'Blender', 'Cinema 4D', 'Illustration',
+  'Graphic Design', 'Web Design', 'Mobile Design', 'Wireframing', 'Prototyping', 'User Research',
+  // Marketing
+  'SEO', 'SEM', 'Google Ads', 'Facebook Ads', 'Social Media Marketing', 'Content Marketing',
+  'Email Marketing', 'Copywriting', 'Content Writing', 'Blog Writing', 'Ghostwriting',
+  'Digital Marketing', 'Affiliate Marketing', 'Influencer Marketing', 'Analytics', 'A/B Testing',
+  'HubSpot', 'Mailchimp', 'Salesforce', 'Market Research', 'Lead Generation',
+  // Business
+  'Project Management', 'Agile', 'Scrum', 'Product Management', 'Business Analysis',
+  'Data Analysis', 'Excel', 'PowerPoint', 'Financial Modeling', 'Accounting', 'Bookkeeping',
+  'QuickBooks', 'HR', 'Recruiting', 'Technical Writing', 'Grant Writing', 'Legal Research',
+  'Contract Drafting', 'Consulting', 'Public Speaking', 'Sales',
+  // Creative & Services
+  'Photography', 'Portrait Photography', 'Real Estate Photography', 'Food Photography',
+  'Video Production', 'Drone Photography', 'Podcast Editing', 'Voiceover', 'Translation',
+  'Transcription', 'Music Production', 'Mixing & Mastering', 'Tutoring', 'Math Tutoring',
+  'Language Teaching', 'Personal Training', 'Yoga Instruction', 'Nutrition Coaching',
+  'Life Coaching', 'Career Coaching', 'Event Planning', 'Interior Design', 'Landscaping',
+  'Carpentry', 'Plumbing', 'Electrical', 'Painting', 'Cleaning', 'Pet Care', 'Dog Training',
+  'Cooking', 'Catering', 'Bartending', 'Childcare',
+];
+
 const TabSkills = ({ data, onChange }) => {
   const [newSkill, setNewSkill] = useState('');
-  const addSkill = () => {
-    if (newSkill.trim() && !data.skills.includes(newSkill.trim())) {
-      onChange('skills', [...data.skills, newSkill.trim()]);
-      setNewSkill('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const suggestions = useMemo(() => {
+    if (!newSkill.trim() || newSkill.length < 2) return [];
+    const q = newSkill.toLowerCase();
+    return SKILL_SUGGESTIONS.filter(s =>
+      s.toLowerCase().includes(q) && !data.skills.includes(s)
+    ).slice(0, 8);
+  }, [newSkill, data.skills]);
+
+  const addSkill = (skill) => {
+    const s = (skill || newSkill).trim();
+    if (s && !data.skills.includes(s)) {
+      onChange('skills', [...data.skills, s]);
     }
+    setNewSkill('');
+    setShowSuggestions(false);
   };
+
   const removeSkill = (s) => onChange('skills', data.skills.filter(sk => sk !== s));
 
   return (
@@ -236,22 +283,48 @@ const TabSkills = ({ data, onChange }) => {
       <h2>Skills & Expertise</h2>
       <div className="prof-field">
         <label>Add Skills</label>
-        <div className="skill-input-row">
-          <input type="text" value={newSkill} onChange={e => setNewSkill(e.target.value)} placeholder="Type a skill and press Enter..." onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addSkill())} />
-          <button type="button" onClick={addSkill} className="btn-add-skill">+ Add</button>
+        <div className="skill-input-row" style={{ position: 'relative' }}>
+          <input
+            type="text"
+            value={newSkill}
+            onChange={e => { setNewSkill(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            placeholder="Type a skill..."
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); addSkill(); }
+              if (e.key === 'Escape') setShowSuggestions(false);
+            }}
+            autoComplete="off"
+          />
+          <button type="button" onClick={() => addSkill()} className="btn-add-skill">+ Add</button>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="skill-suggestions-dropdown">
+              {suggestions.map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  className="skill-suggestion-item"
+                  onMouseDown={e => { e.preventDefault(); addSkill(s); }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="skills-grid">
         {data.skills.map((skill, i) => (
           <span key={i} className="skill-chip">
             {skill}
-            <button type="button" onClick={() => removeSkill(skill)} className="skill-remove">×</button>
+            <button type="button" onClick={() => removeSkill(skill)} className="skill-remove">✕</button>
           </span>
         ))}
         {data.skills.length === 0 && <p className="skills-empty">No skills added yet. Add skills to help clients find you.</p>}
       </div>
       <div className="prof-field" style={{ marginTop: '1.5rem' }}>
-        <label>Primary Category</label>
+        <label>Areas of Expertise</label>
         <CategoryCombobox
           value={data.primaryCategory || ''}
           onChange={v => onChange('primaryCategory', v)}
@@ -260,7 +333,6 @@ const TabSkills = ({ data, onChange }) => {
       </div>
     </div>
   );
-};
 
 // ── Tab: Portfolio ──────────────────────────────────────────────
 const TabPortfolio = ({ data, onRefresh }) => {
