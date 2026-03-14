@@ -4,6 +4,7 @@ import { apiRequest } from '../../utils/api';
 import UpgradePrompt from './UpgradePrompt';
 import SEO from '../common/SEO';
 import './WalletPage.css';
+import './GiftCards.css';
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
 
@@ -12,6 +13,10 @@ const WalletPage = () => {
   const [wallet, setWallet]       = useState(null);
   const [loading, setLoading]     = useState(true);
   const [adding, setAdding]       = useState(false);
+  const [redeemCode,    setRedeemCode]    = useState('');
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [redeemSuccess, setRedeemSuccess] = useState('');
+  const [redeemError,   setRedeemError]   = useState('');
   const [amount, setAmount]       = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [error, setError]         = useState('');
@@ -76,6 +81,27 @@ const WalletPage = () => {
     }
   };
 
+  const handleRedeem = async (e) => {
+    e.preventDefault();
+    if (!redeemCode.trim()) return;
+    setRedeemError('');
+    setRedeemSuccess('');
+    setRedeemLoading(true);
+    try {
+      const data = await apiRequest('/api/gift-cards/redeem', {
+        method: 'POST',
+        body: JSON.stringify({ code: redeemCode.trim() }),
+      });
+      setRedeemSuccess(`${data.amount.toFixed(2)} added to your wallet!${data.message ? ' 🎁 "' + data.message + '"' : ''}`);
+      setRedeemCode('');
+      fetchWallet();
+    } catch (err) {
+      setRedeemError(err.message || 'Invalid or already used code');
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
+
   const handleAddFunds = async () => {
     const finalAmount = parseFloat(customAmount || amount);
     if (!finalAmount || finalAmount < 5) {
@@ -127,6 +153,8 @@ const WalletPage = () => {
       <div className="wp-wallet-header">
         <h1 className="wp-wallet-title">Wallet</h1>
         <Link to="/billing" className="wp-wallet-billing-link">Billing settings →</Link>
+          <Link to="/gift-cards" className="wp-wallet-billing-link">🎁 Gift Cards</Link>
+        </div>
       </div>
 
       {successMsg && <div className="wp-wallet-success">{successMsg}</div>}
@@ -248,6 +276,26 @@ const WalletPage = () => {
           </div>
         </div>
       )}
+
+      {/* Redeem Gift Card */}
+      <div className="wp-wallet-card">
+        <div className="wp-wallet-card-title">🎁 Redeem Gift Card</div>
+        <form className="gc-redeem-form" onSubmit={handleRedeem}>
+          <input
+            className="gc-redeem-input"
+            type="text"
+            value={redeemCode}
+            onChange={e => setRedeemCode(e.target.value.toUpperCase())}
+            placeholder="FW-XXXX-XXXX"
+            maxLength={12}
+          />
+          <button className="gc-redeem-btn" type="submit" disabled={redeemLoading || !redeemCode.trim()}>
+            {redeemLoading ? 'Checking…' : 'Redeem'}
+          </button>
+        </form>
+        {redeemSuccess && <div className="gc-redeem-success">{redeemSuccess}</div>}
+        {redeemError   && <div className="gc-redeem-error">{redeemError}</div>}
+      </div>
 
       {active.length === 0 && history.length === 0 && (
         <div className="wp-wallet-empty">

@@ -66,6 +66,7 @@ const PricingPage          = React.lazy(() => import('./components/Billing/Prici
 const BillingSettings      = React.lazy(() => import('./components/Billing/BillingSettings'));
 const BillingSuccess       = React.lazy(() => import('./components/Billing/BillingSuccess'));
 const WalletPage           = React.lazy(() => import('./components/Billing/WalletPage'));
+const GiftCardsPage        = React.lazy(() => import('./components/Billing/GiftCardsPage'));
 const TeamsPage            = React.lazy(() => import('./components/Teams/TeamsPage'));
 const TeamDetail           = React.lazy(() => import('./components/Teams/TeamDetail'));
 const TeamsWorkspace       = React.lazy(() => import('./pages/Teams'));
@@ -394,6 +395,7 @@ function AppContent() {
           <Route path="/billing"               element={<ProtectedRoute><BillingSettings /></ProtectedRoute>} />
           <Route path="/billing/success"       element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />
           <Route path="/wallet"                element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+              <Route path="/gift-cards"            element={<ProtectedRoute><GiftCardsPage /></ProtectedRoute>} />
                 <Route path="/teams"                 element={<ProtectedRoute><TeamsWorkspace /></ProtectedRoute>} />
                 <Route path="/teams/list"            element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />
                 <Route path="/teams/:id"             element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />

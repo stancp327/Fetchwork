@@ -321,6 +321,7 @@ app.use('/api/stats',        require('./routes/stats'));
 app.use('/api/availability', require('./routes/availability'));
 app.use('/api/calendar',     require('./routes/calendar'));
 app.use('/api/billing',      require('./routes/billing'));
+app.use('/api/gift-cards',   require('./routes/giftCards'));
 app.use('/api/job-alerts',   require('./routes/jobAlerts'));
 app.use('/api/referrals',    require('./routes/referrals'));
 app.use('/api/contracts',          require('./routes/contracts'));
