@@ -158,7 +158,7 @@ const PublicProfile = () => {
               {!isOwnProfile && <SaveButton itemId={f._id} itemType="freelancer" size="lg" />}
             </div>
             <ShareQR url={`/freelancers/${f._id}`} title={`${f.firstName} ${f.lastName} on Fetchwork`} />
-            {f.hourlyRate > 0 && <div className="pp-rate">${f.hourlyRate}<span>/hr</span></div>}
+            {f.hourlyRate > 0 && <div className="pp-rate">${f.hourlyRate}<span>/hr</span>{f.rateNegotiable && <span style={{ fontSize: '0.75rem', marginLeft: 4, color: 'var(--color-text-muted)', fontWeight: 400 }}>(negotiable)</span>}</div>}
             {!isOwnProfile && (
               <>
                 <button className="pp-btn-primary" onClick={handleMessage} disabled={messagingLoading}>

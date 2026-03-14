@@ -417,9 +417,31 @@ const TabRates = ({ data, onChange }) => (
   <div className="tab-content">
     <h2>Rates & Services</h2>
     <div className="prof-field">
-      <label>Hourly Rate ($)</label>
-      <input type="number" value={data.hourlyRate} onChange={e => onChange('hourlyRate', parseFloat(e.target.value) || 0)} min="0" step="0.5" placeholder="50" />
-      <p className="field-hint">Set a competitive rate for your experience level.</p>
+      <label>Minimum Hourly Rate ($)</label>
+      <input
+        type="number"
+        value={data.hourlyRate}
+        onChange={e => onChange('hourlyRate', parseFloat(e.target.value) || 0)}
+        min="0" step="0.5" placeholder="e.g. 25"
+      />
+      <p className="field-hint">
+        This is your <strong>floor rate</strong> — the minimum you'll accept per hour.
+        Individual services can be priced higher. Leave at 0 if you prefer project-based pricing only.
+      </p>
+    </div>
+    <div className="prof-field">
+      <label className="toggle-label">
+        <input
+          type="checkbox"
+          checked={!!data.rateNegotiable}
+          onChange={e => onChange('rateNegotiable', e.target.checked)}
+          style={{ marginRight: '0.5rem', accentColor: 'var(--color-primary)' }}
+        />
+        Rate is negotiable
+      </label>
+      <p className="field-hint" style={{ marginTop: '0.25rem' }}>
+        Clients will see your rate as a starting point and can discuss pricing with you.
+      </p>
     </div>
     <div className="rates-services">
       <h3>Your Services</h3>

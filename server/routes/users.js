@@ -352,7 +352,7 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
     }
     
     const allowedUpdates = [
-      'firstName', 'lastName', 'bio', 'skills', 'hourlyRate',
+      'firstName', 'lastName', 'bio', 'skills', 'hourlyRate', 'rateNegotiable',
       'location', 'timezone', 'portfolio', 'socialLinks', 'phone',
       'headline', 'tagline', 'languages', 'experience', 'education',
       'certifications', 'preferencesExtended', 'socialLinksExtended',

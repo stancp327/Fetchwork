@@ -953,3 +953,35 @@
   background: none; border: 1px solid var(--color-border, #e5e7eb); border-radius: 5px;
   padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--color-text-muted, #6b7280); margin-top: 8px;
 }
+
+/* -- Service Location Cards -- */
+.svc-location-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.svc-location-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, background 0.15s;
+}
+.svc-location-card.selected {
+  border-color: var(--color-primary, #2563eb);
+  background: #eff6ff;
+}
+.svc-location-card:hover:not(.selected) {
+  border-color: #94a3b8;
+  background: var(--color-bg-secondary, #f9fafb);
+}
+.svc-loc-icon { font-size: 1.25rem; flex-shrink: 0; margin-top: 1px; }
+.svc-loc-label { font-weight: 600; font-size: 0.9rem; color: var(--color-text-primary, #111827); }
+.svc-loc-desc { font-size: 0.8rem; color: var(--color-text-muted, #6b7280); margin-top: 1px; }

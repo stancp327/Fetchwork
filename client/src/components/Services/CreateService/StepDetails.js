@@ -160,6 +160,32 @@ const StepDetails = ({ data, onChange, errors, hasFeature = () => true }) => {
         <input type="text" value={data.skills} onChange={e => onChange('skills', e.target.value)}
           placeholder={data.serviceType === 'recurring' ? 'e.g. Algebra, Calculus, Test Prep (comma separated)' : 'React, Node.js, MongoDB (comma separated)'} />
       </div>
+
+      {/* ── Service Location ── */}
+      <div className="wiz-field">
+        <label>Where is this service delivered?</label>
+        <div className="svc-location-cards">
+          {[
+            { value: 'remote',         icon: '💻', label: 'Remote',           desc: 'Fully online — video, chat, or digital delivery' },
+            { value: 'at_client',      icon: '🏠', label: 'I go to the client', desc: "You travel to the client's location" },
+            { value: 'at_freelancer',  icon: '📍', label: 'Client comes to me', desc: 'Client visits your location or workspace' },
+            { value: 'flexible',       icon: '🔄', label: 'Flexible',          desc: 'Can do either — you decide together' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`svc-location-card ${(data.serviceLocation || 'remote') === opt.value ? 'selected' : ''}`}
+              onClick={() => onChange('serviceLocation', opt.value)}
+            >
+              <span className="svc-loc-icon">{opt.icon}</span>
+              <div>
+                <div className="svc-loc-label">{opt.label}</div>
+                <div className="svc-loc-desc">{opt.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

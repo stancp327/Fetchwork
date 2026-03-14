@@ -58,6 +58,7 @@ const userSchema = new mongoose.Schema({
     min: [0, 'Hourly rate cannot be negative'],
     default: 0
   },
+  rateNegotiable: { type: Boolean, default: false },
   location: locationSchema,
   phone: {
     type: String,

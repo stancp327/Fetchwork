@@ -28,6 +28,7 @@ const CreateService = () => {
   const [data, setData] = useState({
     // type
     serviceType: 'one_time',
+    serviceLocation: 'remote',
     // details
     title: '', description: '', category: '', subcategory: '', skills: '',
     requirements: '', imagePreview: '',
@@ -189,6 +190,8 @@ const CreateService = () => {
       if (data.capacityEnabled) {
         serviceData.capacity = { enabled: true, maxPerDay: data.capacityMaxDay, maxPerWeek: data.capacityMaxWeek, maxConcurrent: data.capacityMaxConcurrent };
       }
+
+      serviceData.serviceLocation = data.serviceLocation || 'remote';
 
       await apiRequest('/api/services', { method: 'POST', body: JSON.stringify(serviceData) });
       navigate('/browse-services');
