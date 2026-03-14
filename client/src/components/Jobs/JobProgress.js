@@ -39,6 +39,10 @@ const JobProgress = () => {
   // Milestone payment state: { index, clientSecret, title, amount } or null
   const [milestonePay, setMilestonePay] = useState(null);
   const [msReleasing,  setMsReleasing]  = useState(null); // index being released
+  const [showDeliverForm, setShowDeliverForm] = useState(false);
+  const [deliverNote, setDeliverNote] = useState('');
+  const [delivering, setDelivering] = useState(false);
+  const [approvingDelivery, setApprovingDelivery] = useState(false);
 
   const fetchProgress = useCallback(async () => {
     try {
@@ -175,6 +179,34 @@ const JobProgress = () => {
     } catch (err) {
       alert('Payment received but confirmation failed. Contact support.');
     }
+  };
+
+
+  const handleDeliverWork = async () => {
+    if (!deliverNote.trim() && !window.confirm('Deliver without a note? The client won\'t have any message to review.')) return;
+    setDelivering(true);
+    try {
+      await apiRequest(`/api/jobs/${id}/deliver`, {
+        method: 'POST',
+        body: JSON.stringify({ note: deliverNote }),
+      });
+      setShowDeliverForm(false);
+      setDeliverNote('');
+      fetchProgress();
+    } catch (err) {
+      alert(err.message || 'Failed to deliver work');
+    } finally { setDelivering(false); }
+  };
+
+  const handleApproveDelivery = async () => {
+    if (!window.confirm('Approve this delivery and release payment to the freelancer?')) return;
+    setApprovingDelivery(true);
+    try {
+      await apiRequest(`/api/jobs/${id}/complete`, { method: 'POST' });
+      fetchProgress();
+    } catch (err) {
+      alert(err.message || 'Failed to approve delivery');
+    } finally { setApprovingDelivery(false); }
   };
 
   const handleReleaseMilestone = async (milestoneIndex) => {
@@ -428,6 +460,85 @@ const JobProgress = () => {
           <h2>Activity Timeline</h2>
 
           {/* Post Update */}
+          {/* ── Delivery Section ── */}
+          {isFreelancer && (data.job?.status === 'in_progress' || data.job?.status === 'delivered') && (
+            <div className="jp-delivery-section">
+              {data.job.status === 'delivered' ? (
+                <div className="jp-delivered-badge">
+                  ✅ Work delivered — awaiting client review
+                  {data.job.autoReleaseAt && (
+                    <div style={{ fontSize: 12, marginTop: 4, color: 'var(--color-text-muted)' }}>
+                      Auto-releases {new Date(data.job.autoReleaseAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <button className="jp-btn-deliver" onClick={() => setShowDeliverForm(d => !d)}>
+                    📦 {showDeliverForm ? 'Cancel' : 'Deliver Work'}
+                  </button>
+                  {showDeliverForm && (
+                    <div className="jp-deliver-form">
+                      <textarea
+                        rows={4}
+                        value={deliverNote}
+                        onChange={e => setDeliverNote(e.target.value)}
+                        placeholder="Describe what you're delivering — what was done, how to use it, anything the client should know..."
+                      />
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0.25rem 0 0.5rem' }}>
+                        ⚠️ Once delivered, the client has <strong>3 days</strong> to review. If they don't respond, payment auto-releases to you.
+                      </p>
+                      <button className="jp-btn-primary" onClick={handleDeliverWork} disabled={delivering}>
+                        {delivering ? 'Submitting...' : '📤 Submit Delivery'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── Client: Review Delivery ── */}
+          {isClient && data.job?.status === 'delivered' && (
+            <div className="jp-review-section">
+              <h3>📦 Delivery Received</h3>
+              {data.job.deliveredAt && (
+                <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>
+                  Delivered {new Date(data.job.deliveredAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+              {data.job.deliveryNote && (
+                <div className="jp-delivery-note">
+                  <strong>Freelancer's note:</strong>
+                  <p>{data.job.deliveryNote}</p>
+                </div>
+              )}
+              {data.job.deliveryFiles?.length > 0 && (
+                <div className="jp-delivery-files">
+                  <strong>Attached files:</strong>
+                  {data.job.deliveryFiles.map((f, i) => (
+                    <a key={i} href={f.url} target="_blank" rel="noreferrer" className="jp-attachment">
+                      📎 {f.filename}
+                    </a>
+                  ))}
+                </div>
+              )}
+              {data.job.autoReleaseAt && (
+                <div className="jp-auto-release-notice">
+                  ⏱ <strong>Review by {new Date(data.job.autoReleaseAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</strong> — if you don't respond, payment auto-releases to the freelancer.
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                <button className="jp-btn-primary" onClick={handleApproveDelivery} disabled={approvingDelivery}>
+                  {approvingDelivery ? 'Approving...' : '✅ Approve & Release Payment'}
+                </button>
+                <button className="jp-btn-ghost" onClick={() => window.location.href = `/messages`}>
+                  💬 Request Revision
+                </button>
+              </div>
+            </div>
+          )}
+
           {(isClient || isFreelancer) && (
             <div className="jp-post-update">
               <textarea

@@ -914,6 +914,77 @@ router.post('/:id/begin', authenticateToken, validateMongoId, async (req, res) =
   }
 });
 
+// POST /api/jobs/:id/deliver — freelancer submits deliverables
+router.post('/:id/deliver', authenticateToken, validateMongoId, async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate('client', 'firstName lastName _id')
+      .populate('freelancer', 'firstName lastName _id');
+
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+
+    const userId = (req.user._id || req.user.userId)?.toString();
+    const isFreelancer = job.freelancer?._id?.toString() === userId;
+
+    if (!isFreelancer) return res.status(403).json({ error: 'Only the freelancer can deliver this job' });
+    if (!['in_progress', 'delivered'].includes(job.status)) {
+      return res.status(400).json({ error: 'Job must be in progress to deliver' });
+    }
+
+    const { note, files } = req.body;
+    // files: [{ filename, url, size, contentType }] — frontend uploads via /api/upload first
+    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+    const now = new Date();
+
+    job.status = 'delivered';
+    job.deliveredAt = now;
+    job.deliveryNote = note || '';
+    job.autoReleaseAt = new Date(now.getTime() + THREE_DAYS_MS);
+    if (Array.isArray(files) && files.length > 0) {
+      job.deliveryFiles = files.map(f => ({
+        filename: f.filename || f.name || 'file',
+        url: f.url,
+        size: f.size || 0,
+        contentType: f.contentType || f.mimeType || 'application/octet-stream',
+        uploadedAt: now,
+      }));
+    }
+
+    // Add activity log entry
+    job.activityLog = job.activityLog || [];
+    job.activityLog.push({
+      type: 'file_delivered',
+      user: job.freelancer._id,
+      message: note || 'Deliverables submitted for review.',
+      attachments: job.deliveryFiles || [],
+      timestamp: now,
+    });
+
+    await job.save();
+
+    const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`.trim();
+    // Notify client
+    try {
+      await notify({
+        recipient: job.client._id,
+        title: 'Work delivered — please review',
+        message: `${freelancerName} has delivered "${job.title}". You have 3 days to review and release payment. After that, funds auto-release to the freelancer.`,
+        type: 'job_delivered',
+        link: `/jobs/${job._id}/progress`,
+        metadata: { type: 'job_delivered', jobId: job._id },
+      });
+    } catch (notifErr) {
+      console.error('Delivery notification error (non-fatal):', notifErr.message);
+    }
+
+    res.json({ message: 'Work delivered. Client has 3 days to review.', job });
+  } catch (err) {
+    console.error('Error delivering job:', err);
+    res.status(500).json({ error: 'Failed to deliver job' });
+  }
+});
+
+// POST /api/jobs/:id/complete — client approves work + releases payment
 router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res) => {
   try {
     const job = await Job.findById(req.params.id).populate('client', 'firstName lastName').populate('freelancer', 'firstName lastName');
@@ -928,8 +999,8 @@ router.post('/:id/complete', authenticateToken, validateMongoId, async (req, res
     if (!isFreelancer && !isClient) {
       return res.status(403).json({ error: 'Only the client or freelancer can complete this job' });
     }
-    if (job.status !== 'in_progress') {
-      return res.status(400).json({ error: 'Job must be in progress to complete' });
+    if (!['in_progress', 'delivered'].includes(job.status)) {
+      return res.status(400).json({ error: 'Job must be in progress or delivered to complete' });
     }
 
     const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`.trim();
@@ -1143,6 +1214,62 @@ router.post('/:id/refund', authenticateToken, validateMongoId, async (req, res) 
 
 // ── Milestone & Progress routes (extracted to jobs/milestones.js) ──
 router.use('/:id', milestoneRoutes);
+
+// POST /api/jobs/cron/auto-release — called by Render cron daily, auto-releases overdue deliveries
+router.post('/cron/auto-release', async (req, res) => {
+  const secret = req.headers['x-cron-secret'] || req.query.secret;
+  if (secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const overdueJobs = await Job.find({
+      status: 'delivered',
+      autoReleaseAt: { $lte: new Date() },
+      autoReleased: false,
+    }).populate('client', 'firstName').populate('freelancer', 'firstName lastName _id stripeAccountId feeWaiver');
+
+    let released = 0;
+    for (const job of overdueJobs) {
+      try {
+        // Release payment if escrow exists
+        if (job.stripePaymentIntentId && job.escrowAmount > 0 && job.freelancer?.stripeAccountId) {
+          const stripeService = require('../services/stripeService');
+          const Payment = require('../models/Payment');
+          const { calcPlatformFee } = require('../services/feeEngine');
+          const waived = job.freelancer.isFeeWaived?.() || false;
+          const escrowPayment = await Payment.findOne({ job: job._id, type: 'escrow' });
+          const platformFee = waived ? 0 : (escrowPayment?.platformFee || await calcPlatformFee(
+            String(job.freelancer._id), 'freelancer', job, job.escrowAmount
+          ));
+          const payoutAmt = job.escrowAmount - platformFee;
+          await stripeService.releasePayment(payoutAmt, job.freelancer.stripeAccountId, job.stripePaymentIntentId);
+          if (escrowPayment) { escrowPayment.status = 'completed'; await escrowPayment.save(); }
+        }
+
+        job.status = 'completed';
+        job.autoReleased = true;
+        job.completedAt = new Date();
+        await job.save();
+
+        // Notify both parties
+        try {
+          const freelancerName = `${job.freelancer.firstName} ${job.freelancer.lastName}`;
+          await notify({ recipient: job.client._id, title: 'Funds auto-released', message: `The review period for "${job.title}" ended. Payment was automatically released to ${freelancerName}.`, type: 'auto_release' });
+          await notify({ recipient: job.freelancer._id, title: 'Payment auto-released', message: `The review period for "${job.title}" ended and your payment was released automatically.`, type: 'auto_release' });
+        } catch {}
+
+        released++;
+      } catch (jobErr) {
+        console.error(`Auto-release failed for job ${job._id}:`, jobErr.message);
+      }
+    }
+
+    res.json({ message: `Auto-released ${released} job(s)`, released });
+  } catch (err) {
+    console.error('Auto-release cron error:', err);
+    res.status(500).json({ error: 'Auto-release failed' });
+  }
+});
 
 module.exports = router;
 

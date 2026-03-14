@@ -129,3 +129,78 @@
 }
 .jp-btn-sm.secure  { background: var(--color-primary); color: white; }
 .jp-btn-sm.release { background: var(--color-success); color: white; }
+
+/* -- Delivery Section -- */
+.jp-delivery-section { margin-bottom: 1rem; }
+.jp-btn-deliver {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--color-primary, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.jp-btn-deliver:hover { background: #1d4ed8; }
+.jp-deliver-form {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.jp-deliver-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+.jp-delivered-badge {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.jp-review-section {
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 2px solid var(--color-primary, #2563eb);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.jp-review-section h3 { margin: 0 0 0.5rem; }
+.jp-delivery-note {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  font-size: 0.875rem;
+}
+.jp-delivery-note p { margin: 0.25rem 0 0; }
+.jp-delivery-files {
+  margin: 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+}
+.jp-auto-release-notice {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8rem;
+  color: #92400e;
+}

@@ -78,7 +78,7 @@ const jobSchema = new mongoose.Schema({
   team:           { type: mongoose.Schema.Types.ObjectId, ref: 'Team', default: null },
   status: {
     type: String,
-    enum: ['draft', 'open', 'accepted', 'pending_start', 'in_progress', 'completed', 'cancelled', 'disputed'],
+    enum: ['draft', 'open', 'accepted', 'pending_start', 'in_progress', 'delivered', 'completed', 'cancelled', 'disputed'],
     default: 'draft'
   },
   proposals: [{
@@ -190,6 +190,18 @@ const jobSchema = new mongoose.Schema({
   acceptedAt: Date,
   endDate: Date,
   completedAt: Date,
+  // Delivery flow
+  deliveredAt: Date,
+  deliveryNote: String,
+  deliveryFiles: [{
+    filename: String,
+    url: String,
+    size: Number,
+    contentType: String,
+    uploadedAt: { type: Date, default: Date.now },
+  }],
+  autoReleaseAt: Date,   // deliveredAt + 3 days
+  autoReleased: { type: Boolean, default: false },
   milestones: [{
     title:       { type: String, required: true, trim: true },
     description: String,
