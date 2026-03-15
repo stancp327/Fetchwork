@@ -1,4 +1,5 @@
 import React, { useEffect, Suspense } from 'react';
+import Home from './components/Home/Home'; // eager — avoids Suspense swap CLS on critical homepage
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -17,7 +18,7 @@ import Footer from './components/common/Footer';
 import './App.css';
 
 // Route components — lazy-loaded, only downloaded when the route is visited
-const Home         = React.lazy(() => import('./components/Home/Home'));
+// Home is eagerly imported above — removed from lazy list to eliminate Suspense CLS on homepage
 const Login        = React.lazy(() => import('./components/Auth/Login'));
 const Register     = React.lazy(() => import('./components/Auth/Register'));
 const ForgotPassword = React.lazy(() => import('./components/Auth/ForgotPassword'));
