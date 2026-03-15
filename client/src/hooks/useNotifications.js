@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../utils/api';
+// Note: React Query hooks are in ./useNotificationsQueries — kept separate so
+// @tanstack/react-query stays out of the main bundle (Navigation loads this file eagerly)
 
 // ── Original hook (used by Navigation, etc.) ────────────────────
 export const useNotifications = () => {
@@ -69,9 +70,11 @@ export const useNotifications = () => {
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
+    // Delay initial fetch past TTI (~3s) so the API response re-render
+    // doesn't contribute to TBT; 30s polling continues after that
+    const initial = setTimeout(fetchNotifications, 3000);
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => { clearTimeout(initial); clearInterval(interval); };
   }, [fetchNotifications]);
 
   // Real-time: new in-app notification pushed via socket
@@ -104,33 +107,4 @@ export const useNotifications = () => {
   return { notifications, loading, refetch: fetchNotifications, markAsRead, markAllRead };
 };
 
-// ── React Query hooks (for new features) ────────────────────────
-
-export function useNotificationCount() {
-  return useQuery({
-    queryKey: ['notifications', 'count'],
-    queryFn: () => apiRequest('/api/notifications/count'),
-    refetchInterval: 30 * 1000,
-    staleTime: 10 * 1000,
-  });
-}
-
-export function useNotificationsList(page = 1) {
-  return useQuery({
-    queryKey: ['notifications', 'list', page],
-    queryFn: () => apiRequest(`/api/notifications?page=${page}&limit=20`),
-  });
-}
-
-export function useMarkNotificationsRead() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (ids) => apiRequest('/api/notifications/read', {
-      method: 'PUT',
-      body: JSON.stringify({ ids }),
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
-}
+// React Query hooks moved to useNotificationsQueries.js — import from there
