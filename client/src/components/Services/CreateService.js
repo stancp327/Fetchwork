@@ -113,10 +113,20 @@ const CreateService = () => {
 
   const handleNext = () => {
     if (!validateStep()) return;
+    // Auto-populate basic package title/description from service title/description
+    // so users don't have to type the same thing twice (step 0 → step 1)
+    if (step === 0) {
+      if (!data.basicTitle?.trim() && data.title?.trim()) update('basicTitle', data.title.trim());
+      if (!data.basicDescription?.trim() && data.description?.trim()) update('basicDescription', data.description.trim());
+    }
     setStep(prev => Math.min(prev + 1, STEPS.length - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleBack = () => setStep(prev => Math.max(prev - 1, 0));
+  const handleBack = () => {
+    setStep(prev => Math.max(prev - 1, 0));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handlePublish = async () => {
     setLoading(true);
@@ -179,7 +189,10 @@ const CreateService = () => {
       serviceData.feesIncluded = data.feesIncluded;
       if (data.bundles?.length > 0) serviceData.bundles = data.bundles;
       if (data.intakeEnabled && data.intakeFields?.length > 0) {
-        serviceData.intakeForm = { enabled: true, fields: data.intakeFields };
+        const validFields = data.intakeFields.filter(f => f.label?.trim());
+        if (validFields.length > 0) {
+          serviceData.intakeForm = { enabled: true, fields: validFields };
+        }
       }
       if (data.depositEnabled) {
         serviceData.deposit = { enabled: true, type: data.depositType, amount: data.depositAmount, refundable: data.depositRefundable };
