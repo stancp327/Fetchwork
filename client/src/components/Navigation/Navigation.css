@@ -1,8 +1,8 @@
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   Navigation â€” clean desktop bar + mobile drawer
+   Navigation â€" clean desktop bar + mobile drawer
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* â”€â”€ Shell â”€â”€ */
+/* â"€â"€ Shell â"€â"€ */
 .navigation {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -29,7 +29,7 @@
   gap: 0.5rem;
 }
 
-/* â”€â”€ Brand â”€â”€ */
+/* â"€â"€ Brand â"€â"€ */
 .nav-brand {
   display: flex;
   align-items: center;
@@ -53,7 +53,7 @@
   .brand-text { display: block; }
 }
 
-/* â”€â”€ Primary links (desktop) â”€â”€ */
+/* â"€â"€ Primary links (desktop) â"€â"€ */
 .nav-primary-links {
   display: none; /* hidden on mobile */
   align-items: center;
@@ -110,19 +110,19 @@
   line-height: 1.4;
 }
 
-/* â”€â”€ Spacer â”€â”€ */
+/* â"€â"€ Spacer â"€â"€ */
 .nav-spacer { flex: 1; }
 
-/* â”€â”€ Right-side action cluster (desktop) â”€â”€ */
+/* â"€â"€ Right-side action cluster (desktop) â"€â"€ */
 .nav-actions {
   display: flex;
   align-items: center;
   gap: 0.375rem;
 }
 
-/* â”€â”€ Role toggle â”€â”€ */
+/* â"€â"€ Role toggle â"€â"€ */
 .role-toggle {
-  display: none; /* hidden on mobile â€” lives in mobile drawer instead */
+  display: none; /* hidden on mobile â€" lives in mobile drawer instead */
   background: var(--color-bg-muted);
   border-radius: 8px;
   padding: 3px;
@@ -151,7 +151,7 @@
   font-weight: 700;
 }
 
-/* â”€â”€ Create button â”€â”€ */
+/* â"€â"€ Create button â"€â"€ */
 .nav-create-btn {
   display: none;
   align-items: center;
@@ -171,7 +171,7 @@
   transform: translateY(-1px);
 }
 
-/* â”€â”€ Icon buttons (messages, notifications) â”€â”€ */
+/* â"€â"€ Icon buttons (messages, notifications) â"€â"€ */
 .nav-icon-btn-wrap { position: relative; }
 
 .nav-icon-btn {
@@ -214,7 +214,7 @@
   border: 2px solid #fff;
 }
 
-/* â”€â”€ Avatar button â”€â”€ */
+/* â"€â"€ Avatar button â"€â"€ */
 .nav-avatar-btn {
   display: flex;
   align-items: center;
@@ -260,7 +260,7 @@
   transform: rotate(180deg);
 }
 
-/* â”€â”€ Dropdowns â”€â”€ */
+/* â"€â"€ Dropdowns â"€â"€ */
 .nav-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -337,7 +337,7 @@
   color: var(--color-text-secondary);
 }
 
-/* â”€â”€ Profile menu identity block â”€â”€ */
+/* â"€â"€ Profile menu identity block â"€â"€ */
 .nav-menu-identity {
   display: flex;
   align-items: center;
@@ -359,7 +359,7 @@
   word-break: break-all;
 }
 
-/* â”€â”€ Menu items â”€â”€ */
+/* â"€â"€ Menu items â"€â"€ */
 .nav-menu-item {
   display: flex;
   align-items: center;
@@ -412,7 +412,7 @@
   letter-spacing: 0.06em;
 }
 
-/* â”€â”€ Notification list â”€â”€ */
+/* â"€â"€ Notification list â"€â"€ */
 .notif-list { overflow-y: auto; }
 
 .notif-item {
@@ -450,7 +450,7 @@
   line-height: 1.35;
 }
 
-/* â”€â”€ Hamburger (mobile only) â”€â”€ */
+/* â"€â"€ Hamburger (mobile only) â"€â"€ */
 .mobile-menu-toggle {
   display: flex;
   flex-direction: column;
@@ -482,7 +482,7 @@
 .mobile-menu-toggle.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .mobile-menu-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -4px); }
 
-/* â”€â”€ Overlay â”€â”€ */
+/* â"€â"€ Overlay â"€â"€ */
 .nav-overlay {
   position: fixed;
   inset: 0;
@@ -496,7 +496,7 @@
   to   { opacity: 1; }
 }
 
-/* â”€â”€ Mobile Drawer â”€â”€ */
+/* â"€â"€ Mobile Drawer â"€â"€ */
 .mobile-drawer {
   position: fixed;
   top: 0; right: 0; bottom: 0;
@@ -566,7 +566,7 @@
   padding-bottom: 2rem;
 }
 
-/* â”€â”€ Mobile role row â”€â”€ */
+/* â"€â"€ Mobile role row â"€â"€ */
 .mobile-role-row {
   display: flex;
   gap: 0.5rem;
@@ -596,7 +596,7 @@
   color: #fff;
 }
 
-/* â”€â”€ Mobile sections â”€â”€ */
+/* â"€â"€ Mobile sections â"€â"€ */
 .mobile-section {
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--color-border);
@@ -677,7 +677,7 @@
   color: #fff;
 }
 
-/* â”€â”€ Unauthenticated desktop buttons (hidden on mobile, live in drawer) â”€â”€ */
+/* â"€â"€ Unauthenticated desktop buttons (hidden on mobile, live in drawer) â"€â"€ */
 .nav-login-btn {
   display: none;
   align-items: center;
@@ -716,7 +716,7 @@
   transform: translateY(-1px);
 }
 
-/* â”€â”€ Focus / A11y â”€â”€ */
+/* â"€â"€ Focus / A11y â"€â"€ */
 .nav-primary-link:focus-visible,
 .nav-icon-btn:focus-visible,
 .nav-avatar-btn:focus-visible,
@@ -727,7 +727,7 @@
   outline-offset: 2px;
 }
 
-/* â”€â”€ Desktop breakpoint (â‰¥ 1024px) â”€â”€ */
+/* â"€â"€ Desktop breakpoint (â‰¥ 1024px) â"€â"€ */
 @media (min-width: 1024px) {
   .navigation { height: var(--nav-height); }
   .nav-logo { height: 30px; }
@@ -742,16 +742,36 @@
   .nav-create-btn { display: inline-flex; }
 }
 
-/* â”€â”€ Tablet (768â€“1023px) â”€â”€ */
+/* â"€â"€ Tablet (768â€"1023px) â"€â"€ */
 @media (min-width: 768px) and (max-width: 1023px) {
   /* Show primary links but smaller */
   .nav-primary-links { display: flex; }
   .mobile-menu-toggle { display: flex !important; }
-  /* role-toggle already hidden by default on mobile/tablet â€” shown only at 1024px+ */
+  /* role-toggle already hidden by default on mobile/tablet â€" shown only at 1024px+ */
   .nav-create-btn { display: none; }
 }
 
-/* â”€â”€ Motion â”€â”€ */
+/* ── Mobile: dropdowns fixed to viewport so they never bleed off-screen ── */
+@media (max-width: 767px) {
+  .nav-dropdown {
+    position: fixed;
+    top: var(--nav-height, 64px);
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: 100%;
+    border-radius: 12px;
+  }
+  .notif-dropdown-panel {
+    width: auto;
+    max-height: calc(100vh - var(--nav-height, 64px) - 16px);
+  }
+  .profile-dropdown-panel {
+    width: auto;
+  }
+}
+
+/* ── Motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     transition-duration: 0.01ms !important;
