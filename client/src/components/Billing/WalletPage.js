@@ -152,7 +152,8 @@ const WalletPage = () => {
       <SEO title="Wallet" path="/wallet" noIndex={true} />
       <div className="wp-wallet-header">
         <h1 className="wp-wallet-title">Wallet</h1>
-        <Link to="/billing" className="wp-wallet-billing-link">Billing settings →</Link>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <Link to="/billing" className="wp-wallet-billing-link">Billing settings →</Link>
           <Link to="/gift-cards" className="wp-wallet-billing-link">🎁 Gift Cards</Link>
         </div>
       </div>

@@ -333,6 +333,7 @@ const TabSkills = ({ data, onChange }) => {
       </div>
     </div>
   );
+};
 
 // ── Tab: Portfolio ──────────────────────────────────────────────
 const TabPortfolio = ({ data, onRefresh }) => {

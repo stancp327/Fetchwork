@@ -1645,6 +1645,7 @@ const Messages = () => {
             </div>
           </div>
         </div>
+      )}
 
         {/* Offer Modal (counter-offers from inline message cards) */}
         {showOfferModal && (
