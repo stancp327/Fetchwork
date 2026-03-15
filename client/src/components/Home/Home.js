@@ -352,7 +352,7 @@ const Home = () => {
                     )}
                     <div className="fs-body">
                       <p className="fs-freelancer">{svc.freelancer?.firstName} {svc.freelancer?.lastName}</p>
-                      <h4 className="fs-title">{svc.title}</h4>
+                      <h3 className="fs-title">{svc.title}</h3>
                       <div className="fs-meta">
                         {svc.rating > 0 && (
                           <span className="fs-rating">⭐ {svc.rating?.toFixed(1)}</span>
@@ -371,7 +371,7 @@ const Home = () => {
                     <div className="fs-img-placeholder skeleton-img"></div>
                     <div className="fs-body">
                       <p className="fs-freelancer skeleton-text"></p>
-                      <h4 className="fs-title skeleton-text"></h4>
+                      <h3 className="fs-title skeleton-text"></h3>
                       <div className="fs-meta">
                         <span className="fs-rating skeleton-text"></span>
                         <span className="fs-price skeleton-text"></span>

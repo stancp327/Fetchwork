@@ -250,7 +250,17 @@ const Navigation = () => {
 
           {/* ── Brand ── */}
           <Link to={isAuthenticated ? '/dashboard' : '/'} className="nav-brand" onClick={closeMenu}>
-            <img src="/fetchwork-logo.png" alt="FetchWork" className="nav-logo" />
+            <picture>
+              <source srcSet="/webp/fetchwork-logo.webp" type="image/webp" />
+              <img
+                src="/fetchwork-logo.png"
+                alt=""
+                className="nav-logo"
+                width="42"
+                height="28"
+                fetchpriority="high"
+              />
+            </picture>
             <span className="brand-text">FetchWork</span>
           </Link>
 
@@ -328,7 +338,7 @@ const Navigation = () => {
 
       {/* ── Mobile drawer ── */}
       {isMobileOpen && <div className="nav-overlay" onClick={closeMenu} />}
-      <div className={`mobile-drawer ${isMobileOpen ? 'open' : ''}`} role="dialog" aria-modal="true">
+      <div className={`mobile-drawer ${isMobileOpen ? 'open' : ''}`} role="dialog" aria-modal="true" aria-label="Navigation menu">
         <div className="mobile-drawer-header">
           {isAuthenticated ? (
             <div className="mobile-user-row">

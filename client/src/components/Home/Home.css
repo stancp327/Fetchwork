@@ -4,6 +4,8 @@
 /* -- Hero ------------------------------------------------------ */
 .hero {
   padding: var(--space-2xl) var(--container-padding) var(--space-3xl);
+  /* Reserve space so content doesn't cause layout shift when React mounts */
+  min-height: 480px;
   text-align: center;
   color: white;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -541,6 +543,7 @@
   margin-top: var(--space-lg);
 }
 .t-dot {
+  /* visible dot is 10px but tap target is 24px min (WCAG 2.5.5) */
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -550,6 +553,12 @@
   padding: 0;
   transition: background 0.15s;
   min-height: unset;
+  position: relative;
+}
+.t-dot::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
 }
 .t-dot.active { background: var(--color-primary); }
 
