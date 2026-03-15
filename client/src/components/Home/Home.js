@@ -60,7 +60,8 @@ const Home = () => {
   const [stats, setStats] = useState({ jobs: 24, freelancers: 50, services: 35, reviews: 120 });
   const [featuredServices, setFeaturedServices] = useState([]);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
-  const [heroExtrasReady, setHeroExtrasReady] = useState(false);
+  // Static content — no reason to delay, render immediately to prevent layout shift
+  const [heroExtrasReady] = useState(true);
 
   useEffect(() => {
     const loadHomeData = () => {
@@ -73,21 +74,15 @@ const Home = () => {
         .catch(() => {});
     };
 
-    const readyHeroExtras = () => setHeroExtrasReady(true);
-
-    // Defer non-critical below-the-fold data fetches and hero extras to prioritize hero title render
+    // Defer only the API calls — static content (hero extras) renders immediately now
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       const idleId = window.requestIdleCallback(() => {
-        readyHeroExtras();
         loadHomeData();
       }, { timeout: 3000 });
       return () => window.cancelIdleCallback?.(idleId);
     }
 
-    const t = setTimeout(() => {
-      readyHeroExtras();
-      loadHomeData();
-    }, 1500);
+    const t = setTimeout(loadHomeData, 1500);
     return () => clearTimeout(t);
   }, []);
 
@@ -340,34 +335,36 @@ const Home = () => {
             <h2 className="section-title">Featured Services</h2>
             <p className="section-subtitle">Top-rated freelancers ready to work</p>
             <div className="fs-grid">
-              {featuredServices.length > 0 ? (
-                featuredServices.map(svc => (
-                  <Link key={svc._id} to={`/services/${svc._id}`} className="fs-card">
-                    {svc.gallery?.[0]?.url ? (
-                      <img src={svc.gallery[0].url} alt={svc.title} className="fs-img" loading="lazy" width="320" height="160" decoding="async" />
-                    ) : (
-                      <div className="fs-img-placeholder">
-                        {CATEGORIES.find(c => c.id === svc.category)?.icon || '🛠️'}
+              {/* Always render 6 slots — real cards or skeletons — so grid height never changes */}
+              {Array.from({ length: 6 }).map((_, idx) => {
+                const svc = featuredServices[idx];
+                if (svc) {
+                  return (
+                    <Link key={svc._id} to={`/services/${svc._id}`} className="fs-card">
+                      {svc.gallery?.[0]?.url ? (
+                        <img src={svc.gallery[0].url} alt={svc.title} className="fs-img" loading="lazy" width="320" height="160" decoding="async" />
+                      ) : (
+                        <div className="fs-img-placeholder">
+                          {CATEGORIES.find(c => c.id === svc.category)?.icon || '🛠️'}
+                        </div>
+                      )}
+                      <div className="fs-body">
+                        <p className="fs-freelancer">{svc.freelancer?.firstName} {svc.freelancer?.lastName}</p>
+                        <h3 className="fs-title">{svc.title}</h3>
+                        <div className="fs-meta">
+                          {svc.rating > 0 && (
+                            <span className="fs-rating">⭐ {svc.rating?.toFixed(1)}</span>
+                          )}
+                          <span className="fs-price">
+                            Starting at <strong>${svc.pricing?.basic?.price || '—'}</strong>
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    <div className="fs-body">
-                      <p className="fs-freelancer">{svc.freelancer?.firstName} {svc.freelancer?.lastName}</p>
-                      <h3 className="fs-title">{svc.title}</h3>
-                      <div className="fs-meta">
-                        {svc.rating > 0 && (
-                          <span className="fs-rating">⭐ {svc.rating?.toFixed(1)}</span>
-                        )}
-                        <span className="fs-price">
-                          Starting at <strong>${svc.pricing?.basic?.price || '—'}</strong>
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                // Skeleton placeholders for featured services while loading
-                Array.from({ length: 6 }).map((_, idx) => (
-                  <div key={idx} className="fs-card skeleton">
+                    </Link>
+                  );
+                }
+                return (
+                  <div key={`skel-${idx}`} className="fs-card skeleton" aria-hidden="true">
                     <div className="fs-img-placeholder skeleton-img"></div>
                     <div className="fs-body">
                       <p className="fs-freelancer skeleton-text"></p>
@@ -378,8 +375,8 @@ const Home = () => {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                );
+              })}
             </div>
             <div className="section-more">
               <Link to="/browse-services" className="link-more">View all services →</Link>
