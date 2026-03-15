@@ -286,9 +286,6 @@
   width: min(320px, calc(100vw - 16px));
   max-height: min(420px, calc(100vh - 80px));
   overflow-y: auto;
-  /* clamp so it never goes off the left edge on mobile */
-  right: 0;
-  left: auto;
 }
 
 /* Profile panel */
@@ -751,23 +748,20 @@
   .nav-create-btn { display: none; }
 }
 
-/* ── Mobile: dropdowns fixed to viewport so they never bleed off-screen ── */
+/* ── Mobile: fix dropdown overflow
+   backdrop-filter on .navigation breaks position:fixed for children,
+   so we reparent the containing block to .nav-inner (full nav width)
+   and remove position:relative from the individual button wraps.
+   right:8px is then relative to the nav edge = viewport edge on mobile. ── */
 @media (max-width: 767px) {
+  .nav-inner { position: relative; }
+  .nav-icon-btn-wrap { position: static; }
   .nav-dropdown {
-    position: fixed;
-    top: var(--nav-height, 64px);
-    left: 8px;
+    top: calc(100% + 8px);
     right: 8px;
-    width: auto;
-    max-width: 100%;
-    border-radius: 12px;
-  }
-  .notif-dropdown-panel {
-    width: auto;
+    left: auto;
+    width: min(320px, calc(100vw - 16px));
     max-height: calc(100vh - var(--nav-height, 64px) - 16px);
-  }
-  .profile-dropdown-panel {
-    width: auto;
   }
 }
 
