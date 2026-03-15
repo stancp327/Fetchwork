@@ -479,6 +479,8 @@
   text-decoration: none;
   color: inherit;
   transition: all 0.15s;
+  /* Fixed height prevents CLS when real content replaces skeletons */
+  height: 300px;
 }
 .fs-card:hover {
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
@@ -500,7 +502,7 @@
 }
 .fs-body { padding: var(--space-md); }
 .fs-freelancer { font-size: var(--font-size-xs); color: var(--color-text-secondary); margin: 0 0 4px; }
-.fs-title { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-heading); margin: 0 0 var(--space-sm); line-height: 1.4; }
+.fs-title { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-heading); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 var(--space-sm); line-height: 1.4; }
 .fs-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
 .fs-rating { font-size: var(--font-size-xs); color: var(--color-text); }
 .fs-price { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
