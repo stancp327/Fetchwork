@@ -20,6 +20,16 @@ const ContractDetail = () => {
   const [revisePrompt, setRevisePrompt] = useState('');
   const [revising, setRevising] = useState(false);
   const [showRevise, setShowRevise] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editScope, setEditScope] = useState('');
+  const [editCompensation, setEditCompensation] = useState('');
+  const [editPaymentTerms, setEditPaymentTerms] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   const userId = user?._id || user?.id;
 
@@ -94,6 +104,52 @@ const ContractDetail = () => {
     } finally { setAiSumLoading(false); }
   };
 
+  const handleComplete = async () => {
+    if (!window.confirm('Mark this contract as completed? This cannot be undone.')) return;
+    setCompleting(true);
+    try {
+      const data = await apiRequest(`/api/contracts/${id}/complete`, { method: 'POST' });
+      setContract(data.contract);
+    } catch (err) {
+      alert(err.message || 'Failed to complete contract');
+    } finally { setCompleting(false); }
+  };
+
+  const openEdit = () => {
+    setEditTitle(contract.title || '');
+    setEditScope(contract.terms?.scope || '');
+    setEditCompensation(contract.terms?.compensation || '');
+    setEditPaymentTerms(contract.terms?.paymentTerms || '');
+    setEditStartDate(contract.terms?.startDate ? contract.terms.startDate.slice(0, 10) : '');
+    setEditEndDate(contract.terms?.endDate ? contract.terms.endDate.slice(0, 10) : '');
+    setEditContent(contract.content || '');
+    setShowEdit(true);
+  };
+
+  const handleEditSave = async () => {
+    setEditSaving(true);
+    try {
+      const updated = await apiRequest(`/api/contracts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: editTitle,
+          content: editContent,
+          terms: {
+            scope: editScope,
+            compensation: editCompensation ? Number(editCompensation) : undefined,
+            paymentTerms: editPaymentTerms,
+            startDate: editStartDate || undefined,
+            endDate: editEndDate || undefined,
+          },
+        }),
+      });
+      setContract(updated);
+      setShowEdit(false);
+    } catch (err) {
+      alert(err.message || 'Failed to save changes');
+    } finally { setEditSaving(false); }
+  };
+
   const handleAiRevise = async () => {
     if (!revisePrompt.trim()) return;
     setRevising(true);
@@ -118,6 +174,8 @@ const ContractDetail = () => {
   const mySigned = contract.signatures?.some(s => (s.user?._id || s.user) === userId);
   const canSign = (contract.status === 'pending' || contract.status === 'active') && !mySigned;
   const canSend = contract.status === 'draft' && isCreator;
+  const canEdit = contract.status === 'draft' && isCreator;
+  const canComplete = contract.status === 'active';
   const canCancel = !['cancelled', 'completed'].includes(contract.status);
 
   return (
@@ -175,6 +233,54 @@ const ContractDetail = () => {
             </div>
           )}
         </div>
+
+        {/* Manual Edit — draft only */}
+        {canEdit && (
+          <div className="cd-ai-revise-wrap">
+            <button className="cd-ai-sum-btn" onClick={() => showEdit ? setShowEdit(false) : openEdit()}>
+              {showEdit ? '✕ Close Editor' : '✏️ Edit Contract'}
+            </button>
+            {showEdit && (
+              <div className="cd-ai-revise-panel">
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Title</label>
+                    <input className="sign-input" value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Contract title" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Scope of Work</label>
+                    <textarea className="contract-textarea" rows={3} value={editScope} onChange={e => setEditScope(e.target.value)} placeholder="Describe the work..." />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Compensation ($)</label>
+                      <input className="sign-input" type="number" min="0" value={editCompensation} onChange={e => setEditCompensation(e.target.value)} placeholder="0" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Payment Terms</label>
+                      <input className="sign-input" value={editPaymentTerms} onChange={e => setEditPaymentTerms(e.target.value)} placeholder="e.g. Upon completion" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Start Date</label>
+                      <input className="sign-input" type="date" value={editStartDate} onChange={e => setEditStartDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>End Date</label>
+                      <input className="sign-input" type="date" value={editEndDate} onChange={e => setEditEndDate(e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: 4 }}>Contract Text</label>
+                    <textarea className="contract-textarea" rows={10} value={editContent} onChange={e => setEditContent(e.target.value)} placeholder="Full contract content..." />
+                  </div>
+                  <button className="contract-action-btn primary" onClick={handleEditSave} disabled={editSaving || !editTitle.trim()}>
+                    {editSaving ? 'Saving…' : '💾 Save Changes'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* AI Revise — only for draft/pending contracts */}
         {['draft', 'pending'].includes(contract.status) && (
@@ -243,6 +349,12 @@ const ContractDetail = () => {
                 {signing ? 'Signing...' : '✍️ Sign Contract'}
               </button>
             </form>
+          )}
+
+          {canComplete && (
+            <button className="contract-action-btn success" onClick={handleComplete} disabled={completing}>
+              {completing ? 'Completing…' : '✅ Mark Complete'}
+            </button>
           )}
 
           {canCancel && (

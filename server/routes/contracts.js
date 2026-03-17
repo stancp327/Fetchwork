@@ -128,6 +128,15 @@ router.get('/templates/:id', authenticateToken, (req, res) => {
   res.json(template);
 });
 
+// ─── Helper: lazily expire pending contracts past their expiresAt ─────────────
+async function expireStalePending(ids) {
+  if (!ids || ids.length === 0) return;
+  await Contract.updateMany(
+    { _id: { $in: ids }, status: 'pending', expiresAt: { $lt: new Date() } },
+    { $set: { status: 'expired' } }
+  );
+}
+
 // POST /api/contracts — create a contract
 router.post('/', authenticateToken, async (req, res) => {
   try {
@@ -194,17 +203,20 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user._id;
-    const { status, role, teamId } = req.query;
+    const { status, role, teamId, jobId } = req.query;
 
     let query;
-    if (teamId) {
+    if (jobId) {
+      // Job-scoped: return contracts for this job where user is a party
+      query = { job: jobId, $or: [{ client: userId }, { freelancer: userId }] };
+    } else if (teamId) {
       query = { team: teamId };
     } else {
       query = { $or: [{ client: userId }, { freelancer: userId }] };
     }
     if (status && status !== 'all') query.status = status;
-    if (!teamId && role === 'client') { delete query.$or; query.client = userId; }
-    if (!teamId && role === 'freelancer') { delete query.$or; query.freelancer = userId; }
+    if (!teamId && !jobId && role === 'client') { delete query.$or; query.client = userId; }
+    if (!teamId && !jobId && role === 'freelancer') { delete query.$or; query.freelancer = userId; }
 
     const contracts = await Contract.find(query)
       .populate('client', 'firstName lastName')
@@ -212,6 +224,14 @@ router.get('/', authenticateToken, async (req, res) => {
       .populate('job', 'title')
       .sort({ updatedAt: -1 })
       .limit(50);
+
+    // Lazily expire any pending contracts that have passed their deadline
+    await expireStalePending(contracts.filter(c => c.status === 'pending').map(c => c._id));
+    // Refresh status on affected docs in-memory
+    const now = new Date();
+    contracts.forEach(c => {
+      if (c.status === 'pending' && c.expiresAt && c.expiresAt < now) c.status = 'expired';
+    });
 
     res.json({ contracts });
   } catch (error) {
@@ -486,6 +506,74 @@ router.post('/:id/ai-revise', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error revising contract with AI:', err);
     res.status(500).json({ error: 'Failed to revise contract' });
+  }
+});
+
+// PUT /api/contracts/:id — edit a draft contract
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const contract = await Contract.findById(req.params.id);
+    if (!contract) return res.status(404).json({ error: 'Contract not found' });
+    if (contract.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the creator can edit this contract' });
+    }
+    if (contract.status !== 'draft') {
+      return res.status(400).json({ error: 'Only draft contracts can be edited' });
+    }
+
+    const { title, content, terms, customFields } = req.body;
+    if (title) contract.title = String(title).trim().slice(0, 200);
+    if (content !== undefined) contract.content = content;
+    if (terms) {
+      contract.terms = {
+        ...contract.terms.toObject?.() || contract.terms,
+        ...terms,
+      };
+    }
+    if (customFields) contract.customFields = customFields;
+
+    await contract.save();
+    res.json(contract);
+  } catch (err) {
+    console.error('Error updating contract:', err);
+    res.status(500).json({ error: 'Failed to update contract' });
+  }
+});
+
+// POST /api/contracts/:id/complete — mark an active contract as completed
+router.post('/:id/complete', authenticateToken, async (req, res) => {
+  try {
+    const contract = await Contract.findById(req.params.id)
+      .populate('client', 'firstName lastName')
+      .populate('freelancer', 'firstName lastName');
+    if (!contract) return res.status(404).json({ error: 'Contract not found' });
+
+    const userId = req.user._id.toString();
+    if (contract.client._id.toString() !== userId && contract.freelancer._id.toString() !== userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    if (contract.status !== 'active') {
+      return res.status(400).json({ error: 'Only active contracts can be marked complete' });
+    }
+
+    contract.status = 'completed';
+    await contract.save();
+
+    // Notify the other party
+    const otherParty = userId === contract.client._id.toString()
+      ? contract.freelancer._id : contract.client._id;
+    await notify({
+      recipient: otherParty,
+      type: 'contract',
+      title: 'Contract marked complete',
+      message: `"${contract.title}" has been marked as completed.`,
+      link: `/contracts/${contract._id}`,
+    });
+
+    res.json({ message: 'Contract completed', contract });
+  } catch (err) {
+    console.error('Error completing contract:', err);
+    res.status(500).json({ error: 'Failed to complete contract' });
   }
 });
 

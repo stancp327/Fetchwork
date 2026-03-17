@@ -54,6 +54,7 @@ const JobDetails = () => {
   const [userTeams, setUserTeams]           = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');  // '' = individual
   const [aiMatchError, setAiMatchError]     = useState('');
+  const [pendingContract, setPendingContract] = useState(null);
 
   const API_BASE_URL = getApiBaseUrl();
 
@@ -65,6 +66,25 @@ const JobDetails = () => {
       setUserTeams(teams);
     }).catch(() => {});
   }, [user]);
+
+  // Check for pending contracts on this job that need signing
+  useEffect(() => {
+    if (!job?._id || !user) return;
+    const uid = (user._id || user.id || user.userId)?.toString();
+    apiRequest(`/api/contracts?jobId=${job._id}`)
+      .then(res => {
+        const list = res.contracts || [];
+        const pending = list.find(c =>
+          c.status === 'pending' &&
+          !(c.signatures || []).some(s => {
+            const sid = s.user?._id || s.user;
+            return String(sid) === uid;
+          })
+        );
+        setPendingContract(pending || null);
+      })
+      .catch(() => {});
+  }, [job?._id, user]);
 
   const loadMatches = async () => {
     if (!job?._id) return;
@@ -296,6 +316,13 @@ const JobDetails = () => {
               </div>
             </div>
             
+            {pendingContract && (
+              <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', padding:'0.6rem 1rem', marginBottom:'1rem', background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:'8px', fontSize:'0.85rem' }}>
+                <span>📝 <strong>Contract pending your signature</strong></span>
+                <a href={`/contracts/${pendingContract._id}`} style={{ color:'#2563eb', marginLeft:'auto' }}>Review & sign →</a>
+              </div>
+            )}
+
             <div className="job-stats-row">
               <div className="job-stat-item">
                 <span className="stat-label">Budget</span>

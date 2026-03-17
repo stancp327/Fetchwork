@@ -1238,6 +1238,22 @@ const Messages = () => {
                   onClick={() => setShowScheduleModal(true)}
                 >📅 Schedule</button>
                 <button
+                  type="button"
+                  className="quick-act"
+                  onClick={() => {
+                    const other = selectedConvo?.participants?.find(p => {
+                      const pid = typeof p === 'object' ? (p._id || p.id) : p;
+                      return String(pid) !== String(userId);
+                    });
+                    const otherId = other ? (typeof other === 'object' ? (other._id || other.id) : other) : '';
+                    const jobId = selectedConvo?.job?._id || selectedConvo?.job || '';
+                    const params = new URLSearchParams();
+                    if (otherId) params.set('freelancerId', otherId);
+                    if (jobId) params.set('jobId', jobId);
+                    window.location.href = `/contracts/new?${params.toString()}`;
+                  }}
+                >📄 Contract</button>
+                <button
                   className="quick-act msg-ai-risk-btn"
                   disabled={disputeRiskLoading || messages.length === 0}
                   onClick={async () => {
@@ -1647,23 +1663,22 @@ const Messages = () => {
         </div>
       )}
 
-        {/* Offer Modal (counter-offers from inline message cards) */}
-        {showOfferModal && (
-          <CustomOfferModal
-            isOpen={showOfferModal}
-            onClose={() => { setShowOfferModal(false); setOfferModalOpts({}); }}
-            recipientId={offerModalOpts.recipientId}
-            recipientName={offerModalOpts.recipientName || ''}
-            prefillTerms={offerModalOpts.prefillTerms || {}}
-            counterId={offerModalOpts.counterId}
-            onSuccess={() => {
-              setShowOfferModal(false);
-              setOfferModalOpts({});
-              if (selectedConvo) fetchMessages(selectedConvo);
-              if (offerModalOpts.counterId) setOffersById(prev => { const n = {...prev}; delete n[offerModalOpts.counterId]; return n; });
-            }}
-          />
-        )}
+      {/* Offer Modal (counter-offers from inline message cards) */}
+      {showOfferModal && (
+        <CustomOfferModal
+          isOpen={showOfferModal}
+          onClose={() => { setShowOfferModal(false); setOfferModalOpts({}); }}
+          recipientId={offerModalOpts.recipientId}
+          recipientName={offerModalOpts.recipientName || ''}
+          prefillTerms={offerModalOpts.prefillTerms || {}}
+          counterId={offerModalOpts.counterId}
+          onSuccess={() => {
+            setShowOfferModal(false);
+            setOfferModalOpts({});
+            if (selectedConvo) fetchMessages(selectedConvo);
+            if (offerModalOpts.counterId) setOffersById(prev => { const n = {...prev}; delete n[offerModalOpts.counterId]; return n; });
+          }}
+        />
       )}
     </div>
   );

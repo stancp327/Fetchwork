@@ -32,9 +32,9 @@ export default React.memo(function Avatar({ uri, name = '', size = 'md', online 
   const bg = getColorForName(name);
 
   const containerStyle = useMemo(() => ({ width: dim, height: dim }), [dim]);
-  const imgStyle = useMemo(() => [styles.img, { width: dim, height: dim, borderRadius: dim / 2 }] as const, [dim]);
-  const placeholderStyle = useMemo(() => [styles.placeholder, { width: dim, height: dim, borderRadius: dim / 2, backgroundColor: bg }] as const, [dim, bg]);
-  const initialsStyle = useMemo(() => [styles.initials, { fontSize: dim * 0.38 }] as const, [dim]);
+  const imgStyle = useMemo(() => [styles.img, { width: dim, height: dim, borderRadius: dim / 2 }], [dim]);
+  const placeholderStyle = useMemo(() => [styles.placeholder, { width: dim, height: dim, borderRadius: dim / 2, backgroundColor: bg }], [dim, bg]);
+  const initialsStyle = useMemo(() => [styles.initials, { fontSize: dim * 0.38 }], [dim]);
   const imageSource = useMemo(() => ({ uri: uri!, cache: 'default' as const }), [uri]);
 
   return (

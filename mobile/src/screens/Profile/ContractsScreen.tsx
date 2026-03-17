@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, ListRenderItemInfo, RefreshControl, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, ListRenderItemInfo, Modal, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -8,6 +8,87 @@ import { colors, radius, spacing, typography } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 
 const STATUS_FILTERS = ['all', 'draft', 'pending', 'active', 'completed', 'cancelled'];
+const TEMPLATE_OPTIONS = [
+  { key: 'standard_service', label: 'Standard Service' },
+  { key: 'nda', label: 'NDA' },
+  { key: 'non_compete', label: 'Non-Compete' },
+] as const;
+
+function CreateContractModal({ visible, onClose, onCreated }: { visible: boolean; onClose: () => void; onCreated: () => void }) {
+  const [title, setTitle] = useState('');
+  const [template, setTemplate] = useState<string>('standard_service');
+  const [scope, setScope] = useState('');
+  const [compensation, setCompensation] = useState('');
+  const [freelancerId, setFreelancerId] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    if (!title.trim() || !freelancerId.trim()) {
+      Alert.alert('Missing fields', 'Title and Freelancer User ID are required.');
+      return;
+    }
+    setCreating(true);
+    try {
+      await contractsApi.createContract({
+        freelancerId: freelancerId.trim(),
+        title: title.trim(),
+        template,
+        terms: {
+          scope: scope.trim() || undefined,
+          compensation: compensation ? Number(compensation) : undefined,
+        },
+      });
+      setTitle('');
+      setScope('');
+      setCompensation('');
+      setFreelancerId('');
+      onCreated();
+      onClose();
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.error || 'Failed to create contract');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.container}>
+          <ScrollView>
+            <Text style={modalStyles.heading}>New Contract</Text>
+
+            <Text style={modalStyles.label}>Title *</Text>
+            <TextInput style={modalStyles.input} value={title} onChangeText={setTitle} placeholder="Contract title" />
+
+            <Text style={modalStyles.label}>Template</Text>
+            <View style={modalStyles.templateRow}>
+              {TEMPLATE_OPTIONS.map((t) => (
+                <TouchableOpacity key={t.key} style={[modalStyles.templateChip, template === t.key && modalStyles.templateChipActive]} onPress={() => setTemplate(t.key)}>
+                  <Text style={[modalStyles.templateChipText, template === t.key && modalStyles.templateChipTextActive]}>{t.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={modalStyles.label}>Scope of Work</Text>
+            <TextInput style={[modalStyles.input, { minHeight: 80, textAlignVertical: 'top' }]} value={scope} onChangeText={setScope} placeholder="Describe the work..." multiline />
+
+            <Text style={modalStyles.label}>Compensation ($)</Text>
+            <TextInput style={modalStyles.input} value={compensation} onChangeText={setCompensation} placeholder="0" keyboardType="numeric" />
+
+            <Text style={modalStyles.label}>Freelancer User ID *</Text>
+            <TextInput style={modalStyles.input} value={freelancerId} onChangeText={setFreelancerId} placeholder="Paste user ID" autoCapitalize="none" />
+
+            <View style={modalStyles.actions}>
+              <Button label="Cancel" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
+              <Button label={creating ? 'Creating…' : 'Create'} onPress={handleCreate} disabled={creating} style={{ flex: 1 }} />
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function ContractsScreen() {
   const queryClient = useQueryClient();
@@ -16,6 +97,7 @@ export default function ContractsScreen() {
   const [signatureName, setSignatureName] = useState(`${user?.firstName || ''} ${user?.lastName || ''}`.trim());
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { data, isLoading, error: queryError, isRefetching, refetch } = useQuery({
     queryKey: ['mobile-contracts', filter],
@@ -73,6 +155,26 @@ export default function ContractsScreen() {
       setMessage('');
     },
   });
+
+  const completeMutation = useMutation({
+    mutationFn: (id: string) => contractsApi.completeContract(id),
+    onSuccess: (res) => {
+      setError('');
+      setMessage(res.message || 'Contract completed');
+      refreshContracts();
+    },
+    onError: (err: any) => {
+      setError(err?.response?.data?.error || 'Failed to complete contract');
+      setMessage('');
+    },
+  });
+
+  const handleComplete = useCallback((id: string) => {
+    Alert.alert('Complete Contract', 'Mark this contract as completed?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Complete', onPress: () => { setError(''); setMessage(''); completeMutation.mutate(id); } },
+    ]);
+  }, [completeMutation]);
 
   const contracts = useMemo(() => data?.contracts || [], [data?.contracts]);
 
@@ -138,6 +240,16 @@ export default function ContractsScreen() {
             />
           )}
 
+          {contract.status === 'active' && (
+            <Button
+              label="Complete"
+              size="sm"
+              variant="success"
+              onPress={() => handleComplete(contract._id)}
+              disabled={completeMutation.isPending}
+            />
+          )}
+
           {!['cancelled', 'completed'].includes(contract.status) && (
             <Button
               label="Cancel"
@@ -150,12 +262,17 @@ export default function ContractsScreen() {
         </View>
       </View>
     );
-  }, [handleSend, handleSign, handleCancel, sendMutation.isPending, signMutation.isPending, signatureName, cancelMutation.isPending]);
+  }, [handleSend, handleSign, handleCancel, handleComplete, sendMutation.isPending, signMutation.isPending, signatureName, cancelMutation.isPending, completeMutation.isPending]);
 
   const listHeader = useMemo(() => (
     <>
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Contracts</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.sectionTitle}>Contracts</Text>
+          <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.addBtn}>
+            <Text style={styles.addBtnText}>+</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.filtersWrap}>
           {STATUS_FILTERS.map((status) => (
             <Button
@@ -233,9 +350,24 @@ export default function ContractsScreen() {
         maxToRenderPerBatch={10}
         windowSize={5}
       />
+      <CreateContractModal visible={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={refreshContracts} />
     </SafeAreaView>
   );
 }
+
+const modalStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: spacing.lg },
+  container: { backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.md, maxHeight: '85%' },
+  heading: { ...typography.label, fontSize: 18, color: colors.textDark, marginBottom: spacing.md },
+  label: { ...typography.caption, color: colors.textSecondary, fontWeight: '600', marginTop: spacing.sm, marginBottom: 4 },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, fontSize: 14, color: colors.textDark },
+  templateRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
+  templateChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgSubtle },
+  templateChipActive: { borderColor: colors.primary, backgroundColor: '#eff6ff' },
+  templateChipText: { fontSize: 13, color: colors.textSecondary },
+  templateChipTextActive: { color: colors.primary, fontWeight: '600' },
+  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+});
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bgSubtle },
@@ -297,4 +429,6 @@ const styles = StyleSheet.create({
   actionsCol: { gap: spacing.xs, minWidth: 110 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { ...typography.bodySmall, color: colors.danger },
+  addBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  addBtnText: { color: colors.white, fontSize: 20, fontWeight: '700', lineHeight: 22 },
 });

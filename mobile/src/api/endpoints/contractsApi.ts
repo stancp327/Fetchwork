@@ -31,4 +31,22 @@ export const contractsApi = {
 
   cancelContract: (id: string, reason = ''): Promise<{ message: string; contract: ContractItem }> =>
     client.post(`/api/contracts/${id}/cancel`, { reason }).then((r) => r.data),
+
+  getContract: (id: string): Promise<ContractItem & { content?: string; signatures?: unknown[] }> =>
+    client.get(`/api/contracts/${id}`).then((r) => r.data),
+
+  createContract: (payload: {
+    freelancerId: string;
+    title: string;
+    template?: string;
+    terms?: Record<string, unknown>;
+    jobId?: string;
+  }): Promise<ContractItem> =>
+    client.post('/api/contracts', payload).then((r) => r.data),
+
+  updateContract: (id: string, payload: { title?: string; content?: string; terms?: Record<string, unknown> }): Promise<ContractItem> =>
+    client.put(`/api/contracts/${id}`, payload).then((r) => r.data),
+
+  completeContract: (id: string): Promise<{ message: string; contract: ContractItem }> =>
+    client.post(`/api/contracts/${id}/complete`).then((r) => r.data),
 };
