@@ -2463,6 +2463,64 @@ router.get('/:id/jobs', async (req, res) => {
   }
 });
 
+// POST /api/teams/:id/proposals/:proposalId/withdraw
+router.post('/:id/proposals/:proposalId/withdraw', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const job = await Job.findOne({
+      'proposals._id': req.params.proposalId,
+      'proposals.team': team._id,
+    });
+    if (!job) return res.status(404).json({ error: 'Proposal not found' });
+
+    const proposal = job.proposals.id(req.params.proposalId);
+    if (!proposal) return res.status(404).json({ error: 'Proposal not found' });
+    if (proposal.status !== 'pending') return res.status(400).json({ error: `Cannot withdraw: proposal is ${proposal.status}` });
+
+    proposal.status = 'withdrawn';
+    await job.save();
+
+    res.json({ message: 'Proposal withdrawn', jobId: job._id });
+  } catch (err) {
+    console.error('withdraw team proposal error:', err);
+    res.status(500).json({ error: 'Failed to withdraw proposal' });
+  }
+});
+
+// PATCH /api/teams/:id/jobs/:jobId/lead — assign a team member as lead
+router.patch('/:id/jobs/:jobId/lead', async (req, res) => {
+  try {
+    const { memberId } = req.body;
+    if (!memberId) return res.status(400).json({ error: 'memberId required' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId: req.user.userId, action: 'manage_members' });
+    if (!authz.ok) return res.status(403).json({ error: 'Only owners/admins can assign leads' });
+
+    if (!team.isMember(memberId)) return res.status(400).json({ error: 'User is not a team member' });
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+
+    job.assignedTo = memberId;
+    await job.save();
+
+    const updatedJob = await Job.findById(job._id)
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .lean();
+
+    res.json({ message: 'Lead assigned', job: updatedJob });
+  } catch (err) {
+    console.error('assign team lead error:', err);
+    res.status(500).json({ error: 'Failed to assign lead' });
+  }
+});
+
 module.exports = router;
 
 

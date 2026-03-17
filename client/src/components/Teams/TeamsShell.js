@@ -210,7 +210,7 @@ export default function TeamsShell() {
             <TeamNav activeTab={activeTab} setActiveTab={setActiveTab} />
             <div className="tsh-content">
               {activeTab === 'jobs' && activeTeamId && (
-          <TeamJobs teamId={activeTeamId} />
+          <TeamJobs teamId={activeTeamId} teamMembers={activeTeam?.members || []} />
         )}
         {activeTab === 'dashboard' && (
                 <TeamDashboard

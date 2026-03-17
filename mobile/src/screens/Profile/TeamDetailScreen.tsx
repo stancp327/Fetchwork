@@ -64,7 +64,7 @@ function roleBadgeVariant(role: string): 'purple' | 'danger' | 'warning' | 'neut
 
 type ApiError = { response?: { data?: { error?: string } } };
 
-export default function TeamDetailScreen({ route }: Props) {
+export default function TeamDetailScreen({ route, navigation }: Props) {
   const { teamId } = route.params;
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -217,6 +217,13 @@ export default function TeamDetailScreen({ route }: Props) {
           </Card>
         ))}
       </View>
+
+      <Card>
+        <Pressable style={s.jobsButton} onPress={() => navigation.navigate('TeamJobs', { teamId })}>
+          <Text style={s.jobsButtonText}>View Team Jobs</Text>
+          <Text style={s.jobsButtonArrow}>→</Text>
+        </Pressable>
+      </Card>
 
       {(isOwner || isAdmin) && (
         <Card>
@@ -475,4 +482,9 @@ const s = StyleSheet.create({
   dangerCard:  { borderColor: colors.dangerLight, backgroundColor: colors.dangerLight },
   dangerTitle: { ...typography.h4, color: colors.danger, marginBottom: spacing.xs },
   dangerText:  { ...typography.bodySmall, color: colors.danger },
+
+  // Jobs button
+  jobsButton:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs },
+  jobsButtonText:  { ...typography.body, color: colors.primary, fontWeight: '600' },
+  jobsButtonArrow: { ...typography.body, color: colors.primary, fontWeight: '600' },
 });

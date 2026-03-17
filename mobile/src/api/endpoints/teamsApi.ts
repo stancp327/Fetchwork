@@ -262,6 +262,17 @@ export const teamsApi = {
   removeTeamFromOrganization: (orgId: string, teamId: string): Promise<{ success: boolean }> =>
     client.delete(`/api/organizations/${orgId}/teams/${teamId}`).then((r) => r.data),
 
+  getTeamJobs: (teamId: string): Promise<{
+    assignedJobs: unknown[];
+    pendingProposals: unknown[];
+  }> => client.get(`/api/teams/${teamId}/jobs`).then((r) => r.data),
+
+  withdrawTeamProposal: (teamId: string, proposalId: string): Promise<{ message: string; jobId: string }> =>
+    client.post(`/api/teams/${teamId}/proposals/${proposalId}/withdraw`).then((r) => r.data),
+
+  assignTeamLead: (teamId: string, jobId: string, memberId: string): Promise<{ message: string }> =>
+    client.patch(`/api/teams/${teamId}/jobs/${jobId}/lead`, { memberId }).then((r) => r.data),
+
   updateOrganizationSettings: (
     orgId: string,
     payload: {

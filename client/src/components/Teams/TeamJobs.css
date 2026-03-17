@@ -43,5 +43,11 @@
 .tj-empty p { margin: 0 0 0.25rem; }
 .tj-empty-sub { font-size: 0.85rem; }
 
+.tj-btn-withdraw { font-size: 0.85rem; font-weight: 600; color: #dc2626; background: none; border: 1px solid #dc2626; border-radius: 6px; padding: 0.25rem 0.75rem; cursor: pointer; }
+.tj-btn-withdraw:hover { background: #fee2e2; }
+.tj-lead-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.tj-lead-label { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
+.tj-lead-select { font-size: 0.8rem; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.2rem 0.5rem; background: #fff; cursor: pointer; }
+
 .tj-loading, .tj-error { padding: 2rem; text-align: center; color: #6b7280; }
 .tj-error { color: #dc2626; }

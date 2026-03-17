@@ -54,6 +54,7 @@ export type ProfileStackParamList = {
   Notifications:     undefined;
   Teams:             undefined;
   TeamDetail:        { teamId: string };
+  TeamJobs:          { teamId: string };
   Wallet:            undefined;
   Payments:          undefined;
   Contracts:         undefined;

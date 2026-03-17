@@ -21,11 +21,12 @@ const daysLeft = (date) => {
   return diff;
 };
 
-export default function TeamJobs({ teamId }) {
+export default function TeamJobs({ teamId, teamMembers = [] }) {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [tab, setTab]         = useState('active'); // 'active' | 'pending'
+  const [assigningLead, setAssigningLead] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +94,37 @@ export default function TeamJobs({ teamId }) {
                     <span className="tj-auto-release tj-overdue">⏱ Auto-release overdue</span>
                   )}
                 </div>
+                {teamMembers.length > 0 && (
+                  <div className="tj-lead-row">
+                    <span className="tj-lead-label">Lead:</span>
+                    <select
+                      className="tj-lead-select"
+                      value={job.assignedTo?._id || ''}
+                      disabled={assigningLead === job._id}
+                      onChange={async (e) => {
+                        const memberId = e.target.value;
+                        if (!memberId) return;
+                        setAssigningLead(job._id);
+                        try {
+                          await apiRequest(`/api/teams/${teamId}/jobs/${job._id}/lead`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ memberId }),
+                          });
+                          load();
+                        } catch (err) {
+                          alert(err.message || 'Failed to assign lead');
+                        } finally {
+                          setAssigningLead(null);
+                        }
+                      }}
+                    >
+                      <option value="">-- Assign lead --</option>
+                      {teamMembers.map(m => (
+                        <option key={m._id} value={m._id}>{m.firstName} {m.lastName}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="tj-card-actions">
                   <Link to={`/jobs/${job._id}`} className="tj-btn-view">View Job →</Link>
                 </div>
@@ -126,6 +158,20 @@ export default function TeamJobs({ teamId }) {
                 </div>
                 <div className="tj-card-actions">
                   <Link to={`/jobs/${job._id}`} className="tj-btn-view">View Job →</Link>
+                  {tp && tp.status === 'pending' && (
+                    <button
+                      className="tj-btn-withdraw"
+                      onClick={async () => {
+                        if (!window.confirm('Withdraw this team proposal?')) return;
+                        try {
+                          await apiRequest(`/api/teams/${teamId}/proposals/${tp._id}/withdraw`, { method: 'POST' });
+                          load();
+                        } catch (err) {
+                          alert(err.message || 'Failed to withdraw');
+                        }
+                      }}
+                    >Withdraw</button>
+                  )}
                 </div>
               </div>
             );
