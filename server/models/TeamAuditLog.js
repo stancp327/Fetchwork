@@ -23,6 +23,17 @@ const teamAuditLogSchema = new mongoose.Schema({
       'member_custom_role_assigned',
       'client_linked',
       'client_unlinked',
+      'job_lead_assigned',
+      'job_role_set',
+      'subtask_created',
+      'subtask_completed',
+      'subtask_assigned',
+      'job_status_changed',
+      'progress_note_added',
+      'job_kanban_updated',
+      'job_pinned',
+      'job_unpinned',
+      'chat_message_sent',
     ],
     required: true,
     index: true,
@@ -30,6 +41,7 @@ const teamAuditLogSchema = new mongoose.Schema({
   targetUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   before: { type: mongoose.Schema.Types.Mixed, default: null },
   after: { type: mongoose.Schema.Types.Mixed, default: null },
+  job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', default: null },
   reason: { type: String, default: '' },
   metadata: { type: mongoose.Schema.Types.Mixed, default: null },
   ipAddress: { type: String, default: '' },
@@ -38,6 +50,7 @@ const teamAuditLogSchema = new mongoose.Schema({
 
 teamAuditLogSchema.index({ team: 1, createdAt: -1 });
 teamAuditLogSchema.index({ actor: 1, createdAt: -1 });
+teamAuditLogSchema.index({ team: 1, job: 1, createdAt: -1 });
 
 teamAuditLogSchema.statics.logSafe = async function(data) {
   try {

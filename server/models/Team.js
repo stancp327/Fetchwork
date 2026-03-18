@@ -109,6 +109,8 @@ const teamSchema = new mongoose.Schema({
   transferTargetUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   lockVersion: { type: Number, default: 0 },
 
+  pinnedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
+
   isActive:    { type: Boolean, default: true },
 }, { timestamps: true });
 

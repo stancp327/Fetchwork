@@ -8,10 +8,13 @@ const teamNoteSchema = new mongoose.Schema({
     type: { type: String, enum: ['member', 'job', 'general'], default: 'general' },
     id: { type: mongoose.Schema.Types.ObjectId, default: null },
   },
+  job: { type: mongoose.Schema.Types.ObjectId, ref: 'Job', default: null },
+  mentions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   pinned: { type: Boolean, default: false },
 }, { timestamps: true });
 
 teamNoteSchema.index({ team: 1, createdAt: -1 });
 teamNoteSchema.index({ team: 1, pinned: -1, createdAt: -1 });
+teamNoteSchema.index({ team: 1, job: 1, createdAt: -1 });
 
 module.exports = mongoose.model('TeamNote', teamNoteSchema);

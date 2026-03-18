@@ -2435,7 +2435,7 @@ router.get('/:id/jobs', async (req, res) => {
 
     // Jobs assigned to this team (won proposals)
     const assignedJobs = await Job.find({ team: team._id, status: { $in: ['accepted','pending_start','in_progress','delivered'] } })
-      .select('title status budget assignedTo client createdAt deliveredAt autoReleaseAt')
+      .select('title status budget assignedTo client createdAt deliveredAt autoReleaseAt kanbanColumn deadline urgent')
       .populate('client', 'firstName lastName username avatar')
       .populate('assignedTo', 'firstName lastName username avatar')
       .sort({ createdAt: -1 })
@@ -2456,7 +2456,9 @@ router.get('/:id/jobs', async (req, res) => {
       return { ...job, teamProposal: tp, proposals: undefined };
     });
 
-    res.json({ assignedJobs, pendingProposals });
+    const pinnedJobs = (team.pinnedJobs || []).map(String);
+
+    res.json({ assignedJobs, pendingProposals, pinnedJobs });
   } catch (err) {
     console.error('team jobs error:', err);
     res.status(500).json({ error: 'Failed to fetch team jobs' });
@@ -2514,10 +2516,641 @@ router.patch('/:id/jobs/:jobId/lead', async (req, res) => {
       .populate('assignedTo', 'firstName lastName username avatar')
       .lean();
 
+    TeamAuditLog.logSafe({
+      team: team._id,
+      job: job._id,
+      actor: req.user._id,
+      action: 'job_lead_assigned',
+      after: { assignedTo: memberId },
+    });
+
     res.json({ message: 'Lead assigned', job: updatedJob });
   } catch (err) {
     console.error('assign team lead error:', err);
     res.status(500).json({ error: 'Failed to assign lead' });
+  }
+});
+
+// ── Models for team job workspace ──
+const TeamSubtask = require('../models/TeamSubtask');
+const TeamJobRole = require('../models/TeamJobRole');
+const TeamJobChat = require('../models/TeamJobChat');
+
+// ════════════════════════════════════════════════════════════════
+// SUBTASKS – lite Trello per job
+// ════════════════════════════════════════════════════════════════
+
+// GET subtasks for a job
+router.get('/:id/jobs/:jobId/subtasks', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const subtasks = await TeamSubtask.find({ team: team._id, job: req.params.jobId })
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .populate('createdBy', 'firstName lastName')
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+
+    res.json({ subtasks });
+  } catch (err) {
+    console.error('get subtasks error:', err);
+    res.status(500).json({ error: 'Failed to fetch subtasks' });
+  }
+});
+
+// CREATE subtask
+router.post('/:id/jobs/:jobId/subtasks', async (req, res) => {
+  try {
+    const { title, description, assignedTo, dueDate, priority } = req.body;
+    if (!title || !title.trim()) return res.status(400).json({ error: 'Title is required' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+
+    // Get max order to append at end
+    const last = await TeamSubtask.findOne({ team: team._id, job: job._id }).sort({ order: -1 }).lean();
+    const order = last ? last.order + 1 : 0;
+
+    const subtask = await TeamSubtask.create({
+      team: team._id,
+      job: job._id,
+      title: title.trim(),
+      description: description || '',
+      assignedTo: assignedTo || null,
+      dueDate: dueDate || null,
+      priority: priority || 'medium',
+      createdBy: req.user.userId,
+      order,
+    });
+
+    const populated = await TeamSubtask.findById(subtask._id)
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .populate('createdBy', 'firstName lastName')
+      .lean();
+
+    TeamAuditLog.logSafe({
+      team: team._id, job: job._id, actor: req.user._id,
+      action: 'subtask_created', metadata: { subtaskId: subtask._id, title: title.trim() },
+    });
+
+    res.status(201).json({ subtask: populated });
+  } catch (err) {
+    console.error('create subtask error:', err);
+    res.status(500).json({ error: 'Failed to create subtask' });
+  }
+});
+
+// UPDATE subtask
+router.put('/:id/jobs/:jobId/subtasks/:subtaskId', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const subtask = await TeamSubtask.findOne({
+      _id: req.params.subtaskId,
+      team: team._id,
+      job: req.params.jobId,
+    });
+    if (!subtask) return res.status(404).json({ error: 'Subtask not found' });
+
+    const allowed = ['title', 'description', 'assignedTo', 'dueDate', 'status', 'priority', 'order'];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) subtask[key] = req.body[key];
+    }
+
+    // Set completedAt when transitioning to done
+    if (req.body.status === 'done' && !subtask.completedAt) {
+      subtask.completedAt = new Date();
+    } else if (req.body.status && req.body.status !== 'done') {
+      subtask.completedAt = null;
+    }
+
+    await subtask.save();
+
+    const populated = await TeamSubtask.findById(subtask._id)
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .populate('createdBy', 'firstName lastName')
+      .lean();
+
+    res.json({ subtask: populated });
+  } catch (err) {
+    console.error('update subtask error:', err);
+    res.status(500).json({ error: 'Failed to update subtask' });
+  }
+});
+
+// DELETE subtask
+router.delete('/:id/jobs/:jobId/subtasks/:subtaskId', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const subtask = await TeamSubtask.findOneAndDelete({
+      _id: req.params.subtaskId,
+      team: team._id,
+      job: req.params.jobId,
+    });
+    if (!subtask) return res.status(404).json({ error: 'Subtask not found' });
+
+    res.json({ message: 'Subtask deleted' });
+  } catch (err) {
+    console.error('delete subtask error:', err);
+    res.status(500).json({ error: 'Failed to delete subtask' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// JOB ROLES – per-job role assignment
+// ════════════════════════════════════════════════════════════════
+
+// GET roles for a job
+router.get('/:id/jobs/:jobId/roles', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const roles = await TeamJobRole.find({ team: team._id, job: req.params.jobId })
+      .populate('user', 'firstName lastName username avatar')
+      .lean();
+
+    res.json({ roles });
+  } catch (err) {
+    console.error('get job roles error:', err);
+    res.status(500).json({ error: 'Failed to fetch roles' });
+  }
+});
+
+// PUT roles for a job (replace whole array)
+router.put('/:id/jobs/:jobId/roles', async (req, res) => {
+  try {
+    const { roles } = req.body; // [{ userId, role, customRole }]
+    if (!Array.isArray(roles)) return res.status(400).json({ error: 'roles must be an array' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId: req.user.userId, action: 'assign_work' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not authorized to assign roles' });
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+
+    // Delete existing and bulk insert
+    await TeamJobRole.deleteMany({ team: team._id, job: job._id });
+
+    const validRoles = ['designer', 'developer', 'reviewer', 'pm', 'writer', 'other'];
+    const docs = roles
+      .filter(r => r.userId && validRoles.includes(r.role))
+      .map(r => ({
+        team: team._id,
+        job: job._id,
+        user: r.userId,
+        role: r.role,
+        customRole: r.customRole || '',
+      }));
+
+    if (docs.length > 0) await TeamJobRole.insertMany(docs);
+
+    const saved = await TeamJobRole.find({ team: team._id, job: job._id })
+      .populate('user', 'firstName lastName username avatar')
+      .lean();
+
+    TeamAuditLog.logSafe({
+      team: team._id, job: job._id, actor: req.user._id,
+      action: 'job_role_set', after: { roles: docs.map(d => ({ user: d.user, role: d.role })) },
+    });
+
+    res.json({ roles: saved });
+  } catch (err) {
+    console.error('set job roles error:', err);
+    res.status(500).json({ error: 'Failed to set roles' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// WORKLOAD – member active-job counts
+// ════════════════════════════════════════════════════════════════
+
+router.get('/:id/members/workload', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const activeMembers = team.members.filter(m => m.status === 'active').map(m => getId(m.user));
+
+    // Count jobs where member is lead
+    const leadCounts = await Job.aggregate([
+      { $match: { team: team._id, status: { $in: ['accepted', 'pending_start', 'in_progress', 'delivered'] } } },
+      { $group: { _id: '$assignedTo', count: { $sum: 1 } } },
+    ]);
+
+    // Count subtasks assigned to members (not done)
+    const subtaskCounts = await TeamSubtask.aggregate([
+      { $match: { team: team._id, status: { $ne: 'done' }, assignedTo: { $ne: null } } },
+      { $group: { _id: '$assignedTo', count: { $sum: 1 } } },
+    ]);
+
+    const workload = {};
+    for (const mid of activeMembers) {
+      workload[mid] = 0;
+    }
+    for (const lc of leadCounts) {
+      if (lc._id) workload[String(lc._id)] = (workload[String(lc._id)] || 0) + lc.count;
+    }
+    for (const sc of subtaskCounts) {
+      if (sc._id) workload[String(sc._id)] = (workload[String(sc._id)] || 0) + sc.count;
+    }
+
+    res.json({ workload });
+  } catch (err) {
+    console.error('workload error:', err);
+    res.status(500).json({ error: 'Failed to fetch workload' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// JOB CHAT – internal team thread per job
+// ════════════════════════════════════════════════════════════════
+
+// GET chat messages (paginated, cursor-based)
+router.get('/:id/jobs/:jobId/chat', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const limit = Math.min(parseInt(req.query.limit) || 30, 50);
+    const query = { team: team._id, job: req.params.jobId };
+    if (req.query.before) {
+      query.createdAt = { $lt: new Date(req.query.before) };
+    }
+
+    const messages = await TeamJobChat.find(query)
+      .populate('author', 'firstName lastName username avatar')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    // For soft-deleted messages, redact the message body
+    const cleaned = messages.map(m => {
+      if (m.deletedAt) return { ...m, message: 'This message was deleted' };
+      return m;
+    });
+
+    res.json({ messages: cleaned.reverse(), hasMore: messages.length === limit });
+  } catch (err) {
+    console.error('get chat error:', err);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// POST send message
+router.post('/:id/jobs/:jobId/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required' });
+    if (message.length > 2000) return res.status(400).json({ error: 'Message too long (max 2000 chars)' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    // Parse @mentions — match @firstName against team members
+    const mentionPattern = /@(\w+)/g;
+    const mentions = [];
+    let match;
+    while ((match = mentionPattern.exec(message)) !== null) {
+      const name = match[1].toLowerCase();
+      for (const m of team.members) {
+        const memberId = getId(m.user);
+        // We need populated user data; fetch active member users
+        const memberUser = await User.findById(memberId).select('firstName').lean();
+        if (memberUser && memberUser.firstName.toLowerCase() === name) {
+          mentions.push(memberId);
+        }
+      }
+    }
+
+    const chatMsg = await TeamJobChat.create({
+      team: team._id,
+      job: req.params.jobId,
+      author: req.user.userId,
+      message: message.trim(),
+      mentions: [...new Set(mentions)],
+    });
+
+    const populated = await TeamJobChat.findById(chatMsg._id)
+      .populate('author', 'firstName lastName username avatar')
+      .lean();
+
+    res.status(201).json({ message: populated });
+  } catch (err) {
+    console.error('send chat error:', err);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// PUT edit message (author only, within 15 min)
+router.put('/:id/jobs/:jobId/chat/:msgId', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required' });
+    if (message.length > 2000) return res.status(400).json({ error: 'Message too long' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const chatMsg = await TeamJobChat.findOne({
+      _id: req.params.msgId,
+      team: team._id,
+      job: req.params.jobId,
+      deletedAt: null,
+    });
+    if (!chatMsg) return res.status(404).json({ error: 'Message not found' });
+    if (String(chatMsg.author) !== String(req.user.userId)) {
+      return res.status(403).json({ error: 'You can only edit your own messages' });
+    }
+
+    const ageMs = Date.now() - chatMsg.createdAt.getTime();
+    if (ageMs > 15 * 60 * 1000) {
+      return res.status(400).json({ error: 'Can only edit messages within 15 minutes' });
+    }
+
+    chatMsg.message = message.trim();
+    chatMsg.editedAt = new Date();
+    await chatMsg.save();
+
+    const populated = await TeamJobChat.findById(chatMsg._id)
+      .populate('author', 'firstName lastName username avatar')
+      .lean();
+
+    res.json({ message: populated });
+  } catch (err) {
+    console.error('edit chat error:', err);
+    res.status(500).json({ error: 'Failed to edit message' });
+  }
+});
+
+// DELETE soft-delete message
+router.delete('/:id/jobs/:jobId/chat/:msgId', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const chatMsg = await TeamJobChat.findOne({
+      _id: req.params.msgId,
+      team: team._id,
+      job: req.params.jobId,
+      deletedAt: null,
+    });
+    if (!chatMsg) return res.status(404).json({ error: 'Message not found' });
+
+    // Author or team admin/owner can delete
+    const isAuthor = String(chatMsg.author) === String(req.user.userId);
+    const isAdminOrOwner = team.isOwnerOrAdmin(req.user.userId);
+    if (!isAuthor && !isAdminOrOwner) {
+      return res.status(403).json({ error: 'Not authorized to delete this message' });
+    }
+
+    chatMsg.deletedAt = new Date();
+    await chatMsg.save();
+
+    res.json({ message: 'Message deleted' });
+  } catch (err) {
+    console.error('delete chat error:', err);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// JOB-SCOPED PROGRESS NOTES
+// ════════════════════════════════════════════════════════════════
+
+// GET progress notes for a job
+router.get('/:id/jobs/:jobId/notes', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const notes = await TeamNote.find({ team: team._id, job: req.params.jobId })
+      .populate('author', 'firstName lastName username avatar')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ notes });
+  } catch (err) {
+    console.error('get job notes error:', err);
+    res.status(500).json({ error: 'Failed to fetch notes' });
+  }
+});
+
+// POST create progress note for a job
+router.post('/:id/jobs/:jobId/notes', async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: 'Content is required' });
+    if (content.length > 1000) return res.status(400).json({ error: 'Content must be 1000 characters or fewer' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+
+    // Parse @mentions
+    const mentionPattern = /@(\w+)/g;
+    const mentions = [];
+    let match;
+    while ((match = mentionPattern.exec(content)) !== null) {
+      const name = match[1].toLowerCase();
+      for (const m of team.members) {
+        const memberId = getId(m.user);
+        const memberUser = await User.findById(memberId).select('firstName').lean();
+        if (memberUser && memberUser.firstName.toLowerCase() === name) {
+          mentions.push(memberId);
+        }
+      }
+    }
+
+    const note = await TeamNote.create({
+      team: team._id,
+      job: job._id,
+      author: req.user.userId,
+      content: content.trim(),
+      mentions: [...new Set(mentions)],
+      relatedTo: { type: 'job', id: job._id },
+    });
+
+    const populated = await TeamNote.findById(note._id)
+      .populate('author', 'firstName lastName username avatar')
+      .lean();
+
+    // Audit log
+    TeamAuditLog.logSafe({
+      team: team._id,
+      job: job._id,
+      actor: req.user._id,
+      action: 'progress_note_added',
+      metadata: { noteId: note._id },
+    });
+
+    res.status(201).json({ note: populated });
+  } catch (err) {
+    console.error('create job note error:', err);
+    res.status(500).json({ error: 'Failed to create note' });
+  }
+});
+
+// DELETE progress note for a job
+router.delete('/:id/jobs/:jobId/notes/:noteId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const note = await TeamNote.findOne({ _id: req.params.noteId, team: team._id, job: req.params.jobId });
+    if (!note) return res.status(404).json({ error: 'Note not found' });
+
+    const isAuthor = String(note.author) === requesterId;
+    const ctx = getTeamAccessContext(team, requesterId);
+    if (!isAuthor && !ctx.isOwner && !ctx.isAdmin) {
+      return res.status(403).json({ error: 'Only the author or an admin can delete this note' });
+    }
+
+    await TeamNote.deleteOne({ _id: note._id });
+    res.json({ message: 'Note deleted' });
+  } catch (err) {
+    console.error('delete job note error:', err);
+    res.status(500).json({ error: 'Failed to delete note' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// ACTIVITY FEED — per-job audit log entries
+// ════════════════════════════════════════════════════════════════
+
+router.get('/:id/jobs/:jobId/activity', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const entries = await TeamAuditLog.find({ team: team._id, job: req.params.jobId })
+      .populate('actor', 'firstName lastName username avatar')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    res.json({ entries });
+  } catch (err) {
+    console.error('job activity error:', err);
+    res.status(500).json({ error: 'Failed to fetch activity' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// KANBAN COLUMN — update per-job kanban stage
+// ════════════════════════════════════════════════════════════════
+
+router.put('/:id/jobs/:jobId/kanban', async (req, res) => {
+  try {
+    const { column } = req.body;
+    const validColumns = ['backlog', 'in_progress', 'review', 'done'];
+    if (!validColumns.includes(column)) return res.status(400).json({ error: 'Invalid kanban column' });
+
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+
+    job.kanbanColumn = column;
+    await job.save();
+
+    TeamAuditLog.logSafe({
+      team: team._id,
+      job: job._id,
+      actor: req.user._id,
+      action: 'job_kanban_updated',
+      after: { kanbanColumn: column },
+    });
+
+    res.json({ message: 'Kanban column updated', kanbanColumn: column });
+  } catch (err) {
+    console.error('kanban update error:', err);
+    res.status(500).json({ error: 'Failed to update kanban column' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// PIN JOBS — float to top
+// ════════════════════════════════════════════════════════════════
+
+router.post('/:id/jobs/:jobId/pin', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+
+    const pinnedJobs = team.pinnedJobs || [];
+    const jobIdStr = String(job._id);
+    const isPinned = pinnedJobs.map(String).includes(jobIdStr);
+
+    if (isPinned) {
+      await Team.updateOne({ _id: team._id }, { $pull: { pinnedJobs: job._id } });
+      TeamAuditLog.logSafe({ team: team._id, job: job._id, actor: req.user._id, action: 'job_unpinned' });
+      res.json({ pinned: false });
+    } else {
+      await Team.updateOne({ _id: team._id }, { $addToSet: { pinnedJobs: job._id } });
+      TeamAuditLog.logSafe({ team: team._id, job: job._id, actor: req.user._id, action: 'job_pinned' });
+      res.json({ pinned: true });
+    }
+  } catch (err) {
+    console.error('pin job error:', err);
+    res.status(500).json({ error: 'Failed to pin/unpin job' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// QUICK ACTIONS — mark urgent, set deadline
+// ════════════════════════════════════════════════════════════════
+
+router.patch('/:id/jobs/:jobId/quick', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
+    if (!job) return res.status(404).json({ error: 'Job not found in this team' });
+
+    if (req.body.urgent !== undefined) job.urgent = Boolean(req.body.urgent);
+    if (req.body.deadline !== undefined) job.deadline = req.body.deadline ? new Date(req.body.deadline) : null;
+
+    await job.save();
+    res.json({ message: 'Updated', job: { _id: job._id, urgent: job.urgent, deadline: job.deadline } });
+  } catch (err) {
+    console.error('quick action error:', err);
+    res.status(500).json({ error: 'Failed to update job' });
   }
 });
 

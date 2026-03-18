@@ -306,6 +306,13 @@ const jobSchema = new mongoose.Schema({
     enum: ['completed', 'past_deadline', 'admin', null],
     default: null
   },
+  // ── Team workspace fields ──────────────────────────────────────
+  urgent: { type: Boolean, default: false },
+  kanbanColumn: {
+    type: String,
+    enum: ['backlog', 'in_progress', 'review', 'done', null],
+    default: null,
+  },
   // ── Recurring ────────────────────────────────────────────────────
   recurring: {
     enabled:       { type: Boolean, default: false },
