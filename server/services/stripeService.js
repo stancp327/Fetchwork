@@ -87,7 +87,9 @@ class StripeService {
       currency,
       metadata,
       // Stripe chooses the best payment methods per user (cards, Apple Pay,
-      // Google Pay, bank transfers, etc.) — no hardcoded payment_method_types.
+      // Google Pay, ACH bank transfers, etc.) — no hardcoded payment_method_types.
+      // NOTE: ACH (us_bank_account) requires enablement in Stripe Dashboard →
+      // Settings → Payment Methods → enable "ACH Direct Debit" / "US bank accounts".
       automatic_payment_methods: { enabled: true },
     }, requestOptions);
   }

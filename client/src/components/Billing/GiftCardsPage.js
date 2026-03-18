@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
+import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { apiRequest } from '../../utils/api';
@@ -23,48 +23,105 @@ const STATUS_BADGE = {
   pending_payment: { label: 'Pending',   color: '#d97706', bg: '#fef3c7' },
 };
 
-// ── Purchase form (inner, has Stripe context) ──────────────────────
-function PurchaseForm({ onSuccess }) {
+const ELEMENTS_APPEARANCE = {
+  theme: 'stripe',
+  variables: { colorPrimary: '#2563eb', borderRadius: '8px' },
+};
+
+// ── Payment confirmation (inner, has Stripe context via Elements) ──
+function PaymentConfirmForm({ amount, giftCardId, onSuccess, onBack }) {
   const stripe   = useStripe();
   const elements = useElements();
-  const [amount,   setAmount]   = useState(25);
-  const [message,  setMessage]  = useState('');
-  const [recip,    setRecip]    = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
-  const [done,     setDone]     = useState(null); // { code, amount }
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
 
-  const handlePurchase = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) return;
     setError('');
     setLoading(true);
     try {
-      // 1. Create PaymentIntent + pending card
-      const { clientSecret, giftCardId } = await apiRequest('/api/gift-cards', {
-        method: 'POST',
-        body: JSON.stringify({ amount, message, recipientEmail: recip }),
-      });
-
-      // 2. Confirm with card element
-      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: elements.getElement(CardElement) },
+      const { error: stripeErr, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
       });
       if (stripeErr) throw new Error(stripeErr.message);
 
-      // 3. Confirm + activate
+      // Confirm + activate the gift card
       const result = await apiRequest('/api/gift-cards/confirm', {
         method: 'POST',
         body: JSON.stringify({ giftCardId, paymentIntentId: paymentIntent.id }),
       });
 
-      setDone({ code: result.code, amount });
-      onSuccess?.();
+      onSuccess(result.code);
     } catch (err) {
-      setError(err.message || 'Purchase failed');
+      setError(err.message || 'Payment failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  return (
+    <form className="gc-form" onSubmit={handleSubmit}>
+      <div className="gc-form-field">
+        <label>Payment Details</label>
+        <PaymentElement options={{ layout: 'tabs' }} />
+      </div>
+
+      {error && <div className="gc-error">{error}</div>}
+
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button type="button" className="gc-btn gc-btn-outline" onClick={onBack} disabled={loading}>
+          Back
+        </button>
+        <button className="gc-btn gc-btn-primary" type="submit" disabled={loading || !stripe}>
+          {loading ? 'Processing\u2026' : `Purchase ${fmt(amount)} Gift Card`}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── Purchase form (outer, manages two-step flow) ─────────────────
+function PurchaseForm({ onSuccess }) {
+  const [amount,       setAmount]       = useState(25);
+  const [message,      setMessage]      = useState('');
+  const [recip,        setRecip]        = useState('');
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState('');
+  const [done,         setDone]         = useState(null); // { code, amount }
+  const [clientSecret, setClientSecret] = useState(null);
+  const [giftCardId,   setGiftCardId]   = useState(null);
+
+  // Step 1: create PaymentIntent on server
+  const handleContinue = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const data = await apiRequest('/api/gift-cards', {
+        method: 'POST',
+        body: JSON.stringify({ amount, message, recipientEmail: recip }),
+      });
+      setClientSecret(data.clientSecret);
+      setGiftCardId(data.giftCardId);
+    } catch (err) {
+      setError(err.message || 'Failed to initialize payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = (code) => {
+    setDone({ code, amount });
+    setClientSecret(null);
+    setGiftCardId(null);
+    onSuccess?.();
+  };
+
+  const handleBack = () => {
+    setClientSecret(null);
+    setGiftCardId(null);
   };
 
   if (done) {
@@ -82,8 +139,26 @@ function PurchaseForm({ onSuccess }) {
     );
   }
 
+  // Step 2: show PaymentElement for confirmation
+  if (clientSecret) {
+    return (
+      <Elements
+        stripe={stripePromise}
+        options={{ clientSecret, appearance: ELEMENTS_APPEARANCE }}
+      >
+        <PaymentConfirmForm
+          amount={amount}
+          giftCardId={giftCardId}
+          onSuccess={handlePaymentSuccess}
+          onBack={handleBack}
+        />
+      </Elements>
+    );
+  }
+
+  // Step 1: amount + details form
   return (
-    <form className="gc-form" onSubmit={handlePurchase}>
+    <form className="gc-form" onSubmit={handleContinue}>
       <div className="gc-form-field">
         <label>Amount</label>
         <div className="gc-denom-row">
@@ -117,17 +192,10 @@ function PurchaseForm({ onSuccess }) {
         />
       </div>
 
-      <div className="gc-form-field">
-        <label>Card Details</label>
-        <div className="gc-card-element">
-          <CardElement options={{ style: { base: { fontSize: '15px', color: '#1f2937' } } }} />
-        </div>
-      </div>
-
       {error && <div className="gc-error">{error}</div>}
 
-      <button className="gc-btn gc-btn-primary" type="submit" disabled={loading || !stripe}>
-        {loading ? 'Processing…' : `Purchase ${fmt(amount)} Gift Card`}
+      <button className="gc-btn gc-btn-primary" type="submit" disabled={loading}>
+        {loading ? 'Processing\u2026' : `Continue to Payment — ${fmt(amount)}`}
       </button>
     </form>
   );
@@ -231,9 +299,7 @@ export default function GiftCardsPage() {
               <h2 className="gc-section-title">Purchase a Gift Card</h2>
               <p className="gc-section-sub">Redeemable for wallet credits on any Fetchwork account. Never expires for {365} days.</p>
               {stripePromise ? (
-                <Elements stripe={stripePromise}>
-                  <PurchaseForm onSuccess={onPurchaseSuccess} />
-                </Elements>
+                <PurchaseForm onSuccess={onPurchaseSuccess} />
               ) : (
                 <div className="gc-error">Payments not configured.</div>
               )}

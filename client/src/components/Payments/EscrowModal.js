@@ -263,7 +263,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                       checked={selectedPmId === 'new'}
                       onChange={() => setSelectedPmId('new')}
                     />
-                    <span>+ Use a new card</span>
+                    <span>+ Use a new payment method</span>
                   </label>
               </div>
 
@@ -278,7 +278,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                       ? `Pay $${Number(amount).toFixed(2)} (Split) →`
                       : selectedPmId && selectedPmId !== 'new'
                         ? `Pay $${Number(amount).toFixed(2)} →`
-                        : `Pay with Card — $${Number(amount).toFixed(2)} →`
+                        : `Pay $${Number(amount).toFixed(2)} →`
                   }
                 </button>
               </div>

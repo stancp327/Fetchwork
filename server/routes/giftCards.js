@@ -43,6 +43,7 @@ router.post('/', authenticateToken, async (req, res) => {
       customer:    customerId,
       description: `Fetchwork gift card — $${amount}`,
       metadata:    { type: 'gift_card', userId: user._id.toString(), amount: String(amount) },
+      automatic_payment_methods: { enabled: true },
     });
 
     // Create card in pending_payment state — activated on confirm
