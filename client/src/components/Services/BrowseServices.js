@@ -267,25 +267,13 @@ const BrowseServices = () => {
             suggestions={[
               'Browse available freelancers',
               'Post a job to receive custom proposals',
-              'Check back soon - services added daily'
+              'Check back soon — services added daily'
             ]}
             action={
-              <a href="/freelancers" className="browse-card-cta" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
-                Browse Freelancers
-              </a>
-            }
-          />
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <a href="/freelancers" className="browse-card-cta" style={{ display: 'inline-block', textDecoration: 'none' }}>
-              Browse Freelancers
-            </a>
-            <a href="/create-service" className="browse-card-cta" style={{ display: 'inline-block', textDecoration: 'none' }}>
-              Offer a Service
-            </a>
-          </div>
-                Offer a Service →
-              </a>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <a href="/freelancers" className="browse-card-cta" style={{ display: 'inline-block', textDecoration: 'none' }}>Browse Freelancers</a>
+                <a href="/create-service" className="browse-card-cta" style={{ display: 'inline-block', textDecoration: 'none' }}>Offer a Service</a>
+              </div>
             }
           />
         ) : (
