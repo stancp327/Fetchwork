@@ -24,7 +24,7 @@ const ConvoItem = ({ convo, selected, userId, onClick, onlineStatus }) => {
 
   return (
     <div className={`convo-item ${selected ? 'selected' : ''} ${unread ? 'unread' : ''}`} onClick={onClick}>
-      <div className="convo-avatar" style={{ position: 'relative' }}>
+      <div className="convo-avatar">
         {other?.profilePicture ? (
           <img src={other.profilePicture} alt="" />
         ) : (

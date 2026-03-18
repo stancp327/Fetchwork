@@ -139,6 +139,7 @@
 .convo-item.unread { background: var(--color-unread-bg); }
 
 .convo-avatar {
+  position: relative; /* needed for avatar-online-badge absolute positioning */
   width: 44px; height: 44px; border-radius: 50%;
   background: var(--color-primary-light); display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; overflow: hidden; font-size: var(--font-size-sm); font-weight: 700; color: var(--color-primary);

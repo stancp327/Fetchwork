@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
@@ -37,14 +37,14 @@ const extractOfferId = (content) => {
   return m?.[1] || null;
 };
 
+// Split with a capture-group regex: odd indices are always the matched segments.
+// One regex, no second test needed.
 const Highlight = ({ text = '', query = '' }) => {
   if (!query || !text) return text;
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
   return parts.map((p, i) =>
-    new RegExp(`^${escaped}$`, 'i').test(p)
-      ? <mark key={i} className="search-highlight">{p}</mark>
-      : p
+    i % 2 === 1 ? <mark key={i} className="search-highlight">{p}</mark> : p
   );
 };
 
@@ -105,8 +105,14 @@ const Messages = () => {
   // Feature flags
   const [userFeatures, setUserFeatures] = useState([]);
   const [featuresLoaded, setFeaturesLoaded] = useState(false);
-  const userFeatureList = Array.isArray(userFeatures) ? userFeatures : Object.keys(userFeatures || {});
-  const canCall = !featuresLoaded || userFeatureList.includes('audio_calls') || userFeatureList.includes('video_calls');
+  const userFeatureList = useMemo(
+    () => Array.isArray(userFeatures) ? userFeatures : Object.keys(userFeatures || {}),
+    [userFeatures]
+  );
+  const canCall = useMemo(
+    () => !featuresLoaded || userFeatureList.includes('audio_calls') || userFeatureList.includes('video_calls'),
+    [featuresLoaded, userFeatureList]
+  );
 
   // UI state
   const [selectedConvo, setSelectedConvo] = useState(null);
@@ -159,8 +165,9 @@ const Messages = () => {
     setMessages: msgHook.setMessages,
   });
 
-  const otherParticipant = selectedConvo?.participants?.find(
-    p => String(getEntityId(p?._id || p)) !== String(userId)
+  const otherParticipant = useMemo(
+    () => selectedConvo?.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId)),
+    [selectedConvo, userId]
   );
 
   // ── Socket handler ─────────────────────────────────────────────
@@ -794,13 +801,12 @@ const Messages = () => {
                 </button>
                 <button type="button" className="quick-act" onClick={() => schedHook.setShowScheduleModal(true)}>📅 Schedule</button>
                 <button type="button" className="quick-act" onClick={() => {
-                  const other = selectedConvo?.participants?.find(p => { const pid = typeof p === 'object' ? (p._id || p.id) : p; return String(pid) !== String(userId); });
-                  const otherId = other ? (typeof other === 'object' ? (other._id || other.id) : other) : '';
-                  const jobId = selectedConvo?.job?._id || selectedConvo?.job || '';
                   const params = new URLSearchParams();
-                  if (otherId) params.set('freelancerId', otherId);
-                  if (jobId) params.set('jobId', jobId);
-                  window.location.href = `/contracts/new?${params.toString()}`;
+                  const otherId = getEntityId(otherParticipant?._id || otherParticipant);
+                  if (otherId) params.set('freelancerId', String(otherId));
+                  const jobId = selectedConvo?.job?._id || selectedConvo?.job;
+                  if (jobId) params.set('jobId', String(jobId));
+                  navigate(`/contracts/new?${params.toString()}`);
                 }}>📄 Contract</button>
                 <button
                   className="quick-act msg-ai-risk-btn"
