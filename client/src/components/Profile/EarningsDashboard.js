@@ -52,7 +52,8 @@ export default function EarningsDashboard() {
       setForecast(res);
     } catch (err) {
       if (err.status === 403) alert('Earnings Forecast is a Pro feature.');
-      else alert('Failed to generate forecast.');
+      else if (err.status === 422) alert('Not enough earnings data yet to generate a forecast.');
+          else alert('Failed to generate forecast.');
     } finally { setForecastLoading(false); }
   };
 
