@@ -37,6 +37,7 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
   };
 
   const handleSuspend = () => {
+    if (!window.confirm(`Are you sure you want to suspend ${u.firstName} ${u.lastName}? They will lose access.`)) return;
     const reason = prompt('Reason for suspension:');
     if (!reason) return;
     const days = prompt('Suspension duration in days (blank = indefinite):');
@@ -45,9 +46,10 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     }));
   };
 
-  const handleUnsuspend = () => doAction('unsuspend', () =>
-    apiRequest(`/api/admin/users/${u._id}/unsuspend`, { method: 'PUT' })
-  );
+  const handleUnsuspend = () => {
+    if (!window.confirm(`Unsuspend ${u.firstName} ${u.lastName} and restore their access?`)) return;
+    doAction('unsuspend', () => apiRequest(`/api/admin/users/${u._id}/unsuspend`, { method: 'PUT' }));
+  };
 
   const handleMakeMod = () => doAction('moderator', () =>
     apiRequest(`/api/admin/users/${u._id}/make-moderator`, {
@@ -86,9 +88,10 @@ const AdminUserDrawer = ({ data, onClose, onRefresh }) => {
     }));
   };
 
-  const handlePromoteAdmin = () => doAction('admin', () =>
-    apiRequest(`/api/admin/users/${u._id}/promote`, { method: 'PUT' })
-  );
+  const handlePromoteAdmin = () => {
+    if (!window.confirm(`Grant admin privileges to ${u.firstName} ${u.lastName}? This gives full platform access.`)) return;
+    doAction('admin', () => apiRequest(`/api/admin/users/${u._id}/promote`, { method: 'PUT' }));
+  };
 
   const handleDemoteAdmin = () => {
     if (!window.confirm(`Remove admin access from ${u.firstName} ${u.lastName}?`)) return;

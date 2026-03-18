@@ -262,15 +262,28 @@ const BrowseServices = () => {
         ) : services.length === 0 ? (
           <BrowseEmpty
             icon="🛒"
-            title="No services match your search"
-            message="Here are some things to try:"
+            title="No services listed yet"
+            message="No services listed yet. Browse our freelancers or post a job to get started."
             suggestions={[
-              'Use broader search terms',
-              'Remove some filters',
-              'Browse a different category'
+              'Browse available freelancers',
+              'Post a job to receive custom proposals',
+              'Check back soon - services added daily'
             ]}
             action={
-              <a href="/create-service" className="browse-card-cta" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+              <a href="/freelancers" className="browse-card-cta" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+                Browse Freelancers
+              </a>
+            }
+          />
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <a href="/freelancers" className="browse-card-cta" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              Browse Freelancers
+            </a>
+            <a href="/create-service" className="browse-card-cta" style={{ display: 'inline-block', textDecoration: 'none' }}>
+              Offer a Service
+            </a>
+          </div>
                 Offer a Service →
               </a>
             }

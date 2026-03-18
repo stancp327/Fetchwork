@@ -17,6 +17,8 @@ const memberSchema = new mongoose.Schema({
       'view_wallet',        // view wallet balance + payout history
       'approve_payouts',    // approve member payout requests
       'approve_outsourcing',// approve outsource / team-to-team spend
+      'manage_tasks',       // create/edit/delete team tasks
+      'read_tasks',         // view team tasks
     ],
   }],
   customRoleName: { type: String, default: '' },
@@ -49,6 +51,8 @@ const teamSchema = new mongoose.Schema({
         'view_wallet',
         'approve_payouts',
         'approve_outsourcing',
+        'manage_tasks',
+        'read_tasks',
       ],
     }],
     createdAt: { type: Date, default: Date.now },

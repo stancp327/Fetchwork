@@ -111,6 +111,36 @@ const CreateService = () => {
     return Object.keys(e).length === 0;
   };
 
+  const isStepValid = () => {
+    switch (step) {
+      case 0: // Service Details
+        return data.title.trim() !== '' && 
+               data.description.trim() !== '' && 
+               data.category !== '';
+      case 1: // Pricing & Packages
+        const isRecurring = data.serviceType === 'recurring';
+        if (isRecurring) {
+          return data.basicTitle.trim() !== '' && 
+                 data.basicDescription.trim() !== '' && 
+                 data.basicPrice && parseFloat(data.basicPrice) >= 1 &&
+                 (!data.recurringTrialEnabled || (data.recurringTrialPrice && parseFloat(data.recurringTrialPrice) >= 1));
+        } else {
+          return data.basicTitle.trim() !== '' && 
+                 data.basicDescription.trim() !== '' && 
+                 data.basicPrice && parseFloat(data.basicPrice) >= 5 &&
+                 data.basicDeliveryTime && parseInt(data.basicDeliveryTime) >= 1;
+        }
+      case 2: // Media - no required fields
+        return true;
+      case 3: // Requirements - no required fields
+        return true;
+      case 4: // Review - always valid for Continue
+        return true;
+      default:
+        return false;
+    }
+  };
+
   const handleNext = () => {
     if (!validateStep()) return;
     // Auto-populate basic package title/description from service title/description
@@ -277,9 +307,17 @@ const CreateService = () => {
         <div className="wizard-actions-right">
           {step > 0 && <button className="wiz-btn secondary" onClick={handleBack}>← Back</button>}
           {step < STEPS.length - 1 ? (
-            <button className="wiz-btn primary" onClick={handleNext}>Continue →</button>
+            <button 
+              className="wiz-btn primary" 
+              onClick={handleNext}
+              disabled={!isStepValid()}>
+              Continue →
+            </button>
           ) : (
-            <button className="wiz-btn publish" onClick={handlePublish} disabled={loading}>
+            <button 
+              className="wiz-btn publish" 
+              onClick={handlePublish} 
+              disabled={loading || !isStepValid()}>
               {loading ? 'Publishing...' : '🚀 Publish Service'}
             </button>
           )}

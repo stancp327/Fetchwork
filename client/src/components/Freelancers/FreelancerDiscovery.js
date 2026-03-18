@@ -251,7 +251,21 @@ const FreelancerDiscovery = () => {
         ) : error ? (
           <BrowseEmpty icon="⚠️" title="Error loading freelancers" message={error} />
         ) : freelancers.length === 0 ? (
-          <BrowseEmpty icon="👥" title="No freelancers found" message="Try adjusting your search or filters" />
+          <BrowseEmpty 
+            icon="👥" 
+            title="No freelancers found" 
+            message="No freelancers found. Try broadening your search or check back soon as more professionals join."
+            suggestions={[
+              'Use broader search terms',
+              'Browse all categories',
+              'Check back soon - new freelancers joining daily'
+            ]}
+            action={
+              <a href="/post-job" className="browse-card-cta" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
+                Post a Job
+              </a>
+            }
+          />
         ) : (
           <div className={`browse-grid ${viewMode === 'grid' ? 'grid-view' : 'list-view'}`}>
             {freelancers.map(f => <FreelancerCard key={f._id} freelancer={f} onInvite={user ? setInviteFreelancer : null} />)}
