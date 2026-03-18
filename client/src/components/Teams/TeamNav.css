@@ -1,12 +1,23 @@
+/* Outer bar: no overflow — keeps the More dropdown unclipped */
 .tn-bar {
   display: flex;
-  gap: var(--space-xs, 4px);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  align-items: stretch;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-primary);
   padding: 0 var(--space-md, 16px);
 }
+
+/* Inner scroll strip: only primary tabs scroll on small screens */
+.tn-tabs-scroll {
+  display: flex;
+  gap: var(--space-xs, 4px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  /* Hide scrollbar visually but keep scroll functional */
+  scrollbar-width: none;
+}
+.tn-tabs-scroll::-webkit-scrollbar { display: none; }
 
 .tn-tab {
   flex-shrink: 0;

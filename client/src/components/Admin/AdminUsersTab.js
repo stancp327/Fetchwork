@@ -109,8 +109,22 @@ const AdminUsersTab = ({
               </table>
             </div>
             <div className="pagination">
+              <button
+                className="pagination-btn"
+                disabled={(usersData?.pagination?.current || 1) <= 1}
+                onClick={() => fetchUsersData((usersData.pagination.current || 1) - 1)}
+              >
+                ← Prev
+              </button>
               <span>Page {usersData?.pagination?.current || 1} of {usersData?.pagination?.pages || 1}</span>
-              <span>Total: {usersData?.pagination?.total || 0} users</span>
+              <span className="pagination-total">({usersData?.pagination?.total || 0} users)</span>
+              <button
+                className="pagination-btn"
+                disabled={(usersData?.pagination?.current || 1) >= (usersData?.pagination?.pages || 1)}
+                onClick={() => fetchUsersData((usersData.pagination.current || 1) + 1)}
+              >
+                Next →
+              </button>
             </div>
           </div>
         ) : (
