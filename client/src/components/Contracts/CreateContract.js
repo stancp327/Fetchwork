@@ -32,6 +32,7 @@ const CreateContract = () => {
   const [freelancerId, setFreelancerId] = useState(prefillFreelancer || '');
   const [freelancerSearch, setFreelancerSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [myRole, setMyRole] = useState('client'); // 'client' or 'freelancer'
   const [concerns, setConcerns] = useState('');
   const [checklist, setChecklist] = useState([]);
   const [tools, setTools] = useState('');
@@ -107,6 +108,7 @@ const CreateContract = () => {
           template: selectedTemplate,
           title: title || templates.find(t => t.id === selectedTemplate)?.title || 'Service Agreement',
           freelancerId,
+          myRole,
           jobId: prefillJob || undefined,
           terms,
           concerns,
@@ -125,7 +127,7 @@ const CreateContract = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!freelancerId) return alert('Please select a freelancer');
+    if (!freelancerId) return alert(`Please select a ${myRole === 'client' ? 'freelancer' : 'client'}`);
     setCreating(true);
     try {
       const contract = await apiRequest('/api/contracts', {
@@ -134,6 +136,7 @@ const CreateContract = () => {
           template: selectedTemplate,
           title: title || templates.find(t => t.id === selectedTemplate)?.title || 'Service Agreement',
           freelancerId,
+          myRole,
           jobId: prefillJob || undefined,
           terms,
           concerns,
@@ -230,10 +233,17 @@ const CreateContract = () => {
           <input type="text" value={title} onChange={e => setTitle(e.target.value)}
             placeholder="e.g. Website Development Agreement" className="contract-input" />
 
-          <label>Freelancer</label>
+          <label>I am the</label>
+          <div className="contract-role-toggle">
+            <button type="button" className={`contract-role-btn${myRole === 'client' ? ' active' : ''}`} onClick={() => setMyRole('client')}>👤 Client (hiring)</button>
+            <button type="button" className={`contract-role-btn${myRole === 'freelancer' ? ' active' : ''}`} onClick={() => setMyRole('freelancer')}>🛠 Freelancer (doing the work)</button>
+          </div>
+          <p className="contract-input-hint">{myRole === 'client' ? 'You are hiring someone to complete work for you.' : 'You are the one completing work for a client.'}</p>
+
+          <label>{myRole === 'client' ? 'Freelancer' : 'Client'}</label>
           {freelancerId ? (
             <div className="selected-freelancer">
-              <span>✅ Freelancer selected</span>
+              <span>✅ {myRole === 'client' ? 'Freelancer' : 'Client'} selected</span>
               <button type="button" onClick={() => { setFreelancerId(''); setFreelancerSearch(''); }}>Change</button>
             </div>
           ) : (

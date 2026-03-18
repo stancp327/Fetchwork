@@ -140,9 +140,14 @@ async function expireStalePending(ids) {
 // POST /api/contracts — create a contract
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { template, title, freelancerId, jobId, terms, customFields } = req.body;
+    const { template, title, freelancerId, myRole, jobId, terms, customFields } = req.body;
 
     if (!freelancerId) return res.status(400).json({ error: 'freelancerId required' });
+
+    // myRole tells us if the current user is the client or freelancer
+    // Default: current user = client, otherParty = freelancer
+    const clientId    = myRole === 'freelancer' ? freelancerId : req.user._id;
+    const freelancer_ = myRole === 'freelancer' ? req.user._id : freelancerId;
     if (!title) return res.status(400).json({ error: 'title required' });
 
     const tmpl = TEMPLATES[template] || TEMPLATES.standard_service;
@@ -152,8 +157,8 @@ router.post('/', authenticateToken, async (req, res) => {
     if (terms) {
       const User = require('../models/User');
       const [client, freelancer] = await Promise.all([
-        User.findById(req.user._id).select('firstName lastName'),
-        User.findById(freelancerId).select('firstName lastName'),
+        User.findById(clientId).select('firstName lastName'),
+        User.findById(freelancer_).select('firstName lastName'),
       ]);
       const vars = {
         clientName: client ? `${client.firstName} ${client.lastName}` : 'Client',
@@ -173,8 +178,8 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     const contract = new Contract({
-      client: req.user._id,
-      freelancer: freelancerId,
+      client: clientId,
+      freelancer: freelancer_,
       job: jobId || undefined,
       team: req.body.teamId || undefined,
       template: template || 'standard_service',
@@ -444,6 +449,9 @@ router.post('/:id/ai-generate', authenticateToken, async (req, res) => {
     res.json({ content: generatedContent, message: 'Contract generated successfully' });
   } catch (err) {
     console.error('Error generating contract with AI:', err);
+    if (err?.code === 'insufficient_quota' || err?.error?.code === 'insufficient_quota') {
+      return res.status(503).json({ error: 'AI generation is temporarily unavailable. You can still create the contract manually.' });
+    }
     res.status(500).json({ error: 'Failed to generate contract' });
   }
 });
