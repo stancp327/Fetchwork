@@ -259,6 +259,7 @@ const Messages = () => {
 
   // ── Derived callbacks ──────────────────────────────────────────
   const openConversation = useCallback(async (convo) => {
+    isInitialScrollRef.current = true; // reset so next load jumps instantly
     const updated = await msgHook.fetchMessages(convo);
     if (updated) {
       setSelectedConvo(updated);
@@ -361,7 +362,8 @@ const Messages = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationSearch, convoHook.conversations]);
 
-  // Auto-scroll
+  // Auto-scroll — instant on initial load, smooth only for new messages
+  const isInitialScrollRef = useRef(true);
   useEffect(() => {
     const el = chatMessagesRef.current;
     if (!el) return;
@@ -370,6 +372,13 @@ const Messages = () => {
     const appended = currLen > prevLen;
     prevMessagesLenRef.current = currLen;
     if (!appended) return;
+
+    if (isInitialScrollRef.current) {
+      // Jump instantly to bottom on first load — no animation
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+      isInitialScrollRef.current = false;
+      return;
+    }
     const last = msgHook.messages[currLen - 1];
     const lastSenderId = String(getEntityId(last?.sender?._id || last?.sender));
     const isMine = lastSenderId === String(userId);
@@ -408,7 +417,7 @@ const Messages = () => {
         </div>
       )}
 
-      <div className="messages-layout">
+      <div className={`messages-layout${showContext && selectedConvo ? ' context-open' : ''}`}>
         {/* ── Inbox ── */}
         <div className={`messages-inbox ${mobileView === 'inbox' ? 'mobile-show' : 'mobile-hide'}`}>
           <div className="inbox-filters">
@@ -816,6 +825,7 @@ const Messages = () => {
                   if (otherId) params.set('freelancerId', String(otherId));
                   const jobId = selectedConvo?.job?._id || selectedConvo?.job;
                   if (jobId) params.set('jobId', String(jobId));
+                  if (selectedConvo?._id) params.set('conversationId', String(selectedConvo._id));
                   navigate(`/contracts/new?${params.toString()}`);
                 }}>📄 Contract</button>
                 <button

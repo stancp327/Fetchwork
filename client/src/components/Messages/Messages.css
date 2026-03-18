@@ -136,7 +136,12 @@
 
 .convo-item:hover { background: var(--color-bg-subtle); }
 .convo-item.selected { background: var(--color-primary-light); }
-.convo-item.unread { background: var(--color-unread-bg); }
+.convo-item.unread {
+  background: #eef6ff;
+  border-left: 3px solid #6366f1;
+}
+.convo-item.unread .convo-name { font-weight: 700; color: #1e1b4b; }
+.convo-item.unread .convo-preview { color: #374151; font-weight: 500; }
 
 .convo-avatar {
   position: relative; /* needed for avatar-online-badge absolute positioning */
@@ -509,6 +514,10 @@
   }
   .messages-layout {
     grid-template-columns: 320px 1fr 280px;
+  }
+  /* Collapse the 3rd column when context panel is closed */
+  .messages-layout:not(.context-open) {
+    grid-template-columns: 320px 1fr;
   }
 }
 

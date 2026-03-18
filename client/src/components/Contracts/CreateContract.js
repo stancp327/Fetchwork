@@ -23,6 +23,7 @@ const CreateContract = () => {
   const [searchParams] = useSearchParams();
   const prefillFreelancer = searchParams.get('freelancerId');
   const prefillJob = searchParams.get('jobId');
+  const conversationId = searchParams.get('conversationId');
   const { hasFeature } = useFeatures();
   const canAI = hasFeature('ai_job_description');
 
@@ -116,6 +117,13 @@ const CreateContract = () => {
           tools,
         }),
       });
+      // Notify conversation
+      if (conversationId) {
+        apiRequest(`/api/messages/${conversationId}`, {
+          method: 'POST',
+          body: JSON.stringify({ content: `📄 Contract shared: **${title || 'Service Agreement'}** — [View Contract](/contracts/${contract._id})` }),
+        }).catch(() => {});
+      }
       // Now AI-generate the content
       const generated = await apiRequest(`/api/contracts/${contract._id}/ai-generate`, { method: 'POST' });
       setCreatedContractId(contract._id);
@@ -144,6 +152,13 @@ const CreateContract = () => {
           tools,
         }),
       });
+      // Notify the conversation that a contract was shared
+      if (conversationId) {
+        apiRequest(`/api/messages/${conversationId}`, {
+          method: 'POST',
+          body: JSON.stringify({ content: `📄 Contract shared: **${title || 'Service Agreement'}** — [View Contract](/contracts/${contract._id})` }),
+        }).catch(() => {});
+      }
       navigate(`/contracts/${contract._id}`);
     } catch (err) {
       alert(err.message || 'Failed to create contract');
