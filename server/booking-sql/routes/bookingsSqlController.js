@@ -10,6 +10,8 @@ const { AuditService } = require('../services/AuditService');
 const { BookingRepo } = require('../repos/BookingRepo');
 
 const { BookingNotificationService } = require('../services/BookingNotificationService');
+const { notifyUser: smsNotify, SMS: smsTemplates } = require('../../services/smsService');
+const UserModel = require('../../models/User');
 
 const bookingService    = new BookingService();
 const slotEngine        = new SlotEngine();
@@ -202,12 +204,10 @@ async function cancelBookingSql(req, res) {
 
       // SMS: notify the other party of cancellation
       try {
-        const { notifyUser: smsSend, SMS: smsT } = require('../../services/smsService');
-        const User = require('../../models/User');
         const cancellerName = cancelledBy === 'client' ? 'The client' : 'The freelancer';
         const notifyId = cancelledBy === 'client' ? booking.freelancerId : booking.clientId;
-        const otherParty = await User.findById(notifyId).select('phone preferences');
-        if (otherParty) smsSend(otherParty, 'bookingReminders', smsT.bookingCancelled('your session', cancellerName)).catch(() => {});
+        const otherParty = await UserModel.findById(notifyId).select('phone preferences');
+        if (otherParty) smsNotify(otherParty, 'bookingReminders', smsTemplates.bookingCancelled('your session', cancellerName)).catch(() => {});
       } catch (_) {}
     }
   }

@@ -46,12 +46,37 @@ const sendSMS = async (to, body) => {
  * @param {string} category — one of: messages | bookingReminders | payments | proposals | disputes | marketing
  * @param {string} body     — message text
  */
+// Per-recipient rate limit: max 1 SMS per category per 5 minutes
+const _rateLimitMap = new Map(); // key: `${userId}:${category}` → timestamp
+const RATE_LIMIT_MS = 5 * 60 * 1000;
+
 const notifyUser = async (user, category, body) => {
   if (!user?.phone) return false;
   const prefs = user.preferences || {};
   if (!prefs.smsNotifications) return false;
   const optIn = prefs.smsOptIn || {};
-  if (optIn[category] === false) return false; // explicitly opted out
+
+  // Marketing requires explicit opt-in (TCPA compliance)
+  if (category === 'marketing') {
+    if (optIn.marketing !== true) return false;
+  } else {
+    if (optIn[category] === false) return false; // explicit opt-out for other categories
+  }
+
+  // Rate limit: don't send same category SMS to same user within 5 minutes
+  const rateKey = `${String(user._id)}:${category}`;
+  const lastSent = _rateLimitMap.get(rateKey) || 0;
+  if (Date.now() - lastSent < RATE_LIMIT_MS) return false;
+  _rateLimitMap.set(rateKey, Date.now());
+
+  // Clean up old entries periodically (prevent memory leak)
+  if (_rateLimitMap.size > 10000) {
+    const cutoff = Date.now() - RATE_LIMIT_MS;
+    for (const [k, v] of _rateLimitMap) {
+      if (v < cutoff) _rateLimitMap.delete(k);
+    }
+  }
+
   return sendSMS(user.phone, body);
 };
 

@@ -10,6 +10,7 @@ const { checkJobLimit } = require('../middleware/entitlements');
 const { uploadJobAttachments } = require('../middleware/upload');
 const { geocode, nearSphereQuery } = require('../config/geocoding');
 const { escapeRegex } = require('../utils/sanitize');
+const { notifyUser: smsNotify, SMS: smsTemplates } = require('../services/smsService');
 const { trackEvent } = require('../middleware/analytics');
 const { notify } = require('../services/notificationService');
 const User = require('../models/User');
@@ -739,10 +740,7 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
     }
 
     // SMS: notify job owner of new proposal
-    try {
-      const { notifyUser: smsSend, SMS: smsT } = require('../services/smsService');
-      if (client) smsSend(client, 'proposals', smsT.proposalReceived(job.title)).catch(() => {});
-    } catch (_) {}
+    if (client) smsNotify(client, 'proposals', smsTemplates.proposalReceived(job.title)).catch(() => {});
 
     trackEvent('proposalsSent');
     res.status(201).json({
@@ -802,10 +800,9 @@ router.post('/:id/proposals/:proposalId/accept', authenticateToken, validateMong
 
     // SMS: notify freelancer their proposal was accepted
     try {
-      const { notifyUser: smsSend, SMS: smsT } = require('../services/smsService');
       const User = require('../models/User');
       const freelancer = await User.findById(proposal.freelancer).select('phone preferences');
-      if (freelancer) smsSend(freelancer, 'proposals', smsT.proposalAccepted(job.title)).catch(() => {});
+      if (freelancer) smsNotify(freelancer, 'proposals', smsTemplates.proposalAccepted(job.title)).catch(() => {});
     } catch (_) {}
 
     res.json({

@@ -355,7 +355,15 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
     if (req.body.preferences) {
       const p = req.body.preferences;
       if (!user.preferences) user.preferences = {};
-      if (p.smsNotifications !== undefined) user.preferences.smsNotifications = !!p.smsNotifications;
+      if (p.smsNotifications !== undefined) {
+        const wasOff = !user.preferences.smsNotifications;
+        user.preferences.smsNotifications = !!p.smsNotifications;
+        // Record consent timestamp when user first enables SMS (TCPA compliance)
+        if (wasOff && user.preferences.smsNotifications && !user.preferences.smsConsentAt) {
+          user.preferences.smsConsentAt = new Date();
+        }
+        user.markModified('preferences');
+      }
       if (p.smsOptIn && typeof p.smsOptIn === 'object') {
         if (!user.preferences.smsOptIn) user.preferences.smsOptIn = {};
         const allowed = ['messages', 'bookingReminders', 'payments', 'proposals', 'disputes', 'marketing'];
@@ -379,6 +387,12 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
       if (req.body[field] !== undefined) {
         if (field === 'socialLinks' && typeof req.body[field] === 'object') {
           user[field] = { ...user[field], ...req.body[field] };
+        } else if (field === 'phone') {
+          // Normalize to E.164 server-side
+          let ph = String(req.body.phone || '').replace(/[\s\-().]/g, '');
+          if (ph && !ph.startsWith('+')) ph = '+1' + ph;
+          if (ph && !/^\+[1-9]\d{7,14}$/.test(ph)) ph = ''; // reject invalid
+          user.phone = ph;
         } else {
           user[field] = req.body[field];
         }

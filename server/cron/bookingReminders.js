@@ -39,7 +39,7 @@ const sendBookingReminders = async () => {
 
     const occurrences = await db.bookingOccurrence.findMany({
       where: {
-        localStartWallclock: { gte: windowStart.toISOString(), lte: windowEnd.toISOString() },
+        startAtUtc: { gte: windowStart, lte: windowEnd }, // UTC DateTime — timezone-correct
         status: 'confirmed',
         [sentField]: false, // haven't sent this reminder yet
       },
