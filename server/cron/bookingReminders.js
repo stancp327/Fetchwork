@@ -17,11 +17,23 @@ const sendBookingReminders = async () => {
   // Find occurrences starting in 23h45m–24h15m (24h window)
   // and 45m–1h15m (1h window)
   const windows = [
-    { label: '24h', ms: WINDOW_24H, template: SMS.bookingReminder24h },
-    { label: '1h',  ms: WINDOW_1H,  template: SMS.bookingReminder1h  },
+    {
+      label:       '24h',
+      ms:          WINDOW_24H,
+      sentField:   'smsReminder24hSent',
+      template:    SMS.bookingReminder24h,
+      getTimeStr:  (occ) => occ.localStartWallclock?.split('T')[0] || '',
+    },
+    {
+      label:       '1h',
+      ms:          WINDOW_1H,
+      sentField:   'smsReminder1hSent',
+      template:    SMS.bookingReminder1h,
+      getTimeStr:  (occ) => occ.localStartWallclock?.split('T')[1]?.slice(0, 5) || '',
+    },
   ];
 
-  for (const { label, ms, template } of windows) {
+  for (const { ms, sentField, template, getTimeStr } of windows) {
     const windowStart = new Date(now + ms - BUFFER);
     const windowEnd   = new Date(now + ms + BUFFER);
 
@@ -29,7 +41,7 @@ const sendBookingReminders = async () => {
       where: {
         localStartWallclock: { gte: windowStart.toISOString(), lte: windowEnd.toISOString() },
         status: 'confirmed',
-        smsReminderSent: { not: label }, // avoid duplicate sends
+        [sentField]: false, // haven't sent this reminder yet
       },
       include: { booking: true },
       take: 200,
@@ -38,27 +50,24 @@ const sendBookingReminders = async () => {
     for (const occ of occurrences) {
       try {
         const { booking } = occ;
-        const dateStr = occ.localStartWallclock?.split('T')[0] || '';
-        const timeStr = occ.localStartWallclock?.split('T')[1]?.slice(0, 5) || '';
+        const timeStr = getTimeStr(occ);
 
         const [client, freelancer] = await Promise.all([
           User.findById(booking.clientId).select('phone preferences firstName'),
           User.findById(booking.freelancerId).select('phone preferences firstName'),
         ]);
 
-        const msg = label === '24h'
-          ? template('your upcoming session', dateStr)
-          : template('your upcoming session', timeStr);
+        const msg = template('your upcoming session', timeStr);
 
         await Promise.all([
           client     ? notifyUser(client,     'bookingReminders', msg) : null,
           freelancer ? notifyUser(freelancer,  'bookingReminders', msg) : null,
         ]);
 
-        // Mark reminder sent to avoid duplicates
+        // Mark this specific reminder as sent
         await db.bookingOccurrence.update({
           where: { id: occ.id },
-          data:  { smsReminderSent: label },
+          data:  { [sentField]: true },
         });
       } catch (err) {
         console.error('[bookingReminders] occurrence', occ.id, err.message);

@@ -199,6 +199,16 @@ async function cancelBookingSql(req, res) {
         serviceTitle: 'Service',
         reason:       req.body?.reason || '',
       }).catch(() => {});
+
+      // SMS: notify the other party of cancellation
+      try {
+        const { notifyUser: smsSend, SMS: smsT } = require('../../services/smsService');
+        const User = require('../../models/User');
+        const cancellerName = cancelledBy === 'client' ? 'The client' : 'The freelancer';
+        const notifyId = cancelledBy === 'client' ? booking.freelancerId : booking.clientId;
+        const otherParty = await User.findById(notifyId).select('phone preferences');
+        if (otherParty) smsSend(otherParty, 'bookingReminders', smsT.bookingCancelled('your session', cancellerName)).catch(() => {});
+      } catch (_) {}
     }
   }
 

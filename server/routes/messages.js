@@ -48,9 +48,12 @@ const emitRealtimeDirectMessage = ({ conversation, message, senderId, recipientI
   io.to(senderRoom).emit('conversation:update', { conversation });
   io.to(recipientRoom).emit('conversation:update', { conversation });
 
-  // SMS notification to recipient if they're not online
-  const onlineUsers = global.onlineUsers || new Set();
-  if (!onlineUsers.has(String(recipientId))) {
+  // SMS notification: only if recipient's socket is not in the active rooms for this conversation
+  const io = global.io;
+  const recipientSocketActive = io
+    ? (io.sockets?.adapter?.rooms?.get(String(recipientId))?.size || 0) > 0
+    : false;
+  if (!recipientSocketActive) {
     User.findById(recipientId).select('phone preferences firstName').then(recipient => {
       if (!recipient) return;
       User.findById(senderId).select('firstName lastName').then(sender => {

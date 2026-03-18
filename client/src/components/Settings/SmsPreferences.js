@@ -30,10 +30,11 @@ const SmsPreferences = () => {
   const toggle = (key) => setOptIn(prev => ({ ...prev, [key]: !prev[key] }));
 
   const save = async () => {
-    // Basic E.164 format check
-    const cleaned = phone.replace(/\s/g, '');
-    if (cleaned && !/^\+?[1-9]\d{7,14}$/.test(cleaned)) {
-      setError('Enter a valid phone number, e.g. +14155551234');
+    // Normalize to E.164: strip spaces/dashes/parens, add + if missing
+    let cleaned = phone.replace(/[\s\-().]/g, '');
+    if (cleaned && !cleaned.startsWith('+')) cleaned = '+1' + cleaned; // default to US if no country code
+    if (cleaned && !/^\+[1-9]\d{7,14}$/.test(cleaned)) {
+      setError('Enter a valid phone number, e.g. +1 415 555 1234');
       return;
     }
     setError('');
