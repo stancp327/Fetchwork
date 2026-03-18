@@ -70,7 +70,7 @@ function configurePassport() {
     passport.use(new FacebookStrategy({
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: "/api/auth/facebook/callback",
+      callbackURL: `${process.env.API_URL || 'https://fetchwork-1.onrender.com'}/api/auth/facebook/callback`,
       profileFields: ['id', 'emails', 'name']
     }, async (accessToken, refreshToken, profile, done) => {
       try {
