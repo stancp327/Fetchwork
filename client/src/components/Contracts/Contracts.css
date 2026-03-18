@@ -311,3 +311,75 @@
 .contract-role-toggle { display: flex; gap: 0.75rem; margin-bottom: 0.25rem; flex-wrap: wrap; }
 .contract-role-btn { padding: 0.5rem 1rem; border: 2px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.9rem; transition: all 0.15s; }
 .contract-role-btn.active { border-color: #6366f1; background: #eef2ff; color: #4f46e5; font-weight: 600; }
+
+/* -- Contract Document View -- */
+.contract-doc-wrapper {
+  max-width: 860px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.contract-doc {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.contract-doc-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  padding: 2rem 2.5rem 1.5rem;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.contract-doc-brand { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.05em; opacity: 0.9; }
+.contract-doc-title { font-size: 1.6rem; font-weight: 700; margin: 0.25rem 0 0; }
+.contract-doc-status-badge {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.contract-doc-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.contract-doc-party {
+  padding: 1.25rem 2.5rem;
+  background: #f9fafb;
+}
+
+.contract-doc-party:first-child { border-right: 1px solid #e5e7eb; }
+.contract-doc-party-role { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #6366f1; margin-bottom: 0.25rem; }
+.contract-doc-party-name { font-size: 1.05rem; font-weight: 600; color: #111827; }
+
+.contract-content {
+  padding: 2.5rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #1f2937;
+}
+
+.cd-h1 { font-size: 1.4rem; font-weight: 700; margin: 2rem 0 0.75rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+.cd-h2 { font-size: 1.15rem; font-weight: 700; margin: 1.75rem 0 0.5rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem; }
+.cd-h2::before { content: ''; display: inline-block; width: 4px; height: 1em; background: #6366f1; border-radius: 2px; flex-shrink: 0; }
+.cd-h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.35rem; color: #374151; }
+.cd-p { margin: 0.75rem 0; }
+.cd-ul { margin: 0.5rem 0 0.5rem 1.5rem; }
+.cd-li { margin: 0.3rem 0; }

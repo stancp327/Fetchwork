@@ -5,6 +5,21 @@ import { useAuth } from '../../context/AuthContext';
 import SEO from '../common/SEO';
 import './Contracts.css';
 
+// Render contract markdown to styled HTML (order matters: headings before newlines)
+function renderContractMarkdown(text = '') {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^# (.+)$/gm,   '<h1 class="cd-h1">$1</h1>')
+    .replace(/^## (.+)$/gm,  '<h2 class="cd-h2">$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3 class="cd-h3">$1</h3>')
+    .replace(/^- (.+)$/gm,   '<li class="cd-li">$1</li>')
+    .replace(/(<li class="cd-li">.*<\/li>\n?)+/g, s => `<ul class="cd-ul">${s}</ul>`)
+    .replace(/\n{2,}/g, '</p><p class="cd-p">')
+    .replace(/\n/g, '<br>')
+    .replace(/^(?!<[hup])(.+)/, '<p class="cd-p">$1')
+    + '</p>';
+}
+
 const ContractDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -183,32 +198,30 @@ const ContractDetail = () => {
       <SEO title={contract.title} noIndex />
       <button className="contract-back-btn" onClick={() => navigate('/contracts')}>← Back to Contracts</button>
 
-      <div className="contract-detail-card">
-        <div className="contract-detail-header">
-          <h1>{contract.title}</h1>
-          <span className={`contract-status-pill ${contract.status}`}>{contract.status}</span>
+      <div className="contract-doc">
+        {/* Document Header */}
+        <div className="contract-doc-header">
+          <div>
+            <div className="contract-doc-brand">⚡ Fetchwork</div>
+            <h1 className="contract-doc-title">{contract.title}</h1>
+          </div>
+          <span className={`contract-doc-status-badge ${contract.status}`}>{contract.status}</span>
         </div>
 
-        <div className="contract-parties">
-          <div className="contract-party">
-            <label>Client</label>
-            <span>{contract.client?.firstName} {contract.client?.lastName}</span>
+        {/* Parties */}
+        <div className="contract-doc-parties">
+          <div className="contract-doc-party">
+            <div className="contract-doc-party-role">Client</div>
+            <div className="contract-doc-party-name">{contract.client?.firstName} {contract.client?.lastName}</div>
           </div>
-          <div className="contract-party">
-            <label>Freelancer</label>
-            <span>{contract.freelancer?.firstName} {contract.freelancer?.lastName}</span>
+          <div className="contract-doc-party">
+            <div className="contract-doc-party-role">Freelancer</div>
+            <div className="contract-doc-party-name">{contract.freelancer?.firstName} {contract.freelancer?.lastName}</div>
           </div>
-          {contract.job && (
-            <div className="contract-party">
-              <label>Job</label>
-              <span>{contract.job.title}</span>
-            </div>
-          )}
         </div>
 
-        <div className="contract-content" dangerouslySetInnerHTML={{
-          __html: contract.content?.replace(/\n/g, '<br>').replace(/^# (.*)/gm, '<h2>$1</h2>').replace(/^## (.*)/gm, '<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        }} />
+        {/* Contract Body */}
+        <div className="contract-content" dangerouslySetInnerHTML={{ __html: renderContractMarkdown(contract.content) }} />
 
         {/* AI Plain English Summary */}
         <div className="cd-ai-sum-wrap">
