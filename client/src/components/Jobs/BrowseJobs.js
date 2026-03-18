@@ -261,14 +261,16 @@ const BrowseJobs = () => {
           )}
         </div>
 
-        <ResultsControls
-          total={pagination.total || 0}
-          sortValue={filters.sortBy}
-          onSortChange={v => updateFilter('sortBy', v)}
-          sortOptions={filters.near ? [DISTANCE_SORT, ...BASE_SORT_OPTIONS] : BASE_SORT_OPTIONS}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
+        {!loading && (
+          <ResultsControls
+            total={pagination.total || 0}
+            sortValue={filters.sortBy}
+            onSortChange={v => updateFilter('sortBy', v)}
+            sortOptions={filters.near ? [DISTANCE_SORT, ...BASE_SORT_OPTIONS] : BASE_SORT_OPTIONS}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
+        )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
           <button
             onClick={() => setShowSaveSearch(true)}
