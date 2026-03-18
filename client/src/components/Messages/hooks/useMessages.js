@@ -53,6 +53,10 @@ export default function useMessages({ userId, user, selectedConvoRef, socketRef,
     const content = newMessage.trim();
     const hasFiles = attachFiles.length > 0;
     const requestId = (window.crypto?.randomUUID?.() || `req-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    // Create blob URLs for optimistic preview — track them so we can revoke after upload
+    const blobUrls = hasFiles
+      ? attachFiles.map(f => URL.createObjectURL(f))
+      : [];
     const optimistic = {
       _id: `temp-${Date.now()}`,
       requestId,
@@ -61,7 +65,7 @@ export default function useMessages({ userId, user, selectedConvoRef, socketRef,
       createdAt: new Date().toISOString(),
       isRead: false,
       conversation: selectedConvo._id,
-      attachments: attachFiles.map(f => ({ filename: f.name, url: URL.createObjectURL(f), size: f.size, mimeType: f.type }))
+      attachments: attachFiles.map((f, i) => ({ filename: f.name, url: blobUrls[i], size: f.size, mimeType: f.type }))
     };
     setMessages(prev => [...prev, optimistic]);
     setNewMessage('');
@@ -77,6 +81,8 @@ export default function useMessages({ userId, user, selectedConvoRef, socketRef,
           `/api/messages/conversations/${selectedConvo._id}/messages/upload`,
           { method: 'POST', body: formData }
         );
+        // Revoke blob URLs — real URLs are in the server response
+        blobUrls.forEach(url => URL.revokeObjectURL(url));
         // Update messages locally from response — no fetchMessages needed
         setMessages(prev => prev.map(m => m._id === optimistic._id ? data.data : m));
         if (data.warning) setOffPlatformWarning(data.warning);
@@ -91,6 +97,8 @@ export default function useMessages({ userId, user, selectedConvoRef, socketRef,
       }
       // Socket echo will handle conversation list update
     } catch (err) {
+      // Revoke any blob URLs on failure (the optimistic message is being removed)
+      blobUrls.forEach(url => URL.revokeObjectURL(url));
       if (err?.status === 422 || err?.error === 'off_platform_detected') {
         setOffPlatformWarning(err?.message || '🚫 Message blocked: asking to work or pay outside Fetchwork is not allowed.');
         setMessages(prev => prev.filter(m => m._id !== optimistic._id));

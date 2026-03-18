@@ -971,3 +971,143 @@
   border-radius: 2px;
   padding: 0 1px;
 }
+
+
+/* -- Appointment Card ------------------------------------------- */
+.appt-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 6px;
+  background: var(--color-bg-primary);
+  max-width: 520px;
+}
+.appt-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.appt-card-title { font-weight: 700; }
+.appt-card-status { font-size: 12px; color: var(--color-text-muted); }
+.appt-card-body { margin-top: 6px; font-size: 14px; }
+.appt-card-body > div { margin-bottom: 2px; }
+.appt-card-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.appt-card-waiting { font-size: 13px; color: var(--color-text-muted); }
+.appt-card-edit { margin-top: 10px; }
+.appt-card-loading { margin-top: 8px; font-size: 13px; color: var(--color-text-muted); }
+
+/* -- Payment Request Card -------------------------------------- */
+.pr-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
+  background: var(--color-bg-primary);
+  max-width: 480px;
+}
+.pr-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.pr-card-title { font-weight: 700; }
+.pr-card-status { font-size: 12px; font-weight: 600; }
+.pr-card-status--pending { color: var(--color-warning); }
+.pr-card-status--paid    { color: var(--color-success); }
+.pr-card-status--cancelled { color: var(--color-text-muted); }
+.pr-card-body { margin-top: 6px; font-size: 14px; }
+.pr-card-amount { font-size: 22px; font-weight: 800; color: var(--color-text-darker); }
+.pr-card-desc { color: var(--color-text-secondary); margin-top: 2px; }
+.pr-card-type { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+.pr-card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.pr-card-awaiting { font-size: 13px; color: var(--color-text-muted); }
+.pr-card-paid { margin-top: 8px; color: var(--color-success); font-size: 13px; font-weight: 600; }
+.pr-card-loading { margin-top: 8px; font-size: 13px; color: var(--color-text-muted); }
+
+/* -- Offer Card ------------------------------------------------ */
+.offer-card {
+  border: 2px solid var(--color-primary);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 8px;
+  background: var(--color-bg-primary);
+  max-width: 420px;
+}
+.offer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.offer-card-title { font-weight: 700; }
+.offer-card-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+.offer-card-badge--pending  { background: #eff6ff; color: #1d4ed8; }
+.offer-card-badge--accepted { background: #dcfce7; color: #166534; }
+.offer-card-badge--declined { background: #fee2e2; color: #991b1b; }
+.offer-card-badge--countered { background: #fef3c7; color: #92400e; }
+.offer-card-body { margin-top: 10px; }
+.offer-card-amount { font-size: 22px; font-weight: 800; color: var(--color-text-darker); }
+.offer-card-desc { color: var(--color-text-secondary); margin-top: 2px; font-size: 14px; }
+.offer-card-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.offer-card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+/* -- Context Panel --------------------------------------------- */
+.ctx-stars { color: #f59e0b; font-size: 14px; }
+.ctx-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  justify-content: center;
+}
+.ctx-rating-val { font-weight: 700; font-size: 14px; }
+.ctx-rating-count { font-size: 12px; color: var(--color-text-muted); }
+.ctx-stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.ctx-stat { text-align: center; }
+.ctx-stat-val { font-weight: 700; font-size: 15px; }
+.ctx-stat-label { font-size: 11px; color: var(--color-text-muted); }
+.ctx-bio {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 10px;
+  line-height: 1.5;
+  text-align: left;
+}
+.ctx-skills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.ctx-skill-tag {
+  font-size: 11px;
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 2px 8px;
+  color: var(--color-text-medium);
+}
+.ctx-review-item + .ctx-review-item {
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.ctx-review-header { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.ctx-review-name { font-size: 12px; font-weight: 600; color: var(--color-text-darker); }
+.ctx-review-stars { color: #f59e0b; font-size: 12px; }
+.ctx-review-comment { font-size: 11px; color: var(--color-text-secondary); margin-top: 3px; line-height: 1.4; }

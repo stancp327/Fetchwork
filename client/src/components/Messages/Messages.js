@@ -55,6 +55,45 @@ const translateLanguages = [
   { code: 'ar', label: 'Arabic' }, { code: 'hi', label: 'Hindi' },
 ];
 
+// ── Search Result Item ───────────────────────────────────────────
+// Separate from ConvoItem: shows highlighted name, job title, and message snippets.
+const SearchResultItem = ({ convo, selected, userId, query, onClick }) => {
+  const other = convo.participants?.find(p => String(p._id) !== String(userId));
+  const name = `${other?.firstName || ''} ${other?.lastName || ''}`.trim();
+  return (
+    <div className={`convo-item ${selected ? 'selected' : ''}`} onClick={onClick}>
+      <div className="convo-avatar">
+        {other?.profilePicture
+          ? <img src={other.profilePicture} alt="" />
+          : <span>{other?.firstName?.[0]}{other?.lastName?.[0]}</span>}
+      </div>
+      <div className="convo-info">
+        <div className="convo-top">
+          <span className="convo-name"><Highlight text={name} query={query} /></span>
+        </div>
+        {convo.job?.title && (
+          <div className="convo-job"><Highlight text={`📋 ${convo.job.title}`} query={query} /></div>
+        )}
+        {convo.matchedMessages?.map((m, i) => {
+          const clean = (m.content || '')
+            .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
+            .replace(/\s*\[offer:[a-fA-F0-9]{24}\]/g, '')
+            .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
+            .trim();
+          const idx = clean.toLowerCase().indexOf(query.toLowerCase());
+          const start = Math.max(0, idx - 30);
+          const snippet = (start > 0 ? '…' : '') + clean.slice(start, start + 100) + (clean.length > start + 100 ? '…' : '');
+          return (
+            <div key={i} className="convo-preview">
+              <Highlight text={snippet} query={query} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ── Main Component ───────────────────────────────────────────────
 const Messages = () => {
   const { user } = useAuth();
@@ -228,27 +267,36 @@ const Messages = () => {
       type,
       conversationId: selectedConvo?._id,
     });
+
+    const socket = socketRef.current;
+
     const handler = ({ callId }) => {
       window.dispatchEvent(new CustomEvent('fetchwork:start-call', {
         detail: { callId, remoteUser: recipient, type },
       }));
-      socketRef.current.off('call:initiated', handler);
+      cleanup();
     };
-    socketRef.current.on('call:initiated', handler);
     const gateHandler = ({ type: callType, message }) => {
       setCallGateModal({ type: callType, message });
-      socketRef.current.off('call:feature-gated', gateHandler);
+      cleanup();
     };
-    socketRef.current.on('call:feature-gated', gateHandler);
     const errHandler = ({ message }) => {
       alert(message || 'Could not start call');
-      socketRef.current.off('call:error', errHandler);
+      cleanup();
     };
-    socketRef.current.on('call:error', errHandler);
-    setTimeout(() => {
-      socketRef.current.off('call:error', errHandler);
-      socketRef.current.off('call:feature-gated', gateHandler);
-    }, 5000);
+
+    const cleanup = () => {
+      socket.off('call:initiated', handler);
+      socket.off('call:feature-gated', gateHandler);
+      socket.off('call:error', errHandler);
+    };
+
+    socket.on('call:initiated', handler);
+    socket.on('call:feature-gated', gateHandler);
+    socket.on('call:error', errHandler);
+
+    // Hard timeout — remove all listeners if no response within 8s
+    setTimeout(cleanup, 8000);
   }, [socketRef, selectedConvo]);
 
   // ── Side effects ───────────────────────────────────────────────
@@ -361,46 +409,16 @@ const Messages = () => {
               ) : convoHook.searchResults.length === 0 ? (
                 <div className="inbox-empty"><p>No results for "{convoHook.search}"</p></div>
               ) : (
-                convoHook.searchResults.map(c => {
-                  const other = c.participants?.find(p => String(p._id) !== String(userId));
-                  const name = `${other?.firstName || ''} ${other?.lastName || ''}`.trim();
-                  return (
-                    <div
-                      key={c._id}
-                      className={`convo-item ${selectedConvo?._id === c._id ? 'selected' : ''}`}
-                      onClick={() => openConversation(c)}
-                    >
-                      <div className="convo-avatar">
-                        {other?.profilePicture
-                          ? <img src={other.profilePicture} alt="" />
-                          : <span>{other?.firstName?.[0]}{other?.lastName?.[0]}</span>}
-                      </div>
-                      <div className="convo-info">
-                        <div className="convo-top">
-                          <span className="convo-name"><Highlight text={name} query={convoHook.search} /></span>
-                        </div>
-                        {c.job?.title && (
-                          <div className="convo-job"><Highlight text={`📋 ${c.job.title}`} query={convoHook.search} /></div>
-                        )}
-                        {c.matchedMessages?.map((m, i) => {
-                          const clean = (m.content || '')
-                            .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
-                            .replace(/\s*\[offer:[a-fA-F0-9]{24}\]/g, '')
-                            .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
-                            .trim();
-                          const idx = clean.toLowerCase().indexOf(convoHook.search.toLowerCase());
-                          const start = Math.max(0, idx - 30);
-                          const snippet = (start > 0 ? '…' : '') + clean.slice(start, start + 100) + (clean.length > start + 100 ? '…' : '');
-                          return (
-                            <div key={i} className="convo-preview" style={{ marginTop: 2 }}>
-                              <Highlight text={snippet} query={convoHook.search} />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })
+                convoHook.searchResults.map(c => (
+                  <SearchResultItem
+                    key={c._id}
+                    convo={c}
+                    selected={selectedConvo?._id === c._id}
+                    userId={userId}
+                    query={convoHook.search}
+                    onClick={() => openConversation(c)}
+                  />
+                ))
               )
             ) : convoHook.filtered.length === 0 ? (
               <div className="inbox-empty">
@@ -517,25 +535,23 @@ const Messages = () => {
                         />
 
                         {apptId && (
-                          <div style={{ border: '1px solid var(--color-border)', borderRadius: 10, padding: 12, marginTop: 6, background: 'var(--color-bg-primary)', maxWidth: 520 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-                              <div style={{ fontWeight: 700 }}>Appointment</div>
-                              <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                                {appt?.status ? appt.status.toUpperCase() : '…'}
-                              </div>
+                          <div className="appt-card">
+                            <div className="appt-card-header">
+                              <div className="appt-card-title">Appointment</div>
+                              <div className="appt-card-status">{appt?.status ? appt.status.toUpperCase() : '…'}</div>
                             </div>
                             {appt ? (
                               <>
-                                <div style={{ marginTop: 6, fontSize: 14 }}>
+                                <div className="appt-card-body">
                                   <div><strong>When:</strong> {new Date(appt.startAtUtc).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</div>
                                   <div><strong>Duration:</strong> {Math.round((new Date(appt.endAtUtc).getTime() - new Date(appt.startAtUtc).getTime()) / 60000)} min</div>
                                   <div><strong>Type:</strong> {appt.appointmentType}</div>
-                                  {appt.notes && <div style={{ marginTop: 4 }}><strong>Notes:</strong> {appt.notes}</div>}
+                                  {appt.notes && <div><strong>Notes:</strong> {appt.notes}</div>}
                                 </div>
                                 {appt.status === 'proposed' && (
-                                  <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                                  <div className="appt-card-actions">
                                     {String(appt.proposedById) === String(userId) ? (
-                                      <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Waiting for approval…</div>
+                                      <div className="appt-card-waiting">Waiting for approval…</div>
                                     ) : (
                                       <>
                                         <button type="button" className="offer-btn-primary" disabled={schedHook.actingApptId === appt.id} onClick={() => schedHook.handleApptApprove(appt.id)}>Approve</button>
@@ -545,40 +561,40 @@ const Messages = () => {
                                   </div>
                                 )}
                                 {(appt.status === 'proposed' || appt.status === 'confirmed') && (
-                                  <div style={{ marginTop: appt.status === 'confirmed' ? 10 : 0 }}>
+                                  <div className="appt-card-edit">
                                     <button type="button" className="offer-btn-secondary" disabled={schedHook.actingApptId === appt.id} onClick={() => { schedHook.setEditingApptId(appt.id); schedHook.setShowScheduleModal(true); }}>✏️ Edit</button>
                                   </div>
                                 )}
                               </>
                             ) : (
-                              <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>Loading appointment…</div>
+                              <div className="appt-card-loading">Loading appointment…</div>
                             )}
                           </div>
                         )}
 
                         {/* Payment Request Card */}
                         {prId && (
-                          <div style={{ border: '1px solid var(--color-border)', borderRadius: 10, padding: 12, marginTop: 8, background: 'var(--color-bg-primary)', maxWidth: 480 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                              <div style={{ fontWeight: 700 }}>💳 Payment Request</div>
-                              <div style={{ fontSize: 12, color: pr?.status === 'paid' ? 'var(--color-success)' : pr?.status === 'cancelled' ? 'var(--color-text-muted)' : 'var(--color-warning)', fontWeight: 600 }}>
+                          <div className="pr-card">
+                            <div className="pr-card-header">
+                              <div className="pr-card-title">💳 Payment Request</div>
+                              <div className={`pr-card-status pr-card-status--${pr?.status || 'pending'}`}>
                                 {pr ? pr.status.toUpperCase() : '…'}
                               </div>
                             </div>
                             {pr ? (
                               <>
-                                <div style={{ marginTop: 6, fontSize: 14 }}>
-                                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-text-darker)' }}>${parseFloat(pr.amount).toFixed(2)}</div>
-                                  <div style={{ color: 'var(--color-text-secondary)', marginTop: 2 }}>{pr.description}</div>
-                                  <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                                <div className="pr-card-body">
+                                  <div className="pr-card-amount">${parseFloat(pr.amount).toFixed(2)}</div>
+                                  <div className="pr-card-desc">{pr.description}</div>
+                                  <div className="pr-card-type">
                                     {pr.type === 'service_rendered' ? 'Service rendered' : 'Additional funds'}
                                   </div>
                                 </div>
                                 {pr.status === 'pending' && (
-                                  <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                                  <div className="pr-card-actions">
                                     {String(getEntityId(pr.requestedById)) === String(userId) ? (
                                       <>
-                                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)', alignSelf: 'center' }}>Awaiting payment…</div>
+                                        <span className="pr-card-awaiting">Awaiting payment…</span>
                                         <button type="button" className="offer-btn-secondary" disabled={payHook.actingPrId === prId} onClick={() => payHook.handlePayCancel(prId)}>Cancel</button>
                                       </>
                                     ) : (
@@ -587,11 +603,11 @@ const Messages = () => {
                                   </div>
                                 )}
                                 {pr.status === 'paid' && (
-                                  <div style={{ marginTop: 8, color: 'var(--color-success)', fontSize: 13, fontWeight: 600 }}>✅ Paid {pr.paidAt ? `on ${new Date(pr.paidAt).toLocaleDateString()}` : ''}</div>
+                                  <div className="pr-card-paid">✅ Paid {pr.paidAt ? `on ${new Date(pr.paidAt).toLocaleDateString()}` : ''}</div>
                                 )}
                               </>
                             ) : (
-                              <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>Loading…</div>
+                              <div className="pr-card-loading">Loading…</div>
                             )}
                           </div>
                         )}
@@ -607,24 +623,24 @@ const Messages = () => {
                           const canAct = isRecipient && ['pending', 'countered'].includes(offer.status);
                           const canWithdraw = isSender && ['pending', 'countered'].includes(offer.status);
                           return (
-                            <div style={{ border: '2px solid var(--color-primary, #2563eb)', borderRadius: 12, padding: 14, marginTop: 8, background: 'var(--color-bg-primary)', maxWidth: 420 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                                <div style={{ fontWeight: 700 }}>📋 Custom Offer</div>
-                                <div style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 12, background: offer.status === 'accepted' ? '#dcfce7' : offer.status === 'declined' ? '#fee2e2' : offer.status === 'countered' ? '#fef3c7' : '#eff6ff', color: offer.status === 'accepted' ? '#166534' : offer.status === 'declined' ? '#991b1b' : offer.status === 'countered' ? '#92400e' : '#1d4ed8' }}>
+                            <div className="offer-card">
+                              <div className="offer-card-header">
+                                <div className="offer-card-title">📋 Custom Offer</div>
+                                <div className={`offer-card-badge offer-card-badge--${offer.status || 'pending'}`}>
                                   {offer.status?.toUpperCase()}
                                 </div>
                               </div>
-                              <div style={{ marginTop: 10 }}>
-                                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-text-darker)' }}>${parseFloat(offer.terms?.amount || 0).toFixed(2)}</div>
-                                <div style={{ color: 'var(--color-text-secondary)', marginTop: 2, fontSize: 14 }}>{offer.terms?.description}</div>
-                                <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                              <div className="offer-card-body">
+                                <div className="offer-card-amount">${parseFloat(offer.terms?.amount || 0).toFixed(2)}</div>
+                                <div className="offer-card-desc">{offer.terms?.description}</div>
+                                <div className="offer-card-meta">
                                   <span>⏱ {offer.terms?.deliveryTime} day{offer.terms?.deliveryTime !== 1 ? 's' : ''}</span>
                                   {offer.terms?.revisions > 0 && <span>✏️ {offer.terms.revisions} revision{offer.terms.revisions !== 1 ? 's' : ''}</span>}
                                   {offer.terms?.deadline && <span>📅 Due {new Date(offer.terms.deadline).toLocaleDateString()}</span>}
                                 </div>
                               </div>
                               {(canAct || canWithdraw) && (
-                                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                                <div className="offer-card-actions">
                                   {canAct && (
                                     <>
                                       <button className="offer-btn-primary" onClick={() => payHook.handleOfferAccept(offerId)}>Accept</button>
@@ -819,7 +835,7 @@ const Messages = () => {
                       <h2>📅 {schedHook.editingApptId ? 'Edit appointment' : 'Schedule'}</h2>
                       <button className="offer-modal-close" onClick={() => { schedHook.setShowScheduleModal(false); schedHook.setEditingApptId(null); }} disabled={schedHook.scheduleSaving}>✕</button>
                     </div>
-                    {schedHook.scheduleError && <div className="offer-error" style={{ marginBottom: '12px' }}>{schedHook.scheduleError}</div>}
+                    {schedHook.scheduleError && <div className="offer-error">{schedHook.scheduleError}</div>}
                     <form onSubmit={schedHook.handleScheduleSubmit} className="offer-form">
                       <div className="offer-form-row">
                         <div className="offer-field">
@@ -852,7 +868,7 @@ const Messages = () => {
                           </select>
                         </div>
                       </div>
-                      <div className="offer-field" style={{ marginTop: '8px' }}>
+                      <div className="offer-field">
                         <label>Notes</label>
                         <textarea rows={3} value={schedHook.scheduleNotes} onChange={e => schedHook.setScheduleNotes(e.target.value)} placeholder="Optional notes (address, agenda, call link, etc.)" disabled={schedHook.scheduleSaving} />
                       </div>
@@ -875,7 +891,7 @@ const Messages = () => {
                       <h2>💳 Request Payment</h2>
                       <button className="offer-modal-close" onClick={() => payHook.setShowPayModal(false)} disabled={payHook.paySaving}>✕</button>
                     </div>
-                    {payHook.payError && <div className="offer-error" style={{ marginBottom: 12 }}>{payHook.payError}</div>}
+                    {payHook.payError && <div className="offer-error">{payHook.payError}</div>}
                     <form className="offer-form" onSubmit={payHook.handlePaySubmit}>
                       <div className="offer-form-row">
                         <div className="offer-field">
@@ -935,57 +951,55 @@ const Messages = () => {
                   {otherParticipant?.firstName} {otherParticipant?.lastName}
                 </Link>
               </h4>
-              {contextProfileLoading && <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>Loading…</div>}
+              {contextProfileLoading && <div className="ctx-loading">Loading…</div>}
               {contextProfile && (
                 <>
                   {contextProfile.stats?.rating > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, justifyContent: 'center' }}>
-                      <span style={{ color: '#f59e0b', fontSize: 14 }}>{'★'.repeat(Math.round(contextProfile.stats.rating))}{'☆'.repeat(5 - Math.round(contextProfile.stats.rating))}</span>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>{contextProfile.stats.rating.toFixed(1)}</span>
-                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>({contextProfile.stats.totalReviews})</span>
+                    <div className="ctx-rating-row">
+                      <span className="ctx-stars">{'★'.repeat(Math.round(contextProfile.stats.rating))}{'☆'.repeat(5 - Math.round(contextProfile.stats.rating))}</span>
+                      <span className="ctx-rating-val">{contextProfile.stats.rating.toFixed(1)}</span>
+                      <span className="ctx-rating-count">({contextProfile.stats.totalReviews})</span>
                     </div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8, flexWrap: 'wrap' }}>
+                  <div className="ctx-stats-row">
                     {contextProfile.stats?.completedJobs > 0 && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{contextProfile.stats.completedJobs}</div>
-                        <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Jobs done</div>
+                      <div className="ctx-stat">
+                        <div className="ctx-stat-val">{contextProfile.stats.completedJobs}</div>
+                        <div className="ctx-stat-label">Jobs done</div>
                       </div>
                     )}
                     {contextProfile.freelancer?.memberSince && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{new Date(contextProfile.freelancer.memberSince).getFullYear()}</div>
-                        <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Member since</div>
+                      <div className="ctx-stat">
+                        <div className="ctx-stat-val">{new Date(contextProfile.freelancer.memberSince).getFullYear()}</div>
+                        <div className="ctx-stat-label">Member since</div>
                       </div>
                     )}
                   </div>
                   {contextProfile.freelancer?.bio && (
-                    <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 10, lineHeight: 1.5, textAlign: 'left' }}>
+                    <p className="ctx-bio">
                       {contextProfile.freelancer.bio.length > 180
                         ? contextProfile.freelancer.bio.slice(0, 180) + '…'
                         : contextProfile.freelancer.bio}
                     </p>
                   )}
                   {contextProfile.freelancer?.skills?.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                    <div className="ctx-skills">
                       {contextProfile.freelancer.skills.slice(0, 8).map((s, i) => (
-                        <span key={i} style={{ fontSize: 11, background: 'var(--color-bg-muted)', border: '1px solid var(--color-border)', borderRadius: 20, padding: '2px 8px', color: 'var(--color-text-medium)' }}>{s}</span>
+                        <span key={i} className="ctx-skill-tag">{s}</span>
                       ))}
                     </div>
                   )}
                   {contextProfile.reviews?.length > 0 && (
-                    <div className="context-section" style={{ marginTop: 16 }}>
+                    <div className="context-section">
                       <h4>Recent Reviews</h4>
                       {contextProfile.reviews.slice(0, 3).map((r, i) => (
-                        <div key={i} style={{ borderTop: i > 0 ? '1px solid var(--color-border)' : 'none', paddingTop: i > 0 ? 10 : 0, marginTop: i > 0 ? 10 : 0 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-darker)' }}>
-                              {r.reviewer?.firstName} {r.reviewer?.lastName?.slice(0, 1)}.
-                            </span>
-                            <span style={{ color: '#f59e0b', fontSize: 12 }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                        <div key={i} className="ctx-review-item">
+                          <div className="ctx-review-header">
+                            <span className="ctx-review-name">{r.reviewer?.firstName} {r.reviewer?.lastName?.slice(0, 1)}.</span>
+                            <span className="ctx-review-stars">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
                           </div>
                           {r.comment && (
-                            <p style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 3, lineHeight: 1.4 }}>
+                            <p className="ctx-review-comment">
                               {r.comment.length > 120 ? r.comment.slice(0, 120) + '…' : r.comment}
                             </p>
                           )}
@@ -995,7 +1009,7 @@ const Messages = () => {
                   )}
                 </>
               )}
-              <Link to={`/freelancers/${otherParticipant?._id}`} className="context-link" style={{ marginTop: 12, display: 'inline-block' }}>
+              <Link to={`/freelancers/${otherParticipant?._id}`} className="context-link">
                 View full profile →
               </Link>
             </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiRequest } from '../../../utils/api';
 import { getEntityId } from '../utils';
 
@@ -71,8 +71,8 @@ export default function useConversations(userId) {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Filter conversations (used when not in search mode)
-  const filtered = conversations.filter(c => {
+  // Memoized filter — only recomputes when conversations, filter, search, or userId change
+  const filtered = useMemo(() => conversations.filter(c => {
     if (filter === 'unread' && !c.unreadCount) return false;
     if (search) {
       const other = c.participants?.find(p => String(getEntityId(p?._id || p)) !== String(userId));
@@ -81,7 +81,7 @@ export default function useConversations(userId) {
       return name.includes(search.toLowerCase()) || jobTitle.includes(search.toLowerCase());
     }
     return true;
-  });
+  }), [conversations, filter, search, userId]);
 
   return {
     conversations,
