@@ -17,10 +17,7 @@ import useReceiptSync from './hooks/useReceiptSync';
 import useMessages from './hooks/useMessages';
 import useScheduling from './hooks/useScheduling';
 import usePayments from './hooks/usePayments';
-
-// ── Helpers ──────────────────────────────────────────────────────
-const getEntityId = (v) => (v && typeof v === 'object' ? (v._id || v.id || v.userId || v.toString?.()) : v);
-const idEq = (a, b) => String(getEntityId(a)) === String(getEntityId(b));
+import { getEntityId, idEq } from './utils';
 
 const extractAppointmentId = (content) => {
   if (!content || typeof content !== 'string') return null;
@@ -96,6 +93,10 @@ const Messages = () => {
   useEffect(() => { userIdRef.current = userId; }, [userId]);
 
   // ── Hooks ──────────────────────────────────────────────────────
+  // Pre-declare socketRef so useMessages and useSocket share the same ref object.
+  // useSocket will populate .current once the socket connects.
+  const socketRef = useRef(null);
+
   const convoHook = useConversations(userId);
   const receiptHook = useReceiptSync();
 
@@ -103,7 +104,7 @@ const Messages = () => {
     userId,
     user,
     selectedConvoRef,
-    socketRef: { current: null }, // will be set after socket init
+    socketRef,
     lastSeqByConvoRef: receiptHook.lastSeqByConvoRef,
     updateReceiptCursor: receiptHook.updateReceiptCursor,
     updateConversationLocally: convoHook.updateConversationLocally,
@@ -112,7 +113,6 @@ const Messages = () => {
   const schedHook = useScheduling({
     selectedConvo,
     setMessages: msgHook.setMessages,
-    updateConversationLocally: convoHook.updateConversationLocally,
   });
 
   const payHook = usePayments({
@@ -184,7 +184,12 @@ const Messages = () => {
         setDeliveryStatus(prev => new Map([...prev, [data.messageId, data.deliveredAt]]));
         break;
       case 'rcpt:update':
-        convoHook.fetchConversations();
+        // Only do a full refetch if the server sends no data — prefer local update
+        if (data?.conversation) {
+          convoHook.updateConversationLocally(data.conversation);
+        } else {
+          convoHook.fetchConversations();
+        }
         break;
       case 'safety:nudge':
         if (data?.copy) msgHook.setSafetyNudge(data.copy);
@@ -204,11 +209,8 @@ const Messages = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convoHook.fetchConversations, convoHook.updateConversationLocally, receiptHook.syncConversationSinceLastSeq]);
 
-  const socketRef = useSocket({ token, onEvent: handleSocketEvent });
-
-  // Wire socketRef into msgHook after socket init
-  const msgSocketRef = useRef(socketRef);
-  msgSocketRef.current = socketRef;
+  // Inject the pre-declared socketRef so useMessages gets socket access
+  useSocket({ token, onEvent: handleSocketEvent, socketRef });
 
   // ── Derived callbacks ──────────────────────────────────────────
   const openConversation = useCallback(async (convo) => {
@@ -324,7 +326,7 @@ const Messages = () => {
           {mobileView === 'chat' && (
             <button className="mobile-back-btn" onClick={() => setMobileView('inbox')}>← Back</button>
           )}
-          <h1>Messages <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', marginLeft: 8 }}>v2 canary</span></h1>
+          <h1>Messages</h1>
         </div>
         <div className="messages-header-right">
           <input

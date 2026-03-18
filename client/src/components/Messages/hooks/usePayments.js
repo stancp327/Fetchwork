@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../../utils/api';
-
-const getEntityId = (v) => (v && typeof v === 'object' ? (v._id || v.id || v.userId || v.toString?.()) : v);
+import { getEntityId } from '../utils';
 
 export default function usePayments({ selectedConvo, userId, setMessages }) {
   const [showPayModal, setShowPayModal] = useState(false);

@@ -1,7 +1,6 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { apiRequest } from '../../../utils/api';
-
-const getEntityId = (v) => (v && typeof v === 'object' ? (v._id || v.id || v.userId || v.toString?.()) : v);
+import { getEntityId } from '../utils';
 
 export default function useMessages({ userId, user, selectedConvoRef, socketRef, lastSeqByConvoRef, updateReceiptCursor, updateConversationLocally }) {
   const [messages, setMessages] = useState([]);
@@ -16,6 +15,9 @@ export default function useMessages({ userId, user, selectedConvoRef, socketRef,
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // Cleanup typing timer on unmount to prevent memory leaks
+  useEffect(() => () => clearTimeout(typingTimeoutRef.current), []);
 
   const fetchMessages = useCallback(async (convo) => {
     try {

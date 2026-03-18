@@ -37,8 +37,10 @@ const SOCKET_EVENTS = [
 ];
 
 export const useSocket = (options) => {
-  const { token: providedToken, onEvent } = options || {};
-  const socketRef = useRef(null);
+  const { token: providedToken, onEvent, socketRef: externalRef } = options || {};
+  const internalRef = useRef(null);
+  // Allow callers to inject a pre-existing ref so other hooks can share the same socket
+  const socketRef = externalRef || internalRef;
 
   // Always-current ref — lets the handler update without triggering
   // a socket disconnect/reconnect cycle every time onEvent changes

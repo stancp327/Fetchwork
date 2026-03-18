@@ -1,0 +1,202 @@
+You are implementing a major upgrade to the **Team Jobs** feature in the Fetchwork codebase (React + Express + MongoDB). The goal is to transform the current flat job list into a rich internal workspace where teams can delegate, communicate, and track work — all without the client seeing it.
+
+---
+
+## Context & Existing Code
+
+**Frontend:** client/src/components/Teams/TeamJobs.js + TeamJobs.css
+**Backend:** server/routes/teams.js (existing team job routes: assign lead, approve/reject, fetch jobs)
+**Models:** server/models/Team.js, server/models/TeamNote.js, server/models/TeamMilestone.js, server/models/TeamAuditLog.js
+
+The current TeamJobs component renders Active / Pending Proposals tabs. Each job card shows status badge, budget, client, assigned lead (dropdown), auto-release countdown, and withdraw button. That is the baseline — everything below is net-new.
+
+Read TeamJobs.js, TeamJobs.css, teams.js routes, and the Team model fully before writing a line.
+
+---
+
+## What To Build
+
+### 1. Subtask System (lite Trello)
+**Backend — new model server/models/TeamSubtask.js:**
+Fields: teamId, jobId, title, description, assignedTo (User ref), dueDate, status (todo|in_progress|review|done), priority (low|medium|high|urgent), createdBy, completedAt, order (for drag-sort)
+
+Routes:
+- POST /api/teams/:id/jobs/:jobId/subtasks — create
+- PUT /api/teams/:id/jobs/:jobId/subtasks/:subtaskId — update (title, status, assignee, dueDate, order)
+- DELETE /api/teams/:id/jobs/:jobId/subtasks/:subtaskId — delete
+- GET /api/teams/:id/jobs/:jobId/subtasks — list
+
+**Frontend — SubtaskPanel inside each expanded job card:**
+- Compact task list with inline status toggle (click to cycle todo->in_progress->review->done)
+- Add subtask inline input (press Enter to save)
+- Assign to member via avatar-picker dropdown
+- Due date chip (turns red when overdue)
+- Progress bar showing X/Y tasks done above the task list
+- Drag-to-reorder using HTML5 drag API (no external lib)
+
+---
+
+### 2. Job-Level Role Assignment
+**Backend:** New lightweight model TeamJobRole.js:
+Fields: teamId, jobId, userId, role (designer|developer|reviewer|pm|writer|other), customRole (string)
+
+Routes:
+- PUT /api/teams/:id/jobs/:jobId/roles — set roles for the job (replaces whole array)
+- GET /api/teams/:id/jobs/:jobId/roles — get roles
+
+**Frontend:** Role assignment row below the lead dropdown. Shows avatars with role badges. Click avatar to assign/change role. Roles show as colored pills next to member names.
+
+---
+
+### 3. Workload Indicator
+**Backend:** GET /api/teams/:id/members/workload — returns each member's count of active jobs (status not in completed/cancelled) where they are lead OR have a subtask assigned to them.
+
+**Frontend:** When the lead dropdown opens, show next to each member name: a small colored dot + number. Green = 0-2, Yellow = 3-5, Red = 6+. Tooltip showing active job count.
+
+---
+
+### 4. Team-Only Job Chat (Internal Thread)
+**Backend — new model server/models/TeamJobChat.js:**
+Fields: teamId, jobId, author (User ref), message (string, max 2000), mentions ([User ref]), editedAt, deletedAt (soft delete), createdAt
+
+Routes:
+- GET /api/teams/:id/jobs/:jobId/chat?before=<cursor>&limit=30 — paginated
+- POST /api/teams/:id/jobs/:jobId/chat — send message
+- PUT /api/teams/:id/jobs/:jobId/chat/:msgId — edit (author only, within 15 min)
+- DELETE /api/teams/:id/jobs/:jobId/chat/:msgId — soft delete
+
+@mention parsing: scan message for @firstname patterns against team member list, store resolved user IDs.
+
+**Frontend — JobChatPanel component:**
+- Collapsible panel at bottom of expanded job card (toggle via chat icon + unread badge)
+- Message list with avatar, name, timestamp, message body
+- @mention autocomplete: type @ then dropdown of team members filtered by what you type
+- Inline edit: hover message shows pencil icon (only for own messages within 15 min)
+- Soft-deleted messages show "This message was deleted"
+- Send box: Shift+Enter for newline, Enter to send
+- Unread count: track last-read cursor per user in localStorage keyed by jobChat_${jobId}
+- Poll every 15 seconds when panel is open (use useInterval hook)
+
+---
+
+### 5. Progress Notes with @mentions
+Distinct from job chat — progress notes are milestone-style updates, not a conversation thread.
+
+**Backend:** Extend TeamNote.js by adding jobId field (optional). Notes with a jobId are job-scoped.
+Routes:
+- POST /api/teams/:id/jobs/:jobId/notes — create
+- GET /api/teams/:id/jobs/:jobId/notes — list
+- DELETE /api/teams/:id/jobs/:jobId/notes/:noteId — delete (author or admin)
+
+**Frontend — ProgressNotesPanel:**
+- Timeline-style list (vertical line, dot per note, avatar + time + message)
+- Add update textarea with @mention support (same autocomplete as chat)
+- Notes are permanent-ish (no edit, just delete with confirmation)
+- Show most recent 5 by default, Show all expands
+
+---
+
+### 6. Activity Feed
+**Backend:** Log to TeamAuditLog (already exists) for all team-job events. Add event types if not present:
+job_lead_assigned, job_role_set, subtask_created, subtask_completed, subtask_assigned, proposal_comment_added, proposal_approved, proposal_rejected, job_status_changed, progress_note_added
+
+Each log entry: { teamId, jobId, actor, eventType, payload, createdAt }
+
+Route: GET /api/teams/:id/jobs/:jobId/activity — returns last 50 entries, actor names populated
+
+**Frontend — ActivityFeedPanel:**
+- Toggle via activity-icon button
+- Each entry: actor avatar + name + human-readable description + relative timestamp
+- Color-coded dots per event type (assignment=blue, subtask=green, chat/note=gray, status=orange)
+
+---
+
+### 7. Kanban View
+**Backend:** Add kanbanColumn field to Job for team-internal stage:
+Values: backlog | in_progress | review | done
+Default: backlog for pending proposals, in_progress for accepted jobs
+
+Route: PUT /api/teams/:id/jobs/:jobId/kanban — update column
+
+**Frontend — Kanban toggle:**
+- View-toggle button in TeamJobs header: List vs Kanban
+- Persist choice in localStorage per team
+- Kanban board: 4 columns side-by-side (horizontal scroll on mobile)
+- Each card: job title, client name, budget, lead avatar, subtask progress bar, status badge, due date
+- Drag cards between columns using HTML5 drag API with optimistic update + revert on error
+- Column headers show card count
+
+---
+
+### 8. Proposal Collaboration
+**Backend — new model server/models/ProposalComment.js:**
+Fields: teamId, jobId, proposalId, author (User ref), message (string), type (comment|approve|request_changes), createdAt
+
+Routes:
+- GET /api/teams/:id/jobs/:jobId/proposals/:proposalId/comments — list
+- POST /api/teams/:id/jobs/:jobId/proposals/:proposalId/comments — add
+
+**Frontend:** Expand the Pending Proposals tab. Each proposal card gets a Team Review collapsible section with comment thread, Approve / Request Changes buttons (owner/admin only), and approval status chip showing aggregate vote.
+
+---
+
+### 9. Deadline Tracking
+**Frontend only:**
+- Job cards show deadline chip: "Due Mar 24" — green if >7 days, yellow 3-7 days, red <3 days, strikethrough if overdue
+- Subtasks show their own due date chips inline
+- Kanban view: cards with overdue deadlines get a red left border
+- Overdue filter chip in list header
+
+---
+
+## Additional Workspace Improvements
+
+**A. Quick Actions Menu** — hover a job card shows ellipsis menu: Copy job link, Mark as urgent, Archive, Set deadline, Pin to top
+
+**B. Pin Jobs** — add pinnedJobs array to Team model. Pinned jobs float to top of both list and kanban. Pin/unpin from quick actions.
+
+**C. Job Summary Header** — above the job list, a 4-stat bar: Active Jobs | Overdue | Due This Week | Unread Messages
+
+**D. Keyboard Shortcuts:**
+- K — toggle kanban/list view
+- N — focus add-subtask input on expanded card
+- M — focus job chat input on expanded card
+- ? — show shortcut hints tooltip overlay
+
+**E. Empty States** — all panels (subtasks, chat, notes, activity) must have thoughtful empty states with icon + copy + CTA.
+
+**F. Optimistic Updates** — all mutations must update UI immediately and revert gracefully on error.
+
+---
+
+## Code Quality Requirements
+
+- No new npm packages. Use HTML5 drag API, not react-beautiful-dnd. Use apiRequest, not axios.
+- CSS design tokens — use existing CSS variables. No hardcoded hex colors. Check client/src/index.css for token names.
+- Mobile-first — all new panels must work at 360px viewport. Kanban columns scroll horizontally on mobile.
+- Loading + error states — every async panel needs a skeleton loader and inline error with retry button.
+- Auth on every new route — use existing requireAuth and team membership middleware.
+- No N+1 queries — use .lean(), selective .populate(), and aggregation. Jobs load path max 3 DB calls.
+- Consistent file structure — one .js + one .css per component. CSS class names extend existing tj- prefix pattern.
+
+---
+
+## Deliverables Checklist
+
+Before calling anything done, verify:
+- All 9 new backend route groups work and return correct shapes
+- All new Mongoose models have compound indexes on teamId + jobId
+- TeamJobs.js renders all new panels without errors in both list and kanban view
+- Kanban drag-and-drop works end-to-end (drag -> API call -> persists on reload)
+- Job chat polls every 15s and shows unread badge
+- @mention autocomplete works in both chat and progress notes
+- Workload indicator shows on lead dropdown
+- Activity feed logs correctly for: lead assign, subtask complete, note added
+- All panels have empty states
+- All panels are mobile-responsive at 360px
+- No console errors or React key warnings
+- No hardcoded colors — all from CSS variables
+- Keyboard shortcuts K, N, M, ? work
+
+When completely finished, run:
+openclaw system event --text "Team Jobs workspace upgrade complete"

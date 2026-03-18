@@ -13,7 +13,7 @@ const nextQuarterLocal = () => {
   return d;
 };
 
-export default function useScheduling({ selectedConvo, setMessages, updateConversationLocally }) {
+export default function useScheduling({ selectedConvo, setMessages }) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleType, setScheduleType] = useState('consultation');
   const [scheduleDate, setScheduleDate] = useState('');
