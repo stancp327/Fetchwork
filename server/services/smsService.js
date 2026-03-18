@@ -4,9 +4,9 @@
  */
 const twilio = require('twilio');
 
-const ACCOUNT_SID   = process.env.TWILIO_ACCOUNT_SID;
-const AUTH_TOKEN    = process.env.TWILIO_AUTH_TOKEN;
-const MESSAGING_SID = process.env.TWILIO_MESSAGING_SERVICE_SID;
+const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const AUTH_TOKEN  = process.env.TWILIO_AUTH_TOKEN;
+const FROM_NUMBER = process.env.TWILIO_FROM_NUMBER || '+18556846127';
 
 let client = null;
 const getClient = () => {
@@ -32,7 +32,7 @@ const sendSMS = async (to, body) => {
     return false;
   }
   try {
-    await c.messages.create({ to, body, messagingServiceSid: MESSAGING_SID });
+    await c.messages.create({ to, body, from: FROM_NUMBER });
     return true;
   } catch (err) {
     console.error('[SMS] Send failed:', err.message);
