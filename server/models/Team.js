@@ -14,6 +14,9 @@ const memberSchema = new mongoose.Schema({
       'view_analytics',     // view team dashboard/analytics
       'message_clients',    // message on behalf of team
       'assign_work',        // assign jobs/orders to members
+      'view_wallet',        // view wallet balance + payout history
+      'approve_payouts',    // approve member payout requests
+      'approve_outsourcing',// approve outsource / team-to-team spend
     ],
   }],
   customRoleName: { type: String, default: '' },
@@ -43,6 +46,9 @@ const teamSchema = new mongoose.Schema({
         'view_analytics',
         'message_clients',
         'assign_work',
+        'view_wallet',
+        'approve_payouts',
+        'approve_outsourcing',
       ],
     }],
     createdAt: { type: Date, default: Date.now },
@@ -60,6 +66,9 @@ const teamSchema = new mongoose.Schema({
   portfolio:   [{ title: String, description: String, image: String, url: String }],
   specialties: [String],
   isPublic:    { type: Boolean, default: false },
+
+  // Outsourcing — allows the team wallet to fund external job hires / team-to-team payments
+  outsourcingEnabled: { type: Boolean, default: false },
 
   // Billing
   billingEmail:     { type: String, default: '' },

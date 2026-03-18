@@ -13,6 +13,8 @@ const Job = require('../models/Job');
 const TeamSubtask = require('../models/TeamSubtask');
 const TeamJobRole = require('../models/TeamJobRole');
 const TeamJobChat = require('../models/TeamJobChat');
+const TeamTask = require('../models/TeamTask');
+const TeamPayout = require('../models/TeamPayout');
 const emailService = require('../services/emailService');
 const stripeService = require('../services/stripeService');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
@@ -101,12 +103,15 @@ function getTeamAccessContext(team, requesterId) {
     customRoleName,
     permissions: resolvedPermissions,
     resolvedPermissions: [...resolvedPermissions],
-    canManageMembers: isOwner || isAdmin || resolvedPermissions.has('manage_members'),
-    canManageBilling: isOwner || isAdmin || resolvedPermissions.has('manage_billing'),
-    canApproveOrders: isOwner || isAdmin || resolvedPermissions.has('approve_orders'),
-    canAssignWork: isOwner || isAdmin || resolvedPermissions.has('assign_work'),
+    canManageMembers:   isOwner || isAdmin || resolvedPermissions.has('manage_members'),
+    canManageBilling:   isOwner || isAdmin || resolvedPermissions.has('manage_billing'),
+    canApproveOrders:   isOwner || isAdmin || resolvedPermissions.has('approve_orders'),
+    canAssignWork:      isOwner || isAdmin || resolvedPermissions.has('assign_work'),
     canManagePortfolio: isOwner || isAdmin || resolvedPermissions.has('manage_services'),
-    canReadBilling: isOwner || isAdmin || resolvedPermissions.has('manage_billing') || resolvedPermissions.has('view_analytics'),
+    canReadBilling:     isOwner || isAdmin || resolvedPermissions.has('manage_billing') || resolvedPermissions.has('view_analytics'),
+    canViewWallet:      isOwner || isAdmin || resolvedPermissions.has('view_wallet') || resolvedPermissions.has('manage_billing'),
+    canApprovePayouts:  isOwner || isAdmin || resolvedPermissions.has('approve_payouts'),
+    canApproveOutsourcing: isOwner || resolvedPermissions.has('approve_outsourcing'),
   };
 }
 
@@ -130,7 +135,12 @@ function authorizeTeamAction({ team, requesterId, action }) {
     read_approvals: ctx.canApproveOrders,
     decide_approvals: ctx.canApproveOrders,
     manage_portfolio: ctx.canManagePortfolio,
-    read_audit_logs: ctx.isOwner || ctx.isAdmin,
+    read_audit_logs:       ctx.isOwner || ctx.isAdmin,
+    manage_tasks:          ctx.canAssignWork,
+    read_tasks:            ctx.isMember,
+    view_wallet:           ctx.canViewWallet,
+    approve_payouts:       ctx.canApprovePayouts,
+    approve_outsourcing:   ctx.canApproveOutsourcing,
   };
 
   return { ok: Boolean(allowed[action]), ctx };
@@ -3196,6 +3206,786 @@ router.patch('/:id/jobs/:jobId/quick', async (req, res) => {
   }
 });
 
+
+// ════════════════════════════════════════════════════════════════
+// TEAM TASKS — per_job / per_hour payout system
+// ════════════════════════════════════════════════════════════════
+
+// Helper: deduct amount from team wallet (FIFO across BillingCredits)
+async function deductTeamWallet(teamId, amount, session = null) {
+  const opts = session ? { session } : {};
+  const credits = await BillingCredit.find({
+    team: teamId,
+    status: 'active',
+    remaining: { $gt: 0 },
+    $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+  }, null, opts).sort({ createdAt: 1 });
+
+  const balance = credits.reduce((s, c) => s + (c.remaining || 0), 0);
+  if (balance < amount) throw Object.assign(new Error('Insufficient wallet balance'), { code: 'INSUFFICIENT_FUNDS', balance });
+
+  let remaining = amount;
+  const consumed = [];
+  for (const credit of credits) {
+    if (remaining <= 0) break;
+    const deduct = Math.min(credit.remaining, remaining);
+    credit.remaining = Math.round((credit.remaining - deduct) * 100) / 100;
+    if (credit.remaining <= 0) credit.status = 'used';
+    await credit.save(opts);
+    consumed.push(credit._id);
+    remaining = Math.round((remaining - deduct) * 100) / 100;
+  }
+  return consumed;
+}
+
+// POST /api/teams/:id/tasks — create a task with optional payout config
+router.post('/:id/tasks', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_tasks' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to create tasks' });
+
+    const { title, description, assignedTo, jobId, dueDate, priority,
+            payoutType, payoutAmount, hourlyRate, selfApprovePayout } = req.body;
+    if (!title?.trim()) return res.status(400).json({ error: 'title required' });
+
+    // Validate payout config
+    if (payoutType === 'per_job' && (!payoutAmount || payoutAmount <= 0)) {
+      return res.status(400).json({ error: 'payoutAmount required for per_job tasks' });
+    }
+    if (payoutType === 'per_hour' && (!hourlyRate || hourlyRate <= 0)) {
+      return res.status(400).json({ error: 'hourlyRate required for per_hour tasks' });
+    }
+
+    if (assignedTo && !team.isMember(assignedTo)) {
+      return res.status(400).json({ error: 'assignedTo must be a team member' });
+    }
+    if (jobId) {
+      const job = await Job.findOne({ _id: jobId, team: team._id });
+      if (!job) return res.status(400).json({ error: 'Job not found in this team' });
+    }
+
+    const task = await TeamTask.create({
+      team: team._id,
+      job: jobId || null,
+      title: title.trim(),
+      description: description || '',
+      assignedTo: assignedTo || null,
+      assignedBy: assignedTo ? requesterId : null,
+      assignedAt: assignedTo ? new Date() : null,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      priority: priority || 'medium',
+      payoutType: payoutType || 'none',
+      payoutAmount: payoutType === 'per_job' ? parseFloat(payoutAmount) : null,
+      hourlyRate:   payoutType === 'per_hour' ? parseFloat(hourlyRate) : null,
+      selfApprovePayout: Boolean(selfApprovePayout),
+      createdBy: requesterId,
+    });
+
+    await TeamAuditLog.create({
+      team: team._id, actor: requesterId, action: 'task_created',
+      details: `Task "${task.title}" created${payoutType !== 'none' ? ` (${payoutType})` : ''}`,
+      targetEntity: 'task', targetId: task._id,
+    }).catch(() => {});
+
+    if (assignedTo) {
+      Notification.notify({
+        recipient: assignedTo,
+        type: 'team_task_assigned',
+        title: 'New task assigned',
+        message: `You were assigned "${task.title}" on ${team.name}${payoutType !== 'none' ? ` ($${(payoutAmount || hourlyRate)}/hr)` : ''}`,
+        link: `/teams/${team._id}`,
+      }).catch(() => {});
+    }
+
+    const populated = await TeamTask.findById(task._id)
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .populate('createdBy', 'firstName lastName')
+      .lean();
+
+    res.status(201).json({ task: populated });
+  } catch (err) {
+    console.error('Create team task error:', err.message);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+// GET /api/teams/:id/tasks — list tasks (member sees own; admin sees all)
+router.get('/:id/tasks', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'read_tasks' });
+    if (!authz.ok) return res.status(403).json({ error: 'Not a team member' });
+
+    const ctx = getTeamAccessContext(team, requesterId);
+    const filter = { team: team._id };
+
+    // Non-admins only see their own tasks
+    if (!ctx.isOwner && !ctx.isAdmin && !ctx.canAssignWork) {
+      filter.assignedTo = requesterId;
+    }
+
+    // Optional filters
+    if (req.query.status) filter.status = req.query.status;
+    if (req.query.jobId) filter.job = req.query.jobId;
+    if (req.query.payoutStatus) filter.payoutStatus = req.query.payoutStatus;
+    if (req.query.assignedTo) filter.assignedTo = req.query.assignedTo;
+
+    const tasks = await TeamTask.find(filter)
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .populate('job', 'title')
+      .populate('createdBy', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ tasks });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load tasks' });
+  }
+});
+
+// PUT /api/teams/:id/tasks/:taskId — update task metadata
+router.put('/:id/tasks/:taskId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const task = await TeamTask.findOne({ _id: req.params.taskId, team: team._id });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+
+    const ctx = getTeamAccessContext(team, requesterId);
+    const isAssignee = String(task.assignedTo) === requesterId;
+    if (!ctx.canAssignWork && !isAssignee) return res.status(403).json({ error: 'No permission' });
+
+    // Assignee can update status and log hours; admins can update everything
+    const { title, description, dueDate, priority, status, assignedTo,
+            payoutType, payoutAmount, hourlyRate, selfApprovePayout } = req.body;
+
+    if (ctx.canAssignWork) {
+      if (title !== undefined) task.title = title.trim();
+      if (description !== undefined) task.description = description;
+      if (dueDate !== undefined) task.dueDate = dueDate ? new Date(dueDate) : null;
+      if (priority !== undefined) task.priority = priority;
+      if (selfApprovePayout !== undefined) task.selfApprovePayout = Boolean(selfApprovePayout);
+      if (assignedTo !== undefined) {
+        if (assignedTo && !team.isMember(assignedTo)) return res.status(400).json({ error: 'Not a team member' });
+        task.assignedTo = assignedTo || null;
+        task.assignedBy = assignedTo ? requesterId : null;
+        task.assignedAt = assignedTo ? new Date() : null;
+      }
+      if (payoutType !== undefined) {
+        if (payoutType === 'per_job' && (!payoutAmount || payoutAmount <= 0)) return res.status(400).json({ error: 'payoutAmount required' });
+        if (payoutType === 'per_hour' && (!hourlyRate || hourlyRate <= 0)) return res.status(400).json({ error: 'hourlyRate required' });
+        task.payoutType = payoutType;
+        task.payoutAmount = payoutType === 'per_job' ? parseFloat(payoutAmount) : null;
+        task.hourlyRate   = payoutType === 'per_hour' ? parseFloat(hourlyRate) : null;
+      }
+    }
+
+    // Status changes (assignee or admin)
+    if (status !== undefined) {
+      const validStatuses = ['open', 'in_progress', 'submitted'];
+      if (!ctx.canAssignWork && !validStatuses.includes(status)) return res.status(403).json({ error: 'Cannot set that status' });
+      task.status = status;
+      if (status === 'in_progress' && !task.assignedTo) task.assignedTo = requesterId;
+    }
+
+    await task.save();
+    const populated = await TeamTask.findById(task._id)
+      .populate('assignedTo', 'firstName lastName username avatar')
+      .populate('job', 'title')
+      .lean();
+    res.json({ task: populated });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// DELETE /api/teams/:id/tasks/:taskId
+router.delete('/:id/tasks/:taskId', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'manage_tasks' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission' });
+
+    const task = await TeamTask.findOne({ _id: req.params.taskId, team: team._id });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (task.payoutStatus === 'paid') return res.status(400).json({ error: 'Cannot delete a paid task' });
+
+    await task.deleteOne();
+    res.json({ message: 'Task deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// POST /api/teams/:id/tasks/:taskId/log-hours — assignee logs hours (per_hour tasks)
+router.post('/:id/tasks/:taskId/log-hours', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const task = await TeamTask.findOne({ _id: req.params.taskId, team: team._id });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (task.payoutType !== 'per_hour') return res.status(400).json({ error: 'Only per_hour tasks support hour logging' });
+
+    const ctx = getTeamAccessContext(team, requesterId);
+    const isAssignee = String(task.assignedTo) === requesterId;
+    if (!ctx.canAssignWork && !isAssignee) return res.status(403).json({ error: 'No permission' });
+
+    const hours = parseFloat(req.body.hours);
+    if (!hours || hours <= 0 || hours > 24) return res.status(400).json({ error: 'Hours must be 0–24' });
+
+    task.hoursLogged = Math.round(((task.hoursLogged || 0) + hours) * 100) / 100;
+    if (task.status === 'open') task.status = 'in_progress';
+    await task.save();
+
+    res.json({
+      task: { _id: task._id, hoursLogged: task.hoursLogged, status: task.status },
+      estimatedPayout: Math.round(task.hoursLogged * (task.hourlyRate || 0) * 100) / 100,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to log hours' });
+  }
+});
+
+// POST /api/teams/:id/tasks/:taskId/submit — member submits task for payout
+router.post('/:id/tasks/:taskId/submit', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const task = await TeamTask.findOne({ _id: req.params.taskId, team: team._id });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (String(task.assignedTo) !== requesterId) return res.status(403).json({ error: 'Only the assignee can submit' });
+    if (!['open', 'in_progress'].includes(task.status)) return res.status(400).json({ error: `Cannot submit from status: ${task.status}` });
+    if (task.payoutType === 'none') return res.status(400).json({ error: 'This task has no payout configured' });
+    if (task.payoutType === 'per_hour' && (!task.hoursLogged || task.hoursLogged <= 0)) {
+      return res.status(400).json({ error: 'Log hours before submitting' });
+    }
+
+    task.status = 'submitted';
+    task.completedAt = new Date();
+    task.submissionNote = req.body.note || '';
+    task.payoutStatus = 'requested';
+    task.payoutRequestedAt = new Date();
+    task.payoutRequestedBy = requesterId;
+
+    // Check if self-approve is allowed
+    const amount = task.effectivePayoutAmount;
+    const { payoutRequiresApproval, payoutThresholdAmount } = team.approvalThresholds || {};
+    const needsApproval = payoutRequiresApproval && amount >= (payoutThresholdAmount || 0);
+
+    if (task.selfApprovePayout && !needsApproval) {
+      // Auto-approve — payout execution still needs explicit /pay call
+      task.status = 'approved';
+      task.payoutStatus = 'approved';
+      task.payoutApprovedBy = requesterId;
+      task.payoutApprovedAt = new Date();
+    }
+
+    await task.save();
+
+    // Notify admins if approval needed
+    if (task.payoutStatus === 'requested') {
+      const admins = team.members.filter(m => ['owner', 'admin'].includes(m.role) && m.status === 'active');
+      for (const admin of admins) {
+        Notification.notify({
+          recipient: admin.user,
+          type: 'team_payout_requested',
+          title: 'Payout approval needed',
+          message: `${req.user.firstName || 'A member'} submitted "${task.title}" for payout ($${amount.toFixed(2)})`,
+          link: `/teams/${team._id}`,
+        }).catch(() => {});
+      }
+    }
+
+    res.json({ task: { _id: task._id, status: task.status, payoutStatus: task.payoutStatus, amount } });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to submit task' });
+  }
+});
+
+// POST /api/teams/:id/tasks/:taskId/approve — admin approves payout
+router.post('/:id/tasks/:taskId/approve', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'approve_payouts' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to approve payouts' });
+
+    const task = await TeamTask.findOne({ _id: req.params.taskId, team: team._id });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (task.payoutStatus !== 'requested') return res.status(400).json({ error: `Payout is not pending approval (status: ${task.payoutStatus})` });
+
+    // Approver can override hoursApproved for per_hour tasks
+    if (task.payoutType === 'per_hour' && req.body.hoursApproved !== undefined) {
+      const h = parseFloat(req.body.hoursApproved);
+      if (isNaN(h) || h < 0) return res.status(400).json({ error: 'Invalid hoursApproved' });
+      task.hoursApproved = h;
+    }
+
+    task.status = 'approved';
+    task.payoutStatus = 'approved';
+    task.payoutApprovedBy = requesterId;
+    task.payoutApprovedAt = new Date();
+    await task.save();
+
+    Notification.notify({
+      recipient: task.assignedTo,
+      type: 'team_payout_approved',
+      title: 'Payout approved',
+      message: `Your payout for "${task.title}" was approved ($${task.effectivePayoutAmount.toFixed(2)})`,
+      link: `/teams/${team._id}`,
+    }).catch(() => {});
+
+    res.json({ task: { _id: task._id, status: task.status, payoutStatus: task.payoutStatus, amount: task.effectivePayoutAmount } });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to approve payout' });
+  }
+});
+
+// POST /api/teams/:id/tasks/:taskId/reject — admin rejects payout request
+router.post('/:id/tasks/:taskId/reject', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'approve_payouts' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission' });
+
+    const task = await TeamTask.findOne({ _id: req.params.taskId, team: team._id });
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (!['requested', 'approved'].includes(task.payoutStatus)) return res.status(400).json({ error: 'Nothing to reject' });
+
+    task.status = 'rejected';
+    task.payoutStatus = 'rejected';
+    task.payoutRejectedBy = requesterId;
+    task.payoutRejectedAt = new Date();
+    task.payoutRejectionReason = req.body.reason || '';
+    await task.save();
+
+    Notification.notify({
+      recipient: task.assignedTo,
+      type: 'team_payout_rejected',
+      title: 'Payout rejected',
+      message: `Your payout for "${task.title}" was rejected${task.payoutRejectionReason ? `: ${task.payoutRejectionReason}` : ''}`,
+      link: `/teams/${team._id}`,
+    }).catch(() => {});
+
+    res.json({ task: { _id: task._id, status: task.status, payoutStatus: task.payoutStatus } });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reject payout' });
+  }
+});
+
+// POST /api/teams/:id/tasks/:taskId/pay — execute payout from team wallet
+router.post('/:id/tasks/:taskId/pay', async (req, res) => {
+  const mongoose = require('mongoose');
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id).session(session);
+    if (!team || !team.isActive) { await session.abortTransaction(); return res.status(404).json({ error: 'Team not found' }); }
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'approve_payouts' });
+    if (!authz.ok) { await session.abortTransaction(); return res.status(403).json({ error: 'No permission to execute payouts' }); }
+
+    const task = await TeamTask.findOne({ _id: req.params.taskId, team: team._id }).session(session);
+    if (!task) { await session.abortTransaction(); return res.status(404).json({ error: 'Task not found' }); }
+    if (task.payoutStatus !== 'approved') { await session.abortTransaction(); return res.status(400).json({ error: 'Task must be approved before payout' }); }
+    if (!task.assignedTo) { await session.abortTransaction(); return res.status(400).json({ error: 'No assignee to pay' }); }
+
+    const amount = task.effectivePayoutAmount;
+    if (amount <= 0) { await session.abortTransaction(); return res.status(400).json({ error: 'Payout amount must be > 0' }); }
+
+    // Deduct from team wallet (FIFO)
+    let consumed;
+    try {
+      consumed = await deductTeamWallet(team._id, amount, session);
+    } catch (err) {
+      await session.abortTransaction();
+      if (err.code === 'INSUFFICIENT_FUNDS') return res.status(402).json({ error: `Insufficient wallet balance ($${(err.balance || 0).toFixed(2)} available, $${amount.toFixed(2)} needed)` });
+      throw err;
+    }
+
+    // Create payout record
+    const payout = await TeamPayout.create([{
+      team: team._id,
+      type: 'member_payout',
+      task: task._id,
+      recipientUser: task.assignedTo,
+      amount,
+      payoutType: task.payoutType,
+      hourlyRate: task.hourlyRate || null,
+      hoursApproved: task.hoursApproved || task.hoursLogged || null,
+      billingCreditIds: consumed,
+      status: 'completed',
+      approvedBy: task.payoutApprovedBy,
+      approvedAt: task.payoutApprovedAt,
+      executedBy: requesterId,
+      executedAt: new Date(),
+      note: req.body.note || '',
+      createdBy: requesterId,
+    }], { session });
+
+    // Mark task paid
+    task.status = 'paid';
+    task.payoutStatus = 'paid';
+    task.payoutPaidAt = new Date();
+    task.payoutTransaction = payout[0]._id;
+    await task.save({ session });
+
+    await session.commitTransaction();
+
+    // Credit the recipient's personal wallet for withdrawal
+    await BillingCredit.create({
+      user: task.assignedTo,
+      amount,
+      remaining: amount,
+      type: 'team_payout',
+      reason: `Team payout: ${task.title} (${team.name})`,
+      status: 'active',
+      metadata: { teamId: team._id.toString(), taskId: task._id.toString(), payoutId: payout[0]._id.toString() },
+    }).catch(() => {});
+
+    Notification.notify({
+      recipient: task.assignedTo,
+      type: 'team_payout_paid',
+      title: 'Payment sent',
+      message: `$${amount.toFixed(2)} from "${task.title}" has been added to your wallet`,
+      link: `/wallet`,
+    }).catch(() => {});
+
+    await TeamAuditLog.create({
+      team: team._id, actor: requesterId, action: 'payout_executed',
+      details: `Paid $${amount.toFixed(2)} for task "${task.title}"`,
+      targetEntity: 'task', targetId: task._id,
+    }).catch(() => {});
+
+    res.json({ message: 'Payout sent', amount, payoutId: payout[0]._id });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error('Team payout error:', err.message);
+    res.status(500).json({ error: 'Payout failed' });
+  } finally {
+    session.endSession();
+  }
+});
+
+// GET /api/teams/:id/payouts — payout history (wallet + member payouts)
+router.get('/:id/payouts', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'view_wallet' });
+    if (!authz.ok) return res.status(403).json({ error: 'No wallet access' });
+
+    const ctx = getTeamAccessContext(team, requesterId);
+    const filter = { team: team._id };
+
+    // Non-admins only see their own payouts
+    if (!ctx.canViewWallet) filter.recipientUser = requesterId;
+
+    const payouts = await TeamPayout.find(filter)
+      .populate('recipientUser', 'firstName lastName username avatar')
+      .populate('recipientTeam', 'name slug logo')
+      .populate('task', 'title payoutType')
+      .populate('job', 'title')
+      .populate('executedBy', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(req.query.limit) || 50)
+      .lean();
+
+    res.json({ payouts });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load payouts' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// OUTSOURCING — team wallet funds external hires
+// ════════════════════════════════════════════════════════════════
+
+// POST /api/teams/:id/outsource — post a job funded from team wallet
+router.post('/:id/outsource', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.outsourcingEnabled) return res.status(403).json({ error: 'Outsourcing is not enabled for this team' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'approve_outsourcing' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to outsource' });
+
+    const { title, description, budget, category, skills } = req.body;
+    if (!title?.trim() || !budget?.amount) return res.status(400).json({ error: 'title and budget.amount required' });
+
+    const amount = parseFloat(budget.amount);
+
+    // Check wallet balance
+    const credits = await BillingCredit.find({
+      team: team._id, status: 'active', remaining: { $gt: 0 },
+      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+    }).lean();
+    const balance = credits.reduce((s, c) => s + (c.remaining || 0), 0);
+    if (balance < amount) return res.status(402).json({ error: `Insufficient wallet balance ($${balance.toFixed(2)} available)` });
+
+    // Create the job — posted by team owner, linked to team
+    const job = await Job.create({
+      title: title.trim(),
+      description: description || '',
+      budget: { amount, type: budget.type || 'fixed', currency: 'USD' },
+      category: category || 'other',
+      skills: skills || [],
+      postedBy: requesterId,
+      team: team._id,
+      status: 'open',
+      fundedFromWallet: true,
+      walletReservedAmount: amount,
+    });
+
+    await TeamAuditLog.create({
+      team: team._id, actor: requesterId, action: 'outsource_job_created',
+      details: `Outsource job "${job.title}" created ($${amount})`,
+      targetEntity: 'job', targetId: job._id,
+    }).catch(() => {});
+
+    res.status(201).json({ job: { _id: job._id, title: job.title, budget: job.budget } });
+  } catch (err) {
+    console.error('Team outsource error:', err.message);
+    res.status(500).json({ error: 'Failed to create outsource job' });
+  }
+});
+
+// POST /api/teams/:id/outsource/:jobId/pay — pay hired freelancer/team from wallet
+router.post('/:id/outsource/:jobId/pay', async (req, res) => {
+  const mongoose = require('mongoose');
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id).session(session);
+    if (!team || !team.isActive) { await session.abortTransaction(); return res.status(404).json({ error: 'Team not found' }); }
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'approve_outsourcing' });
+    if (!authz.ok) { await session.abortTransaction(); return res.status(403).json({ error: 'No permission' }); }
+
+    const job = await Job.findOne({ _id: req.params.jobId, team: team._id }).session(session);
+    if (!job) { await session.abortTransaction(); return res.status(404).json({ error: 'Job not found' }); }
+
+    const { recipientUserId, recipientTeamId, amount } = req.body;
+    if (!recipientUserId && !recipientTeamId) { await session.abortTransaction(); return res.status(400).json({ error: 'recipientUserId or recipientTeamId required' }); }
+    const payAmount = parseFloat(amount || job.budget?.amount);
+    if (!payAmount || payAmount <= 0) { await session.abortTransaction(); return res.status(400).json({ error: 'Valid amount required' }); }
+
+    let consumed;
+    try {
+      consumed = await deductTeamWallet(team._id, payAmount, session);
+    } catch (err) {
+      await session.abortTransaction();
+      if (err.code === 'INSUFFICIENT_FUNDS') return res.status(402).json({ error: `Insufficient wallet balance` });
+      throw err;
+    }
+
+    const payout = await TeamPayout.create([{
+      team: team._id,
+      type: recipientTeamId ? 'team_payment' : 'outsource_payment',
+      job: job._id,
+      recipientUser: recipientUserId || null,
+      recipientTeam: recipientTeamId || null,
+      amount: payAmount,
+      payoutType: 'flat',
+      billingCreditIds: consumed,
+      status: 'completed',
+      executedBy: requesterId,
+      executedAt: new Date(),
+      note: req.body.note || '',
+      createdBy: requesterId,
+    }], { session });
+
+    await session.commitTransaction();
+
+    // Credit recipient wallet
+    const recipientId = recipientUserId || null;
+    if (recipientId) {
+      await BillingCredit.create({
+        user: recipientId,
+        amount: payAmount,
+        remaining: payAmount,
+        type: 'outsource_payment',
+        reason: `Payment from ${team.name} for "${job.title}"`,
+        status: 'active',
+        metadata: { teamId: team._id.toString(), jobId: job._id.toString() },
+      }).catch(() => {});
+
+      Notification.notify({
+        recipient: recipientId,
+        type: 'outsource_payment_received',
+        title: 'Payment received',
+        message: `$${payAmount.toFixed(2)} from ${team.name} for "${job.title}" added to your wallet`,
+        link: `/wallet`,
+      }).catch(() => {});
+    }
+
+    if (recipientTeamId) {
+      await BillingCredit.create({
+        team: recipientTeamId,
+        amount: payAmount,
+        remaining: payAmount,
+        type: 'team_payment',
+        reason: `Payment from ${team.name} for "${job.title}"`,
+        status: 'active',
+        metadata: { fromTeamId: team._id.toString(), jobId: job._id.toString() },
+      }).catch(() => {});
+    }
+
+    res.json({ message: 'Payment sent', amount: payAmount, payoutId: payout[0]._id });
+  } catch (err) {
+    await session.abortTransaction();
+    console.error('Outsource pay error:', err.message);
+    res.status(500).json({ error: 'Payment failed' });
+  } finally {
+    session.endSession();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// TEAM-TO-TEAM — teams submit proposals on jobs
+// ════════════════════════════════════════════════════════════════
+
+// POST /api/teams/:id/proposals — team submits a proposal on a job
+router.post('/:id/proposals', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isPublic) return res.status(403).json({ error: 'Team must be public to submit proposals' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'create_jobs' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to submit proposals for this team' });
+
+    const { jobId, coverLetter, proposedBudget, proposedDuration } = req.body;
+    if (!jobId || !coverLetter || !proposedBudget || !proposedDuration) {
+      return res.status(400).json({ error: 'jobId, coverLetter, proposedBudget, and proposedDuration required' });
+    }
+
+    const job = await Job.findById(jobId);
+    if (!job || job.status !== 'open') return res.status(404).json({ error: 'Job not found or not open' });
+
+    // Prevent duplicate proposal from same team
+    const duplicate = job.proposals?.find(p => p.team && String(p.team) === String(team._id));
+    if (duplicate) return res.status(409).json({ error: 'This team has already submitted a proposal for this job' });
+
+    const proposal = {
+      freelancer: requesterId,  // owner/admin is the point of contact
+      team: team._id,
+      coverLetter,
+      proposedBudget: parseFloat(proposedBudget),
+      proposedDuration,
+      status: 'pending',
+      submittedAt: new Date(),
+    };
+
+    job.proposals.push(proposal);
+    await job.save();
+
+    const saved = job.proposals[job.proposals.length - 1];
+    res.status(201).json({ proposal: { _id: saved._id, team: team._id, job: jobId, status: saved.status } });
+  } catch (err) {
+    console.error('Team proposal error:', err.message);
+    res.status(500).json({ error: 'Failed to submit proposal' });
+  }
+});
+
+// GET /api/teams/:id/proposals — list all proposals submitted by this team
+router.get('/:id/proposals', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'create_jobs' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission' });
+
+    // Find all jobs that have a proposal from this team
+    const jobs = await Job.find({ 'proposals.team': team._id })
+      .select('title status budget proposals')
+      .lean();
+
+    const proposals = jobs.flatMap(j =>
+      (j.proposals || [])
+        .filter(p => String(p.team) === String(team._id))
+        .map(p => ({ ...p, job: { _id: j._id, title: j.title, status: j.status, budget: j.budget } }))
+    );
+
+    res.json({ proposals });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load proposals' });
+  }
+});
+
+// GET /api/teams/:id/wallet — wallet balance + pending payouts summary
+router.get('/:id/wallet', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'view_wallet' });
+    if (!authz.ok) return res.status(403).json({ error: 'No wallet access' });
+
+    const [credits, pendingTasks, pendingPayouts] = await Promise.all([
+      BillingCredit.find({
+        team: team._id, status: 'active', remaining: { $gt: 0 },
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+      }).lean(),
+      TeamTask.find({ team: team._id, payoutStatus: { $in: ['requested', 'approved'] } })
+        .populate('assignedTo', 'firstName lastName avatar')
+        .lean(),
+      TeamPayout.find({ team: team._id, status: 'completed' })
+        .sort({ createdAt: -1 }).limit(10)
+        .populate('recipientUser', 'firstName lastName avatar')
+        .lean(),
+    ]);
+
+    const balance = Math.round(credits.reduce((s, c) => s + (c.remaining || 0), 0) * 100) / 100;
+    const reserved = pendingTasks.reduce((s, t) => {
+      const amt = t.payoutType === 'per_job'
+        ? (t.payoutAmount || 0)
+        : (t.hoursApproved ?? t.hoursLogged ?? 0) * (t.hourlyRate || 0);
+      return s + amt;
+    }, 0);
+
+    res.json({
+      balance,
+      available: Math.round((balance - reserved) * 100) / 100,
+      reserved: Math.round(reserved * 100) / 100,
+      pendingTasks,
+      recentPayouts: pendingPayouts,
+      outsourcingEnabled: team.outsourcingEnabled,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load wallet' });
+  }
+});
+
 module.exports = router;
-
-
