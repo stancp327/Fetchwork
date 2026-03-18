@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { apiRequest } from '../../../utils/api';
 import { getEntityId } from '../utils';
 
-export default function useMessages({ userId, user, selectedConvoRef, socketRef, lastSeqByConvoRef, updateReceiptCursor, updateConversationLocally }) {
+export default function useMessages({ userId, user, selectedConvoRef, socketRef, lastSeqByConvoRef, updateReceiptCursor }) {
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState('');

@@ -3,13 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../socket/useSocket';
 import { apiRequest } from '../../utils/api';
-import OnlineStatus, { formatLastSeen } from '../common/OnlineStatus';
+import OnlineStatus from '../common/OnlineStatus';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import '../Offers/CustomOffer.css';
 import './Messages.css';
 import SEO from '../common/SEO';
 
-import { formatTime, ConvoItem, ProposalActionCard, MilestoneRequestCard, MsgBubble, OrderStatusBar } from './parts/components';
+import { ConvoItem, MsgBubble, OrderStatusBar } from './parts/components';
 import SafetyNudge from './parts/SafetyNudge';
 
 import useConversations from './hooks/useConversations';
@@ -146,7 +146,6 @@ const Messages = () => {
     socketRef,
     lastSeqByConvoRef: receiptHook.lastSeqByConvoRef,
     updateReceiptCursor: receiptHook.updateReceiptCursor,
-    updateConversationLocally: convoHook.updateConversationLocally,
   });
 
   const schedHook = useScheduling({

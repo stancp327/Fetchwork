@@ -1111,3 +1111,9 @@
 .ctx-review-name { font-size: 12px; font-weight: 600; color: var(--color-text-darker); }
 .ctx-review-stars { color: #f59e0b; font-size: 12px; }
 .ctx-review-comment { font-size: 11px; color: var(--color-text-secondary); margin-top: 3px; line-height: 1.4; }
+
+/* ctx-loading: shown while context panel profile is fetching */
+.ctx-loading { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; text-align: center; }
+
+/* withdrawn offer badge */
+.offer-card-badge--withdrawn { background: #f3f4f6; color: #6b7280; }
