@@ -266,6 +266,10 @@ const Messages = () => {
     }
   }, [msgHook.fetchMessages]);
 
+  // Tracks the call-listener cleanup timeout so it can be cancelled on unmount
+  const callTimeoutRef = useRef(null);
+  useEffect(() => () => clearTimeout(callTimeoutRef.current), []);
+
   const initiateCall = useCallback((recipient, type = 'video') => {
     if (!socketRef.current || !recipient?._id) return;
     socketRef.current.emit('call:initiate', {
@@ -276,37 +280,42 @@ const Messages = () => {
 
     const socket = socketRef.current;
 
-    const handler = ({ callId }) => {
+    // function declarations are hoisted — cleanup/handler/gateHandler/errHandler
+    // can all reference each other without TDZ ordering issues.
+    function cleanup() {
+      socket.off('call:initiated', handler);
+      socket.off('call:feature-gated', gateHandler);
+      socket.off('call:error', errHandler);
+      clearTimeout(callTimeoutRef.current);
+    }
+    function handler({ callId }) {
       window.dispatchEvent(new CustomEvent('fetchwork:start-call', {
         detail: { callId, remoteUser: recipient, type },
       }));
       cleanup();
-    };
-    const gateHandler = ({ type: callType, message }) => {
+    }
+    function gateHandler({ type: callType, message }) {
       setCallGateModal({ type: callType, message });
       cleanup();
-    };
-    const errHandler = ({ message }) => {
+    }
+    function errHandler({ message }) {
       alert(message || 'Could not start call');
       cleanup();
-    };
-
-    const cleanup = () => {
-      socket.off('call:initiated', handler);
-      socket.off('call:feature-gated', gateHandler);
-      socket.off('call:error', errHandler);
-    };
+    }
 
     socket.on('call:initiated', handler);
     socket.on('call:feature-gated', gateHandler);
     socket.on('call:error', errHandler);
 
-    // Hard timeout — remove all listeners if no response within 8s
-    setTimeout(cleanup, 8000);
+    // Remove all listeners if no response within 8s; stored so unmount can cancel
+    callTimeoutRef.current = setTimeout(cleanup, 8000);
   }, [socketRef, selectedConvo]);
 
   // ── Side effects ───────────────────────────────────────────────
-  useEffect(() => { if (user) convoHook.fetchConversations(); }, [user, convoHook.fetchConversations]);
+  // Depend on user?._id (stable primitive) not user (object) — avoids re-fetch
+  // when AuthContext re-renders with a new user object reference but same identity.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (user) convoHook.fetchConversations(); }, [user?._id, convoHook.fetchConversations]);
 
   useEffect(() => {
     apiRequest('/api/auth/me/features')
