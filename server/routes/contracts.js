@@ -513,6 +513,9 @@ router.post('/:id/ai-revise', authenticateToken, async (req, res) => {
     res.json({ content: revisedContent, message: 'Contract revised successfully' });
   } catch (err) {
     console.error('Error revising contract with AI:', err);
+    if (err?.code === 'insufficient_quota' || err?.error?.code === 'insufficient_quota') {
+      return res.status(503).json({ error: 'AI revision is temporarily unavailable. Please edit the contract text manually.' });
+    }
     res.status(500).json({ error: 'Failed to revise contract' });
   }
 });
