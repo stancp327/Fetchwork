@@ -339,12 +339,14 @@ const CreateContract = () => {
                 <option>5 years</option>
                 <option>Indefinite</option>
               </select>
+              <p className="contract-input-hint">How long the freelancer agrees to keep your information confidential and not compete with your business. "Indefinite" means the obligation never expires. For most projects, 1–2 years is standard.</p>
             </div>
           )}
 
           <label>Jurisdiction</label>
           <input type="text" value={terms.jurisdiction} onChange={e => setTerms(p => ({ ...p, jurisdiction: e.target.value }))}
             placeholder="e.g. State of California" className="contract-input" />
+          <p className="contract-input-hint">The state or country whose laws govern this contract. If there's ever a dispute, this determines which court system handles it. Use your state/country if unsure — e.g. "State of California" or "United Kingdom".</p>
 
           <label style={{ marginTop: '1rem' }}>Tools / Equipment</label>
           <select
