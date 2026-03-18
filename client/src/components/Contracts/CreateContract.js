@@ -307,6 +307,14 @@ const CreateContract = () => {
                 <option>Net 15</option>
                 <option>Net 30</option>
               </select>
+              <p className="contract-input-hint">{({
+                'Upon completion':             'Full payment released once all work is delivered and approved.',
+                'Job acceptance (deposit)':    'Client pays a deposit upfront when accepting the job; remainder due on completion.',
+                '50% upfront, 50% on completion': 'Half paid at the start, half paid when the project is finished.',
+                'Milestone-based':             'Payment is split across agreed milestones — each released as work is approved.',
+                'Net 15':                      'Full invoice due within 15 days of project completion.',
+                'Net 30':                      'Full invoice due within 30 days of project completion.',
+              })[terms.paymentTerms]}</p>
             </div>
           </div>
 

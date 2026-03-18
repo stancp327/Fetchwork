@@ -750,6 +750,7 @@ const Messages = () => {
                   className="chat-ai-draft-btn"
                   disabled={aiDrafting || msgHook.messages.length === 0}
                   onClick={async () => {
+                    if (!window.confirm('Generate an AI draft reply? This will analyze the conversation.')) return;
                     const lastMsg = [...msgHook.messages].reverse().find(m => m.sender?._id !== (user?._id || user?.id));
                     if (!lastMsg) return;
                     setAiDrafting(true);
@@ -821,6 +822,7 @@ const Messages = () => {
                   className="quick-act msg-ai-risk-btn"
                   disabled={disputeRiskLoading || msgHook.messages.length === 0}
                   onClick={async () => {
+                    if (!window.confirm('Run a risk check on this conversation? This will analyze the chat history for potential dispute signals.')) return;
                     setDisputeRiskLoading(true);
                     try {
                       const last20 = msgHook.messages.slice(-20).map(m => ({

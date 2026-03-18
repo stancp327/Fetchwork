@@ -305,3 +305,5 @@
 .cd-edit-panel { margin-top: 0.75rem; padding: 1rem; background: var(--color-bg-secondary, #f9fafb); border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px; display: flex; flex-direction: column; gap: 0.75rem; }
 .cd-edit-row { display: flex; flex-direction: column; gap: 0.35rem; }
 .cd-edit-row label { font-size: 0.8rem; font-weight: 600; color: var(--color-text-secondary, #6b7280); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.contract-input-hint { font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; line-height: 1.4; }

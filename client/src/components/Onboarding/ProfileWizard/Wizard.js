@@ -265,7 +265,7 @@ const Wizard = () => {
                     <button type="button" onClick={() => removeArrayItem('experience', i)}>Remove</button>
                   </div>
                 ))}
-                <button type="button" onClick={() => addArrayItem('experience', { ...emptyExperience })}>Add experience</button>
+                <button type="button" onClick={() => addArrayItem('experience', { ...emptyExperience })}>Add Experience</button>
               </div>
             </div>
             <div className="wiz-row">
