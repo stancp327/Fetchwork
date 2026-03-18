@@ -196,7 +196,7 @@ const WalletPage = () => {
           <button
             className="wp-wallet-add-btn"
             onClick={handleAddFunds}
-            disabled={adding || (!amount && !customAmount)}
+            disabled={adding || parseFloat(customAmount || amount || 0) <= 0}
           >
             {adding ? 'Redirecting…' : `Add $${parseFloat(customAmount || amount || 0).toFixed(2)}`}
           </button>

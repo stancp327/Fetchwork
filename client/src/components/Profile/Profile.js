@@ -151,10 +151,10 @@ const Profile = () => {
           <button className="prf-ai-tools-btn" onClick={() => setShowAiPanel(p => !p)}>
             ✨ AI Tools
           </button>
-          <a href={`/freelancers/${user?._id || user?.userId}`} className="btn-preview" target="_blank" rel="noopener noreferrer">
+          <a href={`/freelancers/${user?.id || user?._id || user?.userId}`} className="btn-preview" target="_blank" rel="noopener noreferrer">
             👁️ Public Preview
           </a>
-          <button className="btn-share" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/freelancers/${user?._id || user?.userId}`)}>
+          <button className="btn-share" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/freelancers/${user?.id || user?._id || user?.userId}`)}>
             🔗 Share Profile
           </button>
         </div>

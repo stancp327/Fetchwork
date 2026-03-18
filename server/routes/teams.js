@@ -240,7 +240,7 @@ router.post('/', async (req, res) => {
     if (!requesterUser?.isAdmin) {
       const existing = await Team.countDocuments({ owner: userObjectId, isActive: true });
       if (existing >= limits.teams) {
-        return res.status(403).json({ error: 'team_limit_reached', limit: limits.teams, plan: planName });
+        return res.status(403).json({ error: `You've reached the ${planName} plan limit of ${limits.teams} team${limits.teams === 1 ? '' : 's'}. Upgrade your plan to create more.` });
       }
     }
 
