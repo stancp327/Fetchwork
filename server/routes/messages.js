@@ -49,7 +49,6 @@ const emitRealtimeDirectMessage = ({ conversation, message, senderId, recipientI
   io.to(recipientRoom).emit('conversation:update', { conversation });
 
   // SMS notification: only if recipient's socket is not in the active rooms for this conversation
-  const io = global.io;
   const recipientSocketActive = io
     ? (io.sockets?.adapter?.rooms?.get(String(recipientId))?.size || 0) > 0
     : false;
