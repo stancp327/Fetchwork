@@ -3,8 +3,8 @@ import { apiRequest } from '../../utils/api';
 
 const STATUS_CYCLE = ['todo', 'in_progress', 'review', 'done'];
 const STATUS_ICONS = { todo: '○', in_progress: '◑', review: '◕', done: '●' };
-const STATUS_COLORS = { todo: '#6b7280', in_progress: '#d97706', review: '#7c3aed', done: '#16a34a' };
-const PRIORITY_COLORS = { low: '#6b7280', medium: '#2563eb', high: '#d97706', urgent: '#dc2626' };
+const STATUS_COLORS = { todo: 'var(--color-text-secondary)', in_progress: 'var(--color-warning-dark)', review: 'var(--color-accent)', done: 'var(--color-success)' };
+const PRIORITY_COLORS = { low: 'var(--color-text-secondary)', medium: 'var(--color-primary)', high: 'var(--color-warning-dark)', urgent: 'var(--color-danger)' };
 
 export default function SubtaskPanel({ teamId, jobId, teamMembers = [] }) {
   const [subtasks, setSubtasks] = useState([]);
@@ -88,11 +88,12 @@ export default function SubtaskPanel({ teamId, jobId, teamMembers = [] }) {
     setSubtasks(items);
     setDragIdx(null);
     setDropIdx(null);
-    // Persist order
+    // Persist order (batch update all positions)
     try {
-      await apiRequest(`/api/teams/${teamId}/jobs/${jobId}/subtasks/${moved._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ order: dropIdx }),
+      const reorderPayload = items.map((s, i) => ({ id: s._id, order: i }));
+      await apiRequest(`/api/teams/${teamId}/jobs/${jobId}/subtasks/reorder`, {
+        method: 'PATCH',
+        body: JSON.stringify({ order: reorderPayload }),
       });
     } catch { load(); }
   };

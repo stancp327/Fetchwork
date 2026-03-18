@@ -112,7 +112,7 @@ export default function TeamJobs({ teamId, teamMembers = [] }) {
   useEffect(() => {
     const handler = (e) => {
       // Don't trigger when typing in inputs
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) return;
       if (e.key === 'k' || e.key === 'K') {
         e.preventDefault();
         toggleView();
@@ -268,11 +268,6 @@ export default function TeamJobs({ teamId, teamMembers = [] }) {
   const weekFromNow = now + 7 * 86_400_000;
   const overdue = active.filter(j => j.deadline && new Date(j.deadline) < now).length;
   const dueThisWeek = active.filter(j => j.deadline && new Date(j.deadline) >= now && new Date(j.deadline) <= weekFromNow).length;
-  const unreadCount = active.reduce((count, j) => {
-    const lastRead = localStorage.getItem(`jobChat_${j._id}`);
-    // We don't have message timestamps here easily, so just count chat opens
-    return count;
-  }, 0);
 
   // Assign default kanban column for jobs without one
   const getKanbanCol = (job) => {
@@ -554,8 +549,8 @@ export default function TeamJobs({ teamId, teamMembers = [] }) {
           <span className="tj-summary-label">Due This Week</span>
         </div>
         <div className="tj-summary-stat">
-          <span className="tj-summary-num">{unreadCount}</span>
-          <span className="tj-summary-label">Unread</span>
+          <span className="tj-summary-num">{pending.length}</span>
+          <span className="tj-summary-label">Pending</span>
         </div>
       </div>
 

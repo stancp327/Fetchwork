@@ -143,6 +143,7 @@ export default function ProgressNotesPanel({ teamId, jobId, teamMembers = [], cu
           value={text}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onBlur={() => { setTimeout(() => setMentionQuery(null), 150); }}
           rows={2}
         />
         <button className="pn-add-btn" onClick={addNote} disabled={sending || !text.trim()}>

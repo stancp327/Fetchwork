@@ -10,6 +10,9 @@ const TeamApproval = require('../models/TeamApproval');
 const TeamClient = require('../models/TeamClient');
 const TeamNote = require('../models/TeamNote');
 const Job = require('../models/Job');
+const TeamSubtask = require('../models/TeamSubtask');
+const TeamJobRole = require('../models/TeamJobRole');
+const TeamJobChat = require('../models/TeamJobChat');
 const emailService = require('../services/emailService');
 const stripeService = require('../services/stripeService');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
@@ -2460,7 +2463,7 @@ router.get('/:id/jobs', async (req, res) => {
 
     res.json({ assignedJobs, pendingProposals, pinnedJobs });
   } catch (err) {
-    console.error('team jobs error:', err);
+    console.error('team jobs error:', err.message);
     res.status(500).json({ error: 'Failed to fetch team jobs' });
   }
 });
@@ -2487,7 +2490,7 @@ router.post('/:id/proposals/:proposalId/withdraw', async (req, res) => {
 
     res.json({ message: 'Proposal withdrawn', jobId: job._id });
   } catch (err) {
-    console.error('withdraw team proposal error:', err);
+    console.error('withdraw team proposal error:', err.message);
     res.status(500).json({ error: 'Failed to withdraw proposal' });
   }
 });
@@ -2501,8 +2504,8 @@ router.patch('/:id/jobs/:jobId/lead', async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
 
-    const authz = authorizeTeamAction({ team, requesterId: req.user.userId, action: 'manage_members' });
-    if (!authz.ok) return res.status(403).json({ error: 'Only owners/admins can assign leads' });
+    const authz = authorizeTeamAction({ team, requesterId: req.user.userId, action: 'assign_work' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to assign work' });
 
     if (!team.isMember(memberId)) return res.status(400).json({ error: 'User is not a team member' });
 
@@ -2526,15 +2529,12 @@ router.patch('/:id/jobs/:jobId/lead', async (req, res) => {
 
     res.json({ message: 'Lead assigned', job: updatedJob });
   } catch (err) {
-    console.error('assign team lead error:', err);
+    console.error('assign team lead error:', err.message);
     res.status(500).json({ error: 'Failed to assign lead' });
   }
 });
 
-// ── Models for team job workspace ──
-const TeamSubtask = require('../models/TeamSubtask');
-const TeamJobRole = require('../models/TeamJobRole');
-const TeamJobChat = require('../models/TeamJobChat');
+// ── Team job workspace routes ──
 
 // ════════════════════════════════════════════════════════════════
 // SUBTASKS – lite Trello per job
@@ -2555,7 +2555,7 @@ router.get('/:id/jobs/:jobId/subtasks', async (req, res) => {
 
     res.json({ subtasks });
   } catch (err) {
-    console.error('get subtasks error:', err);
+    console.error('get subtasks error:', err.message);
     res.status(500).json({ error: 'Failed to fetch subtasks' });
   }
 });
@@ -2601,8 +2601,30 @@ router.post('/:id/jobs/:jobId/subtasks', async (req, res) => {
 
     res.status(201).json({ subtask: populated });
   } catch (err) {
-    console.error('create subtask error:', err);
+    console.error('create subtask error:', err.message);
     res.status(500).json({ error: 'Failed to create subtask' });
+  }
+});
+
+// REORDER subtasks (batch)
+router.patch('/:id/jobs/:jobId/subtasks/reorder', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
+
+    const { order } = req.body;
+    if (!Array.isArray(order)) return res.status(400).json({ error: 'order must be an array' });
+
+    const bulkOps = order.map(({ id, order: o }) => ({
+      updateOne: { filter: { _id: id, team: team._id, job: req.params.jobId }, update: { $set: { order: o } } },
+    }));
+    if (bulkOps.length > 0) await TeamSubtask.bulkWrite(bulkOps);
+
+    res.json({ message: 'Order updated' });
+  } catch (err) {
+    console.error('reorder subtasks error:', err.message);
+    res.status(500).json({ error: 'Failed to reorder subtasks' });
   }
 });
 
@@ -2634,6 +2656,20 @@ router.put('/:id/jobs/:jobId/subtasks/:subtaskId', async (req, res) => {
 
     await subtask.save();
 
+    // Audit logs for status/assignment changes
+    if (req.body.status === 'done') {
+      TeamAuditLog.logSafe({
+        team: team._id, job: req.params.jobId, actor: req.user._id,
+        action: 'subtask_completed', metadata: { subtaskId: subtask._id, title: subtask.title },
+      });
+    }
+    if (req.body.assignedTo !== undefined) {
+      TeamAuditLog.logSafe({
+        team: team._id, job: req.params.jobId, actor: req.user._id,
+        action: 'subtask_assigned', metadata: { subtaskId: subtask._id, assignedTo: req.body.assignedTo },
+      });
+    }
+
     const populated = await TeamSubtask.findById(subtask._id)
       .populate('assignedTo', 'firstName lastName username avatar')
       .populate('createdBy', 'firstName lastName')
@@ -2641,7 +2677,7 @@ router.put('/:id/jobs/:jobId/subtasks/:subtaskId', async (req, res) => {
 
     res.json({ subtask: populated });
   } catch (err) {
-    console.error('update subtask error:', err);
+    console.error('update subtask error:', err.message);
     res.status(500).json({ error: 'Failed to update subtask' });
   }
 });
@@ -2662,7 +2698,7 @@ router.delete('/:id/jobs/:jobId/subtasks/:subtaskId', async (req, res) => {
 
     res.json({ message: 'Subtask deleted' });
   } catch (err) {
-    console.error('delete subtask error:', err);
+    console.error('delete subtask error:', err.message);
     res.status(500).json({ error: 'Failed to delete subtask' });
   }
 });
@@ -2684,7 +2720,7 @@ router.get('/:id/jobs/:jobId/roles', async (req, res) => {
 
     res.json({ roles });
   } catch (err) {
-    console.error('get job roles error:', err);
+    console.error('get job roles error:', err.message);
     res.status(500).json({ error: 'Failed to fetch roles' });
   }
 });
@@ -2731,7 +2767,7 @@ router.put('/:id/jobs/:jobId/roles', async (req, res) => {
 
     res.json({ roles: saved });
   } catch (err) {
-    console.error('set job roles error:', err);
+    console.error('set job roles error:', err.message);
     res.status(500).json({ error: 'Failed to set roles' });
   }
 });
@@ -2773,7 +2809,7 @@ router.get('/:id/members/workload', async (req, res) => {
 
     res.json({ workload });
   } catch (err) {
-    console.error('workload error:', err);
+    console.error('workload error:', err.message);
     res.status(500).json({ error: 'Failed to fetch workload' });
   }
 });
@@ -2809,7 +2845,7 @@ router.get('/:id/jobs/:jobId/chat', async (req, res) => {
 
     res.json({ messages: cleaned.reverse(), hasMore: messages.length === limit });
   } catch (err) {
-    console.error('get chat error:', err);
+    console.error('get chat error:', err.message);
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
 });
@@ -2825,18 +2861,18 @@ router.post('/:id/jobs/:jobId/chat', async (req, res) => {
     if (!team) return res.status(404).json({ error: 'Team not found' });
     if (!team.isMember(req.user.userId)) return res.status(403).json({ error: 'Not a team member' });
 
-    // Parse @mentions — match @firstName against team members
-    const mentionPattern = /@(\w+)/g;
+    // Parse @mentions — match @firstName against team members (single query)
     const mentions = [];
-    let match;
-    while ((match = mentionPattern.exec(message)) !== null) {
-      const name = match[1].toLowerCase();
-      for (const m of team.members) {
-        const memberId = getId(m.user);
-        // We need populated user data; fetch active member users
-        const memberUser = await User.findById(memberId).select('firstName').lean();
-        if (memberUser && memberUser.firstName.toLowerCase() === name) {
-          mentions.push(memberId);
+    const mentionMatches = [...message.matchAll(/@(\w+)/g)];
+    if (mentionMatches.length > 0) {
+      const activeMemberIds = team.members.filter(m => m.status === 'active').map(m => getId(m.user));
+      const memberUsers = await User.find({ _id: { $in: activeMemberIds } }).select('_id firstName').lean();
+      for (const mm of mentionMatches) {
+        const name = mm[1].toLowerCase();
+        for (const u of memberUsers) {
+          if (u.firstName && u.firstName.toLowerCase() === name) {
+            mentions.push(String(u._id));
+          }
         }
       }
     }
@@ -2853,9 +2889,14 @@ router.post('/:id/jobs/:jobId/chat', async (req, res) => {
       .populate('author', 'firstName lastName username avatar')
       .lean();
 
+    TeamAuditLog.logSafe({
+      team: team._id, job: req.params.jobId, actor: req.user._id,
+      action: 'chat_message_sent',
+    });
+
     res.status(201).json({ message: populated });
   } catch (err) {
-    console.error('send chat error:', err);
+    console.error('send chat error:', err.message);
     res.status(500).json({ error: 'Failed to send message' });
   }
 });
@@ -2897,7 +2938,7 @@ router.put('/:id/jobs/:jobId/chat/:msgId', async (req, res) => {
 
     res.json({ message: populated });
   } catch (err) {
-    console.error('edit chat error:', err);
+    console.error('edit chat error:', err.message);
     res.status(500).json({ error: 'Failed to edit message' });
   }
 });
@@ -2929,7 +2970,7 @@ router.delete('/:id/jobs/:jobId/chat/:msgId', async (req, res) => {
 
     res.json({ message: 'Message deleted' });
   } catch (err) {
-    console.error('delete chat error:', err);
+    console.error('delete chat error:', err.message);
     res.status(500).json({ error: 'Failed to delete message' });
   }
 });
@@ -2952,7 +2993,7 @@ router.get('/:id/jobs/:jobId/notes', async (req, res) => {
 
     res.json({ notes });
   } catch (err) {
-    console.error('get job notes error:', err);
+    console.error('get job notes error:', err.message);
     res.status(500).json({ error: 'Failed to fetch notes' });
   }
 });
@@ -2971,17 +3012,18 @@ router.post('/:id/jobs/:jobId/notes', async (req, res) => {
     const job = await Job.findOne({ _id: req.params.jobId, team: team._id });
     if (!job) return res.status(404).json({ error: 'Job not found in this team' });
 
-    // Parse @mentions
-    const mentionPattern = /@(\w+)/g;
+    // Parse @mentions (single query, team members only)
     const mentions = [];
-    let match;
-    while ((match = mentionPattern.exec(content)) !== null) {
-      const name = match[1].toLowerCase();
-      for (const m of team.members) {
-        const memberId = getId(m.user);
-        const memberUser = await User.findById(memberId).select('firstName').lean();
-        if (memberUser && memberUser.firstName.toLowerCase() === name) {
-          mentions.push(memberId);
+    const mentionMatches = [...content.matchAll(/@(\w+)/g)];
+    if (mentionMatches.length > 0) {
+      const activeMemberIds = team.members.filter(m => m.status === 'active').map(m => getId(m.user));
+      const memberUsers = await User.find({ _id: { $in: activeMemberIds } }).select('_id firstName').lean();
+      for (const mm of mentionMatches) {
+        const name = mm[1].toLowerCase();
+        for (const u of memberUsers) {
+          if (u.firstName && u.firstName.toLowerCase() === name) {
+            mentions.push(String(u._id));
+          }
         }
       }
     }
@@ -3010,7 +3052,7 @@ router.post('/:id/jobs/:jobId/notes', async (req, res) => {
 
     res.status(201).json({ note: populated });
   } catch (err) {
-    console.error('create job note error:', err);
+    console.error('create job note error:', err.message);
     res.status(500).json({ error: 'Failed to create note' });
   }
 });
@@ -3035,7 +3077,7 @@ router.delete('/:id/jobs/:jobId/notes/:noteId', async (req, res) => {
     await TeamNote.deleteOne({ _id: note._id });
     res.json({ message: 'Note deleted' });
   } catch (err) {
-    console.error('delete job note error:', err);
+    console.error('delete job note error:', err.message);
     res.status(500).json({ error: 'Failed to delete note' });
   }
 });
@@ -3058,7 +3100,7 @@ router.get('/:id/jobs/:jobId/activity', async (req, res) => {
 
     res.json({ entries });
   } catch (err) {
-    console.error('job activity error:', err);
+    console.error('job activity error:', err.message);
     res.status(500).json({ error: 'Failed to fetch activity' });
   }
 });
@@ -3093,7 +3135,7 @@ router.put('/:id/jobs/:jobId/kanban', async (req, res) => {
 
     res.json({ message: 'Kanban column updated', kanbanColumn: column });
   } catch (err) {
-    console.error('kanban update error:', err);
+    console.error('kanban update error:', err.message);
     res.status(500).json({ error: 'Failed to update kanban column' });
   }
 });
@@ -3125,7 +3167,7 @@ router.post('/:id/jobs/:jobId/pin', async (req, res) => {
       res.json({ pinned: true });
     }
   } catch (err) {
-    console.error('pin job error:', err);
+    console.error('pin job error:', err.message);
     res.status(500).json({ error: 'Failed to pin/unpin job' });
   }
 });
@@ -3149,7 +3191,7 @@ router.patch('/:id/jobs/:jobId/quick', async (req, res) => {
     await job.save();
     res.json({ message: 'Updated', job: { _id: job._id, urgent: job.urgent, deadline: job.deadline } });
   } catch (err) {
-    console.error('quick action error:', err);
+    console.error('quick action error:', err.message);
     res.status(500).json({ error: 'Failed to update job' });
   }
 });

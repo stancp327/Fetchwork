@@ -13,6 +13,7 @@
 }
 .tj-view-toggle.tj-view-active,
 .tj-view-toggle:hover { border-color: var(--color-primary); background: var(--color-primary-light); color: var(--color-primary-dark); }
+.tj-view-toggle:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 .tj-shortcuts-trigger {
   width: 28px; height: 28px; border-radius: var(--radius-full); border: 1.5px solid var(--color-border);
   background: var(--color-bg-primary); font-weight: var(--font-weight-bold); font-size: var(--font-size-sm);
@@ -20,6 +21,7 @@
   min-height: 44px; min-width: 44px;
 }
 .tj-shortcuts-trigger:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.tj-shortcuts-trigger:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 /* Summary bar */
 .tj-summary-bar {
@@ -44,6 +46,7 @@
   min-height: 44px;
 }
 .tj-tab.active { border-color: var(--color-primary); background: var(--color-primary-light); color: var(--color-primary-dark); font-weight: var(--font-weight-semibold); }
+.tj-tab:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 .tj-count { background: var(--color-bg-muted); border-radius: var(--radius-full); padding: 0 0.375rem; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); }
 .tj-tab.active .tj-count { background: var(--color-primary-bg); }
 
@@ -57,7 +60,7 @@
 }
 .tj-card:hover { box-shadow: var(--shadow-md); }
 .tj-card--pending { border-color: var(--color-warning); }
-.tj-card--expanded { border-color: var(--color-primary); box-shadow: 0 2px 12px rgba(37,99,235,.1); }
+.tj-card--expanded { border-color: var(--color-primary); box-shadow: 0 2px 12px var(--color-primary-ring); }
 .tj-card--urgent { border-left: 3px solid var(--color-danger); }
 .tj-card--pinned { border-left: 3px solid var(--color-warning); }
 .tj-card--urgent.tj-card--pinned { border-left: 3px solid var(--color-danger); }
@@ -123,6 +126,7 @@
   min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;
 }
 .tj-quick-btn:hover { background: var(--color-bg-muted); }
+.tj-quick-btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 .tj-quick-menu {
   position: absolute; right: 0; top: 100%; z-index: 20;
   background: var(--color-bg-primary); border: 1px solid var(--color-border);
@@ -135,6 +139,7 @@
   color: var(--color-text); min-height: 44px;
 }
 .tj-quick-item:hover { background: var(--color-bg-hover); }
+.tj-quick-item:focus-visible { outline: none; box-shadow: inset var(--shadow-focus); }
 
 .tj-card-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); }
 .tj-btn-view { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--color-primary); text-decoration: none; }
@@ -145,6 +150,7 @@
   padding: 0.25rem 0.75rem; cursor: pointer; min-height: 44px;
 }
 .tj-btn-withdraw:hover { background: var(--color-danger-light); }
+.tj-btn-withdraw:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 /* Lead row + workload */
 .tj-lead-row { display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-sm); }
@@ -282,6 +288,7 @@
   font-size: var(--font-size-sm); background: var(--color-bg-primary); outline: none;
 }
 .st-add-input:focus { border-color: var(--color-primary); border-style: solid; }
+.st-status-btn:focus-visible, .st-delete-btn:focus-visible { outline: none; box-shadow: var(--shadow-focus); border-radius: var(--radius-sm); }
 .st-loading { font-size: var(--font-size-sm); color: var(--color-text-muted); padding: var(--space-sm); }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -309,6 +316,7 @@
   min-height: 44px;
 }
 .ra-add-btn:hover { background: var(--color-primary-light); }
+.ra-add-btn:focus-visible, .ra-pill-x:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 .ra-picker {
   display: flex; gap: 0.375rem; margin-top: var(--space-sm); align-items: center; flex-wrap: wrap;
 }
@@ -374,6 +382,7 @@
   min-height: 44px;
 }
 .jc-send-btn:disabled { opacity: 0.5; cursor: default; }
+.jc-send-btn:focus-visible, .jc-load-more:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 /* @mention dropdown */
 .jc-mention-dropdown {
@@ -406,6 +415,7 @@
   min-height: 44px;
 }
 .pn-add-btn:disabled { opacity: 0.5; cursor: default; }
+.pn-add-btn:focus-visible, .pn-note-del:focus-visible, .pn-show-all:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 /* Timeline */
 .pn-timeline { position: relative; padding-left: var(--space-lg); }

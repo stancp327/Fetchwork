@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const teamAuditLogSchema = new mongoose.Schema({
-  team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true, index: true },
-  actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  team: { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true },
+  actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   action: {
     type: String,
     enum: [
@@ -36,7 +36,6 @@ const teamAuditLogSchema = new mongoose.Schema({
       'chat_message_sent',
     ],
     required: true,
-    index: true,
   },
   targetUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   before: { type: mongoose.Schema.Types.Mixed, default: null },

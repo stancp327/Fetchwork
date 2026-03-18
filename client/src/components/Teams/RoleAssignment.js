@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
 
 const ROLE_OPTIONS = [
-  { value: 'designer',  label: 'Designer',  color: '#ec4899' },
-  { value: 'developer', label: 'Developer', color: '#3b82f6' },
-  { value: 'reviewer',  label: 'Reviewer',  color: '#8b5cf6' },
-  { value: 'pm',        label: 'PM',        color: '#f59e0b' },
-  { value: 'writer',    label: 'Writer',    color: '#10b981' },
-  { value: 'other',     label: 'Other',     color: '#6b7280' },
+  { value: 'designer',  label: 'Designer',  color: 'var(--color-danger)' },
+  { value: 'developer', label: 'Developer', color: 'var(--color-primary)' },
+  { value: 'reviewer',  label: 'Reviewer',  color: 'var(--color-accent)' },
+  { value: 'pm',        label: 'PM',        color: 'var(--color-warning)' },
+  { value: 'writer',    label: 'Writer',    color: 'var(--color-success)' },
+  { value: 'other',     label: 'Other',     color: 'var(--color-text-secondary)' },
 ];
 const ROLE_MAP = Object.fromEntries(ROLE_OPTIONS.map(r => [r.value, r]));
 

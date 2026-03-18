@@ -209,6 +209,7 @@ export default function JobChatPanel({ teamId, jobId, teamMembers = [], currentU
           value={text}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onBlur={() => { setTimeout(() => setMentionQuery(null), 150); }}
           disabled={sending}
         />
         <button className="jc-send-btn" onClick={send} disabled={sending || !text.trim()}>Send</button>
