@@ -14,6 +14,12 @@
 .service-gallery { border-radius: 12px; overflow: hidden; background: var(--color-bg-subtle); aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
 .service-gallery img { width: 100%; height: 100%; object-fit: cover; }
 .placeholder-image { font-size: 3rem; color: var(--color-border-medium); }
+.placeholder-image--prompt {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.5rem; padding: 2rem; background: var(--color-bg-subtle);
+  border: 2px dashed var(--color-border); border-radius: 12px; aspect-ratio: 16/7;
+}
+.placeholder-image--prompt p { font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: 0; }
 
 /* Content cards */
 .service-description, .service-skills, .service-faqs { background: var(--color-bg-primary); border-radius: 12px; padding: var(--space-lg); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); border: 1px solid var(--color-border); }

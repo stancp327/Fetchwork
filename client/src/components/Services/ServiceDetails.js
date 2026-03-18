@@ -275,11 +275,12 @@ const ServiceDetails = () => {
             <div className="service-gallery">
               {service.gallery && service.gallery.length > 0 ? (
                 <img src={service.gallery[0].url} alt={service.title} />
-              ) : (
-                <div className="placeholder-image">
-                  <span>📋</span>
+              ) : isOwnService ? (
+                <div className="placeholder-image placeholder-image--prompt">
+                  <span>🖼️</span>
+                  <p>Add photos or a video to attract more clients</p>
                 </div>
-              )}
+              ) : null}
             </div>
 
             <div className="service-description">

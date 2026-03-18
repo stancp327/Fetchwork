@@ -757,6 +757,7 @@ const Messages = () => {
                 <button
                   type="button"
                   className="chat-ai-draft-btn"
+                  title="AI Draft — analyzes the conversation and writes a suggested reply for you"
                   disabled={aiDrafting || msgHook.messages.length === 0}
                   onClick={async () => {
                     if (!window.confirm('Generate an AI draft reply? This will analyze the conversation.')) return;

@@ -225,7 +225,7 @@ function AppContent() {
       <ScrollToTop />
       <Navigation />
       {enhancementsReady && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh',color:'var(--color-text-secondary)'}}>Loading…</div>}>
           <ChatBot />
           <FeedbackWidget />
           {user && <NotificationListener />}

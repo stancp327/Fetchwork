@@ -86,6 +86,11 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0; /* allow .inbox-list to scroll inside grid/flex constraints */
+  min-width: 0; /* grid child — explicit min-width set at breakpoints below */
+}
+
+@media (min-width: 768px) {
+  .messages-inbox { min-width: 280px; } /* prevent sidebar collapsing below 280px */
 }
 
 .inbox-filters {
