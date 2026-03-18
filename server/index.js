@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -12,6 +13,17 @@ const session = require('express-session');
 // ── Config ──────────────────────────────────────────────────────
 const { PORT, MONGO_URI, JWT_SECRET } = require('./config/env');
 const configurePassport = require('./config/passport');
+
+// ── Sentry ──────────────────────────────────────────────────────
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  enabled: !!process.env.SENTRY_DSN,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+  integrations: [
+    Sentry.mongooseIntegration(),
+  ],
+});
 
 // ── App Setup ───────────────────────────────────────────────────
 const app = express();
@@ -375,6 +387,7 @@ const { errorTracker, setupProcessErrorHandlers } = require('./middleware/errorT
 setupProcessErrorHandlers();
 
 app.use(errorTracker);
+app.use(Sentry.expressErrorHandler()); // captures unhandled errors to Sentry
 app.use((err, req, res, next) => {
   console.error(err.stack);
   const statusCode = err.status || err.statusCode || 500;
