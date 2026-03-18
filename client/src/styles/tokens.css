@@ -28,6 +28,16 @@
   --color-info-light:    #f0f9ff;   /* Tailwind sky-50  */
   --color-accent:        #8b5cf6;   /* purple accent */
 
+  --color-warning-subtle: #fef3c7;  /* amber-100 — warning banner bg */
+  --color-warning-text:   #92400e;  /* amber-800 — warning text */
+  --color-danger-text:    #991b1b;  /* red-800  — danger text on light bg */
+  --color-danger-border:  #fca5a5;  /* red-300  — soft danger border */
+  --color-success-subtle: #f0fdf4;  /* green-50 — success banner bg */
+  --color-unread-bg:      #fefce8;  /* yellow-50 — unread highlight */
+
+  --color-overlay:        rgba(0, 0, 0, 0.35);
+  --color-overlay-dark:   rgba(0, 0, 0, 0.6);
+
   /* -- Text Colors --------------------------------------------- */
   --color-text-darker:    #111827;  /* near-black, hero headings (gray-900) */
   --color-text-dark:      #1e293b;  /* headings, high emphasis (slate-800) */
