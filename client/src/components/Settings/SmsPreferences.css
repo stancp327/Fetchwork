@@ -1,0 +1,70 @@
+/* ── SMS Preferences ──────────────────────────────────────────── */
+.sms-prefs {
+  max-width: 540px;
+  padding: var(--space-xl);
+}
+.sms-prefs h2 { margin: 0 0 var(--space-xs); font-size: 1.25rem; }
+.sms-prefs-sub { color: var(--color-text-secondary); margin: 0 0 var(--space-xl); font-size: var(--font-size-sm); }
+
+/* Phone input */
+.sms-phone-row { margin-bottom: var(--space-lg); }
+.sms-phone-row label { display: block; font-weight: 600; margin-bottom: var(--space-xs); font-size: var(--font-size-sm); }
+.sms-phone-input {
+  width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); font-size: var(--font-size-base);
+  box-sizing: border-box;
+}
+.sms-phone-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-ring); }
+.sms-error { color: var(--color-danger); font-size: var(--font-size-xs); margin: var(--space-xs) 0 0; }
+
+/* Toggle switch */
+.sms-toggle-label {
+  display: flex; align-items: center; gap: var(--space-md);
+  cursor: pointer; user-select: none;
+}
+.sms-toggle-label input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.sms-toggle-track {
+  position: relative; flex-shrink: 0;
+  width: 44px; height: 24px; border-radius: 12px;
+  background: var(--color-border); transition: background 0.2s;
+}
+.sms-toggle-label input:checked + .sms-toggle-track { background: var(--color-primary); }
+.sms-toggle-track::after {
+  content: ''; position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.sms-toggle-label input:checked + .sms-toggle-track::after { transform: translateX(20px); }
+.sms-toggle-text { font-weight: 600; font-size: var(--font-size-base); }
+
+/* Master toggle */
+.sms-master-toggle {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+/* Per-category rows */
+.sms-categories { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-xl); }
+.sms-category-row {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+.sms-category-info { display: flex; flex-direction: column; gap: 2px; }
+.sms-category-name { font-weight: 600; font-size: var(--font-size-sm); }
+.sms-category-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+
+/* Save button */
+.sms-save-btn {
+  background: var(--color-primary); color: #fff;
+  border: none; border-radius: var(--radius-md);
+  padding: 0.65rem 1.5rem; font-size: var(--font-size-base);
+  font-weight: 600; cursor: pointer; transition: background 0.15s;
+}
+.sms-save-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
+.sms-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }

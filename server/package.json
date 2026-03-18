@@ -56,7 +56,8 @@
     "resend": "^4.7.0",
     "sharp": "^0.33.4",
     "socket.io": "^4.8.1",
-    "stripe": "^18.3.0"
+    "stripe": "^18.3.0",
+    "twilio": "^5.13.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.9.0",

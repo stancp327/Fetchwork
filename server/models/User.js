@@ -151,7 +151,15 @@ const userSchema = new mongoose.Schema({
       enum: ['immediate', 'daily', 'weekly'],
       default: 'immediate'
     },
-    smsNotifications: { type: Boolean, default: false },
+    smsNotifications: { type: Boolean, default: false }, // master toggle
+    smsOptIn: {
+      messages:         { type: Boolean, default: true },
+      bookingReminders: { type: Boolean, default: true },
+      payments:         { type: Boolean, default: true },
+      proposals:        { type: Boolean, default: true },
+      disputes:         { type: Boolean, default: true },
+      marketing:        { type: Boolean, default: false },
+    },
     // Discovery notifications
     discovery: {
       enabled:           { type: Boolean, default: false },  // master toggle

@@ -109,6 +109,7 @@ model BookingOccurrence {
   status              BookingStatus @default(held)
   seriesId            String?       @db.Uuid
   skipped             Boolean       @default(false)
+  smsReminderSent     String?       // '24h' | '1h' | null — tracks which reminder was sent
   createdAt           DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime      @updatedAt @db.Timestamptz(6)
 

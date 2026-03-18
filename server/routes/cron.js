@@ -39,4 +39,30 @@ router.post('/process-onboarding', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/cron/booking-reminders
+ * Sends SMS reminders for bookings starting in ~24h and ~1h.
+ * Run every 15 minutes via Render Cron Job.
+ */
+router.post('/booking-reminders', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error('[cron] CRON_SECRET not set - refusing request');
+    return res.status(500).json({ error: 'CRON_SECRET not configured on server' });
+  }
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!crypto.timingSafeEqual(Buffer.from(token), Buffer.from(secret))) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { sendBookingReminders } = require('../cron/bookingReminders');
+    await sendBookingReminders();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[cron/booking-reminders]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -1010,6 +1010,13 @@ router.post('/wallet/withdraw', authenticateToken, async (req, res) => {
     });
 
     session.endSession();
+
+    // SMS: notify user payout is on the way
+    try {
+      const { notifyUser, SMS: smsTemplates } = require('../services/smsService');
+      notifyUser(user, 'payments', smsTemplates.payoutSent(amount.toFixed(2))).catch(() => {});
+    } catch (_) {}
+
     res.json({
       success:    true,
       withdrawn:  amount,

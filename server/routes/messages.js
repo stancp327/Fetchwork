@@ -9,6 +9,8 @@ const { validateMessage, validateQueryParams, validateConversationIdParam } = re
 const { detectOffPlatform, getWarningMessage } = require('../services/offPlatformDetector');
 const ModerationEvent = require('../models/ModerationEvent');
 
+const { notifyUser, SMS } = require('../services/smsService');
+
 const getCorrelationId = (req) => req.headers['x-correlation-id'] || req.headers['x-request-id'] || crypto.randomUUID();
 const logRouteError = (req, scope, error) => {
   const correlationId = req.correlationId || getCorrelationId(req);
@@ -45,6 +47,19 @@ const emitRealtimeDirectMessage = ({ conversation, message, senderId, recipientI
 
   io.to(senderRoom).emit('conversation:update', { conversation });
   io.to(recipientRoom).emit('conversation:update', { conversation });
+
+  // SMS notification to recipient if they're not online
+  const onlineUsers = global.onlineUsers || new Set();
+  if (!onlineUsers.has(String(recipientId))) {
+    User.findById(recipientId).select('phone preferences firstName').then(recipient => {
+      if (!recipient) return;
+      User.findById(senderId).select('firstName lastName').then(sender => {
+        if (!sender) return;
+        const senderName = `${sender.firstName} ${sender.lastName}`;
+        notifyUser(recipient, 'messages', SMS.newMessage(senderName)).catch(() => {});
+      }).catch(() => {});
+    }).catch(() => {});
+  }
 };
 
 if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {

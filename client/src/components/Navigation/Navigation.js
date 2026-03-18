@@ -185,6 +185,7 @@ const ProfileMenu = ({ user, logout, isAdmin, isMod }) => {
           <MenuItem to="/spend"              icon="📈" label="Spend Dashboard" />
           <MenuItem to="/job-alerts"         icon="🔔" label="Job Alerts" />
           <MenuItem to="/discovery-settings" icon="🔍" label="Discovery" />
+          <MenuItem to="/sms-preferences"   icon="📱" label="SMS Notifications" />
           <MenuItem to="/referrals"          icon="🎁" label="Referrals" />
           <MenuItem to="/security"           icon="🔒" label="Security" />
 

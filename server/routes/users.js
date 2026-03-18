@@ -351,6 +351,21 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
       }));
     }
     
+    // SMS preferences partial update
+    if (req.body.preferences) {
+      const p = req.body.preferences;
+      if (!user.preferences) user.preferences = {};
+      if (p.smsNotifications !== undefined) user.preferences.smsNotifications = !!p.smsNotifications;
+      if (p.smsOptIn && typeof p.smsOptIn === 'object') {
+        if (!user.preferences.smsOptIn) user.preferences.smsOptIn = {};
+        const allowed = ['messages', 'bookingReminders', 'payments', 'proposals', 'disputes', 'marketing'];
+        allowed.forEach(k => {
+          if (p.smsOptIn[k] !== undefined) user.preferences.smsOptIn[k] = !!p.smsOptIn[k];
+        });
+        user.markModified('preferences');
+      }
+    }
+
     const allowedUpdates = [
       'firstName', 'lastName', 'bio', 'skills', 'hourlyRate', 'rateNegotiable',
       'location', 'timezone', 'portfolio', 'socialLinks', 'phone',

@@ -10,6 +10,8 @@ const router  = express.Router();
 const { objectIdParam } = require('../middleware/validateObjectId');
 router.param('id', objectIdParam);
 const { authenticateToken } = require('../middleware/auth');
+const User = require('../models/User');
+const { notifyUser, SMS } = require('../services/smsService');
 const { requireFeature }    = require('../middleware/entitlements');
 const Service               = require('../models/Service'); // service catalog only
 const stripeService         = require('../services/stripeService');
@@ -269,6 +271,18 @@ router.post('/:bookingId/confirm-payment', authenticateToken, async (req, res) =
         date:         occ?.localStartWallclock?.split('T')[0] || '',
         startTime:    occ?.localStartWallclock?.split('T')[1]?.slice(0, 5) || '',
       });
+    } catch (_) {}
+
+    // SMS: notify client (booking confirmed) and freelancer
+    try {
+      const occ2 = await db.bookingOccurrence.findFirst({ where: { bookingId }, orderBy: { occurrenceNo: 'asc' } });
+      const dateStr = occ2?.localStartWallclock?.split('T')[0] || '';
+      const [client, freelancer] = await Promise.all([
+        User.findById(booking.clientId).select('phone preferences firstName'),
+        User.findById(booking.freelancerId).select('phone preferences firstName'),
+      ]);
+      if (client) notifyUser(client, 'bookingReminders', SMS.bookingConfirmed('your booking', dateStr)).catch(() => {});
+      if (freelancer) notifyUser(freelancer, 'bookingReminders', SMS.bookingConfirmed('your booking', dateStr)).catch(() => {});
     } catch (_) {}
 
     return res.json({ success: true, confirmed: true });

@@ -82,6 +82,7 @@ const ContractDetail       = React.lazy(() => import('./components/Contracts/Con
 const CreateContract       = React.lazy(() => import('./components/Contracts/CreateContract'));
 const BackgroundCheckPage  = React.lazy(() => import('./components/Verification/BackgroundCheck'));
 const DiscoverySettings    = React.lazy(() => import('./components/Settings/DiscoverySettings'));
+const SmsPreferences       = React.lazy(() => import('./components/Settings/SmsPreferences'));
 const JobAlertsPage        = React.lazy(() => import('./components/JobAlerts/JobAlertsPage'));
 const ReferralPage         = React.lazy(() => import('./components/Referrals/ReferralPage'));
 const PresentationView     = React.lazy(() => import('./components/Teams/PresentationView'));
@@ -411,6 +412,7 @@ function AppContent() {
               <Route path="/contracts/:id"        element={<ProtectedRoute><ContractDetail /></ProtectedRoute>} />
               <Route path="/background-check"     element={<ProtectedRoute><BackgroundCheckPage /></ProtectedRoute>} />
           <Route path="/discovery-settings"   element={<ProtectedRoute><DiscoverySettings /></ProtectedRoute>} />
+          <Route path="/sms-preferences"       element={<ProtectedRoute><SmsPreferences /></ProtectedRoute>} />
           <Route path="/job-alerts"            element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
           <Route path="/referrals"             element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
           <Route path="/presentation/:slug"    element={<PresentationView />} />
