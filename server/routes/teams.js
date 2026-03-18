@@ -20,7 +20,7 @@ const stripeService = require('../services/stripeService');
 const { hasFeature, FEATURES } = require('../services/entitlementEngine');
 const { getUserSubscription } = require('../utils/billingUtils');
 
-const PLAN_LIMITS = { free: { teams: 0 }, pro: { teams: 1, members: 5 }, business: { teams: 3, members: 10 }, default: { teams: 1, members: 5 } };
+const PLAN_LIMITS = { free: { teams: 1 }, plus: { teams: 3 }, pro: { teams: Infinity, members: Infinity }, business: { teams: Infinity, members: Infinity }, default: { teams: 1, members: 5 } };
 
 async function getUserPlanName(userId) {
   try {
@@ -235,10 +235,13 @@ router.post('/', async (req, res) => {
     const planName = await getUserPlanName(userId);
     const limits = PLAN_LIMITS[planName] || PLAN_LIMITS.default;
 
-    // Check user doesn't already own too many teams
-    const existing = await Team.countDocuments({ owner: userObjectId, isActive: true });
-    if (existing >= limits.teams) {
-      return res.status(403).json({ error: 'team_limit_reached', limit: limits.teams, plan: planName });
+    // Check user doesn't already own too many teams (admins bypass all limits)
+    const requesterUser = await User.findById(userObjectId).select('isAdmin').lean();
+    if (!requesterUser?.isAdmin) {
+      const existing = await Team.countDocuments({ owner: userObjectId, isActive: true });
+      if (existing >= limits.teams) {
+        return res.status(403).json({ error: 'team_limit_reached', limit: limits.teams, plan: planName });
+      }
     }
 
     const team = await Team.create({
