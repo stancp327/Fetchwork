@@ -896,8 +896,25 @@ const Messages = () => {
                         </div>
                       </div>
                       <div className="offer-field">
+                        <label>Work type</label>
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                          {[['remote','🌐 Remote'],['in_person','📍 In-Person']].map(([val, lbl]) => (
+                            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: schedHook.scheduleLocationType === val ? 600 : 400 }}>
+                              <input type="radio" value={val} checked={schedHook.scheduleLocationType === val} onChange={() => schedHook.setScheduleLocationType(val)} disabled={schedHook.scheduleSaving} />
+                              {lbl}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      {schedHook.scheduleLocationType === 'in_person' && (
+                        <div className="offer-field">
+                          <label>Location / Address</label>
+                          <input type="text" value={schedHook.scheduleLocation} onChange={e => schedHook.setScheduleLocation(e.target.value)} placeholder="e.g. 123 Main St, San Francisco CA" disabled={schedHook.scheduleSaving} />
+                        </div>
+                      )}
+                      <div className="offer-field">
                         <label>Notes</label>
-                        <textarea rows={3} value={schedHook.scheduleNotes} onChange={e => schedHook.setScheduleNotes(e.target.value)} placeholder="Optional notes (address, agenda, call link, etc.)" disabled={schedHook.scheduleSaving} />
+                        <textarea rows={3} value={schedHook.scheduleNotes} onChange={e => schedHook.setScheduleNotes(e.target.value)} placeholder="Optional notes (agenda, call link, etc.)" disabled={schedHook.scheduleSaving} />
                       </div>
                       <div className="offer-actions">
                         <button type="button" className="offer-btn-secondary" onClick={() => { schedHook.setShowScheduleModal(false); schedHook.setEditingApptId(null); }} disabled={schedHook.scheduleSaving}>Cancel</button>

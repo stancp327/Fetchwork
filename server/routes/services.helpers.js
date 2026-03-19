@@ -64,6 +64,11 @@ async function buildServiceFilters(query) {
     }
   }
 
+  // Service type filter (one_time / recurring / bundle)
+  if (query.serviceType && query.serviceType !== 'all') {
+    filters.serviceType = query.serviceType;
+  }
+
   // Delivery time filter
   if (query.deliveryTime && query.deliveryTime !== 'all') {
     const maxDays = { '1_day': 1, '3_days': 3, '7_days': 7, '14_days': 14, '30_days': 30 }[query.deliveryTime];

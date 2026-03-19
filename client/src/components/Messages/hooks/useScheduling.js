@@ -20,6 +20,8 @@ export default function useScheduling({ selectedConvo, setMessages }) {
   const [scheduleTime, setScheduleTime] = useState('');
   const [scheduleDuration, setScheduleDuration] = useState(30);
   const [scheduleNotes, setScheduleNotes] = useState('');
+  const [scheduleLocationType, setScheduleLocationType] = useState('remote');
+  const [scheduleLocation, setScheduleLocation] = useState('');
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleError, setScheduleError] = useState('');
   const [editingApptId, setEditingApptId] = useState(null);
@@ -62,6 +64,8 @@ export default function useScheduling({ selectedConvo, setMessages }) {
       setScheduleTime(localTime);
       setScheduleDuration(mins || 30);
       setScheduleNotes(editing.notes || '');
+      setScheduleLocationType(editing.locationType || 'remote');
+      setScheduleLocation(editing.location || '');
       return;
     }
 
@@ -73,6 +77,8 @@ export default function useScheduling({ selectedConvo, setMessages }) {
     setScheduleTime(prev => prev || isoTime);
     setScheduleDuration(prev => prev || 30);
     setScheduleNotes('');
+    setScheduleLocationType('remote');
+    setScheduleLocation('');
 
     if (selectedConvo?.service) setScheduleType('service');
     else if (selectedConvo?.job) setScheduleType('job');
@@ -97,6 +103,8 @@ export default function useScheduling({ selectedConvo, setMessages }) {
         durationMinutes: Number(scheduleDuration),
         timezone: tz,
         notes: scheduleNotes,
+        locationType: scheduleLocationType,
+        location: scheduleLocationType === 'in_person' ? scheduleLocation : undefined,
       };
 
       let appt;
@@ -201,6 +209,10 @@ export default function useScheduling({ selectedConvo, setMessages }) {
     setScheduleDuration,
     scheduleNotes,
     setScheduleNotes,
+    scheduleLocationType,
+    setScheduleLocationType,
+    scheduleLocation,
+    setScheduleLocation,
     scheduleSaving,
     scheduleError,
     editingApptId,

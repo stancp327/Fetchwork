@@ -105,7 +105,7 @@ const BrowseServices = () => {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
-    category: 'all', locationType: 'all', near: '', radius: '25', minPrice: '', maxPrice: '', deliveryTime: 'all', sortBy: 'newest'
+    category: 'all', locationType: 'all', near: '', radius: '25', minPrice: '', maxPrice: '', deliveryTime: 'all', serviceType: 'all', sortBy: 'newest'
   });
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
@@ -182,6 +182,13 @@ const BrowseServices = () => {
           { value: '7_days', label: 'Up to 7 Days' },
           { value: '14_days', label: 'Up to 2 Weeks' },
           { value: '30_days', label: 'Up to 1 Month' },
+        ]} />
+      <FilterSelect label="Service Type" value={filters.serviceType || 'all'} onChange={v => updateFilter('serviceType', v)}
+        options={[
+          { value: 'all',       label: 'All Types' },
+          { value: 'one_time',  label: '⚡ One-Time' },
+          { value: 'recurring', label: '🔄 Recurring / Subscription' },
+          { value: 'bundle',    label: '📦 Bundle / Package' },
         ]} />
     </>
   );
