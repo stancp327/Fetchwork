@@ -50,6 +50,8 @@ const MyBookings = () => {
 
   const [tab, setTab]                   = useState('upcoming');
   const [bookings, setBookings]         = useState([]);
+  const [bundles, setBundles]           = useState([]);
+  const [bundlesLoading, setBundlesLoading] = useState(false);
   const [loading, setLoading]           = useState(true);
   const [actionLoading, setActionLoading] = useState('');
   const [msg, setMsg]                   = useState({ text: '', ok: true });
@@ -94,6 +96,15 @@ const MyBookings = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (tab !== 'bundles') return;
+    setBundlesLoading(true);
+    apiRequest(`/api/services/bundles/me?role=${role}`)
+      .then(d => setBundles(d.bundles || []))
+      .catch(() => {})
+      .finally(() => setBundlesLoading(false));
+  }, [tab, role]);
+
   const doAction = async (bookingId, action, body = {}) => {
     setActionLoading(`${bookingId}_${action}`);
     try {
@@ -124,9 +135,9 @@ const MyBookings = () => {
       <h1 className="mb-title">📅 My Bookings</h1>
 
       <div className="mb-tabs">
-        {['upcoming', 'past', 'cancelled'].map(t => (
+        {['upcoming', 'past', 'cancelled', 'bundles'].map(t => (
           <button key={t} className={`mb-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === 'bundles' ? '📦 Bundles' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -245,6 +256,63 @@ const MyBookings = () => {
             );
           })}
         </div>
+      )}
+
+      {/* ── Bundles tab ── */}
+      {tab === 'bundles' && (
+        bundlesLoading ? (
+          <div className="mb-loading">Loading bundles…</div>
+        ) : bundles.length === 0 ? (
+          <div className="mb-empty">
+            <span style={{ fontSize: '2.5rem' }}>📦</span>
+            <h3>No session bundles</h3>
+            <p>Purchase a bundle from a service page to see your sessions here.</p>
+            <Link to="/services" className="mb-action-btn view" style={{ display: 'inline-block', marginTop: '1rem' }}>
+              Browse Services →
+            </Link>
+          </div>
+        ) : (
+          <div className="mb-list">
+            {bundles.map(b => {
+              const pct = b.sessionsTotal > 0 ? Math.round((b.sessionsCompleted / b.sessionsTotal) * 100) : 0;
+              const other = role === 'client' ? b.freelancer : b.client;
+              const statusInfo = STATUS_LABELS[b.status] || { label: b.status, cls: 'muted' };
+              return (
+                <div key={b._id} className="mb-card">
+                  <div className="mb-card-top">
+                    <div className="mb-card-info">
+                      <h3 className="mb-card-service">{b.service?.title || 'Service'}</h3>
+                      <p className="mb-card-person" style={{ marginBottom: '0.25rem' }}>
+                        <strong>{b.bundleName}</strong>
+                        {other && <> · {role === 'client' ? 'with' : 'from'} {other.firstName} {other.lastName}</>}
+                      </p>
+                    </div>
+                    <span className={`mb-status mb-status-${statusInfo.cls}`}>{statusInfo.label}</span>
+                  </div>
+
+                  {/* Session progress bar */}
+                  <div style={{ margin: '0.75rem 0 0.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#6b7280', marginBottom: 4 }}>
+                      <span>Sessions used: <strong>{b.sessionsCompleted} / {b.sessionsTotal}</strong></span>
+                      <span style={{ color: b.sessionsRemaining > 0 ? '#059669' : '#6b7280', fontWeight: 600 }}>
+                        {b.sessionsRemaining} remaining
+                      </span>
+                    </div>
+                    <div style={{ height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? '#6b7280' : '#2563eb', borderRadius: 4, transition: 'width 0.3s' }} />
+                    </div>
+                  </div>
+
+                  {b.expiresAt && (
+                    <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                      ⏰ Expires {new Date(b.expiresAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )
       )}
     </div>
   );
