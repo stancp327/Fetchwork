@@ -205,6 +205,34 @@ router.post('/:id/cancel', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/appointments/mine — all appointments for current user
+router.get('/mine', authenticateToken, async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const meId = String(getEntityId(req.user?._id));
+    const { status, upcoming } = req.query || {};
+
+    const now = new Date();
+    const where = {
+      OR: [{ clientId: meId }, { freelancerId: meId }],
+      ...(status ? { status: String(status) } : {}),
+      ...(upcoming === 'true' ? { startAtUtc: { gte: now } } : {}),
+      ...(upcoming === 'false' ? { startAtUtc: { lt: now } } : {}),
+    };
+
+    const appointments = await prisma.appointment.findMany({
+      where,
+      orderBy: { startAtUtc: 'asc' },
+      take: 200,
+    });
+
+    return res.json({ appointments });
+  } catch (error) {
+    console.error('List my appointments error:', error);
+    return res.status(500).json({ error: 'Failed to list appointments' });
+  }
+});
+
 // GET /api/appointments?conversationId=...
 router.get('/', authenticateToken, async (req, res) => {
   try {

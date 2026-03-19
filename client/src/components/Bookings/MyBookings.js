@@ -20,10 +20,28 @@ const STATUS_LABELS = {
   pending:    { label: 'Pending',    cls: 'warning' },
   hold:       { label: 'Hold',       cls: 'warning' },
   confirmed:  { label: 'Confirmed',  cls: 'success' },
+  proposed:   { label: 'Proposed',   cls: 'warning' },
   cancelled:  { label: 'Cancelled',  cls: 'danger'  },
   completed:  { label: 'Completed',  cls: 'muted'   },
   no_show:    { label: 'No Show',    cls: 'danger'  },
 };
+
+// Normalise an Appointment into a booking-like shape for display
+function apptToBooking(appt) {
+  const start = new Date(appt.startAtUtc);
+  return {
+    _appt: true,
+    id: appt.id,
+    status: appt.status === 'proposed' ? 'pending' : appt.status,
+    serviceTitle: appt.appointmentType ? appt.appointmentType.replace(/_/g, ' ') : 'Scheduled Session',
+    date: start.toISOString().slice(0, 10),
+    startTime: `${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}`,
+    endTime: (() => { const e = new Date(appt.endAtUtc); return `${String(e.getHours()).padStart(2,'0')}:${String(e.getMinutes()).padStart(2,'0')}`; })(),
+    timezone: appt.timezone,
+    notes: appt.notes,
+    _fromMessages: true,
+  };
+}
 
 const MyBookings = () => {
   const { user } = useAuth();
@@ -41,8 +59,32 @@ const MyBookings = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiRequest(`/api/bookings/me?role=${role}&status=${tab}`);
-      setBookings(data.bookings || []);
+      const [bookingData, apptData] = await Promise.allSettled([
+        apiRequest(`/api/bookings/me?role=${role}&status=${tab}`),
+        apiRequest(`/api/appointments/mine?upcoming=${tab === 'upcoming' ? 'true' : tab === 'past' ? 'false' : 'true'}&${tab === 'cancelled' ? 'status=cancelled' : ''}`),
+      ]);
+
+      const sqlBookings = bookingData.status === 'fulfilled' ? (bookingData.value.bookings || []) : [];
+      const rawAppts    = apptData.status === 'fulfilled'    ? (apptData.value.appointments || []) : [];
+
+      // Filter appointments to match the tab
+      const filteredAppts = rawAppts.filter(a => {
+        if (tab === 'cancelled') return a.status === 'cancelled';
+        if (tab === 'past')      return a.status !== 'cancelled';
+        // upcoming: proposed or confirmed
+        return a.status === 'proposed' || a.status === 'confirmed';
+      });
+
+      const apptBookings = filteredAppts.map(apptToBooking);
+
+      // Merge: SQL bookings first, then appointments; sort by date
+      const merged = [...sqlBookings, ...apptBookings].sort((a, b) => {
+        const da = a.date ? new Date(a.date + 'T' + (a.startTime || '00:00')).getTime() : 0;
+        const db = b.date ? new Date(b.date + 'T' + (b.startTime || '00:00')).getTime() : 0;
+        return da - db;
+      });
+
+      setBookings(merged);
     } catch (err) {
       flash('Failed to load bookings: ' + err.message, false);
     } finally {
@@ -99,7 +141,12 @@ const MyBookings = () => {
         <div className="mb-empty">
           <span style={{ fontSize: '2.5rem' }}>📅</span>
           <h3>No {tab} bookings</h3>
-          <p>{tab === 'upcoming' ? 'Book a service to get started!' : `You don't have any ${tab} bookings yet.`}</p>
+          <p>{tab === 'upcoming' ? 'Ready to book? Browse services to get started.' : `You don't have any ${tab} bookings yet.`}</p>
+          {tab === 'upcoming' && (
+            <Link to="/services" className="mb-action-btn view" style={{ display: 'inline-block', marginTop: '1rem' }}>
+              Browse Services →
+            </Link>
+          )}
         </div>
       ) : (
         <div className="mb-list">
@@ -118,6 +165,7 @@ const MyBookings = () => {
                   <div className="mb-card-info">
                     <h3 className="mb-card-service">
                       {b.service?.title || b.serviceTitle || 'Service'}
+                      {b._fromMessages && <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.5rem', fontWeight: 400 }}>(scheduled in messages)</span>}
                     </h3>
                     {otherPerson && (
                       <p className="mb-card-person">
@@ -158,9 +206,10 @@ const MyBookings = () => {
 
                 {/* Actions */}
                 <div className="mb-card-actions">
-                  <Link to={`/bookings/${id}`} className="mb-action-btn view">
-                    View Details
-                  </Link>
+                  {b._fromMessages
+                    ? <span className="mb-action-btn view" style={{ cursor: 'default', opacity: 0.7 }}>💬 Via Messages</span>
+                    : <Link to={`/bookings/${id}`} className="mb-action-btn view">View Details</Link>
+                  }
 
                   {role === 'freelancer' && b.status === 'pending' && (
                     <button
