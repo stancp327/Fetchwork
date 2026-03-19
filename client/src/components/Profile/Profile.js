@@ -49,6 +49,7 @@ const Profile = () => {
       const response = await apiRequest('/api/users/profile');
       const u = response.user;
       setData({
+        _id: u._id || '',
         firstName: u.firstName || '', lastName: u.lastName || '',
         bio: u.bio || '', headline: u.headline || '',
         skills: u.skills || [], hourlyRate: u.hourlyRate || 0,
@@ -151,12 +152,16 @@ const Profile = () => {
           <button className="prf-ai-tools-btn" onClick={() => setShowAiPanel(p => !p)}>
             ✨ AI Tools
           </button>
-          <a href={`/freelancers/${user?.id || user?._id || user?.userId}`} className="btn-preview" target="_blank" rel="noopener noreferrer">
-            👁️ Public Preview
-          </a>
-          <button className="btn-share" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/freelancers/${user?.id || user?._id || user?.userId}`)}>
-            🔗 Share Profile
-          </button>
+          {(data._id || user?.id) && (
+            <a href={`/freelancers/${data._id || user?.id}`} className="btn-preview" target="_blank" rel="noopener noreferrer">
+              👁️ Public Preview
+            </a>
+          )}
+          {(data._id || user?.id) && (
+            <button className="btn-share" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/freelancers/${data._id || user?.id}`)}>
+              🔗 Share Profile
+            </button>
+          )}
         </div>
       </div>
 
