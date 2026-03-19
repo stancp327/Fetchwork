@@ -89,6 +89,7 @@ export default function useScheduling({ selectedConvo, setMessages }) {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       const startLocal = new Date(`${scheduleDate}T${scheduleTime}:00`);
       if (Number.isNaN(startLocal.getTime())) throw new Error('Invalid date/time');
+      if (startLocal <= new Date()) throw new Error('Please choose a future date and time');
 
       const payload = {
         appointmentType: scheduleType,
