@@ -313,7 +313,7 @@ router.post('/conversations', authenticateToken, validateMessage, async (req, re
         })).filter((a) => a.assetId)
       : [];
 
-    const safeContent = content || (normalizedAssetRefs.length > 0 ? `Ã°Å¸â€œÅ½ Sent ${normalizedAssetRefs.length} file${normalizedAssetRefs.length > 1 ? 's' : ''}` : '');
+    const safeContent = content || (normalizedAssetRefs.length > 0 ? `Sent ${normalizedAssetRefs.length} file${normalizedAssetRefs.length > 1 ? "s" : ""}` : '');
     const safety = detectOffPlatform(safeContent);
 
     // Off-platform enforcement
@@ -410,7 +410,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, valida
 
     const attachments = [...fileAttachments, ...refAttachments];
 
-    const safeContent = content || (attachments.length > 0 ? `Ã°Å¸â€œÅ½ Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : '');
+    const safeContent = content || (attachments.length > 0 ? `Sent ${attachments.length} file${attachments.length > 1 ? "s" : ""}` : '');
     const safety = detectOffPlatform(safeContent);
 
     // Off-platform enforcement
@@ -495,7 +495,7 @@ router.post('/conversations/:conversationId/messages/upload', authenticateToken,
       ? await watermarkAttachments(req.files, req.files.map(f => f.filename))
       : [];
 
-    const safeContent = content || `Ã°Å¸â€œÅ½ Sent ${attachments.length} file${attachments.length > 1 ? 's' : ''}`;
+    const safeContent = content || `Sent ${attachments.length} file${attachments.length > 1 ? "s" : ""}`;
     const safety = detectOffPlatform(safeContent);
 
     // Off-platform enforcement

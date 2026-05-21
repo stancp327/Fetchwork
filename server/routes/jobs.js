@@ -623,6 +623,8 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
   try {
     const { coverLetter, proposedBudget, proposedDuration, teamId } = req.body;
 
+    const job = await Job.findById(req.params.id);
+
     // If submitting as a team, validate membership + permission
     let teamDoc = null;
     if (teamId) {
@@ -635,11 +637,9 @@ router.post('/:id/proposals', authenticateToken, uploadJobAttachments, validateM
         return res.status(403).json({ error: 'You do not have permission to submit proposals for this team' });
       }
       // Check team hasn't already proposed
-      const teamProposal = job.proposals.find(p => p.team && p.team.toString() === teamId);
+      const teamProposal = job && job.proposals.find(p => p.team && p.team.toString() === teamId);
       if (teamProposal) return res.status(400).json({ error: 'This team has already submitted a proposal' });
     }
-    
-    const job = await Job.findById(req.params.id);
     
     if (!job || !job.isActive || job.status !== 'open') {
       return res.status(404).json({ error: 'Job not found or not accepting proposals' });

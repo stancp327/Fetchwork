@@ -105,7 +105,7 @@ const uploadVerificationDocs = multer({
 
 // Message attachments — use Cloudinary in production so files persist across deploys.
 // raw resource_type handles docs/PDFs; images go as image resource_type.
-const messageImageStorage = process.env.CLOUDINARY_URL
+const messageImageStorage = (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
   ? new CloudinaryStorage({
       cloudinary: cloudinary,
       params: async (req, file) => ({
