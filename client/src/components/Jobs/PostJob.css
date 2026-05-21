@@ -291,27 +291,27 @@
   color: var(--color-text-primary, #166534);
 }
 
-/* Required asterisk */
-.pj-required { color: var(--color-danger, #ef4444); font-weight: 400; }
-
-/* -- Step Indicator Bar ----------------------------------------- */
-.pj-step-bar {
+/* -- Wizard Progress Bar --------------------------------------- */
+.pj-wizard-progress {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 4px;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-xl);
   position: relative;
 }
-.pj-step-item {
+.pj-wizard-step {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   position: relative;
+  cursor: default;
 }
-.pj-step-item::after {
+.pj-wizard-step.completed,
+.pj-wizard-step.active { cursor: pointer; }
+.pj-wizard-step::after {
   content: '';
   position: absolute;
   top: 16px;
@@ -320,11 +320,10 @@
   height: 2px;
   background: var(--color-border, #e5e7eb);
 }
-.pj-step-item:last-child::after { display: none; }
-.pj-step-item.done::after { background: var(--color-primary, #2563eb); }
-.pj-step-item.active::after { background: var(--color-border, #e5e7eb); }
+.pj-wizard-step:last-child::after { display: none; }
+.pj-wizard-step.completed::after { background: var(--color-primary, #2563eb); }
 
-.pj-step-number {
+.pj-wizard-step-number {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -340,90 +339,75 @@
   z-index: 1;
   transition: all 0.2s;
 }
-.pj-step-item.active .pj-step-number {
+.pj-wizard-step.active .pj-wizard-step-number {
   background: var(--color-primary, #2563eb);
   color: white;
   border-color: var(--color-primary, #2563eb);
 }
-.pj-step-item.done .pj-step-number {
-  background: var(--color-primary, #2563eb);
+.pj-wizard-step.completed .pj-wizard-step-number {
+  background: var(--color-success, #16a34a);
   color: white;
-  border-color: var(--color-primary, #2563eb);
+  border-color: var(--color-success, #16a34a);
 }
 
-.pj-step-label {
+.pj-wizard-step-label {
   font-size: 11px;
   font-weight: 600;
   color: var(--color-text-muted, #9ca3af);
   text-align: center;
   white-space: nowrap;
 }
-.pj-step-item.active .pj-step-label { color: var(--color-primary, #2563eb); }
-.pj-step-item.done .pj-step-label { color: var(--color-text, #374151); }
+.pj-wizard-step.active .pj-wizard-step-label { color: var(--color-primary, #2563eb); }
+.pj-wizard-step.completed .pj-wizard-step-label { color: var(--color-text, #374151); }
 
 @media (min-width: 480px) {
-  .pj-step-label { font-size: 13px; }
-  .pj-step-number { width: 36px; height: 36px; font-size: 15px; }
-  .pj-step-item::after { top: 18px; }
+  .pj-wizard-step-label { font-size: 13px; }
+  .pj-wizard-step-number { width: 36px; height: 36px; font-size: 15px; }
+  .pj-wizard-step::after { top: 18px; }
 }
 
-/* -- Review Step ------------------------------------------------ */
-.pj-review-hint {
-  font-size: var(--font-size-sm, 14px);
-  color: var(--color-text-secondary, #6b7280);
-  margin: 0 0 var(--space-lg, 16px);
-}
-
-.pj-review-card {
-  background: var(--color-bg-secondary, #f8fafc);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: 10px;
-  padding: var(--space-md, 12px) var(--space-lg, 16px);
-  margin-bottom: var(--space-lg, 16px);
-}
-
-.pj-review-section-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-primary, #2563eb);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: var(--space-sm, 8px);
-}
-
-.pj-review-row {
+/* -- Wizard Navigation ------------------------------------------ */
+.pj-wizard-nav {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--color-bg-muted, #f0f0f0);
-  gap: 12px;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-bg-muted);
 }
-.pj-review-row:last-child { border-bottom: none; }
-.pj-review-row-block { flex-direction: column; }
+.pj-wizard-nav .btn-primary {
+  background: var(--color-primary); color: white; border: none;
+  padding: var(--space-md) var(--space-2xl); border-radius: 8px;
+  font-weight: 600; font-size: var(--font-size-sm); cursor: pointer;
+  min-height: 44px; text-align: center;
+}
+.pj-wizard-nav .btn-primary:hover { background: var(--color-primary-dark); }
+.pj-wizard-nav .btn-primary:disabled { background: var(--color-primary-disabled); cursor: not-allowed; }
+.pj-wizard-nav .btn-secondary {
+  background: var(--color-bg-primary); color: var(--color-text);
+  border: 1px solid var(--color-border-medium);
+  padding: var(--space-md) var(--space-xl); border-radius: 8px;
+  font-weight: 500; font-size: var(--font-size-sm); cursor: pointer;
+  min-height: 44px; text-align: center;
+}
+.pj-wizard-nav .btn-secondary:hover { background: var(--color-bg-subtle); }
 
-.pj-review-label {
-  font-size: 13px;
-  color: var(--color-text-muted, #6b7280);
-  flex-shrink: 0;
-  min-width: 100px;
+/* -- Project Type Cards (Step 2) -------------------------------- */
+.pj-type-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
 }
-
-.pj-review-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text, #1f2937);
-  text-align: right;
-  word-break: break-word;
+.pj-type-card {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  padding: var(--space-md); border: 2px solid var(--color-border); border-radius: 10px;
+  background: var(--color-bg-primary); cursor: pointer; text-align: left; transition: all 0.15s;
+  min-height: 44px; width: 100%;
 }
-.pj-review-row-block .pj-review-value { text-align: left; }
-
-.pj-review-desc {
-  font-size: 13px;
-  color: var(--color-text, #374151);
-  white-space: pre-wrap;
-  line-height: 1.6;
-  margin: 4px 0 0;
-  max-height: 200px;
-  overflow-y: auto;
-}
+.pj-type-card:hover { border-color: var(--color-primary-disabled); background: #f8faff; }
+.pj-type-card.selected { border-color: var(--color-primary); background: var(--color-primary-light); }
+.pj-type-label { font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-darker); }
+.pj-type-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+.pj-type-card.selected .pj-type-label { color: var(--color-primary); }
