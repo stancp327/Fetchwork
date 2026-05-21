@@ -148,7 +148,7 @@ const ServiceDetails = () => {
 
   if (orderConfirmed) {
     return (
-      <div className="sd-state-page">
+      <div className="sd-page sd-state-page">
         <div className="sd-confirmation">
           <div className="sd-confirm-icon">✅</div>
           <h2>Order Confirmed!</h2>
@@ -200,7 +200,7 @@ const ServiceDetails = () => {
 
   if (loading) {
     return (
-      <div className="sd-state-page">
+      <div className="sd-page sd-state-page">
         <p>Loading service...</p>
       </div>
     );
@@ -208,7 +208,7 @@ const ServiceDetails = () => {
 
   if (error) {
     return (
-      <div className="sd-state-page">
+      <div className="sd-page sd-state-page">
         <p style={{ color: '#dc2626' }}>{error}</p>
       </div>
     );
@@ -216,7 +216,7 @@ const ServiceDetails = () => {
 
   if (!service) {
     return (
-      <div className="sd-state-page">
+      <div className="sd-page sd-state-page">
         <p>Service not found</p>
       </div>
     );
@@ -237,8 +237,21 @@ const ServiceDetails = () => {
     ? service.description.slice(0, 155) + (service.description.length > 155 ? '...' : '')
     : `${service.title} by ${freelancerName} on Fetchwork.`;
 
+  // ── helpers ─────────────────────────────────────────────────
+  const billingLabel = service.recurring?.billingCycle === 'weekly' ? 'wk'
+    : service.recurring?.billingCycle === 'per_session' ? 'session' : 'mo';
+
+  const sessionDurationLabel = service.recurring?.sessionDuration
+    ? service.recurring.sessionDuration < 60
+      ? `${service.recurring.sessionDuration} min`
+      : `${service.recurring.sessionDuration / 60} hr`
+    : null;
+
+  const locationFormatLabel = service.recurring?.locationType === 'online' ? 'Online'
+    : service.recurring?.locationType === 'in_person' ? 'In-Person' : 'Online & In-Person';
+
   return (
-    <div className="service-details-page">
+    <div className="sd-page service-details-page">
       <SEO
         title={service.title}
         description={seoDesc}
@@ -251,274 +264,104 @@ const ServiceDetails = () => {
           name: service.title,
           description: service.description,
           provider: { '@type': 'Person', name: freelancerName },
-          offers: lowestPrice ? {
-            '@type': 'Offer',
-            price: lowestPrice,
-            priceCurrency: 'USD',
-          } : undefined,
+          offers: lowestPrice ? { '@type': 'Offer', price: lowestPrice, priceCurrency: 'USD' } : undefined,
           url: `https://fetchwork.net/services/${id}`,
         }}
       />
-      <div className="service-details">
-        <div className="service-header">
-          <h1>{service.title}</h1>
-          <div className="service-meta">
-            <span className="tag primary">{formatCategory(service.category)}</span>
-            <span>⭐ {service.rating.toFixed(1)} ({service.totalReviews} reviews)</span>
-            <span>👁️ {service.views} views</span>
-          </div>
-          <ShareQR url={`/services/${service._id}`} title={`${service.title} on Fetchwork`} />
-        </div>
 
-        <div className="service-content-grid">
-          <div className="service-main">
-            <div className="service-gallery">
-              {service.gallery && service.gallery.length > 0 ? (
-                <img src={service.gallery[0].url} alt={service.title} />
-              ) : isOwnService ? (
-                <div className="placeholder-image placeholder-image--prompt">
-                  <span>🖼️</span>
-                  <p>Add photos or a video to attract more clients</p>
-                </div>
-              ) : null}
-            </div>
+      <div className="sd-layout">
 
-            <div className="service-description">
-              <h3>About This Service</h3>
-              <p>{service.description}</p>
-            </div>
+        {/* ════════════════ LEFT COLUMN ════════════════ */}
+        <div className="sd-main">
 
-            {service.skills && service.skills.length > 0 && (
-              <div className="service-skills">
-                <h3>Skills and Expertise</h3>
-                <div className="service-tags">
-                  {service.skills.map((skill, index) => (
-                    <span key={index} className="tag">{skill}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {service.faqs && service.faqs.length > 0 && (
-              <div className="service-faqs">
-                <h3>Frequently Asked Questions</h3>
-                {service.faqs.map((faq, index) => (
-                  <div key={index} className="faq-item">
-                    <h4>{faq.question}</h4>
-                    <p>{faq.answer}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="service-sidebar">
-            <div className="freelancer-card">
-              <div className="freelancer-info">
-                <Avatar user={service.freelancer} size={56} className="freelancer-avatar-large" userId={service.freelancer?._id} />
-                <div>
-                  <h3>
-                    <Link to={`/freelancers/${service.freelancer?._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      {service.freelancer.firstName} {service.freelancer.lastName}
-                    </Link>
-                  </h3>
-                  {service.freelancer.bio && (
-                    <p className="freelancer-bio">{service.freelancer.bio.substring(0, 100)}...</p>
-                  )}
-                  <div className="freelancer-stats">
-                    <span>⭐ {service.freelancer.rating || 0} rating</span>
-                    <span>📦 {service.freelancer.totalJobs || 0} orders</span>
-                    {service.freelancer.location && (
-                      <span>📍 {getLocationDisplay(service.freelancer.location)}</span>
-                    )}
-                  </div>
-                  {service.freelancer.socialLinks?.portfolio && (
-                    <div className="freelancer-links">
-                      <a 
-                        href={service.freelancer.socialLinks.portfolio} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="portfolio-link"
-                      >
-                        🔗 View Portfolio
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="pricing-card">
-              <div className="package-selector">
-                <button
-                  className={`package-btn ${selectedPackage === 'basic' ? 'active' : ''}`}
-                  onClick={() => setSelectedPackage('basic')}
-                >
-                  Basic
-                </button>
-                {service.pricing.standard && (
-                  <button
-                    className={`package-btn ${selectedPackage === 'standard' ? 'active' : ''}`}
-                    onClick={() => setSelectedPackage('standard')}
-                  >
-                    Standard
-                  </button>
-                )}
-                {service.pricing.premium && (
-                  <button
-                    className={`package-btn ${selectedPackage === 'premium' ? 'active' : ''}`}
-                    onClick={() => setSelectedPackage('premium')}
-                  >
-                    Premium
-                  </button>
-                )}
-              </div>
-
-              {currentPackage && (
-                <div className="package-details">
-                  <h3>{currentPackage.title}</h3>
-                  <p>{currentPackage.description}</p>
-                  
-                  <div className="package-features">
-                    <div className="feature">
-                      <span>💰 Price: <strong>
-                        ${currentPackage.price}
-                        {service.serviceType === 'recurring' && service.recurring?.billingCycle
-                          ? ` / ${service.recurring.billingCycle === 'per_session' ? 'session' : service.recurring.billingCycle === 'weekly' ? 'week' : 'month'}`
-                          : ''}
-                      </strong>
-                      {service.feesIncluded && (
-                        <span className="fees-included-badge">fees included</span>
-                      )}
-                      </span>
-                    </div>
-                    {service.serviceType === 'recurring' ? (
-                      <>
-                        {service.recurring?.sessionDuration && (
-                          <div className="feature">
-                            <span>⏱ Session: <strong>
-                              {service.recurring.sessionDuration < 60
-                                ? `${service.recurring.sessionDuration} min`
-                                : `${service.recurring.sessionDuration / 60} hr`}
-                            </strong></span>
-                          </div>
-                        )}
-                        {service.recurring?.locationType && (
-                          <div className="feature">
-                            <span>📍 Format: <strong>
-                              {service.recurring.locationType === 'online' ? 'Online' : service.recurring.locationType === 'in_person' ? 'In-Person' : 'Online & In-Person'}
-                            </strong></span>
-                          </div>
-                        )}
-                        {currentPackage.sessionsIncluded && (
-                          <div className="feature">
-                            <span>📅 Sessions included: <strong>{currentPackage.sessionsIncluded}</strong></span>
-                          </div>
-                        )}
-                        {service.recurring?.trialEnabled && service.recurring?.trialPrice && (
-                          <div className="feature" style={{ color: '#16a34a' }}>
-                            <span>🎯 Trial session available: <strong>${service.recurring.trialPrice}</strong></span>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="feature">
-                          <span>⏱️ Delivery: <strong>{currentPackage.deliveryTime} days</strong></span>
-                        </div>
-                        <div className="feature">
-                          <span>🔄 Revisions: <strong>{currentPackage.revisions}</strong></span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {service.requirements && (
-                    <div className="service-requirements">
-                      <h4>Requirements</h4>
-                      <p>{service.requirements}</p>
-                    </div>
-                  )}
-
-                  {!isOwnService && (
-                    <div className="order-section">
-                      {service.serviceType !== 'recurring' && (
-                        <div className="form-group">
-                          <label htmlFor="requirements">Additional Requirements (Optional)</label>
-                          <textarea
-                            id="requirements"
-                            value={requirements}
-                            onChange={(e) => setRequirements(e.target.value)}
-                            placeholder="Any specific requirements or details..."
-                            rows={3}
-                          />
-                        </div>
-                      )}
-
-                      {/* Intake form */}
-                      {service.intakeForm?.enabled && service.intakeForm?.fields?.length > 0 && (
-                        <IntakeFormFill
-                          fields={service.intakeForm.fields}
-                          values={intakeValues}
-                          onChange={(key, val) => setIntakeValues(prev => ({ ...prev, [key]: val }))}
-                        />
-                      )}
-
-                      {service.serviceType === 'recurring' ? (
-                        <button onClick={handleSubscribe} disabled={subscribeLoading} className="btn btn-primary btn-large">
-                          {subscribeLoading ? 'Starting...' : `Subscribe — $${currentPackage.price}/${service.recurring?.billingCycle === 'weekly' ? 'wk' : service.recurring?.billingCycle === 'per_session' ? 'session' : 'mo'}`}
-                        </button>
-                      ) : (
-                        <button onClick={handleOrder} disabled={orderLoading} className="btn btn-primary btn-large">
-                          {orderLoading ? 'Ordering...' : `Order Now — $${currentPackage.price}`}
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => setShowOfferModal(true)}
-                        className="btn btn-secondary"
-                        style={{ width: '100%', marginTop: '0.5rem', fontSize: '0.9rem' }}
-                      >
-                        📋 Request Custom Offer
-                      </button>
-                    </div>
-                  )}
-
-                  {isOwnService && (
-                    <div className="own-service-notice">
-                      <p>This is your service listing</p>
-                    </div>
-                  )}
-                </div>
+          {/* Title card */}
+          <div className="sd-title-card">
+            <div className="sd-badge-row">
+              <span className="sd-cat-badge">{formatCategory(service.category)}</span>
+              {service.isAvailable && (
+                <span className="sd-avail-badge">
+                  <span className="sd-avail-dot" />Available
+                </span>
               )}
             </div>
+            <h1 className="sd-title">{service.title}</h1>
+            <div className="sd-meta-row">
+              <span className="sd-rating">
+                ⭐ {service.rating.toFixed(1)}
+                <span className="sd-rating-count">({service.totalReviews} review{service.totalReviews !== 1 ? 's' : ''})</span>
+              </span>
+              <span className="sd-dot" />
+              <span>👁 {service.views} views</span>
+            </div>
+            <div className="sd-share-row">
+              <ShareQR url={`/services/${service._id}`} title={`${service.title} on Fetchwork`} />
+            </div>
           </div>
 
-          {/* Bundle section */}
+          {/* Gallery */}
+          <div className="sd-gallery-card">
+            {service.gallery && service.gallery.length > 0 ? (
+              <img src={service.gallery[0].url} alt={service.title} />
+            ) : (
+              <div className="sd-gallery-empty">
+                <span className="sd-gallery-empty-icon">🖼️</span>
+                <p>{isOwnService ? 'Add photos to attract more clients' : 'No photos yet'}</p>
+              </div>
+            )}
+          </div>
+
+          {/* About */}
+          <div className="sd-card">
+            <h2 className="sd-section-title">About This Service</h2>
+            <p className="sd-about-text">{service.description}</p>
+          </div>
+
+          {/* Skills */}
+          {service.skills && service.skills.length > 0 && (
+            <div className="sd-card">
+              <h2 className="sd-section-title">Skills &amp; Expertise</h2>
+              <div className="sd-skills-list">
+                {service.skills.map((skill, i) => (
+                  <span key={i} className="sd-skill-tag">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* FAQs */}
+          {service.faqs && service.faqs.length > 0 && (
+            <div className="sd-card">
+              <h2 className="sd-section-title">Frequently Asked Questions</h2>
+              {service.faqs.map((faq, i) => (
+                <div key={i} className="sd-faq-item">
+                  <p className="sd-faq-q">{faq.question}</p>
+                  <p className="sd-faq-a">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bundles */}
           {service.bundles?.length > 0 && !isOwnService && (
-            <div className="bundles-section">
-              <h3>📦 Session Bundles</h3>
-              <p className="bundles-subtitle">Buy multiple sessions at a discount. Payments are held securely and released per completed session.</p>
-              <div className="bundles-grid">
+            <div className="sd-card">
+              <h2 className="sd-section-title">📦 Session Bundles</h2>
+              <p className="sd-bundles-subtitle">Buy multiple sessions at a discount. Payments are held securely and released per completed session.</p>
+              <div className="sd-bundles-grid">
                 {service.bundles.filter(b => b.active).map(b => (
                   <div
                     key={b._id}
-                    className={`bundle-card ${selectedBundle === b._id ? 'selected' : ''}`}
+                    className={`sd-bundle-card ${selectedBundle === b._id ? 'selected' : ''}`}
                     onClick={() => setSelectedBundle(b._id)}
                   >
-                    {b.savings > 0 && <span className="bundle-savings-badge">Save ${b.savings}</span>}
-                    <div className="bundle-card-name">{b.name}</div>
-                    <div className="bundle-card-sessions">{b.sessions} sessions</div>
-                    <div className="bundle-card-price">
-                      ${b.price} total
-                      {service.feesIncluded && <span className="fees-included-badge">fees incl.</span>}
+                    {b.savings > 0 && <span className="sd-bundle-savings">Save ${b.savings}</span>}
+                    <div className="sd-bundle-name">{b.name}</div>
+                    <div className="sd-bundle-sessions">{b.sessions} sessions</div>
+                    <div className="sd-bundle-price">
+                      ${b.price}
+                      {service.feesIncluded && <span className="sd-fees-badge">fees incl.</span>}
                     </div>
-                    <div className="bundle-card-per">
-                      ${(b.price / b.sessions).toFixed(2)} / session
-                    </div>
-                    {b.expiresInDays && (
-                      <div className="bundle-card-expiry">⏱ Expires in {b.expiresInDays} days</div>
-                    )}
+                    <div className="sd-bundle-per">${(b.price / b.sessions).toFixed(2)} / session</div>
+                    {b.expiresInDays && <div className="sd-bundle-expiry">⏱ Expires in {b.expiresInDays} days</div>}
                   </div>
                 ))}
               </div>
@@ -526,8 +369,8 @@ const ServiceDetails = () => {
                 <button
                   onClick={handleBundlePurchase}
                   disabled={bundleLoading}
-                  className="btn btn-primary"
-                  style={{ width: '100%', marginTop: '1rem' }}
+                  className="sd-btn-order"
+                  style={{ marginTop: '1rem' }}
                 >
                   {bundleLoading ? 'Processing...' : `Buy Bundle — $${service.bundles.find(b => b._id === selectedBundle)?.price}`}
                 </button>
@@ -538,43 +381,207 @@ const ServiceDetails = () => {
           {/* Service location + map */}
           {service.serviceLocation?.mode && service.serviceLocation.mode !== 'remote' && (() => {
             const loc = service.serviceLocation;
-            // Geo coordinates live on service.location (the main GeoJSON field), not serviceLocation
             const geoCoords = service.location?.coordinates?.coordinates;
             const lat = geoCoords?.[1];
             const lon = geoCoords?.[0];
             return (
-              <>
+              <div className="sd-card">
+                <h2 className="sd-section-title">Service Location</h2>
                 {lat && lon ? (
-                  <ServiceAreaMap
-                    lat={lat} lon={lon}
-                    radius={loc.travelRadius || 25}
-                    mode={loc.mode}
-                    address={loc.address || ''}
-                  />
+                  <ServiceAreaMap lat={lat} lon={lon} radius={loc.travelRadius || 25} mode={loc.mode} address={loc.address || ''} />
                 ) : (
-                  <div style={{ margin: '1rem 0', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)' }}>
+                  <div className="sd-location-info">
                     {loc.mode === 'at_freelancer' && <p style={{ margin: 0 }}>📍 <strong>At freelancer's location</strong>{loc.address ? ` — ${loc.address}` : ''}</p>}
-                    {loc.mode === 'at_client' && <p style={{ margin: 0 }}>🚗 <strong>Freelancer travels to you</strong>{loc.travelRadius > 0 ? ` (within ${loc.travelRadius} miles)` : ''}</p>}
-                    {loc.mode === 'flexible' && <p style={{ margin: 0 }}>🔄 <strong>Flexible</strong>{loc.travelRadius > 0 ? ` — up to ${loc.travelRadius} mi` : ''}</p>}
+                    {loc.mode === 'at_client'    && <p style={{ margin: 0 }}>🚗 <strong>Freelancer travels to you</strong>{loc.travelRadius > 0 ? ` (within ${loc.travelRadius} miles)` : ''}</p>}
+                    {loc.mode === 'flexible'     && <p style={{ margin: 0 }}>🔄 <strong>Flexible</strong>{loc.travelRadius > 0 ? ` — up to ${loc.travelRadius} mi` : ''}</p>}
                   </div>
                 )}
-                {loc.notes && <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>💬 {loc.notes}</p>}
-              </>
+                {loc.notes && <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '8px' }}>💬 {loc.notes}</p>}
+              </div>
             );
           })()}
           {service.serviceLocation?.mode === 'remote' && (
-            <p style={{ margin: '0.5rem 0', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>💻 This service is delivered remotely</p>
+            <div className="sd-card">
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>💻 This service is delivered remotely</p>
+            </div>
           )}
 
           {/* Booking calendar */}
           {service.availability?.enabled && !isOwnService && (
-            <BookingCalendar
-              serviceId={service._id}
-              availability={service.availability}
-            />
+            <div className="sd-card" style={{ padding: 0, overflow: 'hidden' }}>
+              <BookingCalendar serviceId={service._id} availability={service.availability} />
+            </div>
           )}
-        </div>
-      </div>
+
+          {/* Reviews empty state */}
+          <div className="sd-card">
+            <h2 className="sd-section-title">Reviews</h2>
+            {service.totalReviews === 0 ? (
+              <div className="sd-reviews-empty">
+                <div className="sd-reviews-stars">★★★★★</div>
+                <h4>No reviews yet</h4>
+                <p>Be the first to work with this freelancer and leave a review!</p>
+              </div>
+            ) : (
+              <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
+                {service.totalReviews} review{service.totalReviews !== 1 ? 's' : ''} · {service.rating.toFixed(1)} average
+              </p>
+            )}
+          </div>
+
+        </div>{/* end sd-main */}
+
+        {/* ════════════════ RIGHT SIDEBAR ════════════════ */}
+        <div className="sd-sidebar">
+          <div className="sd-sidebar-sticky">
+
+            {/* Seller card */}
+            <div className="sd-card" style={{ marginBottom: '14px' }}>
+              <div className="sd-seller-row">
+                <Avatar user={service.freelancer} size={52} userId={service.freelancer?._id} />
+                <div style={{ minWidth: 0 }}>
+                  <Link to={`/freelancers/${service.freelancer?._id}`} className="sd-seller-name">
+                    {service.freelancer.firstName} {service.freelancer.lastName}
+                  </Link>
+                  {service.freelancer.bio && (
+                    <p className="sd-seller-bio">{service.freelancer.bio.substring(0, 90)}…</p>
+                  )}
+                  <div className="sd-seller-stats">
+                    <span>⭐ {service.freelancer.rating || 0}</span>
+                    <span>📦 {service.freelancer.totalJobs || 0} orders</span>
+                    {service.freelancer.location && (
+                      <span>📍 {getLocationDisplay(service.freelancer.location)}</span>
+                    )}
+                  </div>
+                  {service.freelancer.socialLinks?.portfolio && (
+                    <a href={service.freelancer.socialLinks.portfolio} target="_blank" rel="noopener noreferrer" className="sd-portfolio-link">
+                      🔗 View Portfolio
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Order card */}
+            <div className="sd-card sd-order-card">
+
+              {/* Package tabs */}
+              <div className="sd-tabs">
+                <button className={`sd-tab ${selectedPackage === 'basic' ? 'active' : ''}`} onClick={() => setSelectedPackage('basic')}>Basic</button>
+                {service.pricing.standard && (
+                  <button className={`sd-tab ${selectedPackage === 'standard' ? 'active' : ''}`} onClick={() => setSelectedPackage('standard')}>Standard</button>
+                )}
+                {service.pricing.premium && (
+                  <button className={`sd-tab ${selectedPackage === 'premium' ? 'active' : ''}`} onClick={() => setSelectedPackage('premium')}>Premium</button>
+                )}
+              </div>
+
+              {currentPackage && (
+                <>
+                  <p className="sd-pkg-name">{currentPackage.title || selectedPackage.charAt(0).toUpperCase() + selectedPackage.slice(1)}</p>
+                  {currentPackage.description && <p className="sd-pkg-desc">{currentPackage.description}</p>}
+
+                  <div className="sd-pkg-features">
+                    <div className="sd-pkg-feat">
+                      <span>💰</span>
+                      <span>Price: <strong>
+                        ${currentPackage.price}
+                        {service.serviceType === 'recurring' && service.recurring?.billingCycle ? ` / ${billingLabel}` : ''}
+                      </strong>
+                      {service.feesIncluded && <span className="sd-fees-badge">fees incl.</span>}
+                      </span>
+                    </div>
+
+                    {service.serviceType === 'recurring' ? (
+                      <>
+                        {sessionDurationLabel && (
+                          <div className="sd-pkg-feat"><span>⏱</span><span>Session: <strong>{sessionDurationLabel}</strong></span></div>
+                        )}
+                        {service.recurring?.locationType && (
+                          <div className="sd-pkg-feat"><span>📍</span><span>Format: <strong>{locationFormatLabel}</strong></span></div>
+                        )}
+                        {currentPackage.sessionsIncluded && (
+                          <div className="sd-pkg-feat"><span>📅</span><span>Included: <strong>{currentPackage.sessionsIncluded} sessions</strong></span></div>
+                        )}
+                        {service.recurring?.trialEnabled && service.recurring?.trialPrice && (
+                          <div className="sd-pkg-feat-trial"><span>🎯</span><span>Trial available: <strong>${service.recurring.trialPrice}</strong></span></div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="sd-pkg-feat"><span>⏱️</span><span>Delivery: <strong>{currentPackage.deliveryTime} days</strong></span></div>
+                        <div className="sd-pkg-feat"><span>🔄</span><span>Revisions: <strong>{currentPackage.revisions}</strong></span></div>
+                      </>
+                    )}
+                  </div>
+
+                  {service.requirements && (
+                    <div className="sd-service-req">
+                      <h4>Requirements</h4>
+                      <p>{service.requirements}</p>
+                    </div>
+                  )}
+
+                  {!isOwnService && (
+                    <>
+                      {service.serviceType !== 'recurring' && (
+                        <>
+                          <label className="sd-req-label" htmlFor="requirements">Additional Requirements <span style={{ fontWeight: 400, color: '#9ca3af' }}>(Optional)</span></label>
+                          <textarea
+                            id="requirements"
+                            className="sd-req-textarea"
+                            value={requirements}
+                            onChange={(e) => setRequirements(e.target.value)}
+                            placeholder="Any specific requirements or details…"
+                            rows={3}
+                          />
+                        </>
+                      )}
+
+                      {service.intakeForm?.enabled && service.intakeForm?.fields?.length > 0 && (
+                        <IntakeFormFill
+                          fields={service.intakeForm.fields}
+                          values={intakeValues}
+                          onChange={(key, val) => setIntakeValues(prev => ({ ...prev, [key]: val }))}
+                        />
+                      )}
+
+                      {service.serviceType === 'recurring' ? (
+                        <button onClick={handleSubscribe} disabled={subscribeLoading} className="sd-btn-order">
+                          {subscribeLoading ? 'Starting…' : `Subscribe — $${currentPackage.price}/${billingLabel}`}
+                        </button>
+                      ) : (
+                        <button onClick={handleOrder} disabled={orderLoading} className="sd-btn-order">
+                          {orderLoading ? 'Ordering…' : `Order Now — $${currentPackage.price}`}
+                        </button>
+                      )}
+
+                      <button onClick={() => setShowOfferModal(true)} className="sd-btn-custom">
+                        📋 Request Custom Offer
+                      </button>
+
+                      {/* Trust box */}
+                      <div className="sd-trust-box">
+                        <span className="sd-trust-icon">🛡️</span>
+                        <div className="sd-trust-text">
+                          <strong>Protected Payment</strong>
+                          <span>Your payment is held securely in escrow and only released when you approve the delivery.</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {isOwnService && (
+                    <div className="sd-own-notice">This is your service listing</div>
+                  )}
+                </>
+              )}
+            </div>{/* end sd-order-card */}
+
+          </div>{/* end sd-sidebar-sticky */}
+        </div>{/* end sd-sidebar */}
+
+      </div>{/* end sd-layout */}
 
       {showOfferModal && service && (
         <CustomOfferModal
