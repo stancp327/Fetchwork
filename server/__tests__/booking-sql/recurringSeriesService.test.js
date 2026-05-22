@@ -72,6 +72,7 @@ function makePrisma(overrides = {}) {
       findMany:    jest.fn().mockResolvedValue([]),
       count:       jest.fn().mockResolvedValue(1),
       create:      jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'new-occ', ...data })),
+      createMany:  jest.fn().mockResolvedValue({ count: 0 }),
       update:      jest.fn().mockResolvedValue({}),
       updateMany:  jest.fn().mockResolvedValue({ count: 0 }),
     },

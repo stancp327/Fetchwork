@@ -361,6 +361,9 @@ describe('BookingService.createHold — ServiceAdapter decoupling', () => {
     const repos = {
       bookingRepo: {
         countConflictsAtLocalStart: jest.fn().mockResolvedValue(0),
+        countBookingsForFreelancerOnDay: jest.fn().mockResolvedValue(0),
+        countBookingsForFreelancerInWeek: jest.fn().mockResolvedValue(0),
+        countConcurrentActiveBookings: jest.fn().mockResolvedValue(0),
         createBooking: jest.fn().mockResolvedValue(booking),
         createOccurrence: jest.fn().mockResolvedValue(occurrence),
         findBookingById: jest.fn(),
@@ -382,6 +385,9 @@ describe('BookingService.createHold — ServiceAdapter decoupling', () => {
           maxPerSlot: 1,
           pricingBaseCents: 5000,
           cancellationTier: 'strict',
+          maxPerDay: null,
+          maxPerWeek: null,
+          maxConcurrent: null,
         }),
       },
       policyEngine: new PolicyEngine(),

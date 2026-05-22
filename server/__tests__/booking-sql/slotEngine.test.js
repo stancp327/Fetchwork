@@ -35,15 +35,22 @@ function makeEngine({ service = makeService(), booked = [] } = {}) {
     occurrenceRepo: {
       findActiveForFreelancerDateRange: jest.fn().mockResolvedValue(booked),
     },
+    // Return null so SlotEngine falls back to service.availabilityWindows
+    availabilityService: {
+      getResolvedAvailability: jest.fn().mockResolvedValue(null),
+      getWindowsForDate: jest.fn().mockResolvedValue(null),
+    },
   });
 }
 
-// Next Monday from now (so it's not in the past)
+// Next occurrence of a day-of-week from now (0=Sun,1=Mon,...,6=Sat)
+// Uses UTC arithmetic throughout to avoid local/UTC timezone mismatch.
 function nextWeekday(dayOfWeek) {
   const d = new Date();
-  const diff = (dayOfWeek - d.getDay() + 7) % 7 || 7;
-  d.setDate(d.getDate() + diff);
-  return d.toISOString().slice(0, 10);
+  const utcDay = d.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = (dayOfWeek - utcDay + 7) % 7 || 7;
+  const result = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + diff));
+  return result.toISOString().slice(0, 10);
 }
 
 // ─── tests ───────────────────────────────────────────────────────────────────

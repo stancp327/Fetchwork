@@ -9,14 +9,14 @@ const { DateTime } = require('luxon');
 describe('SlotEngine DST Safety', () => {
 
   describe('generateSlots - Spring Forward', () => {
-    // US DST 2026: March 8, 2:00 AM → 3:00 AM (clocks jump forward)
+    // US DST 2027: March 14, 2:00 AM → 3:00 AM (clocks jump forward)
     
     test('skips non-existent 2:00 AM hour during spring forward', () => {
       const slots = generateSlots({
         windows: [{ dayOfWeek: 0, startTime: '01:00', endTime: '04:00' }], // Sunday
         slotDuration: 60,
         bufferTime: 0,
-        dateStr: '2026-03-08', // Spring forward day
+        dateStr: '2027-03-14', // Spring forward day
         timezone: 'America/Los_Angeles',
         minNoticeHours: 0,
       });
@@ -34,7 +34,7 @@ describe('SlotEngine DST Safety', () => {
         windows: [{ dayOfWeek: 0, startTime: '01:00', endTime: '04:00' }],
         slotDuration: 60,
         bufferTime: 0,
-        dateStr: '2026-03-08',
+        dateStr: '2027-03-14',
         timezone: 'America/Los_Angeles',
         minNoticeHours: 0,
       });
@@ -102,7 +102,7 @@ describe('SlotEngine DST Safety', () => {
         windows: [{ dayOfWeek: 1, startTime: '09:00', endTime: '10:00' }],
         slotDuration: 60,
         bufferTime: 0,
-        dateStr: '2026-04-06', // Regular Monday
+        dateStr: '2026-06-01', // Regular Monday (future)
         timezone: 'America/Los_Angeles',
         minNoticeHours: 0,
       });
@@ -111,7 +111,7 @@ describe('SlotEngine DST Safety', () => {
         windows: [{ dayOfWeek: 1, startTime: '09:00', endTime: '10:00' }],
         slotDuration: 60,
         bufferTime: 0,
-        dateStr: '2026-04-06',
+        dateStr: '2026-06-01',
         timezone: 'America/New_York',
         minNoticeHours: 0,
       });
@@ -130,7 +130,7 @@ describe('SlotEngine DST Safety', () => {
         windows: [{ dayOfWeek: 1, startTime: '14:00', endTime: '15:00' }],
         slotDuration: 60,
         bufferTime: 0,
-        dateStr: '2026-04-06',
+        dateStr: '2026-06-01',
         timezone: 'America/Los_Angeles',
         minNoticeHours: 0,
       });
@@ -182,6 +182,11 @@ describe('SlotEngine DST Safety', () => {
       return new SlotEngine({
         serviceAdapter: { getById: jest.fn().mockResolvedValue(service) },
         occurrenceRepo: { findActiveForFreelancerDateRange: jest.fn().mockResolvedValue([]) },
+        // Return null so SlotEngine falls back to service.availabilityWindows
+        availabilityService: {
+          getResolvedAvailability: jest.fn().mockResolvedValue(null),
+          getWindowsForDate: jest.fn().mockResolvedValue(null),
+        },
       });
     }
 
@@ -189,7 +194,7 @@ describe('SlotEngine DST Safety', () => {
       const engine = makeEngine();
       const result = await engine.getSlotsForServiceDate({
         serviceId: 'svc-1',
-        date: '2026-04-05', // Sunday
+        date: '2026-06-07', // Sunday (future)
       });
 
       expect(result.statusCode).toBe(200);
@@ -200,7 +205,7 @@ describe('SlotEngine DST Safety', () => {
       const engine = makeEngine();
       const result = await engine.getSlotsForServiceDate({
         serviceId: 'svc-1',
-        date: '2026-04-05',
+        date: '2026-06-07', // Sunday (future)
       });
 
       expect(result.statusCode).toBe(200);
@@ -217,7 +222,7 @@ describe('SlotEngine DST Safety', () => {
       const engine = makeEngine();
       const result = await engine.getSlotsForServiceDate({
         serviceId: 'svc-1',
-        date: '2026-03-08', // Spring forward
+        date: '2027-03-14', // Spring forward 2027
       });
 
       expect(result.statusCode).toBe(200);
@@ -245,6 +250,11 @@ describe('SlotEngine DST Safety', () => {
           })
         },
         occurrenceRepo: { findActiveForFreelancerDateRange: jest.fn().mockResolvedValue([]) },
+        // Return null so SlotEngine falls back to service.availabilityWindows
+        availabilityService: {
+          getResolvedAvailability: jest.fn().mockResolvedValue(null),
+          getWindowsForDate: jest.fn().mockResolvedValue(null),
+        },
       });
       return engine;
     }

@@ -124,6 +124,7 @@ class SlotEngine {
     let windowsResult = null;
 
     // Try hybrid availability (SQL) first
+    let usingServiceFallback = false;
     if (this.useHybridAvailability) {
       try {
         availability = await this.availabilityService.getResolvedAvailability({
@@ -140,11 +141,25 @@ class SlotEngine {
         }
       } catch (e) {
         console.error('[SlotEngine] SQL availability error:', e.message);
-        return { statusCode: 503, body: { error: 'Availability service unavailable' } };
+        // Fall through to service-level fallback below
       }
     }
 
-    // No SQL availability record — booking is not configured for this freelancer.
+    // If no SQL availability, fall back to service-level availability windows
+    if (!availability && service.availabilityWindows?.length) {
+      availability = {
+        timezone: service.timezone || 'America/Los_Angeles',
+        slotDuration: service.slotDuration || 60,
+        bufferTime: service.bufferTime || 0,
+        minNoticeHours: service.minNoticeHours || 0,
+        maxAdvanceBookingDays: service.maxAdvanceDays || service.maxAdvanceBookingDays || 60,
+        capacity: service.maxPerSlot || 1,
+        weeklySchedule: service.availabilityWindows,
+      };
+      usingServiceFallback = true;
+    }
+
+    // No availability record anywhere — booking is not configured for this freelancer.
     if (!availability) {
       return { statusCode: 200, body: { slots: [], message: 'Booking not configured for this service' } };
     }
@@ -250,7 +265,7 @@ class SlotEngine {
         dayOfWeek: requestedDate.weekday % 7,
         slots,
         totalSlots: allSlots.length,
-        source: windowsResult?.source || (availability ? 'hybrid' : 'service_fallback'),
+        source: windowsResult?.source || (usingServiceFallback ? 'service_fallback' : 'hybrid'),
       },
     };
   }
