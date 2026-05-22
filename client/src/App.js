@@ -86,6 +86,9 @@ const SmsPreferences       = React.lazy(() => import('./components/Settings/SmsP
 const JobAlertsPage        = React.lazy(() => import('./components/JobAlerts/JobAlertsPage'));
 const ReferralPage         = React.lazy(() => import('./components/Referrals/ReferralPage'));
 const PresentationView     = React.lazy(() => import('./components/Teams/PresentationView'));
+const TermsOfService       = React.lazy(() => import('./components/Legal/TermsOfService'));
+const PrivacyPolicy        = React.lazy(() => import('./components/Legal/PrivacyPolicy'));
+const CommunityGuidelines  = React.lazy(() => import('./components/Legal/CommunityGuidelines'));
 
 // Non-critical global UI — lazy-load after initial content paint
 const ChatBot              = React.lazy(() => import('./components/ChatBot/ChatBot'));
@@ -416,6 +419,9 @@ function AppContent() {
           <Route path="/job-alerts"            element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
           <Route path="/referrals"             element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
           <Route path="/presentation/:slug"    element={<PresentationView />} />
+          <Route path="/terms-of-service"      element={<TermsOfService />} />
+          <Route path="/privacy-policy"        element={<PrivacyPolicy />} />
+          <Route path="/community-guidelines"  element={<CommunityGuidelines />} />
           <Route path="/" element={<Home />} />
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>

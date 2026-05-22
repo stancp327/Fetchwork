@@ -1,0 +1,102 @@
+/* Legal.css
+ * Prefix: lg-
+ * Scope: Legal pages (Terms, Privacy, Community Guidelines)
+ */
+.lg-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--space-px-40) var(--space-px-20);
+}
+
+.lg-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.lg-updated {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin: 0 0 var(--space-px-40) 0;
+}
+
+.lg-section {
+  margin-bottom: var(--space-px-40);
+}
+
+.lg-section h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.lg-section h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  margin: var(--space-lg) 0 var(--space-sm) 0;
+}
+
+.lg-section p {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.lg-section ul,
+.lg-section ol {
+  padding-left: var(--space-px-20);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.lg-section li {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.lg-section a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.lg-section a:hover {
+  text-decoration: underline;
+}
+
+.lg-contact {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-top: var(--space-px-40);
+}
+
+.lg-contact h2 {
+  margin-top: 0;
+}
+
+.lg-nav {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-top: var(--space-px-40);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.lg-nav a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.lg-nav a:hover {
+  text-decoration: underline;
+}

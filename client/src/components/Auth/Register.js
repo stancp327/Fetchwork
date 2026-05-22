@@ -12,7 +12,8 @@ const Register = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    accountType: 'both'
+    accountType: 'both',
+    agreeToTerms: false
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -37,10 +38,10 @@ const Register = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     });
 
     if (name === 'password') {
@@ -284,6 +285,21 @@ const Register = () => {
                 <span>Both</span>
               </label>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="checkbox-option">
+              <input
+                type="checkbox"
+                name="agreeToTerms"
+                checked={formData.agreeToTerms || false}
+                onChange={handleChange}
+                required
+              />
+              <span>
+                I agree to the <Link to="/terms-of-service" target="_blank">Terms of Service</Link> and <Link to="/privacy-policy" target="_blank">Privacy Policy</Link>
+              </span>
+            </label>
           </div>
 
           {error && <div className="error-message">{error}</div>}

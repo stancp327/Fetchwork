@@ -91,7 +91,7 @@
 .ft-footer-section { text-align: center; }
 
 @media (min-width: 768px) {
-  .ft-footer-content { grid-template-columns: 2fr 1fr 1fr 1fr; text-align: left; }
+  .ft-footer-content { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; text-align: left; }
   .ft-footer-title { text-align: left; }
   .ft-footer-description { text-align: left; }
   .ft-footer-section { text-align: left; }

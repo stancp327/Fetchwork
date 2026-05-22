@@ -17,6 +17,8 @@ import TeamHiringPipeline from './TeamHiringPipeline';
 import TeamApprovalQueue from './TeamApprovalQueue';
 import OrgHierarchy from './OrgHierarchy';
 import TeamContracts from './TeamContracts';
+import TeamTasksPanel from './TeamTasksPanel';
+import TeamPayoutsPanel from './TeamPayoutsPanel';
 import './TeamsShell.css';
 
 export default function TeamsShell() {
@@ -261,6 +263,12 @@ export default function TeamsShell() {
               )}
               {activeTab === 'contracts' && (
                 <TeamContracts teamId={activeTeam._id} />
+              )}
+              {activeTab === 'tasks' && (
+                <TeamTasksPanel teamId={activeTeam._id} team={activeTeam} />
+              )}
+              {activeTab === 'payouts' && (
+                <TeamPayoutsPanel teamId={activeTeam._id} />
               )}
               {activeTab === 'settings' && (
                 <TeamSettings

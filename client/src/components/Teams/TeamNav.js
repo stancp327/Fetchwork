@@ -18,6 +18,7 @@ const TABS = [
   { key: 'organization',  label: 'Organization' },
   { key: 'settings',      label: 'Settings' },
   { key: 'tasks',         label: 'Tasks' },
+  { key: 'payouts',       label: 'Payouts' },
 ];
 
 export default function TeamNav({ activeTab, setActiveTab }) {
