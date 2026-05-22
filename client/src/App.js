@@ -420,8 +420,11 @@ function AppContent() {
           <Route path="/referrals"             element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
           <Route path="/presentation/:slug"    element={<PresentationView />} />
           <Route path="/terms-of-service"      element={<TermsOfService />} />
+          <Route path="/terms"                 element={<Navigate to="/terms-of-service" replace />} />
           <Route path="/privacy-policy"        element={<PrivacyPolicy />} />
+          <Route path="/privacy"               element={<Navigate to="/privacy-policy" replace />} />
           <Route path="/community-guidelines"  element={<CommunityGuidelines />} />
+          <Route path="/guidelines"            element={<Navigate to="/community-guidelines" replace />} />
           <Route path="/" element={<Home />} />
           <Route path="/logout" element={<LogoutHandler />} />
         </Routes>
