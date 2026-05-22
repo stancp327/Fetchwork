@@ -15,7 +15,7 @@ function createOAuth2Client() {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CAL_CLIENT_ID,
     process.env.GOOGLE_CAL_CLIENT_SECRET,
-    process.env.GOOGLE_CAL_REDIRECT_URI
+    process.env.GOOGLE_CAL_REDIRECT_URI || 'https://fetchwork-1.onrender.com/api/calendar/google/callback'
   );
 }
 
