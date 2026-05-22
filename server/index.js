@@ -348,6 +348,7 @@ app.use('/api/ai',               require('./routes/ai-workflow'));    // proposa
 app.use('/api/ai',               require('./routes/ai-assistant'));   // earnings forecast, meeting notes, translator, fake reviews
 app.use('/api/skills',           require('./routes/skills'));
 app.use('/api/presentations',   require('./routes/presentations'));
+app.use('/api/upload',          require('./routes/upload'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {

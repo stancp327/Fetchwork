@@ -61,6 +61,7 @@ const PostJob = () => {
     recurringEnabled:  false,
     recurringInterval: 'monthly',
     recurringEndDate:  '',
+    attachments: [],
   });
   const [errors, setErrors] = useState({});
   const zipLookup = useZipLookup(formData.zipCode);
@@ -343,6 +344,7 @@ const PostJob = () => {
               formData={formData}
               handleInputChange={handleInputChange}
               zipLookup={zipLookup}
+              setFormData={setFormData}
             />
           </div>
 

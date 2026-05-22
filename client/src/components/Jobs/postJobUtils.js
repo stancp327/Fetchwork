@@ -111,5 +111,13 @@ export const buildJobPayload = (formData, selectedTeam) => {
   };
 
   if (selectedTeam) payload.teamId = selectedTeam;
+
+  // Include uploaded attachments
+  if (formData.attachments && formData.attachments.length > 0) {
+    payload.attachments = formData.attachments.map(({ filename, url, size, contentType }) => ({
+      filename, url, size, contentType,
+    }));
+  }
+
   return payload;
 };

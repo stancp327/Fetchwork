@@ -985,3 +985,16 @@
 .svc-loc-icon { font-size: 1.25rem; flex-shrink: 0; margin-top: 1px; }
 .svc-loc-label { font-weight: 600; font-size: 0.9rem; color: var(--color-text-primary, #111827); }
 .svc-loc-desc { font-size: 0.8rem; color: var(--color-text-muted, #6b7280); margin-top: 1px; }
+
+/* -- Media Upload ----------------------------------------------- */
+.media-dropzone { border: 2px dashed var(--border-color, #d1d5db); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.media-dropzone:hover, .media-dropzone.drag-over { border-color: var(--primary, #2563eb); background: rgba(37,99,235,0.04); }
+.media-dropzone-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.media-dropzone-text { color: var(--text-secondary, #6b7280); font-size: 0.95rem; }
+.media-thumbnails { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.media-thumb { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 16/10; }
+.media-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.media-thumb-remove { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; min-height: 44px; min-width: 44px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+.media-thumb-caption { width: 100%; margin-top: 0.25rem; }
+.media-thumb-caption input { width: 100%; padding: 0.25rem 0.5rem; border: 1px solid var(--border-color, #d1d5db); border-radius: 6px; font-size: 0.8rem; }
+.media-upload-loading { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; color: var(--text-secondary); }

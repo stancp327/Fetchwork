@@ -31,7 +31,7 @@ const CreateService = () => {
     serviceLocation: 'remote',
     // details
     title: '', description: '', category: '', subcategory: '', skills: '',
-    requirements: '', imagePreview: '',
+    requirements: '', imagePreview: '', gallery: [],
     // recurring settings
     recurringSessionDuration: 60,
     recurringBillingCycle: 'per_session',
@@ -235,6 +235,11 @@ const CreateService = () => {
       }
 
       serviceData.serviceLocation = data.serviceLocation || 'remote';
+
+      // Include uploaded gallery images
+      if (data.gallery && data.gallery.length > 0) {
+        serviceData.gallery = data.gallery.map(({ url, caption, type }) => ({ url, caption, type }));
+      }
 
       await apiRequest('/api/services', { method: 'POST', body: JSON.stringify(serviceData) });
       navigate('/browse-services');

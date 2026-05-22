@@ -1,6 +1,86 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 
-const PostJobStep4 = ({ formData, handleInputChange, zipLookup }) => {
+const MAX_ATTACHMENTS = 5;
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function humanSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const PostJobStep4 = ({ formData, handleInputChange, zipLookup, setFormData }) => {
+  const attachInputRef = useRef(null);
+  const [attachUploading, setAttachUploading] = useState(false);
+  const [attachError, setAttachError] = useState('');
+  const [attachDragOver, setAttachDragOver] = useState(false);
+
+  const attachments = formData.attachments || [];
+
+  const handleAttachFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_ATTACHMENTS - attachments.length;
+    if (remaining <= 0) {
+      setAttachError(`Maximum ${MAX_ATTACHMENTS} files allowed.`);
+      return;
+    }
+    const toUpload = Array.from(files).slice(0, remaining);
+    const oversized = toUpload.filter((f) => f.size > MAX_SIZE_BYTES);
+    if (oversized.length > 0) {
+      setAttachError(`Some files exceed the 10 MB limit: ${oversized.map((f) => f.name).join(', ')}`);
+      return;
+    }
+    setAttachError('');
+    setAttachUploading(true);
+
+    try {
+      const fd = new FormData();
+      toUpload.forEach((f) => fd.append('files', f));
+
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+      }
+
+      const uploaded = await res.json();
+      const newItems = uploaded.map((f) => ({
+        filename: f.filename,
+        url: f.url,
+        size: f.size,
+        contentType: f.contentType,
+      }));
+      setFormData((prev) => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), ...newItems],
+      }));
+    } catch (err) {
+      setAttachError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setAttachUploading(false);
+      if (attachInputRef.current) attachInputRef.current.value = '';
+    }
+  };
+
+  const handleAttachDrop = (e) => {
+    e.preventDefault();
+    setAttachDragOver(false);
+    handleAttachFiles(e.dataTransfer.files);
+  };
+
+  const handleAttachRemove = (idx) => {
+    setFormData((prev) => ({
+      ...prev,
+      attachments: (prev.attachments || []).filter((_, i) => i !== idx),
+    }));
+  };
+
   return (
     <>
       <div className="form-section">
@@ -73,7 +153,11 @@ const PostJobStep4 = ({ formData, handleInputChange, zipLookup }) => {
                 />
                 {zipLookup.loading && <span className="zip-loading">Looking up...</span>}
                 {zipLookup.error && <span className="zip-error">{zipLookup.error}</span>}
-                {zipLookup.result && <span className="zip-city-hint">{'\ud83d\udccd'} {zipLookup.result.city}, {zipLookup.result.state}</span>}
+                {zipLookup.result && (
+                  <span className="zip-city-hint">
+                    {'\ud83d\udccd'} {zipLookup.result.city}, {zipLookup.result.state}
+                  </span>
+                )}
               </div>
             </div>
           </>
@@ -84,7 +168,9 @@ const PostJobStep4 = ({ formData, handleInputChange, zipLookup }) => {
         <div className="form-section">
           <div className="form-section-title">Scheduling</div>
           <div className="form-group">
-            <label htmlFor="scheduledDate">When do you need them? <span className="label-optional">(optional)</span></label>
+            <label htmlFor="scheduledDate">
+              When do you need them? <span className="label-optional">(optional)</span>
+            </label>
             <input
               type="datetime-local"
               id="scheduledDate"
@@ -151,6 +237,75 @@ const PostJobStep4 = ({ formData, handleInputChange, zipLookup }) => {
           </p>
         </div>
       )}
+
+      {/* ── Attachments ─────────────────────────────────────────── */}
+      <div className="form-section" style={{ marginTop: '1.5rem' }}>
+        <div className="form-section-title">Attachments <span className="label-optional">(optional)</span></div>
+
+        {attachments.length < MAX_ATTACHMENTS && (
+          <div
+            className={`attachment-dropzone${attachDragOver ? ' drag-over' : ''}`}
+            onClick={() => !attachUploading && attachInputRef.current?.click()}
+            onDrop={handleAttachDrop}
+            onDragOver={(e) => { e.preventDefault(); setAttachDragOver(true); }}
+            onDragLeave={() => setAttachDragOver(false)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && attachInputRef.current?.click()}
+            aria-label="Upload attachments"
+          >
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>📎</div>
+            <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-secondary, #6b7280)' }}>
+              Drag &amp; drop files here, or click to browse
+            </p>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary, #6b7280)' }}>
+              JPG, PNG, GIF, PDF, DOC, DOCX · Up to 10 MB each · Max {MAX_ATTACHMENTS} files
+            </p>
+            <input
+              ref={attachInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => handleAttachFiles(e.target.files)}
+            />
+          </div>
+        )}
+
+        {attachUploading && (
+          <p style={{ marginTop: '0.5rem', color: 'var(--text-secondary, #6b7280)', fontSize: '0.9rem' }}>
+            ⏳ Uploading…
+          </p>
+        )}
+
+        {attachError && (
+          <p style={{ marginTop: '0.5rem', color: 'var(--danger, #ef4444)', fontSize: '0.9rem' }}>
+            ⚠️ {attachError}
+          </p>
+        )}
+
+        {attachments.length > 0 && (
+          <div className="attachment-list">
+            {attachments.map((item, idx) => (
+              <div key={idx} className="attachment-item">
+                <div className="attachment-item-info">
+                  <span>📄</span>
+                  <span>{item.filename}</span>
+                  <span className="attachment-item-size">{humanSize(item.size)}</span>
+                </div>
+                <button
+                  type="button"
+                  className="attachment-item-remove"
+                  onClick={() => handleAttachRemove(idx)}
+                  aria-label="Remove attachment"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 };

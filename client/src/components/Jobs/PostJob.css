@@ -411,3 +411,12 @@
 .pj-type-label { font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-darker); }
 .pj-type-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
 .pj-type-card.selected .pj-type-label { color: var(--color-primary); }
+
+/* -- Attachments ------------------------------------------------ */
+.attachment-dropzone { border: 2px dashed var(--border-color, #d1d5db); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+.attachment-dropzone:hover, .attachment-dropzone.drag-over { border-color: var(--primary, #2563eb); background: rgba(37,99,235,0.04); }
+.attachment-list { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.attachment-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: var(--bg-secondary, #f9fafb); border-radius: 8px; }
+.attachment-item-info { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+.attachment-item-size { color: var(--text-secondary, #6b7280); font-size: 0.8rem; }
+.attachment-item-remove { background: none; border: none; color: var(--danger, #ef4444); cursor: pointer; min-width: 44px; min-height: 44px; font-size: 1.1rem; }
