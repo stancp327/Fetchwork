@@ -342,3 +342,38 @@
   gap: var(--space-sm, 8px);
   margin-top: var(--space-md, 16px);
 }
+
+/* ── Invite Tabs ── */
+.tmp-invite-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-color, #e5e7eb); margin-bottom: var(--space-md, 16px); }
+.tmp-invite-tab { flex: 1; padding: 10px 0; border: none; background: none; font-size: var(--font-size-sm, 0.875rem); font-weight: 500; color: var(--text-muted, #6b7280); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tmp-invite-tab.active { color: var(--primary, #2563eb); border-bottom-color: var(--primary, #2563eb); font-weight: 600; }
+.tmp-invite-tab:hover:not(.active) { color: var(--text-primary, #1a1a1a); }
+
+/* ── User Search ── */
+.tmp-search-status { font-size: var(--font-size-sm, 0.875rem); color: var(--text-muted, #6b7280); margin-top: 6px; }
+.tmp-search-results { max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color, #e5e7eb); border-radius: var(--radius-md, 8px); margin-top: 8px; }
+.tmp-search-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; transition: background 0.1s; }
+.tmp-search-item:hover { background: var(--bg-hover, #f3f4f6); }
+.tmp-search-item.selected { background: #eff6ff; }
+.tmp-check { color: var(--primary, #2563eb); font-weight: 700; font-size: 1.1rem; }
+.tmp-avatar--sm { width: 32px; height: 32px; border-radius: 50%; font-size: 0.75rem; }
+
+/* ── Join Code ── */
+.tmp-section-desc { font-size: var(--font-size-sm, 0.875rem); color: var(--text-muted, #6b7280); margin-bottom: 12px; }
+.tmp-join-code-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tmp-join-code { background: var(--bg-secondary, #f3f4f6); padding: 8px 12px; border-radius: var(--radius-md, 8px); font-size: var(--font-size-sm, 0.875rem); word-break: break-all; flex: 1; min-width: 0; }
+
+@media (max-width: 480px) {
+  .tmp-join-code-row { flex-direction: column; align-items: stretch; }
+  .tmp-join-code-row .tmp-btn { width: 100%; text-align: center; }
+}
+
+/* ── Join Team Page ── */
+.tmp-join-page { min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.tmp-join-card { background: var(--bg-card, #fff); border-radius: var(--radius-xl, 12px); padding: 2rem; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.tmp-join-card h2 { font-size: 1.5rem; margin-bottom: 1rem; }
+.tmp-join-btn { width: 100%; margin-top: 1rem; }
+.tmp-join-note { font-size: 0.875rem; color: var(--text-muted, #6b7280); margin-top: 0.5rem; }
+.tmp-join-success { color: var(--success, #16a34a); }
+.tmp-join-error { color: var(--danger, #dc2626); }
+.tmp-join-actions { display: flex; gap: 8px; justify-content: center; margin-top: 1rem; }

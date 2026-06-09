@@ -33,10 +33,24 @@ export default function TeamMembersPanel({ teamId, team, onTeamUpdated }) {
 
   // Invite modal
   const [showInvite, setShowInvite] = useState(false);
+  const [inviteTab, setInviteTab] = useState('search'); // 'search' | 'email'
   const [inviteForm, setInviteForm] = useState({ email: '', role: 'member', title: '' });
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
+
+  // User search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchTimer, setSearchTimer] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  // Join code
+  const [joinCode, setJoinCode] = useState(team?.joinCode || '');
+  const [joinCodeEnabled, setJoinCodeEnabled] = useState(team?.joinCodeEnabled || false);
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Role change
   const [changingRole, setChangingRole] = useState(null);
@@ -52,29 +66,87 @@ export default function TeamMembersPanel({ teamId, team, onTeamUpdated }) {
     } catch { /* silent */ }
   }, [teamId, onTeamUpdated]);
 
+  // Debounced user search
+  const handleSearchChange = (q) => {
+    setSearchQuery(q);
+    setSelectedUser(null);
+    if (searchTimer) clearTimeout(searchTimer);
+    if (q.trim().length < 2) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const data = await apiRequest(`/api/teams/${teamId}/search-users?q=${encodeURIComponent(q.trim())}`);
+        setSearchResults(data.users || []);
+      } catch { setSearchResults([]); }
+      finally { setSearching(false); }
+    }, 300);
+    setSearchTimer(timer);
+  };
+
   const handleInvite = async (e) => {
     e.preventDefault();
-    if (!inviteForm.email.trim() || inviting) return;
+    if (inviting) return;
+
+    const body = { role: inviteForm.role, title: inviteForm.title.trim() || undefined };
+
+    if (inviteTab === 'search') {
+      if (!selectedUser) { setInviteError('Select a user to invite'); return; }
+      body.userId = selectedUser._id || selectedUser.id;
+    } else {
+      if (!inviteForm.email.trim()) return;
+      body.email = inviteForm.email.trim();
+    }
+
     setInviteError('');
     setInviteSuccess('');
     setInviting(true);
     try {
       await apiRequest(`/api/teams/${teamId}/invite`, {
         method: 'POST',
-        body: JSON.stringify({
-          email: inviteForm.email.trim(),
-          role: inviteForm.role,
-          title: inviteForm.title.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       });
-      setInviteSuccess(`Invitation sent to ${inviteForm.email}`);
+      const label = inviteTab === 'search' ? memberName(selectedUser) : inviteForm.email;
+      setInviteSuccess(`Invitation sent to ${label}`);
       setInviteForm({ email: '', role: 'member', title: '' });
+      setSelectedUser(null);
+      setSearchQuery('');
+      setSearchResults([]);
       await refreshTeam();
     } catch (err) {
       setInviteError(err.message || 'Failed to send invite');
     } finally {
       setInviting(false);
     }
+  };
+
+  // Join code handlers
+  const handleGenerateCode = async () => {
+    setGeneratingCode(true);
+    try {
+      const data = await apiRequest(`/api/teams/${teamId}/join-code`, { method: 'POST', body: JSON.stringify({}) });
+      setJoinCode(data.joinCode);
+      setJoinCodeEnabled(true);
+      await refreshTeam();
+    } catch (err) {
+      alert(err.message || 'Failed to generate join code');
+    } finally { setGeneratingCode(false); }
+  };
+
+  const handleDisableCode = async () => {
+    try {
+      await apiRequest(`/api/teams/${teamId}/join-code`, { method: 'DELETE' });
+      setJoinCodeEnabled(false);
+      await refreshTeam();
+    } catch (err) {
+      alert(err.message || 'Failed to disable join code');
+    }
+  };
+
+  const copyJoinLink = () => {
+    const url = `${window.location.origin}/teams/join/${joinCode}`;
+    navigator.clipboard.writeText(url);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
   };
 
   const handleRoleChange = async (memberId, userId, newRole) => {
@@ -235,23 +307,110 @@ export default function TeamMembersPanel({ teamId, team, onTeamUpdated }) {
         </section>
       )}
 
+      {/* Join Code Section */}
+      {canManage && (
+        <section className="tmp-section">
+          <h3 className="tmp-section-title">🔗 Join Link</h3>
+          <p className="tmp-section-desc">Share a link so anyone with a FetchWork account can join your team.</p>
+          {joinCodeEnabled && joinCode ? (
+            <div className="tmp-join-code-row">
+              <code className="tmp-join-code">{`${window.location.origin}/teams/join/${joinCode}`}</code>
+              <button className="tmp-btn tmp-btn--secondary" onClick={copyJoinLink}>
+                {codeCopied ? '✓ Copied' : 'Copy'}
+              </button>
+              <button className="tmp-btn tmp-btn--danger-ghost" onClick={handleDisableCode}>Disable</button>
+              <button className="tmp-btn tmp-btn--secondary" onClick={handleGenerateCode} disabled={generatingCode}>
+                {generatingCode ? '…' : 'Regenerate'}
+              </button>
+            </div>
+          ) : (
+            <button className="tmp-btn tmp-btn--primary" onClick={handleGenerateCode} disabled={generatingCode}>
+              {generatingCode ? 'Generating…' : 'Generate Join Link'}
+            </button>
+          )}
+        </section>
+      )}
+
       {/* Invite modal */}
       {showInvite && (
         <div className="tmp-modal-backdrop" onClick={() => setShowInvite(false)}>
           <div className="tmp-modal" onClick={e => e.stopPropagation()}>
             <h3 className="tmp-modal-title">Invite Member</h3>
+
+            {/* Tab bar */}
+            <div className="tmp-invite-tabs">
+              <button
+                className={`tmp-invite-tab ${inviteTab === 'search' ? 'active' : ''}`}
+                onClick={() => { setInviteTab('search'); setInviteError(''); setInviteSuccess(''); }}
+              >
+                🔍 Search Users
+              </button>
+              <button
+                className={`tmp-invite-tab ${inviteTab === 'email' ? 'active' : ''}`}
+                onClick={() => { setInviteTab('email'); setInviteError(''); setInviteSuccess(''); }}
+              >
+                ✉️ By Email
+              </button>
+            </div>
+
             <form onSubmit={handleInvite}>
-              <div className="tmp-field">
-                <label className="tmp-label">Email Address</label>
-                <input
-                  className="tmp-input"
-                  type="email"
-                  required
-                  value={inviteForm.email}
-                  onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="colleague@example.com"
-                />
-              </div>
+              {inviteTab === 'search' ? (
+                <div className="tmp-field">
+                  <label className="tmp-label">Search by name or username</label>
+                  <input
+                    className="tmp-input"
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => handleSearchChange(e.target.value)}
+                    placeholder="Type a name or username…"
+                    autoFocus
+                  />
+                  {searching && <p className="tmp-search-status">Searching…</p>}
+                  {searchResults.length > 0 && (
+                    <div className="tmp-search-results">
+                      {searchResults.map(u => (
+                        <div
+                          key={u._id || u.id}
+                          className={`tmp-search-item ${selectedUser && (selectedUser._id || selectedUser.id) === (u._id || u.id) ? 'selected' : ''}`}
+                          onClick={() => setSelectedUser(u)}
+                        >
+                          <div className="tmp-member-cell">
+                            {u.profileImage ? (
+                              <img src={u.profileImage} alt="" className="tmp-avatar tmp-avatar--sm" />
+                            ) : (
+                              <span className="tmp-avatar tmp-avatar--sm tmp-avatar--placeholder">{memberInitials(u)}</span>
+                            )}
+                            <div className="tmp-member-info">
+                              <span className="tmp-name">{memberName(u)}</span>
+                              <span className="tmp-email">{u.username ? `@${u.username}` : u.email || ''}</span>
+                            </div>
+                          </div>
+                          {selectedUser && (selectedUser._id || selectedUser.id) === (u._id || u.id) && (
+                            <span className="tmp-check">✓</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
+                    <p className="tmp-search-status">No users found. Try inviting by email instead.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="tmp-field">
+                  <label className="tmp-label">Email Address</label>
+                  <input
+                    className="tmp-input"
+                    type="email"
+                    required
+                    value={inviteForm.email}
+                    onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="colleague@example.com"
+                    autoFocus
+                  />
+                </div>
+              )}
+
               <div className="tmp-field">
                 <label className="tmp-label">Role</label>
                 <select
@@ -278,10 +437,10 @@ export default function TeamMembersPanel({ teamId, team, onTeamUpdated }) {
               {inviteError && <p className="tmp-form-error">{inviteError}</p>}
               {inviteSuccess && <p className="tmp-form-success">{inviteSuccess}</p>}
               <div className="tmp-modal-actions">
-                <button type="button" className="tmp-btn tmp-btn--secondary" onClick={() => { setShowInvite(false); setInviteError(''); setInviteSuccess(''); }}>
+                <button type="button" className="tmp-btn tmp-btn--secondary" onClick={() => { setShowInvite(false); setInviteError(''); setInviteSuccess(''); setSelectedUser(null); setSearchQuery(''); setSearchResults([]); }}>
                   Cancel
                 </button>
-                <button type="submit" className="tmp-btn tmp-btn--primary" disabled={inviting}>
+                <button type="submit" className="tmp-btn tmp-btn--primary" disabled={inviting || (inviteTab === 'search' && !selectedUser)}>
                   {inviting ? 'Sending…' : 'Send Invite'}
                 </button>
               </div>

@@ -73,6 +73,7 @@ const TeamDetail           = React.lazy(() => import('./components/Teams/TeamDet
 const TeamsWorkspace       = React.lazy(() => import('./pages/Teams'));
 const AgencyProfile        = React.lazy(() => import('./components/Teams/AgencyPublicProfile'));
 const AgencyDirectory      = React.lazy(() => import('./components/Teams/AgencyDirectory'));
+const JoinTeam             = React.lazy(() => import('./components/Teams/JoinTeam'));
 const UserAnalytics        = React.lazy(() => import('./components/Analytics/UserAnalytics'));
 const SpendDashboard       = React.lazy(() => import('./components/Analytics/SpendDashboard'));
 const BoostCheckout        = React.lazy(() => import('./components/Boosts/BoostCheckout'));
@@ -402,6 +403,7 @@ function AppContent() {
           <Route path="/wallet"                element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
               <Route path="/gift-cards"            element={<ProtectedRoute><GiftCardsPage /></ProtectedRoute>} />
                 <Route path="/teams"                 element={<ProtectedRoute><TeamsWorkspace /></ProtectedRoute>} />
+                <Route path="/teams/join/:code"      element={<ProtectedRoute><JoinTeam /></ProtectedRoute>} />
                 <Route path="/teams/list"            element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />
                 <Route path="/teams/:id"             element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
                 <Route path="/agencies"              element={<AgencyDirectory />} />
