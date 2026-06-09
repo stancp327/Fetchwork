@@ -313,7 +313,8 @@ router.get('/jobs', authenticateAdmin, requirePermission('job_management'), vali
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
-        { skills: { $regex: search, $options: 'i' } }
+        { skills: { $regex: search, $options: 'i' } },
+        { jobRef: { $regex: search, $options: 'i' } }
       ];
     }
 

@@ -3,6 +3,42 @@ import { apiRequest } from '../../utils/api';
 import { formatBudget } from '../../utils/formatters';
 import TracingErrorBoundary from '../common/TracingErrorBoundary';
 
+const CATEGORIES = [
+  { id: 'web_development', label: 'Web Development' },
+  { id: 'mobile_development', label: 'Mobile Development' },
+  { id: 'design', label: 'Design' },
+  { id: 'writing', label: 'Writing' },
+  { id: 'marketing', label: 'Marketing' },
+  { id: 'video_editing', label: 'Video & Animation' },
+  { id: 'music_audio', label: 'Music & Audio' },
+  { id: 'data_entry', label: 'Data & Research' },
+  { id: 'virtual_assistant', label: 'Virtual Assistant' },
+  { id: 'translation', label: 'Translation' },
+  { id: 'consulting', label: 'Consulting' },
+  { id: 'customer_service', label: 'Customer Service' },
+  { id: 'tutoring', label: 'Tutoring & Lessons' },
+  { id: 'home_repair', label: 'Home Repair' },
+  { id: 'cleaning', label: 'Cleaning' },
+  { id: 'moving_hauling', label: 'Moving & Hauling' },
+  { id: 'landscaping', label: 'Landscaping & Yard' },
+  { id: 'delivery', label: 'Delivery & Errands' },
+  { id: 'assembly', label: 'Assembly & Installation' },
+  { id: 'auto_services', label: 'Auto Services' },
+  { id: 'pet_care', label: 'Pet Care' },
+  { id: 'event_help', label: 'Event Help' },
+  { id: 'personal_care', label: 'Personal Care' },
+  { id: 'photography', label: 'Photography' },
+  { id: 'cooking_classes', label: 'Cooking Classes' },
+  { id: 'fitness_classes', label: 'Fitness & Training' },
+  { id: 'art_classes', label: 'Art & Crafts' },
+  { id: 'music_lessons', label: 'Music Lessons' },
+  { id: 'language_classes', label: 'Language Classes' },
+  { id: 'dance_classes', label: 'Dance Classes' },
+  { id: 'tech_workshops', label: 'Tech Workshops' },
+  { id: 'yoga_meditation', label: 'Yoga & Meditation' },
+  { id: 'other', label: 'Other' },
+];
+
 const AdminJobsTab = ({ jobsData, jobFilters, setJobFilters, fetchJobsData, dashboardData }) => {
   return (
     <TracingErrorBoundary componentName="JobsTab">
@@ -41,8 +77,8 @@ const AdminJobsTab = ({ jobsData, jobFilters, setJobFilters, fetchJobsData, dash
                 fetchJobsData(1, f);
               }}>
                 <option value="all">All Categories</option>
-                {(dashboardData?.stats?.jobs?.categories || []).map(c => (
-                  <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
+                {CATEGORIES.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
                 ))}
               </select>
               <select className="status-filter" value={`${jobFilters.sortBy}-${jobFilters.sortOrder}`} onChange={(e) => {
@@ -69,6 +105,7 @@ const AdminJobsTab = ({ jobsData, jobFilters, setJobFilters, fetchJobsData, dash
               <table>
                 <thead>
                   <tr>
+                    <th>Ref</th>
                     <th>Title</th>
                     <th>Client</th>
                     <th>Category</th>
@@ -82,6 +119,7 @@ const AdminJobsTab = ({ jobsData, jobFilters, setJobFilters, fetchJobsData, dash
                 <tbody>
                   {Array.isArray(jobsData?.jobs) && jobsData.jobs.length > 0 ? jobsData.jobs.map((job) => (
                     <tr key={job._id}>
+                      <td><span style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#6b7280' }}>{job.jobRef || '—'}</span></td>
                       <td>
                         <a href={`/jobs/${job._id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}>
                           {job.title}

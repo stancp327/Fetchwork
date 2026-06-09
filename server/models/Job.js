@@ -2,7 +2,19 @@ const mongoose = require('mongoose');
 // categories.js is now open-ended; no enum constraint
 const { locationSchema } = require('../config/locationSchema');
 
+const counterSchema = new mongoose.Schema({
+  _id: String,
+  seq: { type: Number, default: 0 },
+});
+const Counter = mongoose.models.Counter || mongoose.model('Counter', counterSchema);
+
 const jobSchema = new mongoose.Schema({
+  jobRef: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
   title: {
     type: String,
     required: true,
@@ -326,6 +338,24 @@ const jobSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Auto-generate jobRef (FW-0001, FW-0002, etc.)
+jobSchema.pre('save', async function (next) {
+  if (!this.jobRef) {
+    try {
+      const counter = await Counter.findByIdAndUpdate(
+        'jobRef',
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.jobRef = `FW-${String(counter.seq).padStart(4, '0')}`;
+    } catch (err) {
+      console.error('[Job] Failed to generate jobRef:', err.message);
+    }
+  }
+  next();
+});
+
+jobSchema.index({ jobRef: 1 });
 jobSchema.index({ client: 1 });
 jobSchema.index({ freelancer: 1 });
 jobSchema.index({ status: 1 });
