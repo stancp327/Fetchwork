@@ -709,7 +709,10 @@ const Messages = () => {
                 )}
                 {typingUsers.size > 0 && (
                   <div className="typing-indicator">
-                    {otherParticipant?.firstName} is typing...
+                    <span>{otherParticipant?.firstName} is typing</span>
+                    <span className="typing-dots" aria-hidden="true">
+                      <span /><span /><span />
+                    </span>
                   </div>
                 )}
                 <div ref={messagesEndRef} />

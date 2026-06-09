@@ -262,16 +262,29 @@ const MilestoneRequestCard = ({ meta, isMine, onAction }) => {
   );
 };
 
+// ── Emoji-only detection ────────────────────────────────────────
+const EMOJI_ONLY_RE = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|\s)+$/u;
+const isEmojiOnly = (text) => {
+  if (!text) return false;
+  const t = text.trim();
+  return t.length > 0 && t.length <= 14 && EMOJI_ONLY_RE.test(t);
+};
+
 // ── Message Bubble ──────────────────────────────────────────────
 const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) => {
   const meta = msg.metadata;
   const isProposal          = meta?.type === 'job_proposal';
   const isMilestoneRequest  = meta?.type === 'milestone_change_request';
   const isCallTimeline      = ['call_initiated', 'call_accepted', 'call_missed', 'call_ended'].includes(meta?.type);
+  const plainContent        = (msg.content || '')
+    .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
+    .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
+    .trim();
+  const emojiOnly = !isProposal && !isMilestoneRequest && !isCallTimeline && isEmojiOnly(plainContent);
 
   return (
     <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>
-      <div className={`msg-bubble ${msg.messageType === 'system' ? 'msg-system' : ''} ${isProposal || isMilestoneRequest ? 'msg-bubble-proposal' : ''}`}>
+      <div className={`msg-bubble ${msg.messageType === 'system' ? 'msg-system' : ''} ${isProposal || isMilestoneRequest ? 'msg-bubble-proposal' : ''} ${emojiOnly ? 'msg-bubble--emoji' : ''}`}>
 
         {/* Proposal action card */}
         {isProposal ? (
@@ -296,10 +309,7 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
           </div>
         ) : (
           <div className="msg-content" style={{ whiteSpace: 'pre-wrap' }}>
-            {(msg.content || '')
-              .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
-              .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
-              .trim()}
+            {plainContent}
           </div>
         )}
 
