@@ -337,6 +337,7 @@ const Register = () => {
             Continue with Google
           </button>
           
+          {/* Facebook login hidden until app review is complete
           <button
             type="button"
             onClick={handleFacebookLogin}
@@ -347,6 +348,7 @@ const Register = () => {
             </svg>
             Continue with Facebook
           </button>
+          */}
         </div>
 
         <div className="auth-footer">

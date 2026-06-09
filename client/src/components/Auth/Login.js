@@ -197,6 +197,7 @@ const Login = () => {
             Continue with Google
           </button>
           
+          {/* Facebook login hidden until app review is complete
           <button
             type="button"
             onClick={handleFacebookLogin}
@@ -207,6 +208,7 @@ const Login = () => {
             </svg>
             Continue with Facebook
           </button>
+          */}
         </div>
 
         <div className="auth-footer">
