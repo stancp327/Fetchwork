@@ -85,12 +85,14 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: 0; /* allow .inbox-list to scroll inside grid/flex constraints */
-  min-width: 0; /* grid child — explicit min-width set at breakpoints below */
+  min-height: 0;
+  min-width: 0;
+  background: #f8fafc;
+  border-right: 1px solid var(--color-border);
 }
 
 @media (min-width: 768px) {
-  .messages-inbox { min-width: 280px; } /* prevent sidebar collapsing below 280px */
+  .messages-inbox { min-width: 320px; max-width: 360px; }
 }
 
 .inbox-filters {
@@ -98,9 +100,10 @@
   width: 100%;
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
-  border-bottom: 1px solid var(--color-bg-muted);
+  border-bottom: 1px solid var(--color-border);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  background: #fff;
 }
 
 .inbox-filter {
@@ -121,7 +124,10 @@
 
 .inbox-filter.active { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-text-inverse); }
 
-.inbox-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; }
+.inbox-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 0; padding: 4px 0; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.08) transparent; }
+.inbox-list::-webkit-scrollbar { width: 4px; }
+.inbox-list::-webkit-scrollbar-track { background: transparent; }
+.inbox-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
 
 .inbox-loading, .inbox-empty { padding: var(--space-2xl); text-align: center; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .inbox-empty-sub { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-xs); }
@@ -131,53 +137,61 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
+  padding: 12px 16px;
+  margin: 4px 8px;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-  border-bottom: 1px solid var(--color-bg-subtle);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  border-radius: 12px;
   position: relative;
-  min-height: 60px;
+  min-height: 64px;
+  border: none;
 }
 
 .convo-item:hover {
-  background: var(--color-bg-subtle);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .convo-item.selected {
-  background: var(--color-primary-light);
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.12);
   border-left: 3px solid var(--color-primary);
-  padding-left: calc(var(--space-lg) - 3px);
+  padding-left: 13px;
 }
 .convo-item.unread {
-  background: #eef6ff;
+  background: #eef4ff;
   border-left: 3px solid #6366f1;
+  padding-left: 13px;
 }
 .convo-item.unread .convo-name { font-weight: 700; color: #1e1b4b; }
 .convo-item.unread .convo-preview { color: #374151; font-weight: 500; }
 
 .convo-avatar {
-  position: relative; /* needed for avatar-online-badge absolute positioning */
-  width: 44px; height: 44px; border-radius: 50%;
-  background: var(--color-primary-light); display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; overflow: visible; font-size: var(--font-size-sm); font-weight: 700; color: var(--color-primary);
-  border: 2px solid var(--color-border);
+  position: relative;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, #dbeafe, #c7d2fe); 
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: visible; 
+  font-size: 0.85rem; font-weight: 700; color: #4338ca;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 .convo-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
 .convo-info { flex: 1; min-width: 0; }
-.convo-top { display: flex; justify-content: space-between; align-items: center; }
-.convo-name { font-weight: 600; font-size: var(--font-size-sm); color: var(--color-text-darker); }
-.convo-time { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.convo-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.convo-name { font-weight: 600; font-size: 0.9rem; color: var(--color-text-darker); letter-spacing: -0.01em; }
+.convo-time { font-size: 0.7rem; color: var(--color-text-muted); font-weight: 400; }
 .convo-job { font-size: var(--font-size-xs); color: var(--color-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.convo-preview { font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
+.convo-preview { font-size: 0.8rem; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 
 .convo-badge {
-  position: absolute; top: var(--space-md); right: var(--space-md);
-  background: var(--color-danger); color: var(--color-text-inverse); font-size: 0.65rem; font-weight: 700;
-  min-width: 18px; height: 18px; border-radius: 9px;
+  position: absolute; top: 10px; right: 10px;
+  background: #ef4444; color: #fff; font-size: 0.6rem; font-weight: 700;
+  min-width: 20px; height: 20px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  padding: 0 4px;
+  padding: 0 5px;
   animation: badge-pulse 2.5s ease-in-out infinite;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 /* ── Chat Area ────────────────────────────────────────────────── */
