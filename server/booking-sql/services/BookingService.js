@@ -251,7 +251,7 @@ class BookingService {
     return { replayed: false, statusCode, response };
   }
 
-  async cancelBooking({ actorId, route, idempotencyKey, requestHash, bookingId, reason = '' }) {
+  async cancelBooking({ actorId, route, idempotencyKey, requestHash, bookingId, reason = '', refundOverrideCents = null }) {
     const existing = await this.idempotencyRepo.findByKey({ idempotencyKey, route, actorId });
     if (existing) return { replayed: true, statusCode: existing.statusCode, response: existing.responseJson };
 
@@ -271,12 +271,31 @@ class BookingService {
       }
 
       const next = isClient ? 'cancelled_by_client' : 'cancelled_by_freelancer';
+      const gross = Number(booking?.pricingSnapshotJson?.amountCents || 0);
       const policyOutcome = this.policyEngine.evaluateCancellation({
         policySnapshot: booking.policySnapshotJson || {},
-        bookingAmountCents: Number(booking?.pricingSnapshotJson?.amountCents || 0),
+        bookingAmountCents: gross,
         startAtUtc: occurrence.startAtUtc,
         cancelledAtUtc: new Date(),
       });
+
+      // Manual refund override — freelancer can set a custom refund amount
+      let refundOverrideApplied = false;
+      if (refundOverrideCents !== null && refundOverrideCents !== undefined) {
+        if (!isFreelancer) {
+          return { error: 'Only the freelancer can set a custom refund amount', code: 'REFUND_OVERRIDE_NOT_AUTHORIZED' };
+        }
+        const originalRefundCents = policyOutcome.refundCents;
+        const overrideCents = Math.max(0, Math.min(Math.round(Number(refundOverrideCents)), gross));
+        policyOutcome.originalRefundCents = originalRefundCents;
+        policyOutcome.refundCents = overrideCents;
+        policyOutcome.refundAmountCents = overrideCents;
+        policyOutcome.chargeCents = gross - overrideCents;
+        policyOutcome.chargeFeeAmountCents = gross - overrideCents;
+        policyOutcome.chargePct = gross > 0 ? (gross - overrideCents) / gross : 0;
+        policyOutcome.refundOverride = true;
+        refundOverrideApplied = true;
+      }
 
       await this.bookingRepo.updateOccurrenceStatus(occurrence.id, next, tx);
       await this.bookingRepo.updateBookingState(booking.id, next, tx);
@@ -287,7 +306,7 @@ class BookingService {
         actorType: isClient ? 'client' : 'freelancer',
         actorId: String(actorId),
         eventType: 'booking.cancelled',
-        payload: { route, reason, policyOutcome },
+        payload: { route, reason, policyOutcome, refundOverrideApplied },
       }, tx);
 
       return {

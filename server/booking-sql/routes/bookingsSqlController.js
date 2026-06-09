@@ -179,6 +179,10 @@ async function cancelBookingSql(req, res) {
   }
 
   const actorId = String(req.user?.userId || req.user?._id || 'unknown');
+  const refundOverrideCents = req.body?.refundOverrideCents != null
+    ? Number(req.body.refundOverrideCents)
+    : null;
+
   const result = await bookingService.cancelBooking({
     actorId,
     route: 'PATCH:/api/bookings/:bookingId/cancel',
@@ -186,6 +190,7 @@ async function cancelBookingSql(req, res) {
     requestHash: buildRequestHash(req),
     bookingId,
     reason: req.body?.reason || '',
+    refundOverrideCents,
   });
 
   if (result.statusCode === 200 && !result.replayed) {

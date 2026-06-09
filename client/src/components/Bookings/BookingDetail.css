@@ -93,5 +93,23 @@
 .bd-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .bd-btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); padding: var(--space-2) var(--space-5); border-radius: var(--radius-md); font-weight: 600; cursor: pointer; min-height: 44px; }
 
+/* Cancel modal */
+.bd-cancel-textarea { width: 100%; padding: var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-secondary); color: var(--text-primary); resize: vertical; font-family: inherit; }
+.bd-cancel-textarea:focus { outline: none; border-color: var(--primary); }
+.bd-refund-override { margin-top: var(--space-3); }
+.bd-checkbox-label { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: 500; cursor: pointer; }
+.bd-checkbox-label input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.bd-refund-input-row { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.bd-dollar-sign { font-size: var(--text-base); font-weight: 600; color: var(--text-primary); }
+.bd-refund-input { width: 120px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--text-sm); background: var(--bg-secondary); min-height: 44px; }
+.bd-refund-input:focus { outline: none; border-color: var(--primary); }
+.bd-refund-max { font-size: var(--text-sm); color: var(--text-muted); }
+.bd-refund-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); }
+.bd-modal h3 { font-size: var(--text-lg, 1.125rem); font-weight: 700; margin: 0 0 var(--space-3); padding: var(--space-4) var(--space-5) 0; }
+.bd-modal .bd-field-label { display: block; font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); padding: 0 var(--space-5); }
+.bd-modal .bd-cancel-textarea { margin: 0 var(--space-5); width: calc(100% - 2 * var(--space-5)); }
+.bd-modal .bd-refund-override { padding: 0 var(--space-5); }
+.bd-modal .bd-modal-actions { padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-color); }
+
 .bd-btn-pay { background: var(--gradient-primary); color: #fff; border: none; border-radius: var(--radius-lg); padding: var(--space-md) var(--space-xl); font-size: var(--font-size-base); font-weight: 700; cursor: pointer; min-height: 48px; transition: opacity var(--transition-fast); box-shadow: var(--shadow-sm); }
 .bd-btn-pay:hover { opacity: 0.9; }

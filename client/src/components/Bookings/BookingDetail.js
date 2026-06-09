@@ -216,10 +216,21 @@ const BookingDetail = () => {
     }
   };
 
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [refundOverride, setRefundOverride] = useState('');
+  const [useCustomRefund, setUseCustomRefund] = useState(false);
+
   const handleCancel = async () => {
-    const reason = window.prompt('Reason for cancellation (optional):');
-    if (reason === null) return;
-    await doAction('cancel', { reason });
+    const body = { reason: cancelReason };
+    if (useCustomRefund && refundOverride !== '') {
+      body.refundOverrideCents = Math.round(Number(refundOverride) * 100);
+    }
+    setShowCancelModal(false);
+    setCancelReason('');
+    setRefundOverride('');
+    setUseCustomRefund(false);
+    await doAction('cancel', body);
   };
 
   const handleRescheduleSuccess = async (msg) => {
@@ -440,11 +451,71 @@ const BookingDetail = () => {
 
           <button
             className="bd-btn bd-btn-cancel"
-            onClick={handleCancel}
+            onClick={() => setShowCancelModal(true)}
             disabled={!!actionBusy}
           >
             {actionBusy === 'cancel' ? '…' : 'Cancel Booking'}
           </button>
+        </div>
+      )}
+
+      {/* Cancel modal */}
+      {showCancelModal && (
+        <div className="bd-modal-overlay" onClick={() => setShowCancelModal(false)}>
+          <div className="bd-modal" onClick={e => e.stopPropagation()}>
+            <h3>Cancel Booking</h3>
+            <label className="bd-field-label">Reason (optional)</label>
+            <textarea
+              className="bd-cancel-textarea"
+              value={cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              placeholder="Why are you cancelling?"
+              rows={3}
+            />
+
+            {amFreelancer && totalCents > 0 && (
+              <div className="bd-refund-override">
+                <label className="bd-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={useCustomRefund}
+                    onChange={e => setUseCustomRefund(e.target.checked)}
+                  />
+                  Set custom refund amount
+                </label>
+                {useCustomRefund && (
+                  <div className="bd-refund-input-row">
+                    <span className="bd-dollar-sign">$</span>
+                    <input
+                      type="number"
+                      className="bd-refund-input"
+                      value={refundOverride}
+                      onChange={e => setRefundOverride(e.target.value)}
+                      placeholder="0.00"
+                      min="0"
+                      max={(totalCents / 100).toFixed(2)}
+                      step="0.01"
+                    />
+                    <span className="bd-refund-max">of {totalDisplay} max</span>
+                  </div>
+                )}
+                {!useCustomRefund && booking.policy && (
+                  <p className="bd-refund-note">
+                    Refund will follow {booking.policy.tier} policy automatically.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="bd-modal-actions">
+              <button className="bd-btn-secondary" onClick={() => setShowCancelModal(false)}>
+                Back
+              </button>
+              <button className="bd-btn bd-btn-cancel" onClick={handleCancel} disabled={!!actionBusy}>
+                {actionBusy === 'cancel' ? '…' : 'Confirm Cancellation'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
