@@ -133,7 +133,7 @@ export default function useMessages({ userId, user, selectedConvoRef, socketRef,
       });
       setTranslations(prev => ({ ...prev, [msgId]: data }));
     } catch {
-      alert('Failed to translate message.');
+      setError('Failed to translate message.');
     } finally { setTranslatingId(null); }
   }, []);
 
