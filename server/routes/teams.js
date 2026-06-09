@@ -320,12 +320,48 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// â”€â”€ POST /api/teams/:id/invite â€” invite a member â”€â”€
+// â”€â”€ GET /api/teams/:id/search-users â€” search Fetchwork users to invite â”€â”€
+router.get('/:id/search-users', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to manage members' });
+
+    const q = String(req.query.q || '').trim();
+    if (!q) return res.json({ users: [] });
+
+    // Exclude current team members (any status)
+    const existingMemberIds = team.members.map(m => m.user);
+
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const users = await User.find({
+      _id: { $nin: existingMemberIds },
+      $or: [
+        { firstName: regex },
+        { lastName: regex },
+        { username: regex },
+      ],
+    })
+      .select('_id firstName lastName username profileImage')
+      .limit(10)
+      .lean();
+
+    res.json({ users });
+  } catch (err) {
+    console.error('Search users error:', err.message);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
+// â”€â”€ POST /api/teams/:id/invite â€” invite a member (by email or userId) â”€â”€
 router.post('/:id/invite', async (req, res) => {
   try {
     const { id: requesterId } = resolveRequester(req);
-    const { email, role = 'member', permissions, title } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const { email, userId: inviteeUserId, role = 'member', permissions, title } = req.body;
+    if (!email && !inviteeUserId) return res.status(400).json({ error: 'email or userId is required' });
 
     const team = await Team.findById(req.params.id);
     if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
@@ -335,9 +371,11 @@ router.post('/:id/invite', async (req, res) => {
       return res.status(403).json({ error: 'No permission to manage members' });
     }
 
-    // Find user by email
-    const invitee = await User.findOne({ email: email.toLowerCase().trim() }).select('_id firstName lastName email');
-    if (!invitee) return res.status(404).json({ error: 'No user found with that email. They must have a Fetchwork account first.' });
+    // Find user by userId or email
+    const invitee = inviteeUserId
+      ? await User.findById(inviteeUserId).select('_id firstName lastName email')
+      : await User.findOne({ email: email.toLowerCase().trim() }).select('_id firstName lastName email');
+    if (!invitee) return res.status(404).json({ error: 'No user found. They must have a Fetchwork account first.' });
 
     if (String(invitee._id) === requesterId) {
       return res.status(400).json({ error: 'You cannot invite yourself to your own team' });
@@ -476,6 +514,148 @@ router.post('/:id/decline', async (req, res) => {
     res.json({ message: 'Invitation declined' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to decline invitation' });
+  }
+});
+
+// â”€â”€ POST /api/teams/:id/join-code â€” generate/regenerate a join code â”€â”€
+router.post('/:id/join-code', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to manage members' });
+
+    // Generate 8-char alphanumeric code, retry on collision
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let code;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      code = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      const collision = await Team.findOne({ joinCode: code, _id: { $ne: team._id } }).lean();
+      if (!collision) break;
+    }
+
+    team.joinCode = code;
+    team.joinCodeEnabled = true;
+    if (req.body.expiresInDays) {
+      const days = Number(req.body.expiresInDays);
+      if (days > 0) {
+        team.joinCodeExpiresAt = new Date(Date.now() + days * 86400000);
+      }
+    } else {
+      team.joinCodeExpiresAt = undefined;
+    }
+
+    await team.save();
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'join_code_generated', req });
+
+    res.json({ joinCode: code, joinCodeEnabled: true, joinCodeExpiresAt: team.joinCodeExpiresAt || null });
+  } catch (err) {
+    console.error('Join code generate error:', err.message);
+    res.status(500).json({ error: 'Failed to generate join code' });
+  }
+});
+
+// â”€â”€ DELETE /api/teams/:id/join-code â€” disable join code â”€â”€
+router.delete('/:id/join-code', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const team = await Team.findById(req.params.id);
+    if (!team || !team.isActive) return res.status(404).json({ error: 'Team not found' });
+
+    const authz = authorizeTeamAction({ team, requesterId, action: 'invite_member' });
+    if (!authz.ok) return res.status(403).json({ error: 'No permission to manage members' });
+
+    team.joinCodeEnabled = false;
+    await team.save();
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'join_code_disabled', req });
+
+    res.json({ message: 'Join code disabled' });
+  } catch (err) {
+    console.error('Join code disable error:', err.message);
+    res.status(500).json({ error: 'Failed to disable join code' });
+  }
+});
+
+// â”€â”€ POST /api/teams/join/:code â€” join a team via code â”€â”€
+router.post('/join/:code', async (req, res) => {
+  try {
+    const { id: requesterId } = resolveRequester(req);
+    const code = req.params.code;
+
+    const team = await Team.findOne({ joinCode: code, isActive: true });
+    if (!team || !team.joinCodeEnabled) return res.status(404).json({ error: 'Invalid or disabled join code' });
+
+    if (team.joinCodeExpiresAt && team.joinCodeExpiresAt < new Date()) {
+      return res.status(410).json({ error: 'This join code has expired' });
+    }
+
+    // Check if already a member
+    const existing = team.members.find(m => m.user.toString() === requesterId);
+    if (existing && existing.status === 'active') {
+      return res.status(400).json({ error: 'You are already a member of this team' });
+    }
+    if (existing && existing.status === 'invited') {
+      return res.status(400).json({ error: 'You already have a pending invitation to this team' });
+    }
+
+    // Plan-based member limit (against team owner's plan)
+    const ownerPlanName = await getUserPlanName(String(team.owner));
+    const ownerLimits = PLAN_LIMITS[ownerPlanName] || PLAN_LIMITS.default;
+    const memberLimit = ownerLimits.members || 50;
+    const activeMemberCount = team.members.filter(m => m.status !== 'removed').length;
+    if (activeMemberCount >= memberLimit) {
+      return res.status(403).json({ error: 'This team has reached its member limit' });
+    }
+
+    const autoJoin = !team.settings?.requireApproval;
+    const newStatus = autoJoin ? 'active' : 'invited';
+    const defaultPerms = team.settings?.defaultMemberPermissions || ['view_analytics', 'message_clients'];
+
+    if (existing && existing.status === 'removed') {
+      existing.status = newStatus;
+      existing.role = 'member';
+      existing.permissions = defaultPerms;
+      existing.title = '';
+      existing.invitedBy = null;
+      existing.invitedAt = new Date();
+      if (autoJoin) existing.joinedAt = new Date();
+    } else {
+      team.members.push({
+        user: requesterId,
+        role: 'member',
+        permissions: defaultPerms,
+        status: newStatus,
+        invitedAt: new Date(),
+        ...(autoJoin ? { joinedAt: new Date() } : {}),
+      });
+    }
+
+    await team.save();
+
+    if (autoJoin) {
+      await User.findByIdAndUpdate(requesterId, { $addToSet: { teams: team._id } });
+    }
+
+    await Notification.notify({
+      recipient: team.owner,
+      type: autoJoin ? 'team_member_joined' : 'team_join_requested',
+      title: autoJoin ? 'New team member' : 'Team join request',
+      message: autoJoin
+        ? `${req.user.firstName || req.user.email || 'A user'} joined ${team.name} via join code.`
+        : `${req.user.firstName || req.user.email || 'A user'} requested to join ${team.name} via join code.`,
+      link: `/teams/${team._id}`,
+    });
+
+    await logTeamAudit({ teamId: team._id, actorId: requesterId, action: 'join_via_code', req });
+
+    res.json({ message: autoJoin ? 'Joined the team!' : 'Join request submitted — awaiting approval', team: { _id: team._id, name: team.name } });
+  } catch (err) {
+    console.error('Join via code error:', err.message);
+    res.status(500).json({ error: 'Failed to join team' });
   }
 });
 

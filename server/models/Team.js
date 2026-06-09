@@ -124,6 +124,11 @@ const teamSchema = new mongoose.Schema({
 
   pinnedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
 
+  // Join code
+  joinCode:          { type: String, unique: true, sparse: true },
+  joinCodeEnabled:   { type: Boolean, default: false },
+  joinCodeExpiresAt: { type: Date },
+
   isActive:    { type: Boolean, default: true },
 }, { timestamps: true });
 
