@@ -500,6 +500,10 @@
   font-size: 13px;
   color: #6b7280;
 }
+.sd-own-notice p { margin: 0 0 8px; }
+.sd-own-links { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.sd-own-links a { font-size: 0.8rem; color: #2563eb; text-decoration: none; padding: 6px 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb; min-height: 44px; display: inline-flex; align-items: center; }
+.sd-own-links a:hover { background: #eff6ff; border-color: #2563eb; }
 
 /* ── Service requirements (from freelancer) ─────────────────── */
 .sd-service-req {

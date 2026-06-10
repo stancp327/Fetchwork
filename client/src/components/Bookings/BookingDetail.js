@@ -11,6 +11,8 @@ import SessionNotes from './SessionNotes';
 import CancellationPolicyDisplay from './CancellationPolicyDisplay';
 import IntakeFormFill from './IntakeFormFill';
 import IntakeFormView from './IntakeFormView';
+import BookingReviewForm from './BookingReviewForm';
+import BookingReviewDisplay from './BookingReviewDisplay';
 import './BookingDetail.css';
 
 /* ─── Helpers ─── */
@@ -462,6 +464,22 @@ const BookingDetail = () => {
                   }}
                 />
           }
+        </div>
+      )}
+
+      {/* Reviews — show on completed bookings */}
+      {booking.status === 'completed' && (
+        <div className="bd-card">
+          <h2 className="bd-section-title">⭐ Reviews</h2>
+          <BookingReviewDisplay
+            userId={amFreelancer ? booking.clientId : booking.freelancerId}
+            role={amFreelancer ? 'client' : 'freelancer'}
+          />
+          <BookingReviewForm
+            bookingId={bid(booking)}
+            onSubmitted={() => load()}
+            onCancel={() => {}}
+          />
         </div>
       )}
 

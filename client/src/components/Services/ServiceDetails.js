@@ -572,7 +572,14 @@ const ServiceDetails = () => {
                   )}
 
                   {isOwnService && (
-                    <div className="sd-own-notice">This is your service listing</div>
+                    <div className="sd-own-notice">
+                      <p>This is your service listing</p>
+                      <div className="sd-own-links">
+                        <Link to={`/service-packages/${service._id}`}>📦 Manage Packages</Link>
+                        <Link to={`/availability/manage/${service._id}`}>🕐 Availability</Link>
+                        <Link to="/intake-forms/builder">📋 Intake Forms</Link>
+                      </div>
+                    </div>
                   )}
                 </>
               )}

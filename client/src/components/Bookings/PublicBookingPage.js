@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import CancellationPolicyDisplay from './CancellationPolicyDisplay';
 import MultiServiceSelector from './MultiServiceSelector';
+import PackageDisplay from './PackageDisplay';
+import BookingReviewDisplay from './BookingReviewDisplay';
 import './PublicBookingPage.css';
 
 /* ─── Helpers ─── */
@@ -422,6 +424,28 @@ const PublicBookingPage = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Session packages — if service selected */}
+      {selectedService && (
+        <div className="pbp-section">
+          <h2 className="pbp-section-title">📦 Session Packages</h2>
+          <PackageDisplay
+            serviceId={selectedService._id}
+            onSelectPackage={(pkg) => {
+              if (!user) { setShowLogin(true); return; }
+              navigate(`/my-packages`);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Freelancer reviews */}
+      {freelancer && (
+        <div className="pbp-section">
+          <h2 className="pbp-section-title">⭐ Reviews</h2>
+          <BookingReviewDisplay userId={freelancer._id} role="freelancer" />
         </div>
       )}
 

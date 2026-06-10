@@ -139,6 +139,18 @@ const MyBookings = () => {
         )}
       </div>
 
+      {/* Quick links to booking tools */}
+      <div className="mb-quick-links">
+        {isFreelancerMode && (
+          <>
+            <Link to="/intake-forms/builder" className="mb-quick-link">📋 Intake Forms</Link>
+            <Link to="/cancellation-policy" className="mb-quick-link">📜 Cancellation Policy</Link>
+            <Link to="/settings/calendar" className="mb-quick-link">📆 Calendar Sync</Link>
+          </>
+        )}
+        <Link to="/my-packages" className="mb-quick-link">📦 My Packages</Link>
+      </div>
+
       <div className="mb-tabs">
         {['upcoming', 'past', 'cancelled', 'bundles'].map(t => (
           <button key={t} className={`mb-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>

@@ -4,6 +4,11 @@
 .mb-analytics-link { font-size: 0.875rem; color: #2563eb; text-decoration: none; font-weight: 500; white-space: nowrap; min-height: 44px; display: flex; align-items: center; }
 .mb-analytics-link:hover { text-decoration: underline; }
 
+/* Quick links */
+.mb-quick-links { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.mb-quick-link { display: inline-flex; align-items: center; gap: 4px; padding: var(--space-2) var(--space-3); font-size: var(--text-sm); font-weight: 500; color: var(--text-muted); background: var(--bg-secondary); border-radius: var(--radius-md); text-decoration: none; min-height: 44px; transition: background 0.15s, color 0.15s; }
+.mb-quick-link:hover { background: var(--primary); color: white; }
+
 /* Tabs */
 .mb-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-2); }
 .mb-tab { background: none; border: none; padding: var(--space-2) var(--space-3); font-size: var(--text-sm); font-weight: 500; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-md); min-height: 44px; }
