@@ -1,0 +1,105 @@
+.buffer-settings {
+  max-width: 480px;
+}
+
+.buffer-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--color-text-primary, #111);
+}
+
+.buffer-description {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #555);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.buffer-loading {
+  color: var(--color-text-secondary, #555);
+  font-size: 0.875rem;
+  padding: 8px 0;
+}
+
+.buffer-message {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.buffer-message--success {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.buffer-message--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.buffer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.buffer-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-primary, #111);
+  flex: 1;
+}
+
+.buffer-select {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--color-surface, #fff);
+  color: var(--color-text-primary, #111);
+  min-width: 140px;
+  cursor: pointer;
+}
+
+.buffer-preview {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #555);
+  margin: 0 0 14px;
+  background: var(--color-surface-secondary, #f9fafb);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.buffer-save-btn {
+  min-height: 44px;
+  padding: 10px 24px;
+  background: var(--color-primary, #6366f1);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.buffer-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.buffer-save-btn:hover:not(:disabled) { opacity: 0.9; }
+
+.buffer-scope-note {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary, #9ca3af);
+  margin: 10px 0 0;
+}
+
+@media (max-width: 360px) {
+  .buffer-row { flex-direction: column; align-items: flex-start; }
+  .buffer-select { width: 100%; }
+}

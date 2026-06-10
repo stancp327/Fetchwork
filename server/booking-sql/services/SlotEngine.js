@@ -20,11 +20,26 @@ const { AvailabilityService } = require('./AvailabilityService');
  * @param {number} params.minNoticeHours - minimum booking notice (default 0)
  * @returns {Array} slot objects
  */
-function generateSlotsFromWindows({ windows, slotDuration, bufferTime, dateStr, timezone, minNoticeHours = 0 }) {
+function generateSlotsFromWindows({
+  windows,
+  slotDuration,
+  bufferTime,
+  bufferBeforeMinutes,
+  bufferAfterMinutes,
+  dateStr,
+  timezone,
+  minNoticeHours = 0,
+}) {
   const tz = timezone || 'America/Los_Angeles';
   const slots = [];
   const nowMs = Date.now();
   const noticeMs = (minNoticeHours || 0) * 3600 * 1000;
+
+  // Resolve effective buffer: use before/after if set, fall back to legacy bufferTime
+  const hasSplitBuffer = (bufferBeforeMinutes ?? 0) > 0 || (bufferAfterMinutes ?? 0) > 0;
+  const effectiveBefore = hasSplitBuffer ? (bufferBeforeMinutes ?? 0) : 0;
+  const effectiveAfter  = hasSplitBuffer ? (bufferAfterMinutes  ?? 0) : (bufferTime || 0);
+  const totalGap        = effectiveBefore + effectiveAfter;
 
   for (const win of windows || []) {
     let cursor = DateTime.fromISO(`${dateStr}T${win.startTime}`, { zone: tz });
@@ -38,13 +53,13 @@ function generateSlotsFromWindows({ windows, slotDuration, bufferTime, dateStr, 
 
       // DST spring-forward: the hour doesn't exist
       if (!cursor.isValid || !slotEnd.isValid) {
-        cursor = slotEnd.plus({ minutes: bufferTime });
+        cursor = slotEnd.plus({ minutes: totalGap });
         continue;
       }
 
       // Enforce minimum notice window
       if (cursor.toMillis() < nowMs + noticeMs) {
-        cursor = slotEnd.plus({ minutes: bufferTime });
+        cursor = slotEnd.plus({ minutes: totalGap });
         continue;
       }
 
@@ -56,9 +71,11 @@ function generateSlotsFromWindows({ windows, slotDuration, bufferTime, dateStr, 
         startLocal: cursor.toISO(),
         endLocal: slotEnd.toISO(),
         displayTime: cursor.toFormat('h:mm a'),
+        bufferBeforeMinutes: effectiveBefore,
+        bufferAfterMinutes:  effectiveAfter,
       });
 
-      cursor = slotEnd.plus({ minutes: bufferTime });
+      cursor = slotEnd.plus({ minutes: totalGap });
     }
   }
 
@@ -168,6 +185,8 @@ class SlotEngine {
     const tz = availability.timezone || 'America/Los_Angeles';
     const slotDuration = availability.slotDuration || 60;
     const bufferTime = availability.bufferTime || 0;
+    const bufferBeforeMinutes = availability.bufferBeforeMinutes ?? 0;
+    const bufferAfterMinutes  = availability.bufferAfterMinutes  ?? 0;
     const minNoticeHours = availability.minNoticeHours || 0;
     const maxAdvanceDays = availability.maxAdvanceBookingDays || 60;
     const maxPerSlot = availability.capacity || service.maxPerSlot || 1;
@@ -211,6 +230,8 @@ class SlotEngine {
         windows: windowsResult.windows,
         slotDuration,
         bufferTime,
+        bufferBeforeMinutes,
+        bufferAfterMinutes,
         dateStr: date,
         timezone: tz,
         minNoticeHours,
@@ -221,6 +242,8 @@ class SlotEngine {
         windows: availability.weeklySchedule,
         slotDuration,
         bufferTime,
+        bufferBeforeMinutes,
+        bufferAfterMinutes,
         dateStr: date,
         timezone: tz,
         minNoticeHours,

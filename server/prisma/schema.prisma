@@ -111,6 +111,7 @@ model BookingOccurrence {
   skipped             Boolean       @default(false)
   smsReminder24hSent  Boolean       @default(false)
   smsReminder1hSent   Boolean       @default(false)
+  reviewPromptSentAt  DateTime?     @db.Timestamptz(6)
   createdAt           DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime      @updatedAt @db.Timestamptz(6)
 
@@ -250,15 +251,17 @@ model FreelancerAvailability {
   freelancerId          String   @unique
   timezone              String   @default("America/Los_Angeles")
   defaultSlotDuration   Int      @default(60)  // minutes
-  bufferTime            Int      @default(0)   // minutes between slots
+  bufferTime            Int      @default(0)   // minutes between slots (legacy single buffer)
+  bufferBeforeMinutes   Int      @default(0)   // buffer blocked before each booking
+  bufferAfterMinutes    Int      @default(0)   // buffer blocked after each booking
   defaultCapacity       Int      @default(1)   // 1=individual, >1=group
   minNoticeHours        Int      @default(24)  // can't book < X hours from now
   maxAdvanceBookingDays Int      @default(60)  // can't book > X days out
   isActive              Boolean  @default(true)
-  
+
   // Weekly schedule: JSON array of { dayOfWeek: 0-6, windows: [{startTime, endTime}] }
   weeklyScheduleJson    Json     @default("[]")
-  
+
   createdAt             DateTime @default(now()) @db.Timestamptz(6)
   updatedAt             DateTime @updatedAt @db.Timestamptz(6)
 
@@ -276,7 +279,9 @@ model ServiceAvailabilityOverride {
   // Override fields (null = use freelancer default)
   timezone              String?
   slotDuration          Int?     // minutes
-  bufferTime            Int?     // minutes
+  bufferTime            Int?     // minutes (legacy single buffer)
+  bufferBeforeMinutes   Int?
+  bufferAfterMinutes    Int?
   capacity              Int?     // max per slot
   minNoticeHours        Int?
   maxAdvanceBookingDays Int?
@@ -588,4 +593,80 @@ model MultiServiceBooking {
 
   @@index([clientId])
   @@index([freelancerId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE PACKAGES / SESSION BUNDLES
+// Freelancer-defined multi-session packages with discounted per-session pricing
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model ServicePackage {
+  id                  String   @id @default(uuid()) @db.Uuid
+  freelancerId        String
+  serviceId           String   @db.Uuid
+  name                String
+  description         String?
+  sessionCount        Int
+  pricePerSessionCents Int
+  totalPriceCents     Int
+  savingsPercent      Float    @default(0)
+  validityDays        Int      @default(365)
+  isActive            Boolean  @default(true)
+  maxPerClient        Int      @default(1)
+  createdAt           DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
+
+  purchases PackagePurchase[]
+
+  @@index([freelancerId])
+  @@index([serviceId])
+}
+
+model PackagePurchase {
+  id                    String   @id @default(uuid()) @db.Uuid
+  packageId             String   @db.Uuid
+  clientId              String
+  freelancerId          String
+  sessionsTotal         Int
+  sessionsUsed          Int      @default(0)
+  paidAmountCents       Int
+  stripePaymentIntentId String?
+  // active | exhausted | expired | refunded
+  status                String   @default("active")
+  purchasedAt           DateTime @default(now()) @db.Timestamptz(6)
+  expiresAt             DateTime @db.Timestamptz(6)
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(6)
+
+  package ServicePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([freelancerId])
+  @@index([packageId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOOKING REVIEWS
+// Post-session ratings and reviews between clients and freelancers
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model BookingReview {
+  id                   String   @id @default(uuid()) @db.Uuid
+  bookingId            String   @db.Uuid
+  reviewerId           String
+  revieweeId           String
+  // "client" or "freelancer" (the reviewer's role)
+  role                 String
+  rating               Int
+  comment              String?
+  punctualityRating    Int?
+  communicationRating  Int?
+  qualityRating        Int?
+  isPublic             Boolean  @default(true)
+  createdAt            DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([bookingId, reviewerId])
+  @@index([revieweeId])
+  @@index([bookingId])
 }

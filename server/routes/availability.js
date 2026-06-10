@@ -114,6 +114,70 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
+// ── PUT /api/availability/buffer — set buffer before/after for current freelancer ──
+router.put('/buffer', authenticateToken, async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const freelancerId = req.user._id.toString();
+    const { bufferBeforeMinutes, bufferAfterMinutes, serviceId } = req.body;
+
+    const before = Math.max(0, parseInt(bufferBeforeMinutes) || 0);
+    const after  = Math.max(0, parseInt(bufferAfterMinutes)  || 0);
+
+    if (serviceId) {
+      // Per-service override
+      const global = await prisma.freelancerAvailability.findUnique({
+        where: { freelancerId },
+        select: { id: true },
+      });
+      if (!global) return res.status(400).json({ error: 'Set up global availability first' });
+
+      const Service = require('../models/Service');
+      const svc = await Service.findById(serviceId).select('freelancer').lean();
+      if (!svc) return res.status(404).json({ error: 'Service not found' });
+      if (svc.freelancer.toString() !== freelancerId)
+        return res.status(403).json({ error: 'Not your service' });
+
+      await prisma.serviceAvailabilityOverride.upsert({
+        where: { freelancerAvailId_serviceId: { freelancerAvailId: global.id, serviceId } },
+        create: { freelancerAvailId: global.id, serviceId, bufferBeforeMinutes: before, bufferAfterMinutes: after },
+        update: { bufferBeforeMinutes: before, bufferAfterMinutes: after },
+      });
+      return res.json({ message: 'Buffer time updated for service', bufferBeforeMinutes: before, bufferAfterMinutes: after });
+    }
+
+    // Global availability
+    await prisma.freelancerAvailability.upsert({
+      where:  { freelancerId },
+      update: { bufferBeforeMinutes: before, bufferAfterMinutes: after },
+      create: { freelancerId, bufferBeforeMinutes: before, bufferAfterMinutes: after },
+    });
+    res.json({ message: 'Buffer time updated', bufferBeforeMinutes: before, bufferAfterMinutes: after });
+  } catch (err) {
+    console.error('[availability] PUT /buffer error:', err.message);
+    res.status(500).json({ error: 'Failed to save buffer time' });
+  }
+});
+
+// ── GET /api/availability/buffer/:freelancerId — get buffer config for a freelancer ──
+router.get('/buffer/:freelancerId', async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const doc = await prisma.freelancerAvailability.findUnique({
+      where: { freelancerId: req.params.freelancerId },
+      select: { bufferBeforeMinutes: true, bufferAfterMinutes: true, bufferTime: true },
+    });
+    if (!doc) return res.json({ bufferBeforeMinutes: 0, bufferAfterMinutes: 0 });
+    res.json({
+      bufferBeforeMinutes: doc.bufferBeforeMinutes ?? 0,
+      bufferAfterMinutes:  doc.bufferAfterMinutes  ?? 0,
+      bufferTime:          doc.bufferTime          ?? 0,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get buffer config' });
+  }
+});
+
 // ── GET /api/availability/:freelancerId — public availability config ─────────
 router.get('/:freelancerId', async (req, res) => {
   try {

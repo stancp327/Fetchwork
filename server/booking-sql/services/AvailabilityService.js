@@ -49,17 +49,19 @@ class AvailabilityService {
     return {
       freelancerId,
       serviceId,
-      timezone: override?.timezone ?? global.timezone,
-      slotDuration: override?.slotDuration ?? global.defaultSlotDuration,
-      bufferTime: override?.bufferTime ?? global.bufferTime,
-      capacity: override?.capacity ?? global.defaultCapacity,
-      minNoticeHours: override?.minNoticeHours ?? global.minNoticeHours,
+      timezone:             override?.timezone             ?? global.timezone,
+      slotDuration:         override?.slotDuration         ?? global.defaultSlotDuration,
+      bufferTime:           override?.bufferTime           ?? global.bufferTime,
+      bufferBeforeMinutes:  override?.bufferBeforeMinutes  ?? global.bufferBeforeMinutes  ?? 0,
+      bufferAfterMinutes:   override?.bufferAfterMinutes   ?? global.bufferAfterMinutes   ?? 0,
+      capacity:             override?.capacity             ?? global.defaultCapacity,
+      minNoticeHours:       override?.minNoticeHours       ?? global.minNoticeHours,
       maxAdvanceBookingDays: override?.maxAdvanceBookingDays ?? global.maxAdvanceBookingDays,
-      isActive: (override?.isActive ?? true) && global.isActive,
-      weeklySchedule: override?.weeklyScheduleJson ?? global.weeklyScheduleJson ?? [],
+      isActive:             (override?.isActive ?? true) && global.isActive,
+      weeklySchedule:       override?.weeklyScheduleJson   ?? global.weeklyScheduleJson   ?? [],
       // Include raw refs for debugging/admin
-      _globalId: global.id,
-      _overrideId: override?.id ?? null,
+      _globalId:    global.id,
+      _overrideId:  override?.id ?? null,
     };
   }
 
