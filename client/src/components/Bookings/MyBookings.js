@@ -132,7 +132,12 @@ const MyBookings = () => {
     <div className="mb-page">
       <SEO title="My Bookings | Fetchwork" path="/bookings" noIndex={true} />
 
-      <h1 className="mb-title">📅 My Bookings</h1>
+      <div className="mb-title-row">
+        <h1 className="mb-title">📅 My Bookings</h1>
+        {isFreelancerMode && (
+          <Link to="/booking-analytics" className="mb-analytics-link">View Analytics →</Link>
+        )}
+      </div>
 
       <div className="mb-tabs">
         {['upcoming', 'past', 'cancelled', 'bundles'].map(t => (
