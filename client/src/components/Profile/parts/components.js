@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import AIPreferences from '../../Settings/AIPreferences';
 import { apiRequest } from '../../../utils/api';
 import FileUpload from '../../common/FileUpload';
@@ -196,8 +197,8 @@ const TabAbout = ({ data, onChange, onFileSelect }) => {
           placeholder="Zip"
           maxLength={10}
         />
-        {zipLoading && <span style={{ fontSize: '12px', color: '#888' }}>Looking up...</span>}
-        {zipError && <span style={{ fontSize: '12px', color: '#e74c3c' }}>{zipError}</span>}
+        {zipLoading && <span className="prof-zip-loading">Looking up...</span>}
+        {zipError && <span className="prof-zip-error">{zipError}</span>}
       </div>
       <div className="prof-field">
         <label>Availability Status</label>
@@ -284,7 +285,7 @@ const TabSkills = ({ data, onChange }) => {
       <h2>Skills & Expertise</h2>
       <div className="prof-field">
         <label>Add Skills</label>
-        <div className="skill-input-row" style={{ position: 'relative' }}>
+        <div className="skill-input-row">
           <input
             type="text"
             value={newSkill}
@@ -324,7 +325,7 @@ const TabSkills = ({ data, onChange }) => {
         ))}
         {data.skills.length === 0 && <p className="skills-empty">No skills added yet. Add skills to help clients find you.</p>}
       </div>
-      <div className="prof-field" style={{ marginTop: '1.5rem' }}>
+      <div className="prof-field prof-mt-lg">
         <label>Areas of Expertise</label>
         <CategoryCombobox
           value={data.primaryCategory || ''}
@@ -435,20 +436,20 @@ const TabRates = ({ data, onChange }) => (
       <label className="toggle-label">
         <input
           type="checkbox"
+          className="prof-checkbox"
           checked={!!data.rateNegotiable}
           onChange={e => onChange('rateNegotiable', e.target.checked)}
-          style={{ marginRight: '0.5rem', accentColor: 'var(--color-primary)' }}
         />
         Rate is negotiable
       </label>
-      <p className="field-hint" style={{ marginTop: '0.25rem' }}>
+      <p className="field-hint">
         Clients will see your rate as a starting point and can discuss pricing with you.
       </p>
     </div>
     <div className="rates-services">
       <h3>Your Services</h3>
       <p className="tab-desc">Service packages you've created will appear here.</p>
-      <a href="/create-service" className="btn-create-service">+ Create Service</a>
+      <Link to="/create-service" className="btn-create-service">+ Create Service</Link>
     </div>
   </div>
 );
@@ -620,7 +621,7 @@ const TabVerification = ({ data, onRefresh }) => {
           <div className="verify-status-card rejected">
             <p><strong>Your submission was not approved.</strong></p>
             {verif.notes && <p className="verify-reason">Reason: {verif.notes}</p>}
-            <button className="btn btn-primary" style={{ marginTop: '0.75rem' }} onClick={() => setShowForm(true)}>
+            <button className="btn btn-primary prof-mt-lg" onClick={() => setShowForm(true)}>
               Try Again
             </button>
           </div>
@@ -680,7 +681,7 @@ const TabVerification = ({ data, onRefresh }) => {
       </div>
 
       {/* Payment */}
-      <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
+      <div className="verify-id-section prof-mt-lg">
         <div className="verify-id-header">
           <div>
             <h3>🏦 Bank Account</h3>
@@ -693,17 +694,19 @@ const TabVerification = ({ data, onRefresh }) => {
       </div>
 
       {/* Saved Payment Methods (client side — for paying jobs/services) */}
-      <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
+      <div className="verify-id-section prof-mt-lg">
         <PaymentMethods />
       </div>
 
       {/* Calendar Integration */}
-      <div className="verify-id-section" style={{ marginTop: '1.5rem' }}>
-        <div style={{ marginBottom: '1rem' }}>
-          <h3>📅 Calendar Sync</h3>
-          <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0' }}>
-            Sync your bookings with Google Calendar, Apple Calendar, or Outlook.
-          </p>
+      <div className="verify-id-section prof-mt-lg">
+        <div className="verify-id-header">
+          <div>
+            <h3>📅 Calendar Sync</h3>
+            <p className="prof-calendar-desc">
+              Sync your bookings with Google Calendar, Apple Calendar, or Outlook.
+            </p>
+          </div>
         </div>
         <CalendarConnect />
       </div>
@@ -720,7 +723,7 @@ const TabSettings = ({ data, onChange }) => (
       <input type="email" value={data.email || ''} disabled className="input-disabled" />
       <p className="field-hint">Contact support to change your email.</p>
     </div>
-    <h3 style={{ marginTop: '1.5rem' }}>Social Links</h3>
+    <h3 className="prof-mt-lg">Social Links</h3>
     <div className="prof-row">
       <div className="prof-field">
         <label>LinkedIn</label>
@@ -742,7 +745,7 @@ const TabSettings = ({ data, onChange }) => (
       </div>
     </div>
 
-    <div style={{ marginTop: '2rem', borderTop: '1px solid var(--color-border, #e5e7eb)', paddingTop: '1.5rem' }}>
+    <div className="prof-section-divider">
       <AIPreferences userRole={data.role || 'both'} />
     </div>
   </div>

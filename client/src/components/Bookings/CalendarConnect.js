@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import './CalendarConnect.css';
 
@@ -126,7 +127,7 @@ const CalendarConnect = () => {
         </p>
 
         <div style={{ marginTop: '8px' }}>
-          <a href="/calendar" className="cal-link">📋 View Agenda</a>
+          <Link to="/calendar" className="cal-link">📋 View Agenda</Link>
         </div>
 
         {loadingGoogle ? (
