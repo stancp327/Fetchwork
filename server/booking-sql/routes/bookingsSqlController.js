@@ -12,6 +12,7 @@ const { BookingRepo } = require('../repos/BookingRepo');
 const { BookingNotificationService } = require('../services/BookingNotificationService');
 const { notifyUser: smsNotify, SMS: smsTemplates } = require('../../services/smsService');
 const UserModel = require('../../models/User');
+const bookingEmailService = require('../../services/bookingEmailService');
 
 const bookingService    = new BookingService();
 const slotEngine        = new SlotEngine();
@@ -160,6 +161,7 @@ async function confirmBookingSql(req, res) {
         date:         occ?.localStartWallclock?.split('T')[0] || '',
         startTime:    occ?.localStartWallclock?.split('T')[1]?.slice(0, 5) || '',
       }).catch(() => {});
+      bookingEmailService.sendBookingConfirmation(booking, occ).catch(() => {});
     }
   }
 
@@ -206,6 +208,7 @@ async function cancelBookingSql(req, res) {
         serviceTitle: 'Service',
         reason:       req.body?.reason || '',
       }).catch(() => {});
+      bookingEmailService.sendBookingCancellation(booking, null, cancelledBy).catch(() => {});
 
       // SMS: notify the other party of cancellation
       try {
@@ -286,6 +289,28 @@ async function rescheduleBookingSql(req, res) {
     newEndTime,
     reason: reason || '',
   });
+
+  if (result.statusCode === 200 && !result.replayed) {
+    const booking = await bookingRepo.findBookingById(bookingId);
+    if (booking) {
+      const rescheduledBy = String(req.user?.userId || req.user?._id) === booking.clientId ? 'client' : 'freelancer';
+      const occ = await bookingRepo.findFirstOccurrenceByBookingId(bookingId);
+      notifySvc.onRescheduled({
+        bookingId:    booking.id,
+        clientId:     booking.clientId,
+        freelancerId: booking.freelancerId,
+        rescheduledBy,
+        serviceTitle: 'Service',
+        newDate,
+        newStartTime,
+      }).catch(() => {});
+      bookingEmailService.sendBookingReschedule(
+        booking, occ,
+        null,
+        `${newDate} at ${newStartTime}`
+      ).catch(() => {});
+    }
+  }
 
   return res.status(result.statusCode).json(result.response);
 }

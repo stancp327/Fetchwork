@@ -14,6 +14,9 @@ const User    = require('../models/User');
 const Notification = require('../models/Notification');
 const calendarService = require('../services/calendarService');
 
+let bookingEmailService = null;
+try { bookingEmailService = require('../services/bookingEmailService'); } catch (_) {}
+
 let isBookingSqlEnabled = () => false;
 try {
   isBookingSqlEnabled = require('../booking-sql/db/featureFlag').isBookingSqlEnabled;
@@ -76,6 +79,10 @@ function initBookingCrons() {
             }
           }
 
+          if (bookingEmailService) {
+            bookingEmailService.sendBookingReminder(b, null, '24h').catch(() => {});
+          }
+
           // Atomic mark sent — prevents duplicates
           await Booking.findOneAndUpdate(
             { _id: b._id, reminder24hSent: false },
@@ -124,6 +131,10 @@ function initBookingCrons() {
                 link: `/bookings/${b._id}`,
               });
             }
+          }
+
+          if (bookingEmailService) {
+            bookingEmailService.sendBookingReminder(b, null, '1h').catch(() => {});
           }
 
           await Booking.findOneAndUpdate(

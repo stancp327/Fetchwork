@@ -14,6 +14,9 @@ try {
   console.warn('[bookingSqlCrons] booking-sql module not available — SQL crons disabled');
 }
 
+let bookingEmailService = null;
+try { bookingEmailService = require('../services/bookingEmailService'); } catch (_) {}
+
 function initBookingSqlCrons() {
   if (!getPrisma) return;
 
@@ -75,7 +78,73 @@ function initBookingSqlCrons() {
     }
   });
 
-  console.log('[bookingSqlCrons] ✅ SQL booking crons initialized (hold expiry)');
+  // ── 2. 24h reminder emails (every 5 minutes) ──────────────────
+  cron.schedule('*/5 * * * *', async () => {
+    if (!bookingEmailService) return;
+    try {
+      const prisma = getPrisma();
+      const windowStart = new Date(Date.now() + 23.5 * 3600 * 1000);
+      const windowEnd   = new Date(Date.now() + 24.5 * 3600 * 1000);
+
+      const occs = await prisma.bookingOccurrence.findMany({
+        where: {
+          status: 'confirmed',
+          smsReminder24hSent: false,
+          startAtUtc: { gte: windowStart, lte: windowEnd },
+        },
+        include: { booking: true },
+      });
+
+      for (const occ of occs) {
+        try {
+          await bookingEmailService.sendBookingReminder(occ.booking, occ, '24h');
+          await prisma.bookingOccurrence.updateMany({
+            where: { id: occ.id, smsReminder24hSent: false },
+            data:  { smsReminder24hSent: true },
+          });
+        } catch (err) {
+          console.error(`[SQL reminder 24h] occurrence ${occ.id}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('[bookingSqlCrons] 24h reminder error:', err.message);
+    }
+  });
+
+  // ── 3. 1h reminder emails (every 5 minutes) ───────────────────
+  cron.schedule('*/5 * * * *', async () => {
+    if (!bookingEmailService) return;
+    try {
+      const prisma = getPrisma();
+      const windowStart = new Date(Date.now() + 50 * 60 * 1000);
+      const windowEnd   = new Date(Date.now() + 70 * 60 * 1000);
+
+      const occs = await prisma.bookingOccurrence.findMany({
+        where: {
+          status: 'confirmed',
+          smsReminder1hSent: false,
+          startAtUtc: { gte: windowStart, lte: windowEnd },
+        },
+        include: { booking: true },
+      });
+
+      for (const occ of occs) {
+        try {
+          await bookingEmailService.sendBookingReminder(occ.booking, occ, '1h');
+          await prisma.bookingOccurrence.updateMany({
+            where: { id: occ.id, smsReminder1hSent: false },
+            data:  { smsReminder1hSent: true },
+          });
+        } catch (err) {
+          console.error(`[SQL reminder 1h] occurrence ${occ.id}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('[bookingSqlCrons] 1h reminder error:', err.message);
+    }
+  });
+
+  console.log('[bookingSqlCrons] ✅ SQL booking crons initialized (hold expiry + reminders)');
 }
 
 module.exports = { initBookingSqlCrons };
