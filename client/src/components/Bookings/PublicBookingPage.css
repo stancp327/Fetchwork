@@ -41,8 +41,10 @@
 /* ─── Hero / Freelancer card ─── */
 .pbp-hero {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: var(--space-4);
-  align-items: flex-start;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -209,7 +211,7 @@
   justify-content: center;
   background: none;
   transition: background 0.12s, color 0.12s;
-  min-height: 36px;
+  min-height: 44px;
 }
 .pbp-cal-pad { cursor: default; }
 .pbp-cal-available { color: var(--text-primary); }
@@ -389,9 +391,10 @@
 .pbp-btn-secondary:hover:not(:disabled) { background: var(--border-color); }
 
 /* ─── Responsive ─── */
-@media (max-width: 420px) {
-  .pbp-hero { flex-direction: column; align-items: center; text-align: center; }
-  .pbp-rating { justify-content: center; }
+.pbp-rating { justify-content: center; }
+@media (min-width: 421px) {
+  .pbp-hero { flex-direction: row; align-items: flex-start; text-align: left; }
+  .pbp-rating { justify-content: flex-start; }
 }
 
 /* ─── Multi-service toggle ─── */

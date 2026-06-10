@@ -289,7 +289,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .am-day-name {
@@ -403,7 +403,7 @@
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   padding: var(--space-sm) var(--space-md);
-  min-height: 36px;
+  min-height: 44px;
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 

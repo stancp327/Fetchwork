@@ -15,7 +15,7 @@
 }
 
 .pkg-add-btn {
-  min-height: 36px;
+  min-height: 44px;
   padding: 6px 16px;
   background: var(--color-primary, #6366f1);
   color: #fff;
@@ -83,6 +83,7 @@
 
 .pkg-form-row {
   display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -177,7 +178,7 @@
 
 .pkg-edit-btn,
 .pkg-deactivate-btn {
-  min-height: 36px;
+  min-height: 44px;
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -191,6 +192,6 @@
 .pkg-deactivate-btn { background: transparent; border: 1px solid #fca5a5; color: #dc2626; }
 .pkg-deactivate-btn:hover { background: #fef2f2; }
 
-@media (max-width: 480px) {
-  .pkg-form-row { flex-direction: column; }
+@media (min-width: 481px) {
+  .pkg-form-row { flex-direction: row; }
 }
