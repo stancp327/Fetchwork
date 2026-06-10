@@ -403,7 +403,7 @@ function AppContent() {
           <Route path="/bookings"              element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route path="/bookings/group"        element={<ProtectedRoute><GroupSlotsPage /></ProtectedRoute>} />
           <Route path="/bookings/:id"          element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
-          <Route path="/services/:id/availability" element={<ProtectedRoute><AvailabilityManager /></ProtectedRoute>} />
+          <Route path="/services/:serviceId/availability" element={<ProtectedRoute><AvailabilityManager /></ProtectedRoute>} />
           <Route path="/availability"          element={<ProtectedRoute><AvailabilitySettings /></ProtectedRoute>} />
           <Route path="/calendar"              element={<ProtectedRoute><CalendarAgenda /></ProtectedRoute>} />
           <Route path="/calendar-connect"      element={<ProtectedRoute><CalendarConnect /></ProtectedRoute>} />

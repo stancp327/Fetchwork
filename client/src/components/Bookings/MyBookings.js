@@ -143,6 +143,7 @@ const MyBookings = () => {
       <div className="mb-quick-links">
         {isFreelancerMode && (
           <>
+            <Link to="/availability" className="mb-quick-link">🕐 Availability</Link>
             <Link to="/intake-forms/builder" className="mb-quick-link">📋 Intake Forms</Link>
             <Link to="/cancellation-policy" className="mb-quick-link">📜 Cancellation Policy</Link>
             <Link to="/settings/calendar" className="mb-quick-link">📆 Calendar Sync</Link>

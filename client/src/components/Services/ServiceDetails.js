@@ -576,7 +576,7 @@ const ServiceDetails = () => {
                       <p>This is your service listing</p>
                       <div className="sd-own-links">
                         <Link to={`/service-packages/${service._id}`}>📦 Manage Packages</Link>
-                        <Link to={`/availability/manage/${service._id}`}>🕐 Availability</Link>
+                        <Link to={`/services/${service._id}/availability`}>🕐 Availability</Link>
                         <Link to="/intake-forms/builder">📋 Intake Forms</Link>
                       </div>
                     </div>
