@@ -205,6 +205,18 @@ const BookingDetail = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Check if user already left a review for this booking
+  useEffect(() => {
+    if (!booking || booking.status !== 'completed') return;
+    apiRequest(`/api/booking-reviews/booking/${bid(booking)}`)
+      .then(data => {
+        const myId = user?.userId || user?._id?.toString();
+        const mine = (data.reviews || []).find(r => r.reviewerId === myId);
+        setMyReviewExists(!!mine);
+      })
+      .catch(() => {});
+  }, [booking, user]);
+
   // Load intake form template + response after booking loads
   useEffect(() => {
     if (!booking) return;
@@ -256,6 +268,9 @@ const BookingDetail = () => {
   const [intakeTemplate, setIntakeTemplate] = useState(null);
   const [intakeResponse, setIntakeResponse] = useState(null);
   const [intakeLoaded,   setIntakeLoaded]   = useState(false);
+
+  // Review state
+  const [myReviewExists, setMyReviewExists] = useState(false);
 
   useEffect(() => {
     if (!showCancelModal || !id) return;
@@ -475,11 +490,13 @@ const BookingDetail = () => {
             userId={amFreelancer ? booking.clientId : booking.freelancerId}
             role={amFreelancer ? 'client' : 'freelancer'}
           />
-          <BookingReviewForm
-            bookingId={bid(booking)}
-            onSubmitted={() => load()}
-            onCancel={() => {}}
-          />
+          {!myReviewExists && (
+            <BookingReviewForm
+              bookingId={bid(booking)}
+              onSubmitted={() => { setMyReviewExists(true); load(); }}
+              onCancel={() => {}}
+            />
+          )}
         </div>
       )}
 

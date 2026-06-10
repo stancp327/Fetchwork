@@ -429,24 +429,18 @@ const PublicBookingPage = () => {
 
       {/* Session packages — if service selected */}
       {selectedService && (
-        <div className="pbp-section">
-          <h2 className="pbp-section-title">📦 Session Packages</h2>
-          <PackageDisplay
-            serviceId={selectedService._id}
-            onSelectPackage={(pkg) => {
-              if (!user) { setShowLogin(true); return; }
-              navigate(`/my-packages`);
-            }}
-          />
-        </div>
+        <PackageDisplay
+          serviceId={selectedService._id}
+          onSelectPackage={(pkg) => {
+            if (!user) { setShowLogin(true); return; }
+            navigate(`/my-packages`);
+          }}
+        />
       )}
 
       {/* Freelancer reviews */}
       {freelancer && (
-        <div className="pbp-section">
-          <h2 className="pbp-section-title">⭐ Reviews</h2>
-          <BookingReviewDisplay userId={freelancer._id} role="freelancer" />
-        </div>
+        <BookingReviewDisplay userId={freelancer._id} role="freelancer" />
       )}
 
       {/* Login prompt overlay */}
