@@ -62,7 +62,7 @@ const CalendarConnect = () => {
   const handleConnectGoogle = async () => {
     setActionLoading(true);
     try {
-      const data = await apiRequest('/api/calendar/google/connect');
+      const data = await apiRequest('/api/calendar/google/connect', { method: 'POST' });
       if (data.authUrl) {
         window.location.href = data.authUrl;
       }
