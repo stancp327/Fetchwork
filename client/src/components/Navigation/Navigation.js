@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useRole } from '../../context/RoleContext';
 import { useNotifications } from '../../hooks/useNotifications';
+import { apiRequest } from '../../utils/api';
 import './Navigation.css';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -223,6 +224,7 @@ const Navigation = () => {
   const isAdmin = user?.isAdmin || user?.role === 'admin';
   const isMod   = user?.role === 'moderator';
   const unreadMessages = notifications.unreadMessages || 0;
+  const [hasTodayBookings, setHasTodayBookings] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -232,6 +234,35 @@ const Navigation = () => {
 
   // Close drawer on route change
   useEffect(() => { setIsMobileOpen(false); }, [location.pathname]);
+
+  // Booking dot on Calendar icon (if you have anything today)
+  useEffect(() => {
+    if (!isAuthenticated) { setHasTodayBookings(false); return; }
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let cancelled = false;
+
+    const check = async () => {
+      try {
+        const roles = ['client', 'freelancer'];
+        const res = await Promise.allSettled(
+          roles.map(role => apiRequest(`/api/bookings/me?role=${role}&status=upcoming`))
+        );
+        const anyToday = res.some(r => {
+          if (r.status !== 'fulfilled') return false;
+          const bookings = r.value?.bookings || [];
+          return bookings.some(b => b.date === todayStr);
+        });
+        if (!cancelled) setHasTodayBookings(anyToday);
+      } catch {
+        if (!cancelled) setHasTodayBookings(false);
+      }
+    };
+
+    check();
+    const id = setInterval(check, 5 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [isAuthenticated]);
 
   // Body scroll lock when drawer is open
   useEffect(() => {
@@ -306,6 +337,7 @@ const Navigation = () => {
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
+                {hasTodayBookings && <span className="nav-dot-badge nav-dot-badge--dot" aria-hidden="true" />}
               </Link>
 
               {/* Messages */}
