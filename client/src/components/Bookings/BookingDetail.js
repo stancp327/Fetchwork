@@ -374,22 +374,45 @@ const BookingDetail = () => {
           {(booking.client || booking.clientId) && (
             <div className="bd-field">
               <span className="bd-field-label">Client</span>
-              <span className="bd-field-value">
-                {booking.client
-                  ? `${booking.client.firstName} ${booking.client.lastName}`
-                  : booking.clientId}
-              </span>
+              <div className="bd-person-field">
+                <div className="bd-person-avatar">
+                  {booking.client?.profilePicture
+                    ? <img src={booking.client.profilePicture} alt="" />
+                    : (booking.client ? `${booking.client.firstName?.[0] || ''}${booking.client.lastName?.[0] || ''}` : '?')
+                  }
+                </div>
+                <span className="bd-field-value">
+                  {booking.client
+                    ? `${booking.client.firstName} ${booking.client.lastName}`
+                    : booking.clientName || 'Client'}
+                </span>
+              </div>
             </div>
           )}
 
           {(booking.freelancer || booking.freelancerId) && (
             <div className="bd-field">
               <span className="bd-field-label">Freelancer</span>
-              <span className="bd-field-value">
-                {booking.freelancer
-                  ? `${booking.freelancer.firstName} ${booking.freelancer.lastName}`
-                  : booking.freelancerId}
-              </span>
+              <div className="bd-person-field">
+                <div className="bd-person-avatar">
+                  {booking.freelancer?.profilePicture
+                    ? <img src={booking.freelancer.profilePicture} alt="" />
+                    : (booking.freelancer ? `${booking.freelancer.firstName?.[0] || ''}${booking.freelancer.lastName?.[0] || ''}` : '?')
+                  }
+                </div>
+                <span className="bd-field-value">
+                  {booking.freelancer
+                    ? `${booking.freelancer.firstName} ${booking.freelancer.lastName}`
+                    : booking.freelancerName || 'Freelancer'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {booking.serviceLocation?.address && (
+            <div className="bd-field bd-field-full">
+              <span className="bd-field-label">📍 Location</span>
+              <span className="bd-field-value">{booking.serviceLocation.address}</span>
             </div>
           )}
 

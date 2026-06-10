@@ -354,31 +354,38 @@ async function getMyBookingsSql(req, res) {
   const actorId = String(req.user?.userId || req.user?._id || 'unknown');
   const raw = await bookingRepo.findByActor({ actorId, role, status });
 
-  // Shape each booking to match the existing frontend contract as closely as possible.
-  // Fields that were populated from Mongo (service title, user names) are not available
-  // here until we add a service_offerings SQL table. Returning what we have now.
+  // Populate user names from MongoDB in batch
+  const User = require('../../models/User');
+  const userIds = [...new Set(raw.flatMap(b => [b.clientId, b.freelancerId].filter(Boolean)))];
+  const users = await User.find({ _id: { $in: userIds } })
+    .select('_id firstName lastName profilePicture')
+    .lean()
+    .catch(() => []);
+  const userMap = {};
+  users.forEach(u => { userMap[u._id.toString()] = u; });
+
   const bookings = raw.map((b) => {
     const primaryOccurrence = b.occurrences?.[0] || null;
+    const pricingSnap = b.pricingSnapshotJson || {};
+    const clientUser = userMap[b.clientId] || null;
+    const freelancerUser = userMap[b.freelancerId] || null;
     return {
-      // Core identity
       id: b.id,
       bookingRef: b.bookingRef,
-      // Status maps: SQL currentState -> surface as status for frontend compat
       status: b.currentState,
-      // Pricing / policy snapshots
-      pricing: b.pricingSnapshotJson || {},
+      serviceTitle: pricingSnap.serviceTitle || null,
+      pricing: pricingSnap,
       policy: b.policySnapshotJson || {},
       notes: b.notes || '',
-      // Primary occurrence fields (matches old Mongo date/startTime/endTime shape)
       date: primaryOccurrence?.startAtUtc?.toISOString().slice(0, 10) || null,
       startTime: primaryOccurrence?.localStartWallclock?.split('T')[1]?.slice(0, 5) || null,
       endTime: primaryOccurrence?.localEndWallclock?.split('T')[1]?.slice(0, 5) || null,
       timezone: primaryOccurrence?.timezone || null,
-      // Participant IDs (names/photos require join with User model — stub for now)
       clientId: b.clientId,
       freelancerId: b.freelancerId,
+      client: clientUser ? { _id: clientUser._id, firstName: clientUser.firstName, lastName: clientUser.lastName, profilePicture: clientUser.profilePicture } : null,
+      freelancer: freelancerUser ? { _id: freelancerUser._id, firstName: freelancerUser.firstName, lastName: freelancerUser.lastName, profilePicture: freelancerUser.profilePicture } : null,
       serviceId: b.serviceOfferingId || null,
-      // All occurrences for recurring/group bookings
       occurrences: b.occurrences.map((o) => ({
         id: o.id,
         occurrenceNo: o.occurrenceNo,
@@ -412,13 +419,25 @@ async function getBookingByIdSql(req, res) {
     return res.status(403).json({ error: 'Not authorized', code: 'NOT_AUTHORIZED' });
   }
 
+  // Populate user names + profile pics from MongoDB
+  const User = require('../../models/User');
+  const Service = require('../../models/Service');
+  const userFields = '_id firstName lastName profilePicture location';
+  const [clientUser, freelancerUser, serviceDoc] = await Promise.all([
+    b.clientId ? User.findById(b.clientId).select(userFields).lean().catch(() => null) : null,
+    b.freelancerId ? User.findById(b.freelancerId).select(userFields).lean().catch(() => null) : null,
+    b.serviceOfferingId ? Service.findById(b.serviceOfferingId).select('title serviceLocation').lean().catch(() => null) : null,
+  ]);
+
   const primaryOccurrence = b.occurrences?.[0] || null;
+  const pricingSnap = b.pricingSnapshotJson || {};
   return res.json({
     booking: {
       id: b.id,
       bookingRef: b.bookingRef,
       status: b.currentState,
-      pricing: b.pricingSnapshotJson || {},
+      serviceTitle: pricingSnap.serviceTitle || serviceDoc?.title || null,
+      pricing: pricingSnap,
       policy: b.policySnapshotJson || {},
       notes: b.notes || '',
       date: primaryOccurrence?.startAtUtc?.toISOString().slice(0, 10) || null,
@@ -427,7 +446,10 @@ async function getBookingByIdSql(req, res) {
       timezone: primaryOccurrence?.timezone || null,
       clientId: b.clientId,
       freelancerId: b.freelancerId,
+      client: clientUser ? { _id: clientUser._id, firstName: clientUser.firstName, lastName: clientUser.lastName, profilePicture: clientUser.profilePicture } : null,
+      freelancer: freelancerUser ? { _id: freelancerUser._id, firstName: freelancerUser.firstName, lastName: freelancerUser.lastName, profilePicture: freelancerUser.profilePicture } : null,
       serviceId: b.serviceOfferingId || null,
+      serviceLocation: serviceDoc?.serviceLocation || null,
       occurrences: b.occurrences.map((o) => ({
         id: o.id,
         occurrenceNo: o.occurrenceNo,
