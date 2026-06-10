@@ -125,6 +125,10 @@ const CalendarConnect = () => {
           Automatically add bookings to your Google Calendar as they're confirmed.
         </p>
 
+        <div style={{ marginTop: '8px' }}>
+          <a href="/calendar" className="cal-link">📋 View Agenda</a>
+        </div>
+
         {loadingGoogle ? (
           <div className="cal-loading">Checking status…</div>
         ) : googleStatus.connected ? (

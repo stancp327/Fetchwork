@@ -61,6 +61,7 @@ const MyBookings           = React.lazy(() => import('./components/Bookings/MyBo
 const AvailabilitySettings = React.lazy(() => import('./components/Bookings/AvailabilitySettings'));
 const AvailabilityManager  = React.lazy(() => import('./components/Bookings/AvailabilityManager'));
 const CalendarConnect      = React.lazy(() => import('./components/Bookings/CalendarConnect'));
+const CalendarAgenda       = React.lazy(() => import('./components/Bookings/CalendarAgenda'));
 const BookingDetail        = React.lazy(() => import('./components/Bookings/BookingDetail'));
 const GroupSlotsPage       = React.lazy(() => import('./components/Bookings/GroupSlotsPage'));
 const PricingPage          = React.lazy(() => import('./components/Billing/PricingPage'));
@@ -396,6 +397,7 @@ function AppContent() {
           <Route path="/bookings/:id"          element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
           <Route path="/services/:id/availability" element={<ProtectedRoute><AvailabilityManager /></ProtectedRoute>} />
           <Route path="/availability"          element={<ProtectedRoute><AvailabilitySettings /></ProtectedRoute>} />
+          <Route path="/calendar"              element={<ProtectedRoute><CalendarAgenda /></ProtectedRoute>} />
           <Route path="/calendar-connect"      element={<ProtectedRoute><CalendarConnect /></ProtectedRoute>} />
           <Route path="/pricing"               element={<PricingPage />} />
           <Route path="/billing"               element={<ProtectedRoute><BillingSettings /></ProtectedRoute>} />
