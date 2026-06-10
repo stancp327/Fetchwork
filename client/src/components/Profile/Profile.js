@@ -104,6 +104,24 @@ const Profile = () => {
 
       const response = await apiRequest('/api/users/profile', { method: 'PUT', body: formData });
       updateUser(response.user);
+      // Immediately reflect saved profile (avatar + public preview fields)
+      if (response?.user) {
+        setData(prev => ({
+          ...prev,
+          ...response.user,
+          // preserve nested object shapes we rely on
+          socialLinks: {
+            linkedin: response.user.socialLinks?.linkedin || '',
+            github: response.user.socialLinks?.github || '',
+            portfolio: response.user.socialLinks?.portfolio || '',
+            twitter: response.user.socialLinks?.twitter || '',
+          },
+          location: response.user.location || prev.location,
+          portfolio: response.user.portfolio || prev.portfolio,
+          skills: response.user.skills || prev.skills,
+          profilePicture: response.user.profilePicture || prev.profilePicture,
+        }));
+      }
       setSuccess('Profile saved!');
       setHasChanges(false);
       setSelectedFile(null);
@@ -129,9 +147,14 @@ const Profile = () => {
     );
   }
 
+  const handleFileSelect = (file) => {
+    setSelectedFile(file);
+    setHasChanges(true);
+  };
+
   const tabContent = [
     <TabOverview data={data} completion={completion} onTabChange={setActiveTab} />,
-    <TabAbout data={data} onChange={onChange} onFileSelect={setSelectedFile} />,
+    <TabAbout data={data} onChange={onChange} onFileSelect={handleFileSelect} />,
     <TabSkills data={data} onChange={onChange} />,
     <TabPortfolio data={data} onChange={onChange} onRefresh={fetchProfile} />,
     <TabRates data={data} onChange={onChange} />,
