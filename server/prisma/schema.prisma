@@ -522,3 +522,70 @@ model SessionNote {
   @@index([occurrenceId, createdAt])
   @@index([authorId])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INTAKE FORMS
+// Freelancer-defined pre-session questionnaires; client responses per booking
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model IntakeFormTemplate {
+  id           String   @id @default(uuid()) @db.Uuid
+  freelancerId String
+  serviceId    String?
+  name         String
+  // Array of {id, label, type, required, options?}
+  fieldsJson   Json
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  responses    IntakeFormResponse[]
+
+  @@unique([freelancerId, serviceId])
+  @@index([freelancerId])
+  @@index([serviceId])
+}
+
+model IntakeFormResponse {
+  id            String   @id @default(uuid()) @db.Uuid
+  templateId    String   @db.Uuid
+  bookingId     String   @db.Uuid
+  clientId      String
+  // Object keyed by field id: {fieldId: value}
+  responsesJson Json
+  submittedAt   DateTime @default(now()) @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+
+  template      IntakeFormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, bookingId])
+  @@index([bookingId])
+  @@index([clientId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MULTI-SERVICE BOOKINGS
+// Groups multiple service bookings into a single sequential session
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model MultiServiceBooking {
+  id                   String   @id @default(uuid()) @db.Uuid
+  clientId             String
+  freelancerId         String
+  // Array of Booking UUIDs
+  bookingIds           String[]
+  totalDurationMinutes Int
+  totalPriceCents      Int
+  combinedStartAtUtc   DateTime @db.Timestamptz(6)
+  combinedEndAtUtc     DateTime @db.Timestamptz(6)
+  timezone             String
+  // pending | confirmed | partially_completed | completed | cancelled
+  status               String   @default("pending")
+  notes                String?
+  createdAt            DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([clientId])
+  @@index([freelancerId])
+}

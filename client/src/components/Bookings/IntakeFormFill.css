@@ -1,0 +1,95 @@
+.iff-wrap {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.iff-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.25rem;
+}
+.iff-sub {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 1.25rem;
+}
+
+.iff-server-err {
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.iff-form { display: flex; flex-direction: column; gap: 1rem; }
+
+.iff-field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.iff-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+.iff-required { color: #dc2626; }
+
+.iff-input,
+.iff-textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  min-height: 44px;
+  font-family: inherit;
+}
+.iff-input:focus,
+.iff-textarea:focus { outline: 2px solid #2563eb; border-color: transparent; }
+.iff-input.err,
+.iff-textarea.err { border-color: #dc2626; }
+
+.iff-textarea { resize: vertical; }
+
+.iff-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.iff-err-msg { font-size: 0.78rem; color: #dc2626; }
+
+.iff-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 0.5rem;
+}
+.iff-btn:hover:not(:disabled) { background: #1d4ed8; }
+.iff-btn:disabled { opacity: 0.6; cursor: default; }
+
+.iff-done {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-top: 1.5rem;
+}
+.iff-done-icon { font-size: 1.5rem; }
+.iff-done p { font-size: 0.9rem; color: #065f46; margin: 0; }

@@ -301,6 +301,8 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/booking-analytics', require('./routes/bookingAnalytics'));
+app.use('/api/intake-forms',      require('./routes/intakeForms'));
 app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/payment-requests', require('./routes/paymentRequests'));
 app.use('/api/job-templates', require('./routes/jobTemplates'));

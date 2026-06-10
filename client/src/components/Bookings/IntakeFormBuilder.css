@@ -1,0 +1,216 @@
+.ifb-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.ifb-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.ifb-back {
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+.ifb-back:hover { color: #374151; }
+
+.ifb-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.ifb-sub {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem;
+}
+
+/* Existing templates */
+.ifb-existing {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ifb-existing-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+.ifb-existing-item:last-child { border-bottom: none; }
+.ifb-existing-item.inactive { opacity: 0.55; }
+
+.ifb-existing-name { font-weight: 600; font-size: 0.9rem; flex: 1 1 auto; }
+.ifb-existing-meta { font-size: 0.75rem; color: #9ca3af; }
+.ifb-existing-actions { display: flex; gap: 0.75rem; }
+
+.ifb-btn-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  min-height: 44px;
+}
+.ifb-btn-link.danger { color: #dc2626; }
+
+/* Messages */
+.ifb-msg {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.ifb-msg.ok  { background: #ecfdf5; color: #065f46; }
+.ifb-msg.err { background: #fef2f2; color: #991b1b; }
+
+/* Form */
+.ifb-form { display: flex; flex-direction: column; gap: 1rem; }
+
+.ifb-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+.ifb-label-grow { flex: 1; }
+
+.ifb-input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  min-height: 44px;
+}
+.ifb-input:focus { outline: 2px solid #2563eb; border-color: transparent; }
+
+/* Field cards */
+.ifb-fields { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.ifb-field-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: grab;
+}
+.ifb-field-card:active { cursor: grabbing; }
+
+.ifb-field-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ifb-drag-handle {
+  color: #9ca3af;
+  cursor: grab;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.ifb-field-num { font-size: 0.75rem; color: #6b7280; font-weight: 600; }
+
+.ifb-field-remove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 4px 6px;
+  border-radius: 4px;
+  min-height: 44px;
+  min-width: 44px;
+}
+.ifb-field-remove:hover { color: #dc2626; background: #fef2f2; }
+
+.ifb-field-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ifb-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  margin-top: 0.5rem;
+  min-height: 44px;
+}
+
+/* Select options */
+.ifb-options { margin-top: 0.75rem; }
+.ifb-options-label { font-size: 0.8rem; font-weight: 600; color: #6b7280; display: block; margin-bottom: 0.4rem; }
+
+.ifb-option-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  align-items: center;
+}
+
+.ifb-opt-remove {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 6px;
+  font-size: 0.875rem;
+  min-height: 44px;
+}
+.ifb-opt-remove:hover { color: #dc2626; }
+
+.ifb-add-field {
+  background: #f3f4f6;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  text-align: center;
+  min-height: 44px;
+}
+.ifb-add-field:hover { background: #e5e7eb; }
+
+.ifb-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}
+
+.ifb-btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.ifb-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.ifb-btn-primary:disabled { opacity: 0.6; cursor: default; }

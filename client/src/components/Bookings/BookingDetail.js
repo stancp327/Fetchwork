@@ -9,6 +9,8 @@ import BookingPayModal from './BookingPayModal';
 import WeatherWidget from '../common/WeatherWidget';
 import SessionNotes from './SessionNotes';
 import CancellationPolicyDisplay from './CancellationPolicyDisplay';
+import IntakeFormFill from './IntakeFormFill';
+import IntakeFormView from './IntakeFormView';
 import './BookingDetail.css';
 
 /* ─── Helpers ─── */
@@ -201,6 +203,30 @@ const BookingDetail = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Load intake form template + response after booking loads
+  useEffect(() => {
+    if (!booking) return;
+    const serviceId = booking.serviceId || booking.serviceOfferingId || booking.service?._id;
+    const freelancerId = booking.freelancerId;
+    if (!serviceId && !freelancerId) { setIntakeLoaded(true); return; }
+
+    const params = new URLSearchParams();
+    if (freelancerId) params.set('freelancerId', freelancerId);
+    const templateUrl = serviceId
+      ? `/api/intake-forms/${serviceId}?${params}`
+      : null;
+
+    const promises = [
+      templateUrl ? apiRequest(templateUrl).catch(() => ({ template: null })) : Promise.resolve({ template: null }),
+      apiRequest(`/api/intake-forms/responses/${bid(booking)}`).catch(() => ({ response: null })),
+    ];
+
+    Promise.all(promises).then(([tData, rData]) => {
+      setIntakeTemplate(tData.template || null);
+      setIntakeResponse(rData.response || null);
+    }).finally(() => setIntakeLoaded(true));
+  }, [booking]);
+
   const doAction = async (action, body = {}) => {
     setActionBusy(action);
     try {
@@ -223,6 +249,11 @@ const BookingDetail = () => {
   const [refundOverride, setRefundOverride] = useState('');
   const [useCustomRefund, setUseCustomRefund] = useState(false);
   const [refundPreview, setRefundPreview] = useState(null);
+
+  // Intake form state
+  const [intakeTemplate, setIntakeTemplate] = useState(null);
+  const [intakeResponse, setIntakeResponse] = useState(null);
+  const [intakeLoaded,   setIntakeLoaded]   = useState(false);
 
   useEffect(() => {
     if (!showCancelModal || !id) return;
@@ -412,6 +443,27 @@ const BookingDetail = () => {
 
       {/* Session Notes */}
       <SessionNotes bookingId={bid(booking)} />
+
+      {/* Intake Form */}
+      {intakeLoaded && intakeTemplate && (
+        <div className="bd-card">
+          <h2 className="bd-section-title">📋 Pre-Session Form</h2>
+          {amFreelancer
+            ? <IntakeFormView template={intakeTemplate} response={intakeResponse} />
+            : intakeResponse
+              ? <IntakeFormView template={intakeTemplate} response={intakeResponse} />
+              : <IntakeFormFill
+                  template={intakeTemplate}
+                  bookingId={bid(booking)}
+                  onSubmitted={() => {
+                    apiRequest(`/api/intake-forms/responses/${bid(booking)}`)
+                      .then(d => setIntakeResponse(d.response || null))
+                      .catch(() => {});
+                  }}
+                />
+          }
+        </div>
+      )}
 
       {/* Booking payment modal */}
       {showPayModal && (
