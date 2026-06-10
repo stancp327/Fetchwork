@@ -298,6 +298,16 @@ const Navigation = () => {
                 {createLabel}
               </Link>
 
+              {/* Calendar */}
+              <Link to="/calendar" className="nav-icon-btn" aria-label="Calendar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </Link>
+
               {/* Messages */}
               <Link to="/messages" className="nav-icon-btn" aria-label="Messages">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -391,6 +401,7 @@ const Navigation = () => {
               <div className="mobile-section">
                 <div className="mobile-section-label">Work</div>
                 <PrimaryLink to="/projects"  onClick={closeMenu}>📋 Projects</PrimaryLink>
+                <PrimaryLink to="/calendar"  onClick={closeMenu}>🗓 Calendar</PrimaryLink>
                 <PrimaryLink to="/bookings"  onClick={closeMenu}>📅 Bookings</PrimaryLink>
                 <PrimaryLink to="/contracts" onClick={closeMenu}>📄 Contracts</PrimaryLink>
                 <PrimaryLink to="/reviews"   onClick={closeMenu}>⭐ Reviews</PrimaryLink>
