@@ -89,6 +89,90 @@ const timeAgo = (date) => {
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 
+// ── Upcoming Bookings Widget ────────────────────────────────────
+const UpcomingBookings = () => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.allSettled([
+      apiRequest('/api/bookings/me?role=client&status=upcoming'),
+      apiRequest('/api/bookings/me?role=freelancer&status=upcoming'),
+    ]).then(results => {
+      const merged = results.flatMap((r, i) => {
+        if (r.status !== 'fulfilled') return [];
+        return (r.value.bookings || []).map(b => ({
+          ...b,
+          _role: i === 0 ? 'client' : 'freelancer',
+        }));
+      });
+      merged.sort((a, b) => {
+        const da = a.date ? new Date(a.date + 'T' + (a.startTime || '00:00')).getTime() : 0;
+        const db = b.date ? new Date(b.date + 'T' + (b.startTime || '00:00')).getTime() : 0;
+        return da - db;
+      });
+      setBookings(merged.slice(0, 5));
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const fmtTime = (t) => {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+  };
+
+  const fmtDate = (d) => {
+    if (!d) return '';
+    const dt = new Date(d + 'T12:00:00');
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const tomorrow = new Date(today.getTime() + 86400000).toISOString().slice(0, 10);
+    if (d === todayStr) return 'Today';
+    if (d === tomorrow) return 'Tomorrow';
+    return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  if (loading) return null;
+  if (!bookings.length) return null;
+
+  return (
+    <div className="dash-card">
+      <div className="dash-card-header">
+        <h3 className="dash-card-title">📅 Upcoming Bookings</h3>
+        <Link to="/bookings" className="dash-card-link">View All →</Link>
+      </div>
+      <div className="dash-agenda-list">
+        {bookings.map(b => {
+          const id = b.id || b._id;
+          const other = b._role === 'client'
+            ? (b.freelancer || b.freelancerUser)
+            : (b.client || b.clientUser);
+          const otherName = other
+            ? [other.firstName, other.lastName].filter(Boolean).join(' ')
+            : '';
+          return (
+            <Link key={id} to={`/bookings/${id}`} className="dash-agenda-item">
+              <div className="dash-agenda-date">{fmtDate(b.date)}</div>
+              <div className="dash-agenda-info">
+                <span className="dash-agenda-title">
+                  {b.serviceTitle || b.service?.title || 'Booking'}
+                </span>
+                <span className="dash-agenda-meta">
+                  {fmtTime(b.startTime)}{b.endTime ? `–${fmtTime(b.endTime)}` : ''}
+                  {otherName ? ` · ${otherName}` : ''}
+                </span>
+              </div>
+              <span className={`dash-agenda-badge dash-agenda-badge--${b.status || 'pending'}`}>
+                {(b.status || 'pending').replace(/_/g, ' ')}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ── Main Dashboard ──────────────────────────────────────────────
 const Dashboard = () => {
   const { user } = useAuth();
@@ -307,6 +391,9 @@ const Dashboard = () => {
               <ProfileCompletion showInDashboard={true} />
             </div>
           )}
+
+          {/* Upcoming Bookings Agenda */}
+          <UpcomingBookings />
 
           {/* Quick Actions */}
           <div className="dash-card">
