@@ -393,3 +393,36 @@
   .pbp-hero { flex-direction: column; align-items: center; text-align: center; }
   .pbp-rating { justify-content: center; }
 }
+
+/* ─── Multi-service toggle ─── */
+.pbp-multi-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-md, 10px);
+}
+
+.pbp-multi-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted, #6b7280);
+}
+
+.pbp-multi-btn {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--primary, #2563eb);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.pbp-multi-btn:hover { color: #1d4ed8; }

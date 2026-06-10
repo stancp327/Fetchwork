@@ -677,6 +677,221 @@ router.delete('/:bookingId/notes/:noteId', authenticateToken, async (req, res) =
   }
 });
 
+// ── MULTI-SERVICE BOOKING ROUTES ──────────────────────────────────────────────
+
+const MULTI_HOLD_MINUTES = 30;
+
+function generateBookingRef() {
+  const { randomBytes } = require('crypto');
+  return 'MS' + Date.now().toString(36).toUpperCase().slice(-5) + randomBytes(2).toString('hex').toUpperCase();
+}
+
+function toUtcDate(date, time, timezone) {
+  const { DateTime } = require('luxon');
+  const dt = DateTime.fromISO(`${date}T${time}:00`, { zone: timezone });
+  if (!dt.isValid) throw new Error(`Invalid date/time: ${date} ${time} in ${timezone}`);
+  return dt.toUTC().toJSDate();
+}
+
+function addMinutes(date, minutes) {
+  return new Date(date.getTime() + minutes * 60 * 1000);
+}
+
+// POST /api/bookings/multi — create multi-service booking
+router.post('/multi', authenticateToken, async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+    const { freelancerId, serviceIds, date, startTime, timezone, notes } = req.body;
+    const clientId = req.user._id.toString();
+
+    if (!freelancerId || !Array.isArray(serviceIds) || serviceIds.length < 2) {
+      return res.status(400).json({ error: 'freelancerId and at least 2 serviceIds are required' });
+    }
+    if (!date || !startTime) return res.status(400).json({ error: 'date and startTime are required' });
+    const tz = timezone || 'America/Los_Angeles';
+
+    // Validate all services belong to this freelancer
+    const services = await Service.find({ _id: { $in: serviceIds }, freelancer: freelancerId }).lean();
+    if (services.length !== serviceIds.length) {
+      return res.status(400).json({ error: 'One or more services not found or do not belong to this freelancer' });
+    }
+
+    // Get freelancer availability for slot durations
+    const freelancerAvail = await prisma.freelancerAvailability.findUnique({
+      where:   { freelancerId },
+      include: { serviceOverrides: { where: { serviceId: { in: serviceIds.map(String) } } } },
+    });
+
+    const defaultDuration = freelancerAvail?.defaultSlotDuration || 60;
+    const svcPricing = services.map(svc => {
+      const override = freelancerAvail?.serviceOverrides?.find(o => o.serviceId === String(svc._id));
+      const duration = override?.slotDuration || defaultDuration;
+      const priceDollars = svc.pricing?.basic?.price || svc.pricing?.amount || 0;
+      return {
+        serviceId:    svc._id.toString(),
+        title:        svc.title,
+        duration,
+        priceCents:   Math.round(Number(priceDollars) * 100),
+      };
+    });
+
+    // Stack services sequentially
+    let curStart = toUtcDate(date, startTime, tz);
+    const bookingIds = [];
+    const holdExpiresAt = addMinutes(new Date(), MULTI_HOLD_MINUTES);
+
+    for (const svc of svcPricing) {
+      const curEnd = addMinutes(curStart, svc.duration);
+      const localStart = `${date}T${new Date(curStart).toISOString().slice(11, 16)}`;
+      const localEnd   = `${date}T${new Date(curEnd).toISOString().slice(11, 16)}`;
+
+      const booking = await prisma.booking.create({
+        data: {
+          bookingRef:         generateBookingRef(),
+          clientId,
+          freelancerId,
+          policySnapshotJson: { type: 'moderate' },
+          pricingSnapshotJson: {
+            amountCents:  svc.priceCents,
+            currency:     'usd',
+            serviceTitle: svc.title,
+          },
+          currentState: 'held',
+          holdExpiresAt,
+          notes: notes || null,
+        },
+      });
+
+      await prisma.bookingOccurrence.create({
+        data: {
+          bookingId:           booking.id,
+          occurrenceNo:        1,
+          clientId,
+          freelancerId,
+          startAtUtc:          curStart,
+          endAtUtc:            curEnd,
+          timezone:            tz,
+          localStartWallclock: localStart,
+          localEndWallclock:   localEnd,
+          status:              'held',
+        },
+      });
+
+      bookingIds.push(booking.id);
+      curStart = curEnd;
+    }
+
+    const totalDurationMinutes = svcPricing.reduce((s, x) => s + x.duration, 0);
+    const totalPriceCents      = svcPricing.reduce((s, x) => s + x.priceCents, 0);
+    const combinedStartAtUtc   = toUtcDate(date, startTime, tz);
+    const combinedEndAtUtc     = addMinutes(combinedStartAtUtc, totalDurationMinutes);
+
+    const multi = await prisma.multiServiceBooking.create({
+      data: {
+        clientId,
+        freelancerId,
+        bookingIds,
+        totalDurationMinutes,
+        totalPriceCents,
+        combinedStartAtUtc,
+        combinedEndAtUtc,
+        timezone: tz,
+        status:   'pending',
+        notes:    notes || null,
+      },
+    });
+
+    res.status(201).json({ multiBooking: multi, bookingIds });
+  } catch (err) {
+    console.error('[bookings/multi] POST error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/bookings/multi/me — list user's multi-service bookings
+router.get('/multi/me', authenticateToken, async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+    const actorId = req.user._id.toString();
+
+    const multiBookings = await prisma.multiServiceBooking.findMany({
+      where:   { OR: [{ clientId: actorId }, { freelancerId: actorId }] },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ multiBookings });
+  } catch (err) {
+    console.error('[bookings/multi/me] GET error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/bookings/multi/:multiBookingId — get one multi-booking with bookings populated
+router.get('/multi/:multiBookingId', authenticateToken, async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+    const actorId = req.user._id.toString();
+    const { multiBookingId } = req.params;
+
+    const multi = await prisma.multiServiceBooking.findUnique({ where: { id: multiBookingId } });
+    if (!multi) return res.status(404).json({ error: 'Multi-service booking not found' });
+    if (multi.clientId !== actorId && multi.freelancerId !== actorId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where:   { id: { in: multi.bookingIds } },
+      include: { occurrences: { orderBy: { occurrenceNo: 'asc' } } },
+    });
+
+    res.json({ multiBooking: multi, bookings });
+  } catch (err) {
+    console.error('[bookings/multi/:id] GET error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/bookings/multi/:multiBookingId/cancel — cancel all individual bookings
+router.patch('/multi/:multiBookingId/cancel', authenticateToken, async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+    const actorId = req.user._id.toString();
+    const { multiBookingId } = req.params;
+
+    const multi = await prisma.multiServiceBooking.findUnique({ where: { id: multiBookingId } });
+    if (!multi) return res.status(404).json({ error: 'Multi-service booking not found' });
+    if (multi.clientId !== actorId && multi.freelancerId !== actorId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const cancelledBy = actorId === multi.clientId ? 'cancelled_by_client' : 'cancelled_by_freelancer';
+
+    await prisma.booking.updateMany({
+      where: { id: { in: multi.bookingIds } },
+      data:  { currentState: cancelledBy },
+    });
+
+    await prisma.bookingOccurrence.updateMany({
+      where: { bookingId: { in: multi.bookingIds } },
+      data:  { status: cancelledBy },
+    });
+
+    await prisma.multiServiceBooking.update({
+      where: { id: multiBookingId },
+      data:  { status: 'cancelled' },
+    });
+
+    res.json({ cancelled: true });
+  } catch (err) {
+    console.error('[bookings/multi/cancel] PATCH error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
 
 

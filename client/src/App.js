@@ -66,6 +66,9 @@ const BookingDetail          = React.lazy(() => import('./components/Bookings/Bo
 const GroupSlotsPage         = React.lazy(() => import('./components/Bookings/GroupSlotsPage'));
 const PublicBookingPage      = React.lazy(() => import('./components/Bookings/PublicBookingPage'));
 const CancellationPolicyEditor = React.lazy(() => import('./components/Bookings/CancellationPolicyEditor'));
+const BookingAnalytics         = React.lazy(() => import('./components/Bookings/BookingAnalytics'));
+const IntakeFormBuilder        = React.lazy(() => import('./components/Bookings/IntakeFormBuilder'));
+const MultiBookingDetail       = React.lazy(() => import('./components/Bookings/MultiBookingDetail'));
 const PricingPage          = React.lazy(() => import('./components/Billing/PricingPage'));
 const BillingSettings      = React.lazy(() => import('./components/Billing/BillingSettings'));
 const BillingSuccess       = React.lazy(() => import('./components/Billing/BillingSuccess'));
@@ -404,6 +407,9 @@ function AppContent() {
           <Route path="/book/:username"        element={<PublicBookingPage />} />
           <Route path="/book/:username/:serviceId" element={<PublicBookingPage />} />
           <Route path="/cancellation-policy"   element={<ProtectedRoute><CancellationPolicyEditor /></ProtectedRoute>} />
+          <Route path="/booking-analytics"     element={<ProtectedRoute><BookingAnalytics /></ProtectedRoute>} />
+          <Route path="/intake-forms/builder"  element={<ProtectedRoute><IntakeFormBuilder /></ProtectedRoute>} />
+          <Route path="/bookings/multi/:id"    element={<ProtectedRoute><MultiBookingDetail /></ProtectedRoute>} />
           <Route path="/pricing"               element={<PricingPage />} />
           <Route path="/billing"               element={<ProtectedRoute><BillingSettings /></ProtectedRoute>} />
           <Route path="/billing/success"       element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />

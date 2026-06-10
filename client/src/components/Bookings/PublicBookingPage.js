@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
 import { apiRequest } from '../../utils/api';
 import CancellationPolicyDisplay from './CancellationPolicyDisplay';
+import MultiServiceSelector from './MultiServiceSelector';
 import './PublicBookingPage.css';
 
 /* ─── Helpers ─── */
@@ -181,6 +182,9 @@ const PublicBookingPage = () => {
   const [slotsError,      setSlotsError]      = useState('');
   const [selectedSlot,    setSelectedSlot]    = useState(null);
 
+  // Multi-service selector state
+  const [showMultiSelector, setShowMultiSelector] = useState(false);
+
   // Confirm modal state
   const [showConfirm,    setShowConfirm]    = useState(false);
   const [showLogin,      setShowLogin]      = useState(false);
@@ -353,7 +357,27 @@ const PublicBookingPage = () => {
               );
             })}
           </div>
+          {services.length >= 2 && (
+            <div className="pbp-multi-bar">
+              <span className="pbp-multi-label">Need more than one service?</span>
+              <button
+                className="pbp-multi-btn"
+                onClick={() => setShowMultiSelector(true)}
+              >
+                Book multiple services →
+              </button>
+            </div>
+          )}
         </div>
+      )}
+
+      {showMultiSelector && (
+        <MultiServiceSelector
+          services={services}
+          freelancerId={freelancer._id}
+          username={username}
+          onClose={() => setShowMultiSelector(false)}
+        />
       )}
 
       {/* Step 2 — Date picker */}
