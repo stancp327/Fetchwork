@@ -80,7 +80,8 @@ const SummaryCard = ({ data, completion }) => (
 const TabOverview = ({ data, completion, onTabChange }) => {
   const incomplete = [];
   if (!data.bio) incomplete.push({ label: 'Add a bio', tab: 1 });
-  if (!data.profilePicture) incomplete.push({ label: 'Upload a profile photo', tab: 0 });
+  // Photo upload control lives in the About tab
+  if (!data.profilePicture) incomplete.push({ label: 'Upload a profile photo', tab: 1 });
   if (!data.skills?.length) incomplete.push({ label: 'Add your skills', tab: 2 });
   if (!data.hourlyRate) incomplete.push({ label: 'Set your hourly rate', tab: 4 });
   if (!data.phone) incomplete.push({ label: 'Add your phone number', tab: 5 });
