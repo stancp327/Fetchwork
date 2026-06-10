@@ -7,6 +7,8 @@ import SEO from '../common/SEO';
 import RecurringSeriesPanel from './RecurringSeriesPanel';
 import BookingPayModal from './BookingPayModal';
 import WeatherWidget from '../common/WeatherWidget';
+import SessionNotes from './SessionNotes';
+import CancellationPolicyDisplay from './CancellationPolicyDisplay';
 import './BookingDetail.css';
 
 /* ─── Helpers ─── */
@@ -220,6 +222,15 @@ const BookingDetail = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [refundOverride, setRefundOverride] = useState('');
   const [useCustomRefund, setUseCustomRefund] = useState(false);
+  const [refundPreview, setRefundPreview] = useState(null);
+
+  useEffect(() => {
+    if (!showCancelModal || !id) return;
+    setRefundPreview(null);
+    apiRequest(`/api/bookings/${id}/cancellation-preview`)
+      .then(data => setRefundPreview(data))
+      .catch(() => setRefundPreview(null));
+  }, [showCancelModal, id]);
 
   const handleCancel = async () => {
     const body = { reason: cancelReason };
@@ -230,6 +241,7 @@ const BookingDetail = () => {
     setCancelReason('');
     setRefundOverride('');
     setUseCustomRefund(false);
+    setRefundPreview(null);
     await doAction('cancel', body);
   };
 
@@ -392,14 +404,14 @@ const BookingDetail = () => {
       {booking.policy && Object.keys(booking.policy).length > 0 && (
         <div className="bd-card bd-policy">
           <h2 className="bd-section-title">📋 Cancellation Policy</h2>
-          <p className="bd-policy-text">
-            {booking.policy.tier === 'strict'   && 'Strict — no refunds within 48 hours.'}
-            {booking.policy.tier === 'moderate' && 'Moderate — 50% refund up to 24 hours before.'}
-            {booking.policy.tier === 'flexible' && 'Flexible — full refund up to 1 hour before.'}
-            {!booking.policy.tier && JSON.stringify(booking.policy)}
-          </p>
+          <CancellationPolicyDisplay
+            policy={{ type: booking.policy.tier || 'moderate', rulesJson: [] }}
+          />
         </div>
       )}
+
+      {/* Session Notes */}
+      <SessionNotes bookingId={bid(booking)} />
 
       {/* Booking payment modal */}
       {showPayModal && (
@@ -461,7 +473,7 @@ const BookingDetail = () => {
 
       {/* Cancel modal */}
       {showCancelModal && (
-        <div className="bd-modal-overlay" onClick={() => setShowCancelModal(false)}>
+        <div className="bd-modal-overlay" onClick={() => { setShowCancelModal(false); setRefundPreview(null); }}>
           <div className="bd-modal" onClick={e => e.stopPropagation()}>
             <h3>Cancel Booking</h3>
             <label className="bd-field-label">Reason (optional)</label>
@@ -472,6 +484,17 @@ const BookingDetail = () => {
               placeholder="Why are you cancelling?"
               rows={3}
             />
+
+            {/* Refund preview */}
+            {refundPreview && refundPreview.totalCents > 0 && !useCustomRefund && (
+              <div className="bd-refund-preview">
+                <span className="bd-refund-preview-label">Estimated refund:</span>
+                <span className="bd-refund-preview-amount">
+                  ${(refundPreview.refundCents / 100).toFixed(2)}
+                  <span className="bd-refund-preview-pct"> ({refundPreview.refundPercent}%)</span>
+                </span>
+              </div>
+            )}
 
             {amFreelancer && totalCents > 0 && (
               <div className="bd-refund-override">
@@ -508,7 +531,7 @@ const BookingDetail = () => {
             )}
 
             <div className="bd-modal-actions">
-              <button className="bd-btn-secondary" onClick={() => setShowCancelModal(false)}>
+              <button className="bd-btn-secondary" onClick={() => { setShowCancelModal(false); setRefundPreview(null); }}>
                 Back
               </button>
               <button className="bd-btn bd-btn-cancel" onClick={handleCancel} disabled={!!actionBusy}>
