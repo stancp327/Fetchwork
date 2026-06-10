@@ -224,7 +224,7 @@ const Navigation = () => {
   const isAdmin = user?.isAdmin || user?.role === 'admin';
   const isMod   = user?.role === 'moderator';
   const unreadMessages = notifications.unreadMessages || 0;
-  const [hasTodayBookings, setHasTodayBookings] = useState(false);
+  const [todayBookingCount, setTodayBookingCount] = useState(0);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -237,7 +237,7 @@ const Navigation = () => {
 
   // Booking dot on Calendar icon (if you have anything today)
   useEffect(() => {
-    if (!isAuthenticated) { setHasTodayBookings(false); return; }
+    if (!isAuthenticated) { setTodayBookingCount(0); return; }
 
     const todayStr = new Date().toISOString().slice(0, 10);
     let cancelled = false;
@@ -248,14 +248,17 @@ const Navigation = () => {
         const res = await Promise.allSettled(
           roles.map(role => apiRequest(`/api/bookings/me?role=${role}&status=upcoming`))
         );
-        const anyToday = res.some(r => {
-          if (r.status !== 'fulfilled') return false;
+
+        let count = 0;
+        for (const r of res) {
+          if (r.status !== 'fulfilled') continue;
           const bookings = r.value?.bookings || [];
-          return bookings.some(b => b.date === todayStr);
-        });
-        if (!cancelled) setHasTodayBookings(anyToday);
+          count += bookings.filter(b => b.date === todayStr).length;
+        }
+
+        if (!cancelled) setTodayBookingCount(count);
       } catch {
-        if (!cancelled) setHasTodayBookings(false);
+        if (!cancelled) setTodayBookingCount(0);
       }
     };
 
@@ -337,7 +340,11 @@ const Navigation = () => {
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                {hasTodayBookings && <span className="nav-dot-badge nav-dot-badge--dot" aria-hidden="true" />}
+                {todayBookingCount > 0 && (
+                  <span className="nav-dot-badge nav-dot-badge--calendar" aria-label={`${todayBookingCount} bookings today`}>
+                    {todayBookingCount}
+                  </span>
+                )}
               </Link>
 
               {/* Messages */}

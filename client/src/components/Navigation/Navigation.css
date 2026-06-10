@@ -214,16 +214,16 @@
   border: 2px solid #fff;
 }
 
-/* Pure dot variant (used for Calendar "you have bookings today") */
-.nav-dot-badge--dot {
-  min-width: 10px;
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  top: 6px;
-  right: 6px;
+/* Calendar count badge (bookings today) */
+.nav-dot-badge--calendar {
   background: #22c55e;
   border-color: #fff;
+  top: 4px;
+  right: 3px;
+  font-size: 0.58rem;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
 }
 
 /* â"€â"€ Avatar button â"€â"€ */
