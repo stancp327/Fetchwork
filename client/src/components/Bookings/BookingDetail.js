@@ -510,53 +510,66 @@ const BookingDetail = () => {
       )}
 
       {/* Action buttons */}
-      {isActive && (
-        <div className="bd-actions">
-          {/* Client: pay to confirm when held with a price */}
-          {isMyBooking && ['held', 'hold', 'pending_payment'].includes(booking.status) &&
-           (booking.pricingSnapshotJson?.amountCents || booking.pricing?.amountCents || 0) > 0 && (
-            <button className="bd-btn bd-btn-pay" onClick={() => setShowPayModal(true)}>
-              💳 Pay to Confirm
-            </button>
-          )}
+      <div className="bd-actions">
+        {/* Message the other party — always available */}
+        {(() => {
+          const otherId = amFreelancer ? booking.clientId : booking.freelancerId;
+          if (!otherId) return null;
+          return (
+            <Link to={`/messages?userId=${otherId}`} className="bd-btn bd-btn-message">
+              💬 Message {amFreelancer ? 'Client' : 'Freelancer'}
+            </Link>
+          );
+        })()}
 
-          {amFreelancer && booking.status === 'pending' && (
+        {isActive && (
+          <>
+            {/* Client: pay to confirm when held with a price */}
+            {isMyBooking && ['held', 'hold', 'pending_payment'].includes(booking.status) &&
+             (booking.pricingSnapshotJson?.amountCents || booking.pricing?.amountCents || 0) > 0 && (
+              <button className="bd-btn bd-btn-pay" onClick={() => setShowPayModal(true)}>
+                💳 Pay to Confirm
+              </button>
+            )}
+
+            {amFreelancer && booking.status === 'pending' && (
+              <button
+                className="bd-btn bd-btn-confirm"
+                onClick={() => doAction('confirm')}
+                disabled={!!actionBusy}
+              >
+                {actionBusy === 'confirm' ? '…' : '✅ Confirm Booking'}
+              </button>
+            )}
+
+            {amFreelancer && booking.status === 'confirmed' && (
+              <button
+                className="bd-btn bd-btn-complete"
+                onClick={() => doAction('complete')}
+                disabled={!!actionBusy}
+              >
+                {actionBusy === 'complete' ? '…' : '✓ Mark Complete'}
+              </button>
+            )}
+
             <button
-              className="bd-btn bd-btn-confirm"
-              onClick={() => doAction('confirm')}
+              className="bd-btn bd-btn-reschedule"
+              onClick={() => setShowReschedule(true)}
               disabled={!!actionBusy}
             >
-              {actionBusy === 'confirm' ? '…' : '✅ Confirm Booking'}
+              🗓 Reschedule
             </button>
-          )}
 
-          {amFreelancer && booking.status === 'confirmed' && (
             <button
-              className="bd-btn bd-btn-complete"
-              onClick={() => doAction('complete')}
+              className="bd-btn bd-btn-cancel"
+              onClick={() => setShowCancelModal(true)}
               disabled={!!actionBusy}
             >
-              {actionBusy === 'complete' ? '…' : '✓ Mark Complete'}
+              {actionBusy === 'cancel' ? '…' : 'Cancel Booking'}
             </button>
-          )}
-
-          <button
-            className="bd-btn bd-btn-reschedule"
-            onClick={() => setShowReschedule(true)}
-            disabled={!!actionBusy}
-          >
-            🗓 Reschedule
-          </button>
-
-          <button
-            className="bd-btn bd-btn-cancel"
-            onClick={() => setShowCancelModal(true)}
-            disabled={!!actionBusy}
-          >
-            {actionBusy === 'cancel' ? '…' : 'Cancel Booking'}
-          </button>
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {/* Cancel modal */}
       {showCancelModal && (

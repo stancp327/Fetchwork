@@ -61,6 +61,8 @@
 .bd-btn-reschedule:hover { background: #eff6ff; }
 .bd-btn-cancel    { background: var(--bg-card); color: var(--danger); border-color: var(--danger); }
 .bd-btn-cancel:hover { background: #fef2f2; }
+.bd-btn-message   { background: var(--bg-card); color: var(--color-primary, #2563eb); border-color: var(--color-primary, #2563eb); text-decoration: none; }
+.bd-btn-message:hover { background: var(--color-primary-light, #eff6ff); }
 
 /* ─── Reschedule Modal ─── */
 .bd-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: var(--space-4); }

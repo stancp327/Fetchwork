@@ -351,13 +351,38 @@ const Messages = () => {
       .finally(() => setContextProfileLoading(false));
   }, [showContext, otherParticipant?._id]);
 
-  // Auto-open from URL
+  // Auto-open from URL (?conversation=<id> or ?userId=<id>)
   useEffect(() => {
     const params = new URLSearchParams(locationSearch);
     const targetId = params.get('conversation');
-    if (targetId && convoHook.conversations.length > 0 && !selectedConvo) {
+    const targetUserId = params.get('userId');
+
+    if (convoHook.conversations.length === 0 || selectedConvo) return;
+
+    if (targetId) {
       const match = convoHook.conversations.find(c => c._id === targetId);
       if (match) openConversation(match);
+    } else if (targetUserId) {
+      // Find existing conversation with this user
+      const match = convoHook.conversations.find(c =>
+        c.participants?.some(p => String(getEntityId(p?._id || p)) === String(targetUserId))
+      );
+      if (match) {
+        openConversation(match);
+      } else {
+        // Start new conversation — find or create via API
+        apiRequest('/api/messages/conversations/find-or-create', {
+          method: 'POST',
+          body: JSON.stringify({ recipientId: targetUserId }),
+        }).then(data => {
+          if (data.conversation) {
+            convoHook.setConversations(prev => [data.conversation, ...prev]);
+            openConversation(data.conversation);
+          }
+        }).catch(() => {});
+      }
+      // Clean the URL
+      navigate('/messages', { replace: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationSearch, convoHook.conversations]);
