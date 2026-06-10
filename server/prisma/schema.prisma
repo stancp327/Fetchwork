@@ -448,24 +448,24 @@ model WaitlistEntry {
   id                String         @id @default(uuid()) @db.Uuid
   slotId            String         @db.Uuid
   clientId          String
-  
+
   seatCount         Int            @default(1)
   status            WaitlistStatus @default(waiting)
   position          Int            // Queue position (1 = first in line)
-  
+
   // When they joined the waitlist
   joinedAt          DateTime       @default(now()) @db.Timestamptz(6)
-  
+
   // When they were promoted (if applicable)
   promotedAt        DateTime?      @db.Timestamptz(6)
-  
+
   // Expiry for promotion offer
   promotionExpiresAt DateTime?     @db.Timestamptz(6)
-  
+
   // Contact preference for notification
   notifyEmail       Boolean        @default(true)
   notifyPush        Boolean        @default(true)
-  
+
   createdAt         DateTime       @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime       @updatedAt @db.Timestamptz(6)
 
@@ -474,4 +474,51 @@ model WaitlistEntry {
   @@unique([slotId, clientId])
   @@index([slotId, status, position])
   @@index([clientId, status])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANCELLATION POLICY ENGINE
+// Freelancer-defined refund rules, per service or as a default
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum CancellationPolicyType {
+  flexible
+  moderate
+  strict
+  custom
+}
+
+model CancellationPolicy {
+  id           String                 @id @default(uuid()) @db.Uuid
+  freelancerId String
+  serviceId    String?
+  type         CancellationPolicyType @default(moderate)
+  // Array of { hoursBeforeStart: number, refundPercent: number }, sorted desc
+  rulesJson    Json                   @default("[]")
+  createdAt    DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime               @updatedAt @db.Timestamptz(6)
+
+  @@unique([freelancerId, serviceId])
+  @@index([freelancerId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SESSION NOTES
+// Shared or private notes added by booking participants
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model SessionNote {
+  id           String   @id @default(uuid()) @db.Uuid
+  bookingId    String   @db.Uuid
+  occurrenceId String?  @db.Uuid
+  authorId     String
+  authorRole   String   // "client" or "freelancer"
+  content      String
+  isPrivate    Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([bookingId, createdAt])
+  @@index([occurrenceId, createdAt])
+  @@index([authorId])
 }

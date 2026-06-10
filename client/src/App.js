@@ -57,13 +57,15 @@ const OnboardingWizard = React.lazy(() => import('./components/Onboarding/Profil
 const ContactUs = React.lazy(() => import('./components/common/ContactUs'));
 const Support = React.lazy(() => import('./components/common/Support'));
 const CategoryLanding      = React.lazy(() => import('./components/Categories/CategoryLanding'));
-const MyBookings           = React.lazy(() => import('./components/Bookings/MyBookings'));
-const AvailabilitySettings = React.lazy(() => import('./components/Bookings/AvailabilitySettings'));
-const AvailabilityManager  = React.lazy(() => import('./components/Bookings/AvailabilityManager'));
-const CalendarConnect      = React.lazy(() => import('./components/Bookings/CalendarConnect'));
-const CalendarAgenda       = React.lazy(() => import('./components/Bookings/CalendarAgenda'));
-const BookingDetail        = React.lazy(() => import('./components/Bookings/BookingDetail'));
-const GroupSlotsPage       = React.lazy(() => import('./components/Bookings/GroupSlotsPage'));
+const MyBookings             = React.lazy(() => import('./components/Bookings/MyBookings'));
+const AvailabilitySettings   = React.lazy(() => import('./components/Bookings/AvailabilitySettings'));
+const AvailabilityManager    = React.lazy(() => import('./components/Bookings/AvailabilityManager'));
+const CalendarConnect        = React.lazy(() => import('./components/Bookings/CalendarConnect'));
+const CalendarAgenda         = React.lazy(() => import('./components/Bookings/CalendarAgenda'));
+const BookingDetail          = React.lazy(() => import('./components/Bookings/BookingDetail'));
+const GroupSlotsPage         = React.lazy(() => import('./components/Bookings/GroupSlotsPage'));
+const PublicBookingPage      = React.lazy(() => import('./components/Bookings/PublicBookingPage'));
+const CancellationPolicyEditor = React.lazy(() => import('./components/Bookings/CancellationPolicyEditor'));
 const PricingPage          = React.lazy(() => import('./components/Billing/PricingPage'));
 const BillingSettings      = React.lazy(() => import('./components/Billing/BillingSettings'));
 const BillingSuccess       = React.lazy(() => import('./components/Billing/BillingSuccess'));
@@ -399,6 +401,9 @@ function AppContent() {
           <Route path="/availability"          element={<ProtectedRoute><AvailabilitySettings /></ProtectedRoute>} />
           <Route path="/calendar"              element={<ProtectedRoute><CalendarAgenda /></ProtectedRoute>} />
           <Route path="/calendar-connect"      element={<ProtectedRoute><CalendarConnect /></ProtectedRoute>} />
+          <Route path="/book/:username"        element={<PublicBookingPage />} />
+          <Route path="/book/:username/:serviceId" element={<PublicBookingPage />} />
+          <Route path="/cancellation-policy"   element={<ProtectedRoute><CancellationPolicyEditor /></ProtectedRoute>} />
           <Route path="/pricing"               element={<PricingPage />} />
           <Route path="/billing"               element={<ProtectedRoute><BillingSettings /></ProtectedRoute>} />
           <Route path="/billing/success"       element={<ProtectedRoute><BillingSuccess /></ProtectedRoute>} />

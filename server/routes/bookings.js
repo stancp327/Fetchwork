@@ -139,6 +139,166 @@ router.get('/availability/:serviceId', async (req, res) => {
 // ── GET /api/bookings/slots/:serviceId ───────────────────────────
 router.get('/slots/:serviceId', requireSql((...a) => ctrl.getSlotsSql(...a)));
 
+// ── PUBLIC BOOKING PAGE ROUTES (no auth on GETs) ─────────────────
+// Must be registered before generic /:serviceId and /:bookingId routes.
+
+// GET /api/bookings/public/:username — freelancer profile + bookable services
+router.get('/public/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username: username.toLowerCase() })
+      .select('_id firstName lastName username profilePicture bio rating totalReviews')
+      .lean();
+    if (!user) return res.status(404).json({ error: 'Freelancer not found' });
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+
+    const avail = await prisma.freelancerAvailability.findUnique({
+      where: { freelancerId: user._id.toString() },
+    });
+
+    const freelancer = {
+      _id:         user._id,
+      firstName:   user.firstName,
+      lastName:    user.lastName,
+      username:    user.username,
+      avatar:      user.profilePicture,
+      bio:         user.bio,
+      rating:      user.rating,
+      reviewCount: user.totalReviews,
+    };
+
+    if (!avail || !avail.isActive) {
+      return res.json({ freelancer, services: [] });
+    }
+
+    const services = await Service.find({
+      freelancer:             user._id,
+      isActive:               true,
+      'availability.enabled': true,
+    })
+      .select('_id title description pricing category')
+      .lean();
+
+    res.json({ freelancer, services });
+  } catch (err) {
+    console.error('[public/:username] GET error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/bookings/public/:username/:serviceId/slots?date=YYYY-MM-DD
+router.get('/public/:username/:serviceId/slots', requireSql((...a) => ctrl.getSlotsSql(...a)));
+
+// POST /api/bookings/public/:serviceId — auth required; alias for POST /:serviceId
+router.post('/public/:serviceId', authenticateToken, requireSql((...a) => ctrl.createBookingHoldSql(...a)));
+
+// ── CANCELLATION POLICY ENGINE ───────────────────────────────────
+
+const PREDEFINED_POLICY_RULES = {
+  flexible: [
+    { hoursBeforeStart: 2,  refundPercent: 100 },
+    { hoursBeforeStart: 0,  refundPercent: 50  },
+  ],
+  moderate: [
+    { hoursBeforeStart: 24, refundPercent: 100 },
+    { hoursBeforeStart: 12, refundPercent: 50  },
+    { hoursBeforeStart: 0,  refundPercent: 0   },
+  ],
+  strict: [
+    { hoursBeforeStart: 48, refundPercent: 100 },
+    { hoursBeforeStart: 24, refundPercent: 50  },
+    { hoursBeforeStart: 0,  refundPercent: 0   },
+  ],
+};
+
+function calculateRefundPercent(rules, bookingStartAt) {
+  const hoursUntil = (new Date(bookingStartAt) - Date.now()) / 3600000;
+  for (const rule of rules) {
+    if (hoursUntil >= rule.hoursBeforeStart) return rule.refundPercent;
+  }
+  return 0;
+}
+
+// PUT /api/bookings/cancellation-policy — upsert freelancer's policy
+router.put('/cancellation-policy', authenticateToken, async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+    const freelancerId = req.user._id.toString();
+    const { type, serviceId, rulesJson } = req.body;
+
+    if (!['flexible', 'moderate', 'strict', 'custom'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid policy type' });
+    }
+
+    const rules = type === 'custom'
+      ? (Array.isArray(rulesJson) ? rulesJson : [])
+      : PREDEFINED_POLICY_RULES[type];
+
+    const existing = await prisma.cancellationPolicy.findFirst({
+      where: { freelancerId, serviceId: serviceId || null },
+    });
+
+    let policy;
+    if (existing) {
+      policy = await prisma.cancellationPolicy.update({
+        where: { id: existing.id },
+        data:  { type, rulesJson: rules },
+      });
+    } else {
+      policy = await prisma.cancellationPolicy.create({
+        data: { freelancerId, serviceId: serviceId || null, type, rulesJson: rules },
+      });
+    }
+
+    res.json({ policy });
+  } catch (err) {
+    console.error('[cancellation-policy] PUT error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/bookings/cancellation-policy/:freelancerId — public; returns policy or moderate default
+router.get('/cancellation-policy/:freelancerId', async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+    const { freelancerId } = req.params;
+    const { serviceId } = req.query;
+
+    // Try service-specific first, then freelancer-wide default
+    let policy = null;
+    if (serviceId) {
+      policy = await prisma.cancellationPolicy.findFirst({
+        where: { freelancerId, serviceId },
+      });
+    }
+    if (!policy) {
+      policy = await prisma.cancellationPolicy.findFirst({
+        where: { freelancerId, serviceId: null },
+      });
+    }
+
+    if (!policy) {
+      return res.json({
+        policy: { type: 'moderate', rulesJson: PREDEFINED_POLICY_RULES.moderate },
+      });
+    }
+
+    // Merge predefined rules for non-custom types so caller always gets the rules
+    const rulesJson = policy.type !== 'custom'
+      ? PREDEFINED_POLICY_RULES[policy.type]
+      : policy.rulesJson;
+
+    res.json({ policy: { ...policy, rulesJson } });
+  } catch (err) {
+    console.error('[cancellation-policy] GET error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── POST /api/bookings/:serviceId — create hold ──────────────────
 router.post('/:serviceId', authenticateToken, requireSql((...a) => ctrl.createBookingHoldSql(...a)));
 
@@ -328,6 +488,194 @@ router.get   ('/audit/events/:eventId/verify',      authenticateToken, requireSq
 router.get   ('/:bookingId/timeline',               authenticateToken, requireSql((...a) => ctrl.getBookingTimeline(...a)));
 router.post  ('/:bookingId/timeline/admin-override', authenticateToken, requireSql((...a) => ctrl.recordAdminOverride(...a)));
 router.get   ('/:bookingId/audit/dispute-evidence', authenticateToken, requireSql((...a) => ctrl.getDisputeEvidence(...a)));
+
+// ── CANCELLATION REFUND PREVIEW ───────────────────────────────────
+// GET /api/bookings/:bookingId/cancellation-preview — returns refund estimate
+router.get('/:bookingId/cancellation-preview', authenticateToken, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const actorId = req.user._id.toString();
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+
+    const booking = await prisma.booking.findUnique({
+      where:   { id: bookingId },
+      include: { occurrences: { orderBy: { occurrenceNo: 'asc' }, take: 1 } },
+    });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.clientId !== actorId && booking.freelancerId !== actorId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const occ = booking.occurrences[0];
+    const startAt = occ?.startAtUtc || booking.createdAt;
+
+    // Find policy (service-specific or freelancer default)
+    const policy = await prisma.cancellationPolicy.findFirst({
+      where: { freelancerId: booking.freelancerId, serviceId: null },
+    });
+
+    const policyType = policy?.type || 'moderate';
+    const rules = (policy && policy.type === 'custom')
+      ? policy.rulesJson
+      : PREDEFINED_POLICY_RULES[policyType] || PREDEFINED_POLICY_RULES.moderate;
+
+    const refundPercent = calculateRefundPercent(rules, startAt);
+    const totalCents    = Number(booking.pricingSnapshotJson?.amountCents || 0);
+    const refundCents   = Math.round(totalCents * refundPercent / 100);
+
+    res.json({ refundPercent, refundCents, totalCents, policyType });
+  } catch (err) {
+    console.error('[cancellation-preview] GET error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── SESSION NOTES ROUTES ──────────────────────────────────────────
+
+// POST /api/bookings/:bookingId/notes — add a note
+router.post('/:bookingId/notes', authenticateToken, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { content, isPrivate, occurrenceId } = req.body;
+    const actorId = req.user._id.toString();
+
+    if (!content?.trim()) return res.status(400).json({ error: 'content is required' });
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.clientId !== actorId && booking.freelancerId !== actorId) {
+      return res.status(403).json({ error: 'Not a booking participant' });
+    }
+
+    const authorRole = booking.freelancerId === actorId ? 'freelancer' : 'client';
+
+    const note = await prisma.sessionNote.create({
+      data: {
+        bookingId,
+        occurrenceId: occurrenceId || null,
+        authorId:     actorId,
+        authorRole,
+        content:      content.trim(),
+        isPrivate:    Boolean(isPrivate),
+      },
+    });
+
+    const author = await User.findById(actorId).select('firstName lastName profilePicture').lean();
+    res.status(201).json({
+      note: {
+        ...note,
+        author: author ? {
+          _id: author._id, firstName: author.firstName,
+          lastName: author.lastName, avatar: author.profilePicture,
+        } : null,
+      },
+    });
+  } catch (err) {
+    console.error('[session-notes] POST error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/bookings/:bookingId/notes — list notes visible to requester
+router.get('/:bookingId/notes', authenticateToken, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const actorId = req.user._id.toString();
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.clientId !== actorId && booking.freelancerId !== actorId) {
+      return res.status(403).json({ error: 'Not a booking participant' });
+    }
+
+    const notes = await prisma.sessionNote.findMany({
+      where: {
+        bookingId,
+        OR: [{ isPrivate: false }, { authorId: actorId }],
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const authorIds = [...new Set(notes.map(n => n.authorId))];
+    const authors   = await User.find({ _id: { $in: authorIds } })
+      .select('_id firstName lastName profilePicture').lean();
+    const authorMap = Object.fromEntries(authors.map(a => [a._id.toString(), a]));
+
+    const populated = notes.map(n => {
+      const a = authorMap[n.authorId];
+      return {
+        ...n,
+        author: a ? { _id: a._id, firstName: a.firstName, lastName: a.lastName, avatar: a.profilePicture } : null,
+      };
+    });
+
+    res.json({ notes: populated });
+  } catch (err) {
+    console.error('[session-notes] GET error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/bookings/:bookingId/notes/:noteId — edit own note
+router.put('/:bookingId/notes/:noteId', authenticateToken, async (req, res) => {
+  try {
+    const { bookingId, noteId } = req.params;
+    const { content, isPrivate } = req.body;
+    const actorId = req.user._id.toString();
+
+    if (!content?.trim()) return res.status(400).json({ error: 'content is required' });
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+
+    const note = await prisma.sessionNote.findUnique({ where: { id: noteId } });
+    if (!note || note.bookingId !== bookingId) return res.status(404).json({ error: 'Note not found' });
+    if (note.authorId !== actorId) return res.status(403).json({ error: 'Can only edit your own notes' });
+
+    const updated = await prisma.sessionNote.update({
+      where: { id: noteId },
+      data: {
+        content:   content.trim(),
+        isPrivate: isPrivate !== undefined ? Boolean(isPrivate) : note.isPrivate,
+      },
+    });
+
+    res.json({ note: updated });
+  } catch (err) {
+    console.error('[session-notes] PUT error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/bookings/:bookingId/notes/:noteId — delete own note
+router.delete('/:bookingId/notes/:noteId', authenticateToken, async (req, res) => {
+  try {
+    const { bookingId, noteId } = req.params;
+    const actorId = req.user._id.toString();
+
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+
+    const note = await prisma.sessionNote.findUnique({ where: { id: noteId } });
+    if (!note || note.bookingId !== bookingId) return res.status(404).json({ error: 'Note not found' });
+    if (note.authorId !== actorId) return res.status(403).json({ error: 'Can only delete your own notes' });
+
+    await prisma.sessionNote.delete({ where: { id: noteId } });
+
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error('[session-notes] DELETE error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
 
