@@ -247,6 +247,7 @@ const userSchema = new mongoose.Schema({
   },
   headline: { type: String, default: '' },
   tagline: { type: String, default: '' },
+  primaryCategory: { type: String, default: '', trim: true },
   languages: [{ name: String, level: String }],
   experience: [{ company: String, role: String, startDate: Date, endDate: Date, description: String }],
   education: [{ school: String, degree: String, startDate: Date, endDate: Date }],

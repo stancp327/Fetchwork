@@ -22,7 +22,7 @@ const Profile = () => {
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [data, setData] = useState({
     firstName: '', lastName: '', bio: '', headline: '', skills: [],
-    hourlyRate: 0, location: '', phone: '', profilePicture: '',
+    hourlyRate: 0, location: '', profilePicture: '',
     languages: '', primaryCategory: '', email: '', isVerified: false,
     rating: 0, portfolio: [],
     socialLinks: { linkedin: '', github: '', portfolio: '', twitter: '' }
@@ -53,15 +53,18 @@ const Profile = () => {
         firstName: u.firstName || '', lastName: u.lastName || '',
         bio: u.bio || '', headline: u.headline || '',
         skills: u.skills || [], hourlyRate: u.hourlyRate || 0,
-        location: u.location || { locationType: 'remote', city: '', state: '', zipCode: '' }, phone: u.phone || '',
-        profilePicture: u.profilePicture || '', languages: u.languages || '',
+        location: u.location || { locationType: 'remote', city: '', state: '', zipCode: '' },
+        profilePicture: u.profilePicture || '',
+        languages: Array.isArray(u.languages) ? u.languages.map(l => l.name || l).filter(Boolean).join(', ') : (u.languages || ''),
         primaryCategory: u.primaryCategory || '', email: u.email || '',
         isVerified: u.isVerified || false, rating: u.rating || 0,
         portfolio: u.portfolio || [], stripeConnected: u.stripeConnected || false,
         socialLinks: {
           linkedin: u.socialLinks?.linkedin || '', github: u.socialLinks?.github || '',
           portfolio: u.socialLinks?.portfolio || '', twitter: u.socialLinks?.twitter || ''
-        }
+        },
+        availabilityStatus: u.availabilityStatus || 'available',
+        rateNegotiable: u.rateNegotiable || false
       });
     } catch (err) {
       setError('Failed to load profile');
@@ -71,6 +74,15 @@ const Profile = () => {
   }, []);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+  // Warn before navigating away with unsaved changes
+  useEffect(() => {
+    const handler = (e) => {
+      if (hasChanges) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasChanges]);
 
   const onChange = (field, value) => {
     setHasChanges(true);
@@ -88,21 +100,23 @@ const Profile = () => {
       setError('');
       setSuccess('');
 
-      const formData = new FormData();
-      Object.keys(data).forEach(key => {
-        if (key === 'socialLinks') {
-          Object.keys(data.socialLinks).forEach(sk => formData.append(`socialLinks.${sk}`, data.socialLinks[sk]));
-        } else if (Array.isArray(data[key])) {
-          data[key].forEach(item => {
-            if (typeof item === 'string') formData.append(`${key}[]`, item);
-          });
-        } else if (typeof data[key] !== 'object') {
-          formData.append(key, data[key]);
-        }
-      });
-      if (selectedFile) formData.append('profilePicture', selectedFile);
-
-      const response = await apiRequest('/api/users/profile', { method: 'PUT', body: formData });
+      let response;
+      if (selectedFile) {
+        // Use FormData only when uploading a profile picture
+        const formData = new FormData();
+        formData.append('profilePicture', selectedFile);
+        // Send all other fields as JSON in a single field
+        const { _id, profilePicture, stripeConnected, isVerified, rating, email, ...saveable } = data;
+        formData.append('_json', JSON.stringify(saveable));
+        response = await apiRequest('/api/users/profile', { method: 'PUT', body: formData });
+      } else {
+        // No file — send clean JSON
+        const { _id, profilePicture, stripeConnected, isVerified, rating, email, ...saveable } = data;
+        response = await apiRequest('/api/users/profile', {
+          method: 'PUT',
+          body: JSON.stringify(saveable),
+        });
+      }
       updateUser(response.user);
       // Immediately reflect saved profile (avatar + public preview fields)
       if (response?.user) {
@@ -119,6 +133,9 @@ const Profile = () => {
           location: response.user.location || prev.location,
           portfolio: response.user.portfolio || prev.portfolio,
           skills: response.user.skills || prev.skills,
+          languages: Array.isArray(response.user.languages)
+            ? response.user.languages.map(l => l.name || l).filter(Boolean).join(', ')
+            : (response.user.languages || prev.languages),
           profilePicture: response.user.profilePicture || prev.profilePicture,
         }));
       }

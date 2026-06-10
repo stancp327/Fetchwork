@@ -302,6 +302,16 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // When FormData is used (file upload), fields arrive in a single _json blob
+    // Parse this FIRST so all subsequent sanitization applies to the real data
+    if (req.body._json) {
+      try {
+        const parsed = JSON.parse(req.body._json);
+        Object.assign(req.body, parsed);
+      } catch { /* ignore malformed JSON */ }
+      delete req.body._json;
+    }
+
     const clip = (v, n) => String(v || '').trim().slice(0, n);
     const sanitizeArray = (arr, mapFn) => Array.isArray(arr) ? arr.slice(0, 50).map(mapFn) : undefined;
 
@@ -331,11 +341,21 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
       }));
     }
     if (req.body.languages) {
+      // Accept comma-separated string or array of objects → always normalize to [{name, level}]
       const allowed = new Set(['Beginner','Intermediate','Advanced','Native']);
-      req.body.languages = sanitizeArray(req.body.languages, it => ({
-        name: clip(it.name, 80),
-        level: allowed.has(String(it.level || '').trim()) ? it.level : 'Intermediate'
-      }));
+      if (typeof req.body.languages === 'string') {
+        req.body.languages = req.body.languages
+          .split(',')
+          .map(l => l.trim())
+          .filter(Boolean)
+          .slice(0, 50)
+          .map(name => ({ name: name.slice(0, 80), level: 'Intermediate' }));
+      } else {
+        req.body.languages = sanitizeArray(req.body.languages, it => ({
+          name: clip(it.name, 80),
+          level: allowed.has(String(it.level || '').trim()) ? it.level : 'Intermediate'
+        }));
+      }
     }
     if (req.body.skills) {
       req.body.skills = sanitizeArray(req.body.skills, it => clip(it, 60));
@@ -380,7 +400,8 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
       'headline', 'tagline', 'languages', 'experience', 'education',
       'certifications', 'preferencesExtended', 'socialLinksExtended',
       'bannerUrl', 'visibility', 'modes',
-      'interests', 'lookingFor'
+      'interests', 'lookingFor',
+      'availabilityStatus', 'primaryCategory'
     ];
     
     allowedUpdates.forEach(field => {

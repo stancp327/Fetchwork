@@ -17,8 +17,8 @@ const TABS = ['Overview', 'About', 'Skills', 'Portfolio', 'Rates', 'Verification
 const calcCompletion = (data) => {
   const fields = [
     { key: 'firstName', w: 10 }, { key: 'lastName', w: 10 },
-    { key: 'bio', w: 15 }, { key: 'profilePicture', w: 15 },
-    { key: 'location', w: 5 }, { key: 'phone', w: 10 },
+    { key: 'bio', w: 20 }, { key: 'profilePicture', w: 15 },
+    { key: 'location', w: 10 },
     { key: 'skills', w: 15, check: v => v?.length > 0 },
     { key: 'hourlyRate', w: 10, check: v => v > 0 },
     { key: 'socialLinks', w: 10, check: v => Object.values(v || {}).some(Boolean) },
@@ -85,7 +85,6 @@ const TabOverview = ({ data, completion, onTabChange }) => {
   if (!data.profilePicture) incomplete.push({ label: 'Upload a profile photo', tab: 1 });
   if (!data.skills?.length) incomplete.push({ label: 'Add your skills', tab: 2 });
   if (!data.hourlyRate) incomplete.push({ label: 'Set your hourly rate', tab: 4 });
-  if (!data.phone) incomplete.push({ label: 'Add your phone number', tab: 5 });
 
   return (
     <div className="tab-content">
@@ -129,9 +128,8 @@ const TabOverview = ({ data, completion, onTabChange }) => {
           <p>{data.hourlyRate > 0 ? `$${data.hourlyRate}/hr` : 'Not set'}</p>
         </div>
         <div className="overview-card">
-          <h4>Contact</h4>
-          <p>{data.phone || 'No phone'}</p>
-          <p>{getLocationDisplay(data.location) || 'No location'}</p>
+          <h4>Location</h4>
+          <p>{getLocationDisplay(data.location) || 'No location set'}</p>
         </div>
       </div>
     </div>
@@ -208,10 +206,6 @@ const TabAbout = ({ data, onChange, onFileSelect }) => {
           <option value="not_taking_work">🔴 Not Taking Work</option>
           <option value="away">⚫ Away</option>
         </select>
-      </div>
-      <div className="prof-field">
-        <label>Phone</label>
-        <input type="tel" value={data.phone} onChange={e => onChange('phone', e.target.value)} placeholder="+1 (555) 123-4567" />
       </div>
     </div>
     <div className="prof-field">
@@ -398,7 +392,7 @@ const TabPortfolio = ({ data, onRefresh }) => {
             </div>
           ))}
           <div className="portfolio-add" onClick={() => handleOpen()}>
-            <span style={{ fontSize: '2rem' }}>+</span>
+            <span className="portfolio-add-icon">+</span>
             <p>Add another project</p>
           </div>
         </div>
@@ -582,13 +576,7 @@ const TabVerification = ({ data, onRefresh }) => {
             <p>{data.isEmailVerified || data.isVerified ? 'Your email is verified' : 'Verify your email to build trust'}</p>
           </div>
         </div>
-        <div className={`verify-item ${data.phone ? 'verified' : ''}`}>
-          <span className="verify-icon">{data.phone ? '✅' : '⬜'}</span>
-          <div>
-            <strong>Phone Number</strong>
-            <p>{data.phone ? 'Phone number added' : 'Add a phone number for extra security'}</p>
-          </div>
-        </div>
+
       </div>
 
       {/* ID Verification */}
