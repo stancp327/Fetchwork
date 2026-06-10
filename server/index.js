@@ -351,6 +351,8 @@ app.use('/api/ai',               require('./routes/ai-assistant'));   // earning
 app.use('/api/skills',           require('./routes/skills'));
 app.use('/api/presentations',   require('./routes/presentations'));
 app.use('/api/upload',          require('./routes/upload'));
+app.use('/api/service-packages',  require('./routes/servicePackages'));
+app.use('/api/booking-reviews',   require('./routes/bookingReviews'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {

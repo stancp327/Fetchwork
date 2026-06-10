@@ -144,7 +144,48 @@ function initBookingSqlCrons() {
     }
   });
 
-  console.log('[bookingSqlCrons] ✅ SQL booking crons initialized (hold expiry + reminders)');
+  // ── 4. Review prompt emails (every 15 minutes) ───────────────
+  // After a booking completes + 1 hour, email both participants to leave a review
+  cron.schedule('*/15 * * * *', async () => {
+    if (!bookingEmailService) return;
+    try {
+      const prisma = getPrisma();
+      const oneHourAgo  = new Date(Date.now() - 1 * 3600 * 1000);
+      const twentyFourh = new Date(Date.now() - 24 * 3600 * 1000);
+
+      // Occurrences that completed 1-24h ago and haven't had a review prompt sent
+      const occs = await prisma.bookingOccurrence.findMany({
+        where: {
+          status:            'completed',
+          reviewPromptSentAt: null,
+          endAtUtc: { gte: twentyFourh, lte: oneHourAgo },
+        },
+        include: { booking: true },
+        take: 50,
+      });
+
+      for (const occ of occs) {
+        try {
+          if (bookingEmailService.sendReviewPrompt) {
+            await bookingEmailService.sendReviewPrompt(occ.booking, occ);
+          }
+          await prisma.bookingOccurrence.update({
+            where: { id: occ.id },
+            data:  { reviewPromptSentAt: new Date() },
+          }).catch(() => {}); // Silently ignore if column doesn't exist yet
+        } catch (err) {
+          console.error(`[SQL review-prompt] occurrence ${occ.id}:`, err.message);
+        }
+      }
+    } catch (err) {
+      // reviewPromptSentAt column may not exist until migration — log quietly
+      if (!err.message?.includes('reviewPromptSentAt') && !err.message?.includes('column')) {
+        console.error('[bookingSqlCrons] review prompt cron error:', err.message);
+      }
+    }
+  });
+
+  console.log('[bookingSqlCrons] ✅ SQL booking crons initialized (hold expiry + reminders + review prompts)');
 }
 
 module.exports = { initBookingSqlCrons };

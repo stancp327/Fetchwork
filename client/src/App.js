@@ -93,6 +93,9 @@ const SmsPreferences       = React.lazy(() => import('./components/Settings/SmsP
 const JobAlertsPage        = React.lazy(() => import('./components/JobAlerts/JobAlertsPage'));
 const ReferralPage         = React.lazy(() => import('./components/Referrals/ReferralPage'));
 const PresentationView     = React.lazy(() => import('./components/Teams/PresentationView'));
+const CalendarSyncSettings = React.lazy(() => import('./components/Bookings/CalendarSyncSettings'));
+const PackageManager       = React.lazy(() => import('./components/Bookings/PackageManager'));
+const MyPackages           = React.lazy(() => import('./components/Bookings/MyPackages'));
 const TermsOfService       = React.lazy(() => import('./components/Legal/TermsOfService'));
 const PrivacyPolicy        = React.lazy(() => import('./components/Legal/PrivacyPolicy'));
 const CommunityGuidelines  = React.lazy(() => import('./components/Legal/CommunityGuidelines'));
@@ -434,6 +437,10 @@ function AppContent() {
           <Route path="/job-alerts"            element={<ProtectedRoute><JobAlertsPage /></ProtectedRoute>} />
           <Route path="/referrals"             element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
           <Route path="/presentation/:slug"    element={<PresentationView />} />
+          <Route path="/settings/calendar"     element={<ProtectedRoute><CalendarSyncSettings /></ProtectedRoute>} />
+          <Route path="/service-packages/:serviceId" element={<ProtectedRoute><PackageManager /></ProtectedRoute>} />
+          <Route path="/service-packages"         element={<ProtectedRoute><PackageManager /></ProtectedRoute>} />
+          <Route path="/my-packages"           element={<ProtectedRoute><MyPackages /></ProtectedRoute>} />
           <Route path="/terms-of-service"      element={<TermsOfService />} />
           <Route path="/terms"                 element={<Navigate to="/terms-of-service" replace />} />
           <Route path="/privacy-policy"        element={<PrivacyPolicy />} />
