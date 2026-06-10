@@ -23,6 +23,18 @@ const recurringSeriesSvc = new RecurringSeriesService();
 const attendanceService = new AttendanceService();
 const auditService      = new AuditService();
 
+// Lazy-load calendar sync to avoid circular deps; never let it crash a booking
+function tryCalendarSync(fn) {
+  setImmediate(async () => {
+    try {
+      const svc = require('../../services/calendarSyncService');
+      await fn(svc);
+    } catch (err) {
+      console.error('[calendar-sync] background error:', err.message);
+    }
+  });
+}
+
 /**
  * Wraps an async route handler so any unhandled error returns a clean 500
  * instead of hanging the request or crashing the process.
@@ -162,6 +174,9 @@ async function confirmBookingSql(req, res) {
         startTime:    occ?.localStartWallclock?.split('T')[1]?.slice(0, 5) || '',
       }).catch(() => {});
       bookingEmailService.sendBookingConfirmation(booking, occ).catch(() => {});
+
+      // Push to Google Calendar (fire-and-forget)
+      tryCalendarSync(svc => svc.syncBookingToCalendar(booking.freelancerId, booking.id, occ?.id ?? null));
     }
   }
 
@@ -209,6 +224,9 @@ async function cancelBookingSql(req, res) {
         reason:       req.body?.reason || '',
       }).catch(() => {});
       bookingEmailService.sendBookingCancellation(booking, null, cancelledBy).catch(() => {});
+
+      // Remove from Google Calendar (fire-and-forget)
+      tryCalendarSync(svc => svc.removeBookingFromCalendar(booking.freelancerId, booking.id));
 
       // SMS: notify the other party of cancellation
       try {
@@ -309,6 +327,9 @@ async function rescheduleBookingSql(req, res) {
         null,
         `${newDate} at ${newStartTime}`
       ).catch(() => {});
+
+      // Update calendar event after reschedule (fire-and-forget)
+      tryCalendarSync(svc => svc.syncBookingToCalendar(booking.freelancerId, booking.id, occ?.id ?? null));
     }
   }
 

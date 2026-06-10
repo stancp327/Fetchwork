@@ -121,4 +121,71 @@ router.post('/ical-rotate', authenticateToken, async (req, res) => {
   }
 });
 
+// ── GET /api/calendar/auth — redirect to Google OAuth consent ─────────────────
+router.get('/auth', authenticateToken, async (req, res) => {
+  try {
+    if (!process.env.GOOGLE_CAL_CLIENT_ID && !process.env.GOOGLE_CLIENT_ID) {
+      return res.status(503).json({ error: 'Google Calendar not configured', setupRequired: true });
+    }
+    const authUrl = calendarService.getAuthUrl(req.user.userId || req.user._id);
+    return res.redirect(authUrl);
+  } catch (err) {
+    console.error('[calendar] /auth error:', err.message);
+    res.status(500).json({ error: 'Failed to generate auth URL' });
+  }
+});
+
+// ── GET /api/calendar/callback — handles OAuth callback (alias for /google/callback) ──
+router.get('/callback', async (req, res) => {
+  const { code, state: userId, error } = req.query;
+  if (error) return res.redirect(`${process.env.CLIENT_URL}/settings/calendar?calendar=denied`);
+  if (!code || !userId) return res.redirect(`${process.env.CLIENT_URL}/settings/calendar?calendar=error`);
+  try {
+    await calendarService.handleCallback(code, userId);
+    res.redirect(`${process.env.CLIENT_URL}/settings/calendar?calendar=connected`);
+  } catch (err) {
+    console.error('[calendar] /callback error:', err.message);
+    res.redirect(`${process.env.CLIENT_URL}/settings/calendar?calendar=error`);
+  }
+});
+
+// ── POST /api/calendar/sync-all — sync all upcoming confirmed bookings ─────────
+router.post('/sync-all', authenticateToken, async (req, res) => {
+  try {
+    const calendarSyncService = require('../services/calendarSyncService');
+    const freelancerId = (req.user.userId || req.user._id).toString();
+    const synced = await calendarSyncService.syncAllUpcomingBookings(freelancerId);
+    res.json({ message: `Synced ${synced} booking(s) to Google Calendar`, synced });
+  } catch (err) {
+    console.error('[calendar] /sync-all error:', err.message);
+    res.status(500).json({ error: 'Sync failed' });
+  }
+});
+
+// ── DELETE /api/calendar/disconnect — remove tokens (top-level alias) ─────────
+router.delete('/disconnect', authenticateToken, async (req, res) => {
+  try {
+    await calendarService.disconnect(req.user.userId || req.user._id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[calendar] /disconnect error:', err.message);
+    res.status(500).json({ error: 'Failed to disconnect Google Calendar' });
+  }
+});
+
+// ── GET /api/calendar/status — returns {connected, email} ─────────────────────
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId || req.user._id)
+      .select('googleCalConnected googleCalTokenExpiry email');
+    res.json({
+      connected: user?.googleCalConnected ?? false,
+      email:     user?.googleCalConnected ? user.email : null,
+      expiresAt: user?.googleCalTokenExpiry ?? null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get calendar status' });
+  }
+});
+
 module.exports = router;
