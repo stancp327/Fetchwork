@@ -351,6 +351,20 @@ userSchema.index({ 'idVerification.status': 1 });
 
 userSchema.pre('validate', function(next) {
   if (this.email) this.emailCanonical = canonicalizeEmail(this.email);
+
+  // Sanitize empty location enum fields to prevent validation errors
+  if (this.location) {
+    if (!this.location.locationType) {
+      this.location.locationType = 'remote';
+    }
+    if (this.location.coordinates && !this.location.coordinates.type) {
+      this.location.coordinates.type = 'Point';
+    }
+    if (!this.location.serviceRadius || this.location.serviceRadius < 1) {
+      this.location.serviceRadius = 25;
+    }
+  }
+
   next();
 });
 

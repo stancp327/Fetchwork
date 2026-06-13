@@ -408,6 +408,13 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, validatePro
       if (req.body[field] !== undefined) {
         if (field === 'socialLinks' && typeof req.body[field] === 'object') {
           user[field] = { ...user[field], ...req.body[field] };
+        } else if (field === 'location' && typeof req.body[field] === 'object') {
+          // Sanitize location — don't assign empty enum values
+          const loc = req.body[field];
+          if (loc.locationType === '') delete loc.locationType;
+          if (loc.coordinates && loc.coordinates.type === '') delete loc.coordinates.type;
+          if (loc.serviceRadius !== undefined && (loc.serviceRadius === '' || loc.serviceRadius < 1)) delete loc.serviceRadius;
+          user[field] = { ...(user[field] || {}), ...loc };
         } else if (field === 'phone') {
           // Normalize to E.164 server-side
           let ph = String(req.body.phone || '').replace(/[\s\-().]/g, '');
