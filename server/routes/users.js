@@ -354,16 +354,16 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, (req, res, 
         credentialUrl: clip(it.credentialUrl, 400)
       }));
     }
-    if (req.body.languages) {
+    if (req.body.languages !== undefined) {
       // Accept comma-separated string or array of objects → always normalize to [{name, level}]
       const allowed = new Set(['Beginner','Intermediate','Advanced','Native']);
       if (typeof req.body.languages === 'string') {
-        req.body.languages = req.body.languages
-          .split(',')
-          .map(l => l.trim())
-          .filter(Boolean)
-          .slice(0, 50)
-          .map(name => ({ name: name.slice(0, 80), level: 'Intermediate' }));
+        const parts = req.body.languages.split(',').map(l => l.trim()).filter(Boolean);
+        req.body.languages = parts.length > 0
+          ? parts.slice(0, 50).map(name => ({ name: name.slice(0, 80), level: 'Intermediate' }))
+          : undefined; // empty string → don't update languages at all
+      } else if (!Array.isArray(req.body.languages)) {
+        req.body.languages = undefined; // reject non-string non-array
       } else {
         req.body.languages = sanitizeArray(req.body.languages, it => ({
           name: clip(it.name, 80),
@@ -423,11 +423,17 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, (req, res, 
         if (field === 'socialLinks' && typeof req.body[field] === 'object') {
           user[field] = { ...user[field], ...req.body[field] };
         } else if (field === 'location' && typeof req.body[field] === 'object') {
-          // Sanitize location — don't assign empty enum values
+          // Sanitize location — don't assign empty/invalid nested values
           const loc = req.body[field];
           if (loc.locationType === '') delete loc.locationType;
-          if (loc.coordinates && loc.coordinates.type === '') delete loc.coordinates.type;
           if (loc.serviceRadius !== undefined && (loc.serviceRadius === '' || loc.serviceRadius < 1)) delete loc.serviceRadius;
+          // Strip coordinates entirely if empty/malformed — Mongoose requires {type:'Point', coordinates:[lng,lat]}
+          if (loc.coordinates) {
+            const coords = loc.coordinates;
+            if (!coords.type || coords.type === '' || !Array.isArray(coords.coordinates) || coords.coordinates.length < 2) {
+              delete loc.coordinates;
+            }
+          }
           user[field] = { ...(user[field] || {}), ...loc };
         } else if (field === 'phone') {
           // Normalize to E.164 server-side
