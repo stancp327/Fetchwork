@@ -132,15 +132,12 @@ class SlotEngine {
     if (!service) {
       return { statusCode: 404, body: { error: 'Service not found' } };
     }
-    if (!service.bookingEnabled) {
-      return { statusCode: 200, body: { slots: [], message: 'Booking not enabled' } };
-    }
 
     const effectiveFreelancerId = freelancerId || service.freelancerId;
     let availability = null;
     let windowsResult = null;
 
-    // Try hybrid availability (SQL) first
+    // Try hybrid availability (SQL) first — this is the primary source
     let usingServiceFallback = false;
     if (this.useHybridAvailability) {
       try {
@@ -160,6 +157,12 @@ class SlotEngine {
         console.error('[SlotEngine] SQL availability error:', e.message);
         // Fall through to service-level fallback below
       }
+    }
+
+    // Only check MongoDB bookingEnabled if we have NO SQL availability
+    // (SQL availability has its own isActive flag, checked in getResolvedAvailability)
+    if (!availability && !service.bookingEnabled) {
+      return { statusCode: 200, body: { slots: [], message: 'Booking not enabled' } };
     }
 
     // If no SQL availability, fall back to service-level availability windows

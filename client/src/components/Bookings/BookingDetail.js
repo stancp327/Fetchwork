@@ -46,6 +46,7 @@ const STATUS_META = {
 function RescheduleModal({ booking, onClose, onSuccess }) {
   const [date, setDate]         = useState('');
   const [slots, setSlots]       = useState([]);
+  const [slotMsg, setSlotMsg]   = useState('');
   const [slotLoad, setSlotLoad] = useState(false);
   const [selected, setSelected] = useState(null);
   const [reason, setReason]     = useState('');
@@ -56,10 +57,13 @@ function RescheduleModal({ booking, onClose, onSuccess }) {
 
   const loadSlots = useCallback(async (d) => {
     if (!d || !serviceId) return;
-    setSlotLoad(true); setError(''); setSelected(null);
+    setSlotLoad(true); setError(''); setSelected(null); setSlotMsg('');
     try {
       const data = await apiRequest(`/api/bookings/slots/${serviceId}?date=${d}`);
       setSlots(data.slots || []);
+      if ((data.slots || []).length === 0 && data.message) {
+        setSlotMsg(data.message);
+      }
     } catch (err) {
       setError('Could not load slots: ' + err.message);
       setSlots([]);
@@ -127,7 +131,13 @@ function RescheduleModal({ booking, onClose, onSuccess }) {
               {slotLoad ? (
                 <p className="bd-slots-loading">Loading slots…</p>
               ) : slots.length === 0 ? (
-                <p className="bd-slots-empty">No availability on this date.</p>
+                <p className="bd-slots-empty">
+                  {slotMsg === 'Booking not configured for this service'
+                    ? 'Availability hasn\'t been set up for this service yet. The freelancer needs to configure their schedule.'
+                    : slotMsg === 'Booking not enabled'
+                      ? 'Online booking is not enabled for this service.'
+                      : slotMsg || 'No availability on this date.'}
+                </p>
               ) : (
                 <div className="bd-slots-grid">
                   {slots.map(s => (
