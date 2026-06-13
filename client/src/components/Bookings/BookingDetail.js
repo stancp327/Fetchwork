@@ -16,6 +16,9 @@ import BookingReviewDisplay from './BookingReviewDisplay';
 import './BookingDetail.css';
 
 /* ─── Helpers ─── */
+function idempotencyKey() {
+  try { return crypto.randomUUID(); } catch { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
+}
 function formatTime12(t) {
   if (!t) return '';
   const [h, m] = t.split(':').map(Number);
@@ -83,7 +86,7 @@ function RescheduleModal({ booking, onClose, onSuccess }) {
     try {
       await apiRequest(`/api/bookings/${bid(booking)}/reschedule`, {
         method: 'PATCH',
-        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        headers: { 'Idempotency-Key': idempotencyKey() },
         body: JSON.stringify({
           newDate:      date,
           newStartTime: selected.startTime,
@@ -93,7 +96,8 @@ function RescheduleModal({ booking, onClose, onSuccess }) {
       });
       onSuccess('Booking rescheduled ✅');
     } catch (err) {
-      setError(err.message);
+      console.error('Reschedule error:', err);
+      setError(err.message || 'Reschedule failed — check console for details');
     } finally {
       setSub(false);
     }
@@ -270,7 +274,7 @@ const BookingDetail = () => {
     try {
       await apiRequest(`/api/bookings/${id}/${action}`, {
         method: 'PATCH',
-        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        headers: { 'Idempotency-Key': idempotencyKey() },
         body: JSON.stringify(body),
       });
       showFlash(`${action.charAt(0).toUpperCase() + action.slice(1)}d ✅`);
