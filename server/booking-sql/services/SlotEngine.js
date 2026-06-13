@@ -10,36 +10,48 @@ const { OccurrenceRepo } = require('../repos/OccurrenceRepo');
 const { AvailabilityService } = require('./AvailabilityService');
 
 /**
+ * Slot architecture:
+ * - DISPLAY_INTERVAL (15 min): spacing between start times shown to users
+ * - INTERNAL_PRECISION (5 min): granularity for buffer math
+ * - Service duration: how long the appointment actually takes (from service)
+ * - Buffer: per-freelancer, in 5-min increments, applied after each booking
+ *
+ * Collision detection: range-based overlap check. A candidate slot at time T
+ * is blocked if ANY existing booking's [start, end + bufferAfter] overlaps
+ * with [T - bufferBefore, T + displayInterval].
+ *
+ * 96 possible start times per 24hr day (at 15-min intervals).
+ */
+
+const DISPLAY_INTERVAL = 15;    // minutes between displayed start times
+const INTERNAL_PRECISION = 5;   // minutes — buffer granularity
+
+/**
  * Generate time slots from windows for a specific date.
- * @param {Object} params
- * @param {Array} params.windows - time windows [{startTime, endTime}]
- * @param {number} params.slotDuration - minutes per slot
- * @param {number} params.bufferTime - minutes between slots
- * @param {string} params.dateStr - "YYYY-MM-DD"
- * @param {string} params.timezone - IANA timezone
- * @param {number} params.minNoticeHours - minimum booking notice (default 0)
- * @returns {Array} slot objects
+ * Slots are spaced at DISPLAY_INTERVAL (15 min) within each availability window.
  */
 function generateSlotsFromWindows({
   windows,
-  slotDuration,
+  displayInterval,
   bufferTime,
   bufferBeforeMinutes,
   bufferAfterMinutes,
   dateStr,
   timezone,
   minNoticeHours = 0,
+  // Legacy compat: slotDuration treated as displayInterval if displayInterval not set
+  slotDuration,
 }) {
   const tz = timezone || 'America/Los_Angeles';
+  const interval = displayInterval || slotDuration || DISPLAY_INTERVAL;
   const slots = [];
   const nowMs = Date.now();
   const noticeMs = (minNoticeHours || 0) * 3600 * 1000;
 
-  // Resolve effective buffer: use before/after if set, fall back to legacy bufferTime
+  // Resolve effective buffer
   const hasSplitBuffer = (bufferBeforeMinutes ?? 0) > 0 || (bufferAfterMinutes ?? 0) > 0;
   const effectiveBefore = hasSplitBuffer ? (bufferBeforeMinutes ?? 0) : 0;
   const effectiveAfter  = hasSplitBuffer ? (bufferAfterMinutes  ?? 0) : (bufferTime || 0);
-  const totalGap        = effectiveBefore + effectiveAfter;
 
   for (const win of windows || []) {
     let cursor = DateTime.fromISO(`${dateStr}T${win.startTime}`, { zone: tz });
@@ -47,19 +59,21 @@ function generateSlotsFromWindows({
 
     if (!cursor.isValid || !winEnd.isValid) continue;
 
-    while (true) {
-      const slotEnd = cursor.plus({ minutes: slotDuration });
-      if (slotEnd > winEnd) break;
+    while (cursor < winEnd) {
+      const slotEnd = cursor.plus({ minutes: interval });
 
       // DST spring-forward: the hour doesn't exist
       if (!cursor.isValid || !slotEnd.isValid) {
-        cursor = slotEnd.plus({ minutes: totalGap });
+        cursor = cursor.plus({ minutes: interval });
         continue;
       }
 
+      // Don't generate slots that extend past the window end
+      if (slotEnd > winEnd) break;
+
       // Enforce minimum notice window
       if (cursor.toMillis() < nowMs + noticeMs) {
-        cursor = slotEnd.plus({ minutes: totalGap });
+        cursor = cursor.plus({ minutes: interval });
         continue;
       }
 
@@ -75,7 +89,7 @@ function generateSlotsFromWindows({
         bufferAfterMinutes:  effectiveAfter,
       });
 
-      cursor = slotEnd.plus({ minutes: totalGap });
+      cursor = cursor.plus({ minutes: interval });
     }
   }
 
@@ -86,7 +100,7 @@ function generateSlotsFromWindows({
  * Legacy: Generate slots from weekly schedule (dayOfWeek-filtered).
  * Used when AvailabilityService is not available.
  */
-function generateSlots({ windows, slotDuration, bufferTime, dateStr, timezone, minNoticeHours = 0 }) {
+function generateSlots({ windows, slotDuration, displayInterval, bufferTime, dateStr, timezone, minNoticeHours = 0 }) {
   const tz = timezone || 'America/Los_Angeles';
   const localDate = DateTime.fromISO(dateStr, { zone: tz });
   
@@ -104,7 +118,7 @@ function generateSlots({ windows, slotDuration, bufferTime, dateStr, timezone, m
 
   return generateSlotsFromWindows({
     windows: timeWindows,
-    slotDuration,
+    displayInterval: displayInterval || slotDuration,
     bufferTime,
     dateStr,
     timezone: tz,
@@ -169,7 +183,7 @@ class SlotEngine {
     if (!availability && service.availabilityWindows?.length) {
       availability = {
         timezone: service.timezone || 'America/Los_Angeles',
-        slotDuration: service.slotDuration || 15,
+        slotDuration: DISPLAY_INTERVAL,
         bufferTime: service.bufferTime || 0,
         minNoticeHours: service.minNoticeHours || 0,
         maxAdvanceBookingDays: service.maxAdvanceDays || service.maxAdvanceBookingDays || 60,
@@ -186,7 +200,7 @@ class SlotEngine {
 
     // All settings come from SQL FreelancerAvailability — no Mongo fallback.
     const tz = availability.timezone || 'America/Los_Angeles';
-    const slotDuration = availability.slotDuration || 15;
+    const displayInterval = DISPLAY_INTERVAL; // 15-min start time intervals for users
     const bufferTime = availability.bufferTime || 0;
     const bufferBeforeMinutes = availability.bufferBeforeMinutes ?? 0;
     const bufferAfterMinutes  = availability.bufferAfterMinutes  ?? 0;
@@ -225,13 +239,13 @@ class SlotEngine {
       };
     }
 
-    // Generate slots
+    // Generate slots at 15-min display intervals within availability windows
     let allSlots;
     if (windowsResult?.windows?.length > 0) {
       // Use windows from hybrid availability (already day-filtered)
       allSlots = generateSlotsFromWindows({
         windows: windowsResult.windows,
-        slotDuration,
+        displayInterval,
         bufferTime,
         bufferBeforeMinutes,
         bufferAfterMinutes,
@@ -243,7 +257,7 @@ class SlotEngine {
       // Use weekly schedule from SQL availability
       allSlots = generateSlots({
         windows: availability.weeklySchedule,
-        slotDuration,
+        displayInterval,
         bufferTime,
         bufferBeforeMinutes,
         bufferAfterMinutes,
@@ -256,7 +270,7 @@ class SlotEngine {
       allSlots = [];
     }
 
-    // Query existing bookings
+    // Query existing bookings for the day
     const startOfDayUtc = requestedDate.startOf('day').toUTC().toJSDate();
     const endOfDayUtc = requestedDate.endOf('day').toUTC().toJSDate();
     
@@ -266,19 +280,34 @@ class SlotEngine {
       dayEndUtc: endOfDayUtc,
     });
 
-    // Count bookings per slot
-    const bookedCounts = {};
-    for (const item of booked) {
-      const hhmm = String(item.localStartWallclock || '').split('T')[1]?.slice(0, 5);
-      if (!hhmm) continue;
-      bookedCounts[hhmm] = (bookedCounts[hhmm] || 0) + 1;
-    }
+    // Build blocked ranges: each booking blocks [start - bufferBefore, end + bufferAfter]
+    const blockedRanges = booked.map(item => {
+      const startMs = new Date(item.startAtUtc).getTime();
+      const endMs   = new Date(item.endAtUtc).getTime();
+      return {
+        blockStart: startMs - (bufferBeforeMinutes * 60000),
+        blockEnd:   endMs   + (bufferAfterMinutes  * 60000),
+        bookingStart: startMs,
+        bookingEnd:   endMs,
+      };
+    });
 
-    // Filter to available slots
+    // A candidate slot is available if it doesn't overlap with any blocked range.
+    // Overlap: slot [startUtc, endUtc] intersects blocked [blockStart, blockEnd]
+    // Count overlapping bookings per slot (for capacity/maxPerSlot support)
     const slots = allSlots
       .map((s) => {
-        const count = bookedCounts[s.startTime] || 0;
-        const spotsLeft = Math.max(0, maxPerSlot - count);
+        const sStart = new Date(s.startUtc).getTime();
+        const sEnd   = new Date(s.endUtc).getTime();
+        // Count how many bookings overlap this slot's time range
+        let overlaps = 0;
+        for (const br of blockedRanges) {
+          // Two ranges overlap if one starts before the other ends
+          if (sStart < br.blockEnd && sEnd > br.blockStart) {
+            overlaps++;
+          }
+        }
+        const spotsLeft = Math.max(0, maxPerSlot - overlaps);
         return { ...s, spotsLeft, totalSpots: maxPerSlot };
       })
       .filter((s) => s.spotsLeft > 0);
