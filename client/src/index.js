@@ -23,7 +23,17 @@ root.render(
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-// reportWebVitals();
+// ── Auto-reload on stale chunk errors after deploys ─────────────
+// When a new deploy changes chunk hashes, cached main.js references
+// old chunks that no longer exist. Catch and reload once.
+window.addEventListener('error', (e) => {
+  if (e.message && /Loading chunk .* failed/i.test(e.message)) {
+    const reloaded = sessionStorage.getItem('chunk_reload');
+    if (!reloaded) {
+      sessionStorage.setItem('chunk_reload', '1');
+      window.location.reload();
+    }
+  }
+});
+// Clear the flag on successful load so future deploys can trigger reload
+sessionStorage.removeItem('chunk_reload');

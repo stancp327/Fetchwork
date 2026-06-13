@@ -120,10 +120,16 @@ const logClientError = async (errorData, userId, userEmail) => {
 // Catch unhandled rejections and uncaught exceptions
 const setupProcessErrorHandlers = () => {
   process.on('unhandledRejection', async (reason) => {
+    const msg = reason?.message || String(reason);
+    // Skip transient WebSocket/proxy errors (Render returns 403 on stale WS upgrades)
+    if (/unexpected status code.*40[13]/i.test(msg) || /websocket.*close/i.test(msg)) {
+      console.warn('Suppressed transient WS rejection:', msg);
+      return;
+    }
     console.error('Unhandled Rejection:', reason);
     try {
       await ServerError.create({
-        message: reason?.message || String(reason),
+        message: msg,
         stack: reason?.stack,
         name: reason?.name || 'UnhandledRejection',
         source: 'unhandledRejection',

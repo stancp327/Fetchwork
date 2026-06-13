@@ -104,6 +104,10 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    // Allow the API's own origin (browsing API URL directly)
+    if (origin === 'https://fetchwork-1.onrender.com') {
+      return callback(null, true);
+    }
     // Allow Vercel preview deployments (*.vercel.app) for staging/PR reviews
     if (/^https:\/\/[a-z0-9-]+-fetch-work\.vercel\.app$/.test(origin) ||
         /^https:\/\/fetchwork[a-z0-9-]*\.vercel\.app$/.test(origin)) {
