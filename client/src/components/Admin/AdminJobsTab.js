@@ -146,13 +146,14 @@ const AdminJobsTab = ({ jobsData, jobFilters, setJobFilters, fetchJobsData, dash
                             }}>Cancel</button>
                           )}
                           <button className="action-btn delete" onClick={async () => {
-                            if (!window.confirm(`Remove "${job.title}"?`)) return;
+                            if (!window.confirm(`Remove "${job.title}"? This will cancel and hide it from public listings.`)) return;
                             const reason = prompt('Reason for removal:');
                             if (reason) {
                               try {
                                 await apiRequest(`/api/admin/jobs/${job._id}`, { method: 'DELETE', body: JSON.stringify({ reason }) });
+                                alert('Job removed from public listings.');
                                 fetchJobsData(jobsData?.pagination?.current || 1, jobFilters);
-                              } catch (err) { alert('Failed to remove job'); }
+                              } catch (err) { alert('Failed to remove job: ' + (err.message || '')); }
                             }
                           }}>Remove</button>
                         </div>

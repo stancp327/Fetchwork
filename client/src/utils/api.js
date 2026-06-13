@@ -22,7 +22,15 @@ export const apiRequest = async (endpoint, options = {}) => {
     ? { ...defaultHeaders, ...options.headers }
     : { 'Content-Type': 'application/json', ...defaultHeaders, ...options.headers };
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  // Build query string from params option
+  let url = `${baseUrl}${endpoint}`;
+  if (options.params) {
+    const qs = new URLSearchParams(options.params).toString();
+    if (qs) url += `${endpoint.includes('?') ? '&' : '?'}${qs}`;
+    delete options.params;
+  }
+
+  const response = await fetch(url, {
     ...options,
     headers
   });
