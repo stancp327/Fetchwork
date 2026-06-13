@@ -12,10 +12,12 @@ class AppErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
+    console.error('[AppErrorBoundary]', error.message, '\nComponent:', errorInfo?.componentStack?.split('\n')[1]?.trim());
     reportError({
       message: error.message,
       stack: error.stack,
       name: error.name,
+      url: window.location.href,
       component: errorInfo?.componentStack?.split('\n')[1]?.trim()
     });
   }
@@ -36,6 +38,11 @@ class AppErrorBoundary extends React.Component {
           <p style={{ color: 'var(--color-text-secondary, #6b7280)', marginBottom: '1.5rem', maxWidth: '400px', lineHeight: 1.6 }}>
             An unexpected error occurred. Our team has been notified.
           </p>
+          {this.state.error && (
+            <p style={{ color: 'var(--color-text-muted, #9ca3af)', fontSize: '0.75rem', marginBottom: '1rem', maxWidth: '400px', wordBreak: 'break-word' }}>
+              {this.state.error.message}
+            </p>
+          )}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               onClick={this.handleRetry}

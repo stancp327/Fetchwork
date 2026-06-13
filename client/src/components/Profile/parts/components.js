@@ -167,8 +167,8 @@ const TabAbout = ({ data, onChange, onFileSelect }) => {
     </div>
     <div className="prof-field">
       <label>Bio</label>
-      <textarea value={data.bio} onChange={e => onChange('bio', e.target.value)} placeholder="Tell clients about yourself, your experience, and what makes you different..." rows={5} maxLength={500} />
-      <div className="field-footer"><span /><span className="char-count">{data.bio.length}/500</span></div>
+      <textarea value={data.bio || ''} onChange={e => onChange('bio', e.target.value)} placeholder="Tell clients about yourself, your experience, and what makes you different..." rows={5} maxLength={500} />
+      <div className="field-footer"><span /><span className="char-count">{(data.bio || '').length}/500</span></div>
     </div>
     <div className="prof-row">
       <div className="prof-field">
@@ -311,13 +311,13 @@ const TabSkills = ({ data, onChange }) => {
         </div>
       </div>
       <div className="skills-grid">
-        {data.skills.map((skill, i) => (
+        {(data.skills || []).map((skill, i) => (
           <span key={i} className="skill-chip">
             {skill}
             <button type="button" onClick={() => removeSkill(skill)} className="skill-remove">✕</button>
           </span>
         ))}
-        {data.skills.length === 0 && <p className="skills-empty">No skills added yet. Add skills to help clients find you.</p>}
+        {(!data.skills || data.skills.length === 0) && <p className="skills-empty">No skills added yet. Add skills to help clients find you.</p>}
       </div>
       <div className="prof-field prof-mt-lg">
         <label>Areas of Expertise</label>
