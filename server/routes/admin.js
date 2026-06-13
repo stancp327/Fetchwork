@@ -408,6 +408,67 @@ router.get('/services', authenticateAdmin, requirePermission('job_management'), 
   }
 });
 
+// ── Suspend service (hide from public, reversible) ──────────────
+router.put('/services/:serviceId/suspend', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.serviceId);
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+
+    service.status = 'paused';
+    service.isActive = false;
+    service.adminAction = {
+      action: 'suspended',
+      reason: req.body.reason || 'Suspended by admin',
+      suspendedAt: new Date(),
+      suspendedBy: req.admin._id,
+    };
+    await service.save();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: service.freelancer, action: 'service.suspend',
+      reason: req.body.reason || 'Suspended by admin',
+      metadata: { serviceId: service._id, serviceTitle: service.title },
+      ip: req.ip,
+    });
+
+    res.json({ message: 'Service suspended', service: { _id: service._id, title: service.title } });
+  } catch (error) {
+    console.error('Admin suspend service error:', error);
+    res.status(500).json({ error: 'Failed to suspend service' });
+  }
+});
+
+// ── Reinstate suspended service ─────────────────────────────────
+router.put('/services/:serviceId/reinstate', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.serviceId);
+    if (!service) return res.status(404).json({ error: 'Service not found' });
+
+    service.status = 'active';
+    service.isActive = true;
+    service.adminAction = {
+      action: 'reinstated',
+      reinstatedAt: new Date(),
+      reinstatedBy: req.admin._id,
+    };
+    await service.save();
+
+    await logAdminAction({
+      adminId: req.admin._id, adminEmail: req.admin.email,
+      targetId: service.freelancer, action: 'service.reinstate',
+      metadata: { serviceId: service._id, serviceTitle: service.title },
+      ip: req.ip,
+    });
+
+    res.json({ message: 'Service reinstated', service: { _id: service._id, title: service.title } });
+  } catch (error) {
+    console.error('Admin reinstate service error:', error);
+    res.status(500).json({ error: 'Failed to reinstate service' });
+  }
+});
+
+// ── Permanently remove service ──────────────────────────────────
 router.delete('/services/:serviceId', authenticateAdmin, requirePermission('job_management'), async (req, res) => {
   try {
     const service = await Service.findById(req.params.serviceId);

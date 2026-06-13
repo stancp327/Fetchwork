@@ -247,10 +247,10 @@ const AdminDashboard = () => {
     }
   }, [jobFilters]);
 
-  const fetchServicesData = useCallback(async (page = 1, status = 'all') => {
+  const fetchServicesData = useCallback(async (page = 1, status = 'all', limit = 10) => {
     try {
       const response = await apiRequest('/api/admin/services', {
-        params: { page, status, limit: 10 }
+        params: { page, status, limit }
       });
       setServicesData(response);
     } catch (error) {
