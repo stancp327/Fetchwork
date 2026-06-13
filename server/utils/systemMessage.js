@@ -4,8 +4,7 @@
  */
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const { Message } = require('../models/Message');
-const Conversation = require('../models/Conversation');
+const { Message, Conversation } = require('../models/Message');
 
 const SYSTEM_EMAIL = 'system@fetchwork.com';
 let _systemUser = null;
