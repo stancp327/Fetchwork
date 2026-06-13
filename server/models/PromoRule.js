@@ -8,6 +8,9 @@ const promoRuleSchema = new mongoose.Schema({
   name:        { type: String, required: true },
   description: { type: String, default: '' },
 
+  // Redeemable promo code (optional — if set, users can enter it to unlock the promo)
+  code: { type: String, default: null, uppercase: true, trim: true },
+
   // Who it applies to
   appliesTo: {
     type: String,
@@ -24,6 +27,9 @@ const promoRuleSchema = new mongoose.Schema({
   // Promo window
   startDate: { type: Date, required: true },
   endDate:   { type: Date, required: true },
+
+  // Max redemptions (null = unlimited)
+  maxRedemptions: { type: Number, default: null },
 
   // What it does — fee rate overrides (null = no override for that field)
   feeRateOverrides: {
@@ -46,10 +52,12 @@ const promoRuleSchema = new mongoose.Schema({
   active:    { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   usageCount: { type: Number, default: 0 },
+  redeemedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, {
   timestamps: true,
 });
 
 promoRuleSchema.index({ active: 1, startDate: 1, endDate: 1 });
+promoRuleSchema.index({ code: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('PromoRule', promoRuleSchema);

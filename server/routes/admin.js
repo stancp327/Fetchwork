@@ -1545,6 +1545,17 @@ router.put('/billing/promo/:promoId', authenticateAdmin, requirePermission('paym
   }
 });
 
+// ── DELETE /api/admin/billing/promo/:promoId ────────────────────
+router.delete('/billing/promo/:promoId', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const promo = await PromoRule.findByIdAndDelete(req.params.promoId);
+    if (!promo) return res.status(404).json({ error: 'Promo not found' });
+    res.json({ message: 'Promo deleted', promoId: promo._id });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Failed to delete promo' });
+  }
+});
+
 // ── STRIPE CATALOG MANAGEMENT ─────────────────────────────────────
 // These endpoints create/update in Stripe AND sync to MongoDB in one step.
 // Igor (the AI) can call these directly when Chaz says "add a new plan".

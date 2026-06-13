@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
 import StripeCatalogPanel from './StripeCatalogPanel';
+import PromoSection from './PromoSection';
 import './AdminBillingTab.css';
 
 const TIER_COLORS = { free: '#6c757d', plus: '#667eea', pro: '#764ba2' };
@@ -168,82 +169,6 @@ const EditPlanModal = ({ plan, onSave, onClose }) => {
   );
 };
 
-// ── Promo Rule Form ─────────────────────────────────────────────
-const PromoForm = ({ onCreated }) => {
-  const [form, setForm] = useState({
-    name: '', description: '', appliesTo: 'new_users', audience: 'both',
-    startDate: '', endDate: '',
-    remoteClient: '', remoteFreelancer: '', subscriptionDiscount: '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState('');
-
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  const handleCreate = async () => {
-    if (!form.name || !form.startDate || !form.endDate) {
-      setError('Name, start date, and end date are required');
-      return;
-    }
-    setSaving(true); setError('');
-    try {
-      const payload = {
-        name:        form.name,
-        description: form.description,
-        appliesTo:   form.appliesTo,
-        audience:    form.audience,
-        startDate:   form.startDate,
-        endDate:     form.endDate,
-        feeRateOverrides: {
-          remoteClient:     form.remoteClient     ? Number(form.remoteClient)     / 100 : null,
-          remoteFreelancer: form.remoteFreelancer ? Number(form.remoteFreelancer) / 100 : null,
-        },
-        subscriptionDiscount: form.subscriptionDiscount ? Number(form.subscriptionDiscount) / 100 : null,
-      };
-      await apiRequest('/api/admin/billing/promo', { method: 'POST', body: JSON.stringify(payload) });
-      setForm({ name: '', description: '', appliesTo: 'new_users', audience: 'both', startDate: '', endDate: '', remoteClient: '', remoteFreelancer: '', subscriptionDiscount: '' });
-      onCreated();
-    } catch (err) {
-      setError(err.message || 'Failed to create promo');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="abt-promo-form">
-      <h4>Create Promo Rule</h4>
-      <div className="abt-form-row-2">
-        <div><label>Name *</label><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Summer 2026 promo" /></div>
-        <div><label>Applies to</label>
-          <select value={form.appliesTo} onChange={e => set('appliesTo', e.target.value)}>
-            <option value="new_users">New users only</option>
-            <option value="existing_users">Existing users only</option>
-            <option value="all">All users</option>
-          </select>
-        </div>
-        <div><label>Audience</label>
-          <select value={form.audience} onChange={e => set('audience', e.target.value)}>
-            <option value="both">Both</option>
-            <option value="freelancer">Freelancers only</option>
-            <option value="client">Clients only</option>
-          </select>
-        </div>
-        <div><label>Start date *</label><input type="date" value={form.startDate} onChange={e => set('startDate', e.target.value)} /></div>
-        <div><label>End date *</label><input type="date" value={form.endDate} onChange={e => set('endDate', e.target.value)} /></div>
-        <div><label>Remote client fee % (override)</label><input type="number" value={form.remoteClient} onChange={e => set('remoteClient', e.target.value)} placeholder="leave blank to skip" /></div>
-        <div><label>Remote freelancer fee % (override)</label><input type="number" value={form.remoteFreelancer} onChange={e => set('remoteFreelancer', e.target.value)} placeholder="leave blank to skip" /></div>
-        <div><label>Subscription discount %</label><input type="number" value={form.subscriptionDiscount} onChange={e => set('subscriptionDiscount', e.target.value)} placeholder="e.g. 20 = 20% off" /></div>
-      </div>
-      <div><label>Description</label><input value={form.description} onChange={e => set('description', e.target.value)} placeholder="Internal notes" /></div>
-      {error && <div className="abt-error">{error}</div>}
-      <button className="abt-btn-primary" onClick={handleCreate} disabled={saving}>
-        {saving ? 'Creating…' : 'Create Promo Rule'}
-      </button>
-    </div>
-  );
-};
-
 // ── Main Tab ────────────────────────────────────────────────────
 const AdminBillingTab = () => {
   const [plans,  setPlans]  = useState([]);
@@ -305,36 +230,7 @@ const AdminBillingTab = () => {
       </section>
 
       {/* ── Promo Rules ── */}
-      <section className="abt-section">
-        <h3 className="abt-section-title">🎁 Promo Rules</h3>
-        <PromoForm onCreated={fetchAll} />
-        {promos.length > 0 && (
-          <div className="abt-promo-list">
-            {promos.map(promo => (
-              <div key={promo._id} className={`abt-promo-row ${promo.active ? '' : 'inactive'}`}>
-                <div className="abt-promo-info">
-                  <strong>{promo.name}</strong>
-                  <span>{promo.appliesTo} · {promo.audience}</span>
-                  <span>{new Date(promo.startDate).toLocaleDateString()} – {new Date(promo.endDate).toLocaleDateString()}</span>
-                </div>
-                <div className="abt-promo-actions">
-                  <button
-                    className={`abt-promo-toggle ${promo.active ? 'danger' : 'success'}`}
-                    onClick={async () => {
-                      await apiRequest(`/api/admin/billing/promo/${promo._id}`, {
-                        method: 'PUT', body: JSON.stringify({ active: !promo.active }),
-                      });
-                      fetchAll();
-                    }}
-                  >
-                    {promo.active ? 'Deactivate' : 'Activate'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <PromoSection promos={promos} onRefresh={fetchAll} />
 
       {/* ── Edit Modal ── */}
       {editingPlan && (

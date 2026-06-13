@@ -47,6 +47,48 @@ router.get('/plans', async (req, res) => {
   }
 });
 
+// ── POST /api/billing/redeem-promo ──────────────────────────────
+// User enters a promo code to activate a promo for themselves
+router.post('/redeem-promo', authenticateToken, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ error: 'Promo code is required' });
+    }
+    const PromoRule = require('../models/PromoRule');
+    const now = new Date();
+    const promo = await PromoRule.findOne({
+      code: code.toUpperCase().trim(),
+      active: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    });
+    if (!promo) {
+      return res.status(404).json({ error: 'Invalid or expired promo code' });
+    }
+    // Check max redemptions
+    if (promo.maxRedemptions && promo.usageCount >= promo.maxRedemptions) {
+      return res.status(410).json({ error: 'This promo code has reached its redemption limit' });
+    }
+    // Check if already redeemed by this user
+    if (promo.redeemedBy.some(id => String(id) === String(req.user.userId))) {
+      return res.status(409).json({ error: 'You have already redeemed this promo code' });
+    }
+    // Redeem
+    promo.redeemedBy.push(req.user.userId);
+    promo.usageCount = (promo.usageCount || 0) + 1;
+    await promo.save();
+
+    res.json({
+      message: 'Promo code applied!',
+      promo: { name: promo.name, description: promo.description, endDate: promo.endDate },
+    });
+  } catch (err) {
+    console.error('Redeem promo error:', err);
+    res.status(500).json({ error: 'Failed to redeem promo code' });
+  }
+});
+
 // ── GET /api/billing/status ─────────────────────────────────────
 // Returns current user's plan + subscription details
 router.get('/status', authenticateToken, async (req, res) => {

@@ -53,7 +53,15 @@ async function getActivePromo(userId, audience) {
     ],
   }).lean();
 
+  // Filter out code-based promos the user hasn't redeemed
+  // and promos that hit their max redemptions
+
   for (const promo of promos) {
+    // Skip code-based promos if user hasn't redeemed the code
+    if (promo.code && !(promo.redeemedBy || []).some(id => String(id) === String(userId))) continue;
+    // Skip if max redemptions hit
+    if (promo.maxRedemptions && (promo.usageCount || 0) >= promo.maxRedemptions) continue;
+
     if (promo.appliesTo === 'specific_users') {
       if (promo.specificUsers.some(id => String(id) === String(userId))) return promo;
       continue;
@@ -138,13 +146,19 @@ async function getFee({ userId, role, jobType, amount }) {
     const promo = await getActivePromo(userId, audience);
     if (promo?.feeRateOverrides) {
       const ov = promo.feeRateOverrides;
+      let promoResult = null;
       if (jobType === 'remote' && role === 'client'     && ov.remoteClient     != null)
-        return { fee: roundFee(amount * ov.remoteClient),     feeRate: ov.remoteClient,     source: `promo:${promo._id}` };
+        promoResult = { fee: roundFee(amount * ov.remoteClient),     feeRate: ov.remoteClient,     source: `promo:${promo._id}` };
       if (jobType === 'remote' && role === 'freelancer'  && ov.remoteFreelancer != null)
-        return { fee: roundFee(amount * ov.remoteFreelancer), feeRate: ov.remoteFreelancer, source: `promo:${promo._id}` };
+        promoResult = { fee: roundFee(amount * ov.remoteFreelancer), feeRate: ov.remoteFreelancer, source: `promo:${promo._id}` };
       if (jobType === 'local'  && role === 'client'      && ov.localClient) {
         const flatFee = getLocalClientFlatFee(ov.localClient, amount);
-        if (flatFee != null) return { fee: flatFee, feeRate: null, source: `promo:${promo._id}` };
+        if (flatFee != null) promoResult = { fee: flatFee, feeRate: null, source: `promo:${promo._id}` };
+      }
+      if (promoResult) {
+        // Track usage (fire-and-forget)
+        PromoRule.updateOne({ _id: promo._id }, { $inc: { usageCount: 1 } }).catch(() => {});
+        return promoResult;
       }
     }
   } catch { /* continue */ }
