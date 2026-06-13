@@ -284,11 +284,21 @@ router.get('/search', authenticateToken, async (req, res) => {
 const maybeUploadProfilePicture = (req, res, next) => {
   try {
     const ct = req.headers['content-type'] || '';
+    console.log('[upload-debug] content-type:', ct.substring(0, 60), '| method:', req.method);
     if (ct.includes('multipart/form-data')) {
-      return uploadProfilePicture(req, res, next);
+      console.log('[upload-debug] Running multer...');
+      return uploadProfilePicture(req, res, (err) => {
+        if (err) {
+          console.error('[upload-debug] ❌ Multer error:', err.message, err.code);
+          return res.status(400).json({ error: 'Upload failed: ' + err.message });
+        }
+        console.log('[upload-debug] ✅ Multer done. File:', req.file?.originalname || 'none', '| Body keys:', Object.keys(req.body || {}).join(', '));
+        next();
+      });
     }
     return next();
   } catch (e) {
+    console.error('[upload-debug] ❌ Catch:', e.message);
     return next();
   }
 };
