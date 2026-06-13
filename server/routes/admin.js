@@ -861,13 +861,17 @@ router.get('/analytics', authenticateAdmin, requirePermission('analytics_view'),
 router.get('/monitoring', authenticateAdmin, async (req, res) => {
   try {
     const io = req.app.get('io');
-    const activeUsers = io.getActiveUsers();
-    
+
+    // Get connection stats from socket.io native API
+    const allSockets = await io.fetchSockets();
+    const totalConnections = allSockets.length;
+    const uniqueUserIds = new Set(allSockets.map(s => s.data?.userId || s.handshake?.query?.userId).filter(Boolean));
+    const uniqueUsers = uniqueUserIds.size;
+
     const connectionStats = {
-      totalConnections: Array.from(activeUsers.values()).reduce((sum, sockets) => sum + sockets.size, 0),
-      uniqueUsers: activeUsers.size,
-      averageConnectionsPerUser: activeUsers.size > 0 ? 
-        Array.from(activeUsers.values()).reduce((sum, sockets) => sum + sockets.size, 0) / activeUsers.size : 0
+      totalConnections,
+      uniqueUsers,
+      averageConnectionsPerUser: uniqueUsers > 0 ? totalConnections / uniqueUsers : 0
     };
 
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -943,9 +947,10 @@ router.get('/monitoring', authenticateAdmin, async (req, res) => {
       averageMembersPerRoom: Math.round((roomStatsAgg[0].averageMembersPerRoom[0]?.avg || 0) * 10) / 10
     };
 
-    const onlineUsersList = await User.find({
-      _id: { $in: Array.from(activeUsers.keys()) }
-    }).select('firstName lastName email lastActive').limit(50);
+    const onlineUsersList = uniqueUserIds.size > 0
+      ? await User.find({ _id: { $in: Array.from(uniqueUserIds) } })
+          .select('firstName lastName email lastActive').limit(50)
+      : [];
 
     res.json({
       message: 'Monitoring data retrieved successfully',
