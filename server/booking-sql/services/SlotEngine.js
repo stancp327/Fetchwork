@@ -169,7 +169,7 @@ class SlotEngine {
     if (!availability && service.availabilityWindows?.length) {
       availability = {
         timezone: service.timezone || 'America/Los_Angeles',
-        slotDuration: service.slotDuration || 60,
+        slotDuration: service.slotDuration || 15,
         bufferTime: service.bufferTime || 0,
         minNoticeHours: service.minNoticeHours || 0,
         maxAdvanceBookingDays: service.maxAdvanceDays || service.maxAdvanceBookingDays || 60,
@@ -186,7 +186,7 @@ class SlotEngine {
 
     // All settings come from SQL FreelancerAvailability — no Mongo fallback.
     const tz = availability.timezone || 'America/Los_Angeles';
-    const slotDuration = availability.slotDuration || 60;
+    const slotDuration = availability.slotDuration || 15;
     const bufferTime = availability.bufferTime || 0;
     const bufferBeforeMinutes = availability.bufferBeforeMinutes ?? 0;
     const bufferAfterMinutes  = availability.bufferAfterMinutes  ?? 0;

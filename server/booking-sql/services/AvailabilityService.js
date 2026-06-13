@@ -193,7 +193,7 @@ class AvailabilityService {
       create: {
         freelancerId,
         timezone: data.timezone ?? 'America/Los_Angeles',
-        defaultSlotDuration: data.slotDuration ?? 60,
+        defaultSlotDuration: data.slotDuration ?? 15,
         bufferTime: data.bufferTime ?? 0,
         defaultCapacity: data.capacity ?? 1,
         minNoticeHours: data.minNoticeHours ?? 24,
