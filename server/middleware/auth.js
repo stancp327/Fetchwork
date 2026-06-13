@@ -4,10 +4,18 @@ const Admin = require('../models/Admin');
 
 const authenticateToken = async (req, res, next) => {
   try {
+    // Debug: log PUT/POST requests to profile
+    if (req.method === 'PUT' && req.originalUrl?.includes('/profile')) {
+      console.log('[auth-debug] PUT /profile — has auth header:', !!req.headers['authorization']);
+    }
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
+      if (req.method === 'PUT' && req.originalUrl?.includes('/profile')) {
+        console.log('[auth-debug] ❌ No token found in request');
+      }
       return res.status(401).json({ error: 'Access token required' });
     }
 
@@ -43,9 +51,15 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
+      if (req.method === 'PUT' && req.originalUrl?.includes('/profile')) {
+        console.log('[auth-debug] ❌ Token EXPIRED for PUT /profile');
+      }
       return res.status(401).json({ error: 'Token expired' });
     }
     if (error.name === 'JsonWebTokenError') {
+      if (req.method === 'PUT' && req.originalUrl?.includes('/profile')) {
+        console.log('[auth-debug] ❌ Invalid token for PUT /profile');
+      }
       return res.status(401).json({ error: 'Invalid token' });
     }
     console.error('Authentication error:', error);
