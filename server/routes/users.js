@@ -294,9 +294,12 @@ const maybeUploadProfilePicture = (req, res, next) => {
 };
 
 
-router.put('/profile', authenticateToken, maybeUploadProfilePicture, validateProfilePictureUpdate, async (req, res) => {
+router.put('/profile', authenticateToken, maybeUploadProfilePicture, (req, res, next) => {
+  console.log('[profile-save] PRE-VALIDATION — user:', req.user?.userId, 'body keys:', Object.keys(req.body || {}).join(', '), 'content-type:', req.headers['content-type']);
+  next();
+}, validateProfilePictureUpdate, async (req, res) => {
   try {
-    console.log('[profile-save] PUT /profile from user:', req.user.userId, 'fields:', Object.keys(req.body).join(', '));
+    console.log('[profile-save] POST-VALIDATION — user:', req.user.userId, 'fields:', Object.keys(req.body).join(', '));
     const user = await User.findById(req.user.userId);
     
     if (!user) {
