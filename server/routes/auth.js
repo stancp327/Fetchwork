@@ -416,6 +416,72 @@ router.post('/reset-password', [
   }
 });
 
+// ── Change Password (logged-in user) ────────────────────────────
+router.put('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+    const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/;
+    if (!pwRegex.test(newPassword)) {
+      return res.status(400).json({ error: 'Password must include uppercase, lowercase, number, and special character' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // OAuth-only users don't have a password set
+    if (!user.password) {
+      return res.status(400).json({ error: 'Your account uses Google/Facebook sign-in. Set a password via Forgot Password instead.' });
+    }
+
+    const valid = await user.comparePassword(currentPassword);
+    if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
+
+    user.password = newPassword;
+    user.tokenVersion = (user.tokenVersion || 0) + 1; // invalidate other sessions
+    await user.save();
+
+    // Issue fresh token so this session stays alive
+    const token = jwt.sign(
+      { userId: user._id, tokenVersion: user.tokenVersion },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({ message: 'Password changed successfully', token });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// ── Security info (account overview) ────────────────────────────
+router.get('/security-info', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId)
+      .select('email googleId facebookId createdAt lastLogin lastLoginAt lastLoginIp lastLoginCity lastLoginCountry password')
+      .lean();
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.json({
+      email: user.email,
+      hasPassword: !!user.password,
+      hasGoogle: !!user.googleId,
+      hasFacebook: !!user.facebookId,
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt || user.lastLogin,
+      lastLoginIp: user.lastLoginIp,
+      lastLoginCity: user.lastLoginCity,
+      lastLoginCountry: user.lastLoginCountry,
+    });
+  } catch (err) {
+    console.error('Security info error:', err);
+    res.status(500).json({ error: 'Failed to load security info' });
+  }
+});
+
 // ── Admin Recovery ──────────────────────────────────────────────
 router.post('/recover-admin', recoverAdminLimiter, async (req, res) => {
   try {

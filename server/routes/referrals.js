@@ -6,7 +6,7 @@ const Referral   = require('../models/Referral');
 const { notify } = require('../services/notificationService');
 const { authenticateToken } = require('../middleware/auth');
 
-const REWARD_AMOUNT = 25; // $25 credit per qualified referral
+const REWARD_AMOUNT = 0; // $0 for now — flip to $10 when ready
 const BASE_URL      = process.env.CLIENT_URL || 'https://fetchwork.net';
 
 // ── Helper: generate a short unique code ─────────────────────────

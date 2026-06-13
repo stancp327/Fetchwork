@@ -25,7 +25,7 @@ const referralSchema = new mongoose.Schema({
   },
   rewardAmount: {
     type:    Number,
-    default: 25,           // $25 wallet credit per qualified referral
+    default: 0,            // $0 for now — flip to $10 when ready
   },
   rewardedAt: Date,
 }, { timestamps: true });

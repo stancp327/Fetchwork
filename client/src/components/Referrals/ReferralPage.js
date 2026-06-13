@@ -36,10 +36,10 @@ const ReferralPage = () => {
       <SEO title="Referrals" path="/referrals" noIndex={true} />
 
       <div className="ref-header">
-        <h1 className="ref-title">Refer &amp; Earn</h1>
+        <h1 className="ref-title">Refer a Friend</h1>
         <p className="ref-sub">
-          Share your link. When someone signs up and completes their first job,
-          you earn <strong>${stats.rewardAmount} in credits</strong> — automatically.
+          Share your link and help grow the Fetchwork community.
+          {stats.rewardAmount > 0 && <> When they complete their first job, you earn <strong>${stats.rewardAmount} in credits</strong> — automatically.</>}
         </p>
       </div>
 
@@ -126,13 +126,15 @@ const ReferralPage = () => {
               <p>Once they finish their first job, you both benefit.</p>
             </div>
           </div>
-          <div className="ref-step">
-            <span className="ref-step-num">4</span>
-            <div>
-              <strong>You earn ${stats.rewardAmount}</strong>
-              <p>Credits added to your account automatically.</p>
+          {stats.rewardAmount > 0 && (
+            <div className="ref-step">
+              <span className="ref-step-num">4</span>
+              <div>
+                <strong>You earn ${stats.rewardAmount}</strong>
+                <p>Credits added to your account automatically.</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
