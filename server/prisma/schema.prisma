@@ -82,6 +82,7 @@ model Booking {
   clientId            String
   freelancerId        String
   serviceOfferingId   String?       @db.Uuid
+  mongoServiceId      String?       // MongoDB Service._id for slot engine lookups
   policySnapshotJson  Json
   pricingSnapshotJson Json
   currentState        BookingStatus @default(pending_payment)

@@ -385,7 +385,7 @@ async function getMyBookingsSql(req, res) {
       freelancerId: b.freelancerId,
       client: clientUser ? { _id: clientUser._id, firstName: clientUser.firstName, lastName: clientUser.lastName, profilePicture: clientUser.profilePicture } : null,
       freelancer: freelancerUser ? { _id: freelancerUser._id, firstName: freelancerUser.firstName, lastName: freelancerUser.lastName, profilePicture: freelancerUser.profilePicture } : null,
-      serviceId: b.serviceOfferingId || null,
+      serviceId: b.mongoServiceId || b.serviceOfferingId || null,
       occurrences: b.occurrences.map((o) => ({
         id: o.id,
         occurrenceNo: o.occurrenceNo,
@@ -426,7 +426,7 @@ async function getBookingByIdSql(req, res) {
   const [clientUser, freelancerUser, serviceDoc] = await Promise.all([
     b.clientId ? User.findById(b.clientId).select(userFields).lean().catch(() => null) : null,
     b.freelancerId ? User.findById(b.freelancerId).select(userFields).lean().catch(() => null) : null,
-    b.serviceOfferingId ? Service.findById(b.serviceOfferingId).select('title serviceLocation').lean().catch(() => null) : null,
+    (b.mongoServiceId || b.serviceOfferingId) ? Service.findById(b.mongoServiceId || b.serviceOfferingId).select('title serviceLocation').lean().catch(() => null) : null,
   ]);
 
   const primaryOccurrence = b.occurrences?.[0] || null;
@@ -448,7 +448,7 @@ async function getBookingByIdSql(req, res) {
       freelancerId: b.freelancerId,
       client: clientUser ? { _id: clientUser._id, firstName: clientUser.firstName, lastName: clientUser.lastName, profilePicture: clientUser.profilePicture } : null,
       freelancer: freelancerUser ? { _id: freelancerUser._id, firstName: freelancerUser.firstName, lastName: freelancerUser.lastName, profilePicture: freelancerUser.profilePicture } : null,
-      serviceId: b.serviceOfferingId || null,
+      serviceId: b.mongoServiceId || b.serviceOfferingId || null,
       serviceLocation: serviceDoc?.serviceLocation || null,
       occurrences: b.occurrences.map((o) => ({
         id: o.id,

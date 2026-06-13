@@ -111,6 +111,7 @@ class BookingService {
         clientId: String(actorId),
         freelancerId,
         serviceOfferingId: isUuid(String(serviceId)) ? String(serviceId) : null,
+        mongoServiceId: String(serviceId || ''),
         policySnapshotJson: { tier: service.cancellationTier, snapshotVersion: 1 },
         pricingSnapshotJson: {
           amountCents: service.pricingBaseCents,
