@@ -158,8 +158,10 @@
 /* Slots */
 .bd-slots-section { display: flex; flex-direction: column; gap: var(--space-2); }
 .bd-slots-loading, .bd-slots-empty { font-size: var(--text-sm); color: var(--color-text-muted, #9ca3af); padding: var(--space-3) 0; }
-.bd-slots-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
-@media (min-width: 360px) { .bd-slots-grid { grid-template-columns: repeat(3, 1fr); } }
+.bd-slots-grouped { display: flex; flex-direction: column; gap: var(--space-3); }
+.bd-slot-group-label { font-size: var(--text-sm); font-weight: 600; margin: 0 0 var(--space-1); color: var(--color-text-darker, #374151); }
+.bd-slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+@media (min-width: 480px) { .bd-slots-grid { grid-template-columns: repeat(4, 1fr); } }
 .bd-slot {
   padding: var(--space-2); border: 2px solid var(--color-border, #e5e7eb);
   border-radius: 24px; font-size: var(--text-sm); font-weight: 600;

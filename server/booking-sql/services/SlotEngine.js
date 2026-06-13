@@ -200,7 +200,10 @@ class SlotEngine {
 
     // All settings come from SQL FreelancerAvailability — no Mongo fallback.
     const tz = availability.timezone || 'America/Los_Angeles';
-    const displayInterval = DISPLAY_INTERVAL; // 15-min start time intervals for users
+    // Use service's configured slot duration as the display interval
+    // A 60-min service shows hourly starts; a 15-min service shows 15-min starts
+    const serviceSlotDuration = availability.slotDuration || service.slotDuration || DISPLAY_INTERVAL;
+    const displayInterval = Math.max(serviceSlotDuration, DISPLAY_INTERVAL);
     const bufferTime = availability.bufferTime || 0;
     const bufferBeforeMinutes = availability.bufferBeforeMinutes ?? 0;
     const bufferAfterMinutes  = availability.bufferAfterMinutes  ?? 0;
@@ -320,6 +323,7 @@ class SlotEngine {
         dayOfWeek: requestedDate.weekday % 7,
         slots,
         totalSlots: allSlots.length,
+        slotDurationMinutes: serviceSlotDuration,
         source: windowsResult?.source || (usingServiceFallback ? 'service_fallback' : 'hybrid'),
       },
     };

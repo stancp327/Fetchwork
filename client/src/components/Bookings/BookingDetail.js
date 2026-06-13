@@ -139,18 +139,32 @@ function RescheduleModal({ booking, onClose, onSuccess }) {
                       : slotMsg || 'No availability on this date.'}
                 </p>
               ) : (
-                <div className="bd-slots-grid">
-                  {slots.map(s => (
-                    <button
-                      key={s.startTime}
-                      type="button"
-                      className={`bd-slot ${selected?.startTime === s.startTime ? 'selected' : ''}`}
-                      onClick={() => setSelected(s)}
-                    >
-                      {formatTime12(s.startTime)}
-                      {s.spotsLeft > 1 && <span className="bd-slot-spots"> ({s.spotsLeft} left)</span>}
-                    </button>
-                  ))}
+                <div className="bd-slots-grouped">
+                  {(() => {
+                    const groups = [
+                      { label: '☀️ Morning', slots: slots.filter(s => { const h = parseInt(s.startTime); return h < 12; }) },
+                      { label: '🌤️ Afternoon', slots: slots.filter(s => { const h = parseInt(s.startTime); return h >= 12 && h < 17; }) },
+                      { label: '🌙 Evening', slots: slots.filter(s => { const h = parseInt(s.startTime); return h >= 17; }) },
+                    ];
+                    return groups.filter(g => g.slots.length > 0).map(g => (
+                      <div key={g.label} className="bd-slot-group">
+                        <p className="bd-slot-group-label">{g.label}</p>
+                        <div className="bd-slots-grid">
+                          {g.slots.map(s => (
+                            <button
+                              key={s.startTime}
+                              type="button"
+                              className={`bd-slot ${selected?.startTime === s.startTime ? 'selected' : ''}`}
+                              onClick={() => setSelected(s)}
+                            >
+                              {formatTime12(s.startTime)}
+                              {s.spotsLeft > 1 && <span className="bd-slot-spots"> ({s.spotsLeft} left)</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
               )}
             </div>
