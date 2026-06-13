@@ -117,26 +117,45 @@ const Profile = () => {
           body: JSON.stringify(saveable),
         });
       }
-      updateUser(response.user);
-      // Immediately reflect saved profile (avatar + public preview fields)
+      // Update auth context (minimal — just avatar + name)
       if (response?.user) {
+        try {
+          updateUser({
+            firstName: response.user.firstName,
+            lastName: response.user.lastName,
+            profilePicture: response.user.profilePicture,
+            headline: response.user.headline,
+          });
+        } catch (e) {
+          console.warn('updateUser failed:', e);
+        }
+      }
+      // Reflect saved data in local form state
+      if (response?.user) {
+        const u = response.user;
         setData(prev => ({
           ...prev,
-          ...response.user,
-          // preserve nested object shapes we rely on
+          firstName: u.firstName || prev.firstName,
+          lastName: u.lastName || prev.lastName,
+          bio: u.bio || '',
+          headline: u.headline || prev.headline,
+          skills: Array.isArray(u.skills) ? u.skills : (prev.skills || []),
+          hourlyRate: u.hourlyRate ?? prev.hourlyRate ?? 0,
+          rateNegotiable: u.rateNegotiable ?? prev.rateNegotiable,
+          availabilityStatus: u.availabilityStatus || prev.availabilityStatus,
+          primaryCategory: u.primaryCategory || prev.primaryCategory,
           socialLinks: {
-            linkedin: response.user.socialLinks?.linkedin || '',
-            github: response.user.socialLinks?.github || '',
-            portfolio: response.user.socialLinks?.portfolio || '',
-            twitter: response.user.socialLinks?.twitter || '',
+            linkedin: u.socialLinks?.linkedin || '',
+            github: u.socialLinks?.github || '',
+            portfolio: u.socialLinks?.portfolio || '',
+            twitter: u.socialLinks?.twitter || '',
           },
-          location: response.user.location || prev.location,
-          portfolio: response.user.portfolio || prev.portfolio,
-          skills: response.user.skills || prev.skills,
-          languages: Array.isArray(response.user.languages)
-            ? response.user.languages.map(l => l.name || l).filter(Boolean).join(', ')
-            : (response.user.languages || prev.languages),
-          profilePicture: response.user.profilePicture || prev.profilePicture,
+          location: u.location || prev.location,
+          portfolio: Array.isArray(u.portfolio) ? u.portfolio : (prev.portfolio || []),
+          languages: Array.isArray(u.languages)
+            ? u.languages.map(l => l.name || l).filter(Boolean).join(', ')
+            : (typeof u.languages === 'string' ? u.languages : prev.languages),
+          profilePicture: u.profilePicture || prev.profilePicture,
         }));
       }
       setSuccess('Profile saved!');
