@@ -13,6 +13,7 @@ const Team = require('../models/Team');
 const { Message, ChatRoom } = require('../models/Message');
 const { logAdminAction, AdminAuditLog } = require('../utils/adminAudit');
 const stripeService = require('../services/stripeService');
+const { sendModeratorMessage } = require('../utils/systemMessage');
 
 router.get('/profile', authenticateAdmin, async (req, res) => {
   try {
@@ -250,6 +251,13 @@ router.put('/users/:userId/suspend', authenticateAdmin, requirePermission('user_
       reason, ip: req.ip,
     });
 
+    // Notify the user
+    sendModeratorMessage(
+      userId,
+      `⚠️ Your account has been suspended.\n\nReason: ${reason}\n\nIf you believe this was a mistake, please contact support.`,
+      { action: 'user_suspended' }
+    ).catch(() => {});
+
     res.json({
       message: 'User suspended successfully',
       user: user.getPublicProfile()
@@ -368,6 +376,13 @@ router.put('/jobs/:jobId/cancel', authenticateAdmin, requirePermission('job_mana
       ip: req.ip,
     });
 
+    // Notify the job owner via moderator message
+    sendModeratorMessage(
+      job.client.toString(),
+      `⚠️ Your job "${job.title}" has been cancelled by a moderator.\n\nReason: ${reason || 'Policy violation'}\n\nIf you believe this was a mistake, please contact support.`,
+      { action: 'job_cancelled', metadata: { jobId: job._id.toString(), jobTitle: job.title } }
+    ).catch(() => {});
+
     res.json({
       message: 'Job cancelled successfully',
       job
@@ -431,6 +446,13 @@ router.put('/services/:serviceId/suspend', authenticateAdmin, requirePermission(
       metadata: { serviceId: service._id, serviceTitle: service.title },
       ip: req.ip,
     });
+
+    // Notify the freelancer
+    sendModeratorMessage(
+      service.freelancer.toString(),
+      `⚠️ Your service "${service.title}" has been suspended by a moderator.\n\nReason: ${req.body.reason || 'Policy review'}\n\nYour service is hidden from public listings. Contact support if you have questions.`,
+      { action: 'service_suspended', metadata: { serviceId: service._id.toString(), serviceTitle: service.title } }
+    ).catch(() => {});
 
     res.json({ message: 'Service suspended', service: { _id: service._id, title: service.title } });
   } catch (error) {
@@ -520,6 +542,13 @@ router.delete('/jobs/:jobId', authenticateAdmin, requirePermission('job_manageme
       metadata: { jobId: job._id, jobTitle: job.title },
       ip: req.ip,
     });
+
+    // Notify the job owner
+    sendModeratorMessage(
+      job.client.toString(),
+      `🚫 Your job "${job.title}" has been removed by a moderator.\n\nReason: ${reason || 'Policy violation'}\n\nIf you believe this was a mistake, please contact support.`,
+      { action: 'job_removed', metadata: { jobId: job._id.toString(), jobTitle: job.title } }
+    ).catch(() => {});
 
     res.json({
       message: 'Job removed successfully',

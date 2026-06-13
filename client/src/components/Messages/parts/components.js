@@ -273,6 +273,7 @@ const isEmojiOnly = (text) => {
 // ── Message Bubble ──────────────────────────────────────────────
 const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) => {
   const meta = msg.metadata;
+  const isModeratorMsg      = meta?.type === 'admin_action' || msg.messageType === 'system' && meta?.action;
   const isProposal          = meta?.type === 'job_proposal';
   const isMilestoneRequest  = meta?.type === 'milestone_change_request';
   const isCallTimeline      = ['call_initiated', 'call_accepted', 'call_missed', 'call_ended'].includes(meta?.type);
@@ -280,7 +281,20 @@ const MsgBubble = ({ msg, isMine, deliveryStatus, userId, onProposalAction }) =>
     .replace(/\s*\[appt:[0-9a-fA-F-]{10,}\]/g, '')
     .replace(/\s*\[pr:[a-fA-F0-9]{24}\]/g, '')
     .trim();
-  const emojiOnly = !isProposal && !isMilestoneRequest && !isCallTimeline && isEmojiOnly(plainContent);
+  const emojiOnly = !isProposal && !isMilestoneRequest && !isCallTimeline && !isModeratorMsg && isEmojiOnly(plainContent);
+
+  // Moderator/admin action messages get special centered rendering
+  if (isModeratorMsg) {
+    return (
+      <div className="msg-row msg-row-moderator">
+        <div className="msg-moderator">
+          <div className="msg-moderator-badge">🛡️ Fetchwork Moderator</div>
+          <div className="msg-moderator-content">{plainContent}</div>
+          <div className="msg-moderator-time">{formatTime(msg.createdAt)}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`msg-row ${isMine ? 'mine' : 'theirs'}`}>

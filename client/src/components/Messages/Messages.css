@@ -1244,6 +1244,43 @@
   display: none !important;
 }
 
+/* -- Moderator messages ----------------------------------------- */
+.msg-row-moderator {
+  justify-content: center !important;
+  padding: var(--space-2) var(--space-4);
+}
+
+.msg-moderator {
+  max-width: 85%;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+}
+
+.msg-moderator-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-1);
+}
+
+.msg-moderator-content {
+  font-size: 0.9rem;
+  color: #78350f;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.msg-moderator-time {
+  font-size: 0.7rem;
+  color: #b45309;
+  margin-top: var(--space-1);
+}
+
 /* -- Message entrance animation --------------------------------- */
 @keyframes msg-in {
   from { opacity: 0; transform: translateY(6px); }
