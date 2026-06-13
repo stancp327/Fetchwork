@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiRequest } from '../../utils/api';
+import './AdminBookingsTab.css';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -41,10 +42,13 @@ function safeName(u) {
   return name || u.email || '—';
 }
 
+const TERMINAL_STATUSES = ['completed', 'cancelled_by_client', 'cancelled_by_freelancer', 'resolved'];
+
 const AdminBookingsTab = () => {
   const [bookings, setBookings] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +60,7 @@ const AdminBookingsTab = () => {
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
-      const params = { page, limit: 20 };
+      const params = { page, limit: perPage };
       if (status) params.status = status;
       const data = await apiRequest('/api/admin/bookings', { params });
       setBookings(data.bookings || []);
@@ -66,7 +70,7 @@ const AdminBookingsTab = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, status]);
+  }, [page, perPage, status]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -106,7 +110,7 @@ const AdminBookingsTab = () => {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / 20));
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   return (
     <div className="admin-tab-content">
@@ -115,27 +119,43 @@ const AdminBookingsTab = () => {
         <span className="admin-count-badge">{total} total</span>
       </div>
 
-      <div className="admin-filters" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
+      <div className="admin-filters abt-filters">
+        <select
+          className="abt-select"
+          value={status}
+          onChange={e => { setStatus(e.target.value); setPage(1); }}
+        >
           {STATUS_OPTIONS.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
-        <button onClick={fetchBookings} className="btn btn-ghost btn-sm">Refresh</button>
-        {selectedId && (
-          <button onClick={() => setSelectedId(null)} className="btn btn-ghost btn-sm">Close details</button>
-        )}
+        <div className="abt-filter-actions">
+          <select
+            className="abt-per-page"
+            value={perPage}
+            onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
+            aria-label="Results per page"
+          >
+            <option value={20}>20 / page</option>
+            <option value={50}>50 / page</option>
+            <option value={100}>100 / page</option>
+          </select>
+          <button onClick={fetchBookings} className="btn btn-ghost btn-sm">Refresh</button>
+          {selectedId && (
+            <button onClick={() => setSelectedId(null)} className="btn btn-ghost btn-sm">Close details</button>
+          )}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', minHeight: 420, marginTop: '0.75rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 520px', minWidth: 0 }}>
+      <div className="abt-layout">
+        <div className="abt-list-panel">
           {loading ? (
             <div className="admin-loading">Loading bookings…</div>
           ) : bookings.length === 0 ? (
             <div className="admin-empty">No bookings found.</div>
           ) : (
-            <div className="admin-table-wrap">
-              <table className="admin-table">
+            <div className="abt-table-wrap">
+              <table className="abt-table">
                 <thead>
                   <tr>
                     <th>Service</th>
@@ -147,100 +167,138 @@ const AdminBookingsTab = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.map(b => {
-                    const isSelected = selectedId === b._id;
-                    return (
-                      <tr key={b._id} style={{ background: isSelected ? '#eff6ff' : undefined }}>
-                        <td>{b.service?.title || '—'}</td>
-                        <td>{safeName(b.client)}</td>
-                        <td>{safeName(b.freelancer)}</td>
-                        <td>
-                          <span
-                            className="status-badge"
-                            style={{
-                              background: STATUS_COLORS[b.status] || '#6b7280',
-                              color: '#fff',
-                              padding: '2px 8px',
-                              borderRadius: 12,
-                              fontSize: '0.8rem',
-                              display: 'inline-block',
-                              maxWidth: 220,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                            title={b.status}
-                          >
-                            {formatStatus(b.status)}
-                          </span>
-                        </td>
-                        <td>{b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '—'}</td>
-                        <td style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {bookings.map(b => (
+                    <tr
+                      key={b._id}
+                      className={selectedId === b._id ? 'is-selected' : ''}
+                    >
+                      <td data-label="Service">{b.service?.title || '—'}</td>
+                      <td data-label="Client">{safeName(b.client)}</td>
+                      <td data-label="Freelancer">{safeName(b.freelancer)}</td>
+                      <td data-label="Status">
+                        <span
+                          className="abt-status-badge"
+                          data-status={b.status}
+                          title={b.status}
+                        >
+                          {formatStatus(b.status)}
+                        </span>
+                      </td>
+                      <td data-label="Date">
+                        {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="abt-actions-cell">
+                        <div className="abt-row-actions">
                           <button onClick={() => setSelectedId(b._id)} className="btn btn-ghost btn-sm">View</button>
-                          {!['completed', 'cancelled_by_client', 'cancelled_by_freelancer', 'resolved'].includes(b.status) && (
+                          {!TERMINAL_STATUSES.includes(b.status) && (
                             <button onClick={() => cancelBooking(b._id)} className="btn btn-danger btn-sm">Cancel</button>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
 
-          {total > 20 && (
-            <div className="admin-pagination" style={{ marginTop: '0.75rem' }}>
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn btn-ghost btn-sm">← Prev</button>
-              <span>Page {page} of {totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="btn btn-ghost btn-sm">Next →</button>
+          {total > perPage && (
+            <div className="admin-pagination">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="btn btn-ghost btn-sm"
+              >
+                ← Prev
+              </button>
+              <span className="abt-page-info">Page {page} of {totalPages}</span>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="btn btn-ghost btn-sm"
+              >
+                Next →
+              </button>
             </div>
           )}
         </div>
 
         {selectedId && (
-          <div style={{ flex: '0 1 420px', minWidth: 320, border: '1px solid #e5e7eb', borderRadius: 12, padding: '0.75rem', background: '#fff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+          <div className="abt-detail-panel">
+            <div className="abt-detail-header">
               <div>
-                <div style={{ fontWeight: 700 }}>Booking Details</div>
-                <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{selectedId}</div>
+                <div className="abt-detail-title">Booking Details</div>
+                <div className="abt-detail-id">{selectedId}</div>
               </div>
               <button onClick={() => setSelectedId(null)} className="btn btn-ghost btn-sm">✕</button>
             </div>
 
             {detailLoading ? (
-              <div style={{ color: '#6b7280' }}>Loading detail…</div>
+              <div className="admin-loading">Loading detail…</div>
             ) : detailError ? (
-              <div style={{ color: '#ef4444' }}>{detailError}</div>
+              <div className="abt-detail-error">{detailError}</div>
             ) : !selected ? (
-              <div style={{ color: '#6b7280' }}>No detail found.</div>
+              <div className="admin-empty">No detail found.</div>
             ) : (
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                <div><strong>Ref:</strong> {selected.bookingRef || '—'}</div>
-                <div><strong>Status:</strong> {formatStatus(selected.status)}</div>
-                <div><strong>Client:</strong> {safeName(selected.client)}</div>
-                <div><strong>Freelancer:</strong> {safeName(selected.freelancer)}</div>
-                <div><strong>Service:</strong> {selected.service?.title || selected.policySnapshotJson?.serviceTitle || '—'}</div>
+              <div className="abt-detail-body">
+                <dl className="abt-detail-fields">
+                  <div className="abt-field-row">
+                    <dt>Ref</dt>
+                    <dd>{selected.bookingRef || '—'}</dd>
+                  </div>
+                  <div className="abt-field-row">
+                    <dt>Status</dt>
+                    <dd>
+                      <span
+                        className="abt-status-badge"
+                        data-status={selected.status}
+                      >
+                        {formatStatus(selected.status)}
+                      </span>
+                    </dd>
+                  </div>
+                  <div className="abt-field-row">
+                    <dt>Client</dt>
+                    <dd>{safeName(selected.client)}</dd>
+                  </div>
+                  <div className="abt-field-row">
+                    <dt>Freelancer</dt>
+                    <dd>{safeName(selected.freelancer)}</dd>
+                  </div>
+                  <div className="abt-field-row">
+                    <dt>Service</dt>
+                    <dd>{selected.service?.title || selected.policySnapshotJson?.serviceTitle || '—'}</dd>
+                  </div>
+                </dl>
 
-                {Array.isArray(selected.occurrences) && (
-                  <div style={{ marginTop: '0.25rem' }}>
-                    <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Occurrences</div>
-                    <div style={{ display: 'grid', gap: '0.25rem' }}>
+                {Array.isArray(selected.occurrences) && selected.occurrences.length > 0 && (
+                  <div className="abt-occurrences">
+                    <div className="abt-occurrences-title">Occurrences</div>
+                    <div className="abt-occurrences-list">
                       {selected.occurrences.slice(0, 10).map(o => (
-                        <div key={o.id} style={{ fontSize: '0.85rem', padding: '0.4rem 0.5rem', border: '1px solid #e5e7eb', borderRadius: 10, background: '#f9fafb' }}>
-                          <div><strong>#{o.occurrenceNo}</strong> · {formatStatus(o.status)}</div>
-                          <div style={{ color: '#6b7280' }}>{o.localStartWallclock} → {o.localEndWallclock} ({o.timezone})</div>
+                        <div key={o.id} className="abt-occurrence-item">
+                          <div className="abt-occurrence-no">
+                            <strong>#{o.occurrenceNo}</strong> · {formatStatus(o.status)}
+                          </div>
+                          <div className="abt-occurrence-time">
+                            {o.localStartWallclock} → {o.localEndWallclock} ({o.timezone})
+                          </div>
                         </div>
                       ))}
                       {selected.occurrences.length > 10 && (
-                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Showing first 10 occurrences…</div>
+                        <div className="abt-occurrences-more">Showing first 10 occurrences…</div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {!['completed', 'cancelled_by_client', 'cancelled_by_freelancer', 'resolved'].includes(selected.status) && (
-                  <button onClick={() => cancelBooking(selected.id)} className="btn btn-danger btn-sm" style={{ marginTop: '0.5rem' }}>Cancel booking</button>
+                {!TERMINAL_STATUSES.includes(selected.status) && (
+                  <button
+                    onClick={() => cancelBooking(selected.id)}
+                    className="btn btn-danger btn-sm abt-cancel-btn"
+                  >
+                    Cancel booking
+                  </button>
                 )}
               </div>
             )}

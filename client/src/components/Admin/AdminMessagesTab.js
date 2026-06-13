@@ -50,11 +50,19 @@ const AdminMessagesTab = () => {
         method: 'DELETE',
         body: JSON.stringify({ reason }),
       });
-      setMessages(prev => prev.map(m => m._id === msgId ? { ...m, content: '[Removed by moderator]', moderatedAt: new Date() } : m));
+      setMessages(prev =>
+        prev.map(m =>
+          m._id === msgId
+            ? { ...m, content: '[Removed by moderator]', moderatedAt: new Date() }
+            : m
+        )
+      );
     } catch (err) {
       alert('Failed to remove message: ' + (err.message || 'Unknown error'));
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(total / 20));
 
   return (
     <div className="admin-tab-content">
@@ -64,8 +72,12 @@ const AdminMessagesTab = () => {
       </div>
 
       <div className="admin-filters admin-messages-filters">
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-          <input type="checkbox" checked={flagged} onChange={e => { setFlagged(e.target.checked); setPage(1); }} />
+        <label className="amt-filter-label">
+          <input
+            type="checkbox"
+            checked={flagged}
+            onChange={e => { setFlagged(e.target.checked); setPage(1); }}
+          />
           Flagged only
         </label>
         <button onClick={fetchConversations} className="btn btn-ghost btn-sm">Refresh</button>
@@ -84,18 +96,19 @@ const AdminMessagesTab = () => {
                 <div
                   key={c._id}
                   onClick={() => viewMessages(c._id)}
-                  className={`admin-convo-card ${selectedConvo === c._id ? 'is-selected' : ''}`}
+                  className={`admin-convo-card${selectedConvo === c._id ? ' is-selected' : ''}`}
                 >
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem' }}>
-                    {(c.participants || []).map(p => `${p.firstName} ${p.lastName}`).join(' ↔ ')}
+                  <div className="amt-convo-header">
+                    <div className="amt-convo-names">
+                      {(c.participants || []).map(p => `${p.firstName} ${p.lastName}`).join(' ↔ ')}
+                    </div>
+                    {c.flagged && <span className="amt-flagged-badge">Flagged</span>}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                    Updated: {new Date(c.updatedAt).toLocaleString()}
+                  <div className="amt-convo-time">
+                    {new Date(c.updatedAt).toLocaleString()}
                   </div>
-                  {c.flagged && (
-                    <span style={{ background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontSize: '0.7rem', marginTop: '0.25rem', display: 'inline-block' }}>
-                      Flagged
-                    </span>
+                  {c.lastMessage && (
+                    <div className="amt-convo-preview">{c.lastMessage}</div>
                   )}
                 </div>
               ))
@@ -103,42 +116,50 @@ const AdminMessagesTab = () => {
           </div>
         </div>
 
-        {/* Message view */}
+        {/* Message thread */}
         <div className="admin-messages-thread">
           <div className="admin-messages-thread-inner">
             {!selectedConvo ? (
-              <div style={{ textAlign: 'center', color: '#9ca3af', paddingTop: '2rem' }}>
+              <div className="amt-empty-thread">
                 Select a conversation to view messages
               </div>
             ) : msgLoading ? (
               <div className="admin-loading">Loading messages…</div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div className="amt-messages-list">
                 {messages.map(m => (
                   <div
                     key={m._id}
-                    className={`admin-message-card ${m.moderatedAt ? 'is-moderated' : ''}`}
+                    className={`admin-message-card${m.moderatedAt ? ' is-moderated' : ''}`}
                   >
                     <div className="admin-message-meta">
-                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                      <span className="amt-sender-name">
                         {m.sender?.firstName} {m.sender?.lastName}
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                      <span className="amt-message-time">
                         {new Date(m.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>{m.content}</div>
-                    {!m.moderatedAt && (
-                      <button onClick={() => removeMessage(m._id)} className="btn btn-danger btn-sm" style={{ fontSize: '0.75rem' }}>
-                        Remove
-                      </button>
-                    )}
-                    {m.moderatedAt && (
-                      <span style={{ fontSize: '0.75rem', color: '#ef4444', fontStyle: 'italic' }}>Moderated</span>
-                    )}
+                    <div className={`amt-message-content${m.moderatedAt ? ' is-moderated' : ''}`}>
+                      {m.content}
+                    </div>
+                    <div className="amt-message-footer">
+                      {m.moderatedAt ? (
+                        <span className="amt-moderated-label">Moderated</span>
+                      ) : (
+                        <button
+                          onClick={() => removeMessage(m._id)}
+                          className="amt-remove-btn"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
-                {messages.length === 0 && <div className="admin-empty">No messages in this conversation.</div>}
+                {messages.length === 0 && (
+                  <div className="admin-empty">No messages in this conversation.</div>
+                )}
               </div>
             )}
           </div>
@@ -146,10 +167,22 @@ const AdminMessagesTab = () => {
       </div>
 
       {total > 20 && (
-        <div className="admin-pagination" style={{ marginTop: '1rem' }}>
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn btn-ghost btn-sm">← Prev</button>
-          <span>Page {page} of {Math.ceil(total / 20)}</span>
-          <button disabled={page >= Math.ceil(total / 20)} onClick={() => setPage(p => p + 1)} className="btn btn-ghost btn-sm">Next →</button>
+        <div className="admin-pagination">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage(p => p - 1)}
+            className="btn btn-ghost btn-sm"
+          >
+            ← Prev
+          </button>
+          <span className="amt-page-info">Page {page} of {totalPages}</span>
+          <button
+            disabled={page >= totalPages}
+            onClick={() => setPage(p => p + 1)}
+            className="btn btn-ghost btn-sm"
+          >
+            Next →
+          </button>
         </div>
       )}
     </div>

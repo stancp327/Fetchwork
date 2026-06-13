@@ -1,8 +1,12 @@
+/* ── AdminMessagesTab.css — Mobile-first ─────────────────────── */
+
+/* ── Filter bar ── */
 .admin-messages-filters {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-sm);
   align-items: flex-start;
+  margin-bottom: var(--space-md);
 }
 
 @media (min-width: 480px) {
@@ -13,104 +17,259 @@
   }
 }
 
+.amt-filter-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  user-select: none;
+}
+
+/* ── Two-panel layout ── */
 .admin-messages-layout {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 420px;
+  gap: var(--space-md);
+  min-height: 480px;
 }
 
 @media (min-width: 768px) {
   .admin-messages-layout {
     flex-direction: row;
-    gap: 16px;
+    gap: var(--space-lg);
   }
 }
 
+/* ── Sidebar (conversation list) ── */
 .admin-messages-sidebar {
   width: 100%;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-primary);
   overflow: hidden;
 }
 
 @media (min-width: 768px) {
   .admin-messages-sidebar {
-    flex: 0 0 320px;
+    flex: 0 0 300px;
   }
 }
 
 .admin-messages-sidebar-inner {
-  max-height: 420px;
+  max-height: 380px;
   overflow-y: auto;
-  padding: 12px;
+  padding: var(--space-sm);
 }
 
 @media (min-width: 768px) {
   .admin-messages-sidebar-inner {
     max-height: 600px;
+    padding: var(--space-md);
   }
 }
 
+/* ── Conversation card ── */
+.admin-convo-card {
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  margin-bottom: var(--space-xs);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.admin-convo-card:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-medium);
+}
+
+.admin-convo-card.is-selected {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.amt-convo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: 3px;
+}
+
+.amt-convo-names {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-dark);
+  line-height: var(--line-height-tight);
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.amt-flagged-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-danger);
+  color: #fff;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.amt-convo-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.amt-convo-preview {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 3px;
+}
+
+/* ── Thread panel ── */
 .admin-messages-thread {
-  width: 100%;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-primary);
   overflow: hidden;
 }
 
 .admin-messages-thread-inner {
   max-height: 520px;
   overflow-y: auto;
-  padding: 12px;
+  padding: var(--space-md);
 }
 
 @media (min-width: 768px) {
   .admin-messages-thread-inner {
     max-height: 600px;
-    padding: 16px;
+    padding: var(--space-lg);
   }
 }
 
-.admin-convo-card {
-  padding: 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  margin-bottom: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+/* ── Empty thread placeholder ── */
+.amt-empty-thread {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
-.admin-convo-card.is-selected {
-  background: #eff6ff;
-  border-color: #3b82f6;
+/* ── Messages list ── */
+.amt-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
+/* ── Individual message card ── */
 .admin-message-card {
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  padding: var(--space-md);
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  transition: background var(--transition-fast);
 }
 
 .admin-message-card.is-moderated {
-  background: #fef2f2;
+  background: var(--color-danger-subtle);
+  border-color: var(--color-danger-border);
 }
 
+/* ── Message meta: sender left, time right ── */
 .admin-message-meta {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
-  margin-bottom: 6px;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+  flex-wrap: wrap;
 }
 
-@media (min-width: 480px) {
-  .admin-message-meta {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
+.amt-sender-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-dark);
+}
+
+.amt-message-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ── Message content ── */
+.amt-message-content {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: var(--line-height-relaxed);
+  word-break: break-word;
+  margin-bottom: var(--space-sm);
+}
+
+.amt-message-content.is-moderated {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+/* ── Message footer ── */
+.amt-message-footer {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+/* Subtle inline remove button — not a big red block */
+.amt-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--space-sm);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast),
+              background var(--transition-fast);
+  min-height: 28px;
+}
+
+.amt-remove-btn:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: var(--color-danger-subtle);
+}
+
+/* Moderated label */
+.amt-moderated-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  font-style: italic;
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── Pagination ── */
+.amt-page-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }

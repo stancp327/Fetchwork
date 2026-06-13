@@ -1395,7 +1395,7 @@ router.post('/users/:userId/billing/grant', authenticateAdmin, requirePermission
         plan:          plan._id,
         status:        'active',
         customPrice:   customPrice ?? null,
-        grantedBy:     req.user.userId,
+        grantedBy:     req.admin._id,
         grantReason:   reason,
         grantExpiresAt: expiresAt ? new Date(expiresAt) : null,
         source:        'admin_grant',
@@ -1409,7 +1409,7 @@ router.post('/users/:userId/billing/grant', authenticateAdmin, requirePermission
       action:  'plan_granted',
       before,
       after:   { planSlug: plan.slug, customPrice, expiresAt },
-      adminId: req.user.userId,
+      adminId: req.admin._id,
       note:    reason,
     });
 
@@ -1441,7 +1441,7 @@ router.post('/users/:userId/billing/fee-override', authenticateAdmin, requirePer
       action:  'fee_override_set',
       before,
       after:   feeRateOverrides,
-      adminId: req.user.userId,
+      adminId: req.admin._id,
       note:    reason,
     });
 
@@ -1471,7 +1471,7 @@ router.post('/users/:userId/billing/fee-override/remove', authenticateAdmin, req
       action:  'fee_override_removed',
       before,
       after:   null,
-      adminId: req.user.userId,
+      adminId: req.admin._id,
       note:    reason || 'Fee override removed by admin',
     });
 
@@ -1494,7 +1494,7 @@ router.post('/users/:userId/billing/credit', authenticateAdmin, requirePermissio
       user:      userId,
       amount,
       reason,
-      appliedBy: req.user.userId,
+      appliedBy: req.admin._id,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
     });
 
@@ -1503,7 +1503,7 @@ router.post('/users/:userId/billing/credit', authenticateAdmin, requirePermissio
       action:  'credit_added',
       before:  null,
       after:   { amount, reason, expiresAt },
-      adminId: req.user.userId,
+      adminId: req.admin._id,
       note:    reason,
     });
 
@@ -1728,17 +1728,17 @@ router.post('/users/:userId/features', authenticateAdmin, requirePermission('use
       userId:    req.params.userId,
       feature,
       enabled:   enabled !== false,
-      grantedBy: req.user._id || req.user.id,
+      grantedBy: req.admin._id,
       reason,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
     });
 
     const User = require('../models/User');
     const user = await User.findById(req.params.userId).select('firstName lastName email').lean();
-    console.log(`[admin] Feature grant: ${feature}=${enabled} for user ${user?.email} by admin ${req.user.email}`);
+    console.log(`[admin] Feature grant: ${feature}=${enabled} for user ${user?.email} by admin ${req.admin.email}`);
 
     await logAdminAction({
-      adminId: req.user._id || req.user.id, adminEmail: req.user.email,
+      adminId: req.admin._id, adminEmail: req.admin.email,
       targetId: req.params.userId, action: enabled ? 'feature.grant' : 'feature.revoke',
       reason,
       newValue: { feature, enabled },
@@ -1758,7 +1758,7 @@ router.delete('/users/:userId/features/:feature', authenticateAdmin, requirePerm
     await removeUserFeature(req.params.userId, req.params.feature);
 
     await logAdminAction({
-      adminId: req.user._id || req.user.id, adminEmail: req.user.email,
+      adminId: req.admin._id, adminEmail: req.admin.email,
       targetId: req.params.userId, action: 'feature.remove',
       metadata: { feature: req.params.feature },
       ip: req.ip,
@@ -1800,7 +1800,7 @@ router.post('/feature-groups', authenticateAdmin, requirePermission('user_manage
       description,
       features,
       members,
-      createdBy:  req.user._id || req.user.id,
+      createdBy:  req.admin._id,
       expiresAt:  expiresAt ? new Date(expiresAt) : null,
     });
     res.status(201).json({ message: 'Feature group created', group });
@@ -2499,7 +2499,7 @@ router.post('/wallets/:userId/adjust', authenticateAdmin, requirePermission('pay
         user:      userId,
         amount:    parsedAmount,
         reason:    `Admin adjustment: ${reason}`,
-        appliedBy: req.user.userId,
+        appliedBy: req.admin._id,
       });
 
       await logBillingAction({
@@ -2507,7 +2507,7 @@ router.post('/wallets/:userId/adjust', authenticateAdmin, requirePermission('pay
         action:  'wallet_admin_credit',
         before:  null,
         after:   { amount: parsedAmount, reason },
-        adminId: req.user.userId,
+        adminId: req.admin._id,
         note:    `Admin added $${parsedAmount} — ${reason}`,
       });
 
@@ -2546,7 +2546,7 @@ router.post('/wallets/:userId/adjust', authenticateAdmin, requirePermission('pay
         action:  'wallet_admin_debit',
         before:  { balance },
         after:   { deducted: deductAmt, reason },
-        adminId: req.user.userId,
+        adminId: req.admin._id,
         note:    `Admin deducted $${deductAmt} — ${reason}`,
       });
 
@@ -2614,7 +2614,7 @@ router.put('/wallets/:userId/freeze', authenticateAdmin, requirePermission('paym
       action:  freeze ? 'wallet_frozen' : 'wallet_unfrozen',
       before:  { walletFrozen: !freeze },
       after:   { walletFrozen: !!freeze, reason },
-      adminId: req.user.userId,
+      adminId: req.admin._id,
       note:    freeze ? `Wallet frozen — ${reason}` : 'Wallet unfrozen by admin',
     });
 
