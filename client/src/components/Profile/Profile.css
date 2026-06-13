@@ -441,6 +441,35 @@
 .sticky-error { color: var(--color-danger); font-size: 0.8rem; }
 .sticky-success { color: var(--color-success-dark); font-size: 0.8rem; }
 
+/* Toast notification for post-save feedback */
+.profile-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-md, 8px);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  z-index: 1000;
+  animation: toast-in 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.profile-toast-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+.profile-toast-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* â”€â”€ Summary Badges (sidebar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .summary-badges {
   display: flex;

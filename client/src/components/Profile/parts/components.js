@@ -417,13 +417,13 @@ const TabRates = ({ data, onChange }) => (
       <label>Minimum Hourly Rate ($)</label>
       <input
         type="number"
-        value={data.hourlyRate}
-        onChange={e => onChange('hourlyRate', parseFloat(e.target.value) || 0)}
+        value={data.hourlyRate || ''}
+        onChange={e => onChange('hourlyRate', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
         min="0" step="0.5" placeholder="e.g. 25"
       />
       <p className="field-hint">
         This is your <strong>floor rate</strong> — the minimum you'll accept per hour.
-        Individual services can be priced higher. Leave at 0 if you prefer project-based pricing only.
+        Individual services can be priced higher. Leave empty if you prefer project-based pricing only.
       </p>
     </div>
     <div className="prof-field">

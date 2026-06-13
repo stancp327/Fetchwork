@@ -144,7 +144,8 @@ const Profile = () => {
       setSelectedFile(null);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to save');
+      console.error('Profile save error:', err);
+      setError(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
     }
@@ -302,18 +303,24 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Feedback toast (visible even after save hides the sticky bar) */}
+      {!hasChanges && (success || error) && (
+        <div className={`profile-toast ${error ? 'profile-toast-error' : 'profile-toast-success'}`}>
+          {success || error}
+        </div>
+      )}
+
       {/* Sticky Actions */}
       {hasChanges && (
         <div className="profile-sticky-actions">
           <span className="unsaved-indicator">● Unsaved changes</span>
           <div className="sticky-btns">
-            <button className="btn-cancel" onClick={fetchProfile}>Cancel</button>
+            <button className="btn-cancel" onClick={() => { fetchProfile(); setHasChanges(false); }}>Cancel</button>
             <button className="btn-save" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
           {error && <span className="sticky-error">{error}</span>}
-          {success && <span className="sticky-success">{success}</span>}
         </div>
       )}
     </div>
