@@ -2628,24 +2628,259 @@ router.put('/wallets/:userId/freeze', authenticateAdmin, requirePermission('paym
   }
 });
 
-// Teams summary for Admin Dashboard
+// ═══════════════════════════════════════════════════════════════
+// ADMIN TEAMS ROUTES
+// ═══════════════════════════════════════════════════════════════
+const mongoose        = require('mongoose');
+const TeamTask        = require('../models/TeamTask');
+const TeamPayout      = require('../models/TeamPayout');
+
+// GET /admin/teams — paginated list with search + filter
 router.get('/teams', authenticateAdmin, async (req, res) => {
   try {
-    const teams = await Team.find({ isActive: true })
-      .populate('owner', 'firstName lastName email')
-      .select('name type owner members createdAt')
-      .sort({ createdAt: -1 })
-      .limit(200)
-      .lean();
+    const { search, filter, page = 1, perPage = 25 } = req.query;
+    const limit = Math.min(Number(perPage) || 25, 100);
+    const skip  = (Math.max(Number(page), 1) - 1) * limit;
+
+    const query = {};
+    if (search) query.name = { $regex: escapeRegex(search), $options: 'i' };
+    if (filter === 'active')    query.isActive = true;
+    else if (filter === 'suspended') query.isActive = false;
+    else if (filter === 'flagged')   query.flagged = true;
+
+    const [teams, total] = await Promise.all([
+      Team.find(query)
+        .populate('owner', 'firstName lastName email')
+        .select('name type owner members createdAt isActive flagged flagReason suspendedAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Team.countDocuments(query),
+    ]);
 
     const normalized = teams.map((t) => ({
       ...t,
       activeMembers: (t.members || []).filter((m) => m.status === 'active').length,
     }));
 
-    res.json({ teams: normalized });
+    res.json({ teams: normalized, total, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load teams' });
+  }
+});
+
+// GET /admin/teams/:teamId — full team detail
+router.get('/teams/:teamId', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const [team, taskCount, payoutAgg, creditAgg] = await Promise.all([
+      Team.findById(teamId)
+        .populate('owner', 'firstName lastName email profilePicture')
+        .populate('members.user', 'firstName lastName email profilePicture')
+        .lean(),
+      TeamTask.countDocuments({ team: teamId }),
+      TeamPayout.aggregate([
+        { $match: { team: new mongoose.Types.ObjectId(teamId) } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      BillingCredit.aggregate([
+        { $match: { team: new mongoose.Types.ObjectId(teamId), status: 'active' } },
+        { $group: { _id: null, balance: { $sum: '$remaining' } } },
+      ]),
+    ]);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    res.json({
+      team,
+      taskCount,
+      payoutTotal:   payoutAgg[0]?.total   ?? 0,
+      walletBalance: creditAgg[0]?.balance ?? 0,
+    });
+  } catch (err) {
+    console.error('Admin team detail error:', err);
+    res.status(500).json({ error: 'Failed to load team' });
+  }
+});
+
+// PUT /admin/teams/:teamId/suspend
+router.put('/teams/:teamId/suspend', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { reason = '' } = req.body;
+    const team = await Team.findById(teamId).populate('owner', 'firstName lastName email');
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    team.isActive     = false;
+    team.suspendedAt  = new Date();
+    team.suspendedBy  = req.admin._id;
+    team.suspendReason = reason;
+    await team.save();
+    sendModeratorMessage(
+      team.owner._id,
+      `Your team "${team.name}" has been suspended.${reason ? ` Reason: ${reason}` : ''}`,
+    ).catch(() => {});
+    await logAdminAction({ adminId: req.admin._id, adminEmail: req.admin.email, targetId: teamId, action: 'team.suspend', reason, ip: req.ip });
+    res.json({ message: 'Team suspended' });
+  } catch (err) {
+    console.error('Admin team suspend error:', err);
+    res.status(500).json({ error: 'Failed to suspend team' });
+  }
+});
+
+// PUT /admin/teams/:teamId/reinstate
+router.put('/teams/:teamId/reinstate', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const team = await Team.findById(teamId).populate('owner', 'firstName lastName email');
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    team.isActive      = true;
+    team.suspendedAt   = null;
+    team.suspendedBy   = null;
+    team.suspendReason = '';
+    await team.save();
+    sendModeratorMessage(team.owner._id, `Your team "${team.name}" has been reinstated.`).catch(() => {});
+    await logAdminAction({ adminId: req.admin._id, adminEmail: req.admin.email, targetId: teamId, action: 'team.reinstate', ip: req.ip });
+    res.json({ message: 'Team reinstated' });
+  } catch (err) {
+    console.error('Admin team reinstate error:', err);
+    res.status(500).json({ error: 'Failed to reinstate team' });
+  }
+});
+
+// PUT /admin/teams/:teamId/transfer — { newOwnerId }
+router.put('/teams/:teamId/transfer', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { newOwnerId } = req.body;
+    if (!newOwnerId) return res.status(400).json({ error: 'newOwnerId required' });
+    const team = await Team.findById(teamId)
+      .populate('owner', 'firstName lastName email')
+      .populate('members.user', 'firstName lastName email');
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    const newOwnerMember = team.members.find(
+      (m) => m.user?._id?.toString() === newOwnerId && m.status === 'active',
+    );
+    if (!newOwnerMember) return res.status(400).json({ error: 'New owner must be an active team member' });
+    const oldOwner = team.owner;
+    const oldOwnerMember = team.members.find(
+      (m) => m.user?._id?.toString() === oldOwner._id.toString() && m.status === 'active',
+    );
+    if (oldOwnerMember) oldOwnerMember.role = 'admin';
+    newOwnerMember.role = 'owner';
+    team.owner = newOwnerId;
+    await team.save();
+    sendModeratorMessage(
+      newOwnerMember.user._id,
+      `You have been made the owner of team "${team.name}".`,
+    ).catch(() => {});
+    sendModeratorMessage(
+      oldOwner._id,
+      `Ownership of team "${team.name}" has been transferred to ${newOwnerMember.user.firstName} ${newOwnerMember.user.lastName}.`,
+    ).catch(() => {});
+    await logAdminAction({ adminId: req.admin._id, adminEmail: req.admin.email, targetId: teamId, action: 'team.transfer', reason: `Transferred to ${newOwnerId}`, ip: req.ip });
+    res.json({ message: 'Ownership transferred' });
+  } catch (err) {
+    console.error('Admin team transfer error:', err);
+    res.status(500).json({ error: 'Failed to transfer ownership' });
+  }
+});
+
+// DELETE /admin/teams/:teamId/members/:userId
+router.delete('/teams/:teamId/members/:userId', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId, userId } = req.params;
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    const member = team.members.find((m) => m.user?.toString() === userId && m.status !== 'removed');
+    if (!member) return res.status(404).json({ error: 'Member not found' });
+    if (member.role === 'owner') return res.status(400).json({ error: 'Cannot remove team owner' });
+    member.status = 'removed';
+    await team.save();
+    sendModeratorMessage(userId, `You have been removed from team "${team.name}".`).catch(() => {});
+    await logAdminAction({ adminId: req.admin._id, adminEmail: req.admin.email, targetId: teamId, action: 'team.remove_member', reason: `Removed user ${userId}`, ip: req.ip });
+    res.json({ message: 'Member removed' });
+  } catch (err) {
+    console.error('Admin team remove member error:', err);
+    res.status(500).json({ error: 'Failed to remove member' });
+  }
+});
+
+// PUT /admin/teams/:teamId/flag — toggle flagged + flagReason
+router.put('/teams/:teamId/flag', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { flagReason = '' } = req.body;
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    team.flagged    = !team.flagged;
+    team.flagReason = team.flagged ? flagReason : '';
+    await team.save();
+    await logAdminAction({ adminId: req.admin._id, adminEmail: req.admin.email, targetId: teamId, action: team.flagged ? 'team.flag' : 'team.unflag', reason: flagReason, ip: req.ip });
+    res.json({ flagged: team.flagged, flagReason: team.flagReason });
+  } catch (err) {
+    console.error('Admin team flag error:', err);
+    res.status(500).json({ error: 'Failed to toggle flag' });
+  }
+});
+
+// DELETE /admin/teams/:teamId — hard delete, requires { confirm: true }
+router.delete('/teams/:teamId', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    if (!req.body?.confirm) return res.status(400).json({ error: 'confirm: true required in body' });
+    const team = await Team.findByIdAndDelete(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    await logAdminAction({ adminId: req.admin._id, adminEmail: req.admin.email, targetId: teamId, action: 'team.delete', reason: `Deleted "${team.name}"`, ip: req.ip });
+    res.json({ message: 'Team deleted' });
+  } catch (err) {
+    console.error('Admin team delete error:', err);
+    res.status(500).json({ error: 'Failed to delete team' });
+  }
+});
+
+// GET /admin/teams/:teamId/tasks — paginated
+router.get('/teams/:teamId/tasks', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    const lim  = Math.min(Number(limit) || 20, 100);
+    const skip = (Math.max(Number(page), 1) - 1) * lim;
+    const [tasks, total] = await Promise.all([
+      TeamTask.find({ team: teamId })
+        .populate('assignedTo', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(lim)
+        .lean(),
+      TeamTask.countDocuments({ team: teamId }),
+    ]);
+    res.json({ tasks, total, page: Number(page), pages: Math.ceil(total / lim) });
+  } catch (err) {
+    console.error('Admin team tasks error:', err);
+    res.status(500).json({ error: 'Failed to load tasks' });
+  }
+});
+
+// GET /admin/teams/:teamId/payouts — paginated
+router.get('/teams/:teamId/payouts', authenticateAdmin, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    const lim  = Math.min(Number(limit) || 20, 100);
+    const skip = (Math.max(Number(page), 1) - 1) * lim;
+    const [payouts, total] = await Promise.all([
+      TeamPayout.find({ team: teamId })
+        .populate('recipientUser', 'firstName lastName')
+        .populate('recipientTeam', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(lim)
+        .lean(),
+      TeamPayout.countDocuments({ team: teamId }),
+    ]);
+    res.json({ payouts, total, page: Number(page), pages: Math.ceil(total / lim) });
+  } catch (err) {
+    console.error('Admin team payouts error:', err);
+    res.status(500).json({ error: 'Failed to load payouts' });
   }
 });
 

@@ -129,6 +129,12 @@ const teamSchema = new mongoose.Schema({
   joinCodeEnabled:   { type: Boolean, default: false },
   joinCodeExpiresAt: { type: Date },
 
+  flagged:       { type: Boolean, default: false },
+  flagReason:    { type: String, default: '' },
+  suspendedAt:   { type: Date, default: null },
+  suspendedBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  suspendReason: { type: String, default: '' },
+
   isActive:    { type: Boolean, default: true },
 }, { timestamps: true });
 
