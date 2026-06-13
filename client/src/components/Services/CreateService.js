@@ -11,6 +11,7 @@ import Stepper from './CreateService/Stepper';
 import LivePreview from './CreateService/LivePreview';
 import StepDetails from './CreateService/StepDetails';
 import StepPricing from './CreateService/StepPricing';
+import StepBooking from './CreateService/StepBooking';
 import StepMedia from './CreateService/StepMedia';
 import StepRequirements from './CreateService/StepRequirements';
 import StepReview from './CreateService/StepReview';
@@ -78,6 +79,13 @@ const CreateService = () => {
     capacityMaxDay: null,
     capacityMaxWeek: null,
     capacityMaxConcurrent: null,
+    // booking
+    bookingEnabled: false,
+    bookingSlotDuration: 60,
+    bookingMaxPerSlot: 1,
+    bookingBuffer: 0,
+    bookingMinNotice: 1,
+    bookingMaxAdvance: 60,
   });
 
   const update = (key, value) => {
@@ -130,11 +138,13 @@ const CreateService = () => {
                  data.basicPrice && parseFloat(data.basicPrice) >= 5 &&
                  data.basicDeliveryTime && parseInt(data.basicDeliveryTime) >= 1;
         }
-      case 2: // Media - no required fields
+      case 2: // Booking - no required fields
         return true;
-      case 3: // Requirements - no required fields
+      case 3: // Media - no required fields
         return true;
-      case 4: // Review - always valid for Continue
+      case 4: // Requirements - no required fields
+        return true;
+      case 5: // Review - always valid for Continue
         return true;
       default:
         return false;
@@ -236,6 +246,18 @@ const CreateService = () => {
 
       serviceData.serviceLocation = data.serviceLocation || 'remote';
 
+      // Booking settings
+      if (data.bookingEnabled) {
+        serviceData.availability = {
+          enabled: true,
+          slotDuration: data.bookingSlotDuration || 60,
+          maxPerSlot: data.bookingMaxPerSlot || 1,
+          bufferTime: data.bookingBuffer || 0,
+          maxAdvanceDays: data.bookingMaxAdvance || 60,
+        };
+        serviceData.bookingMinNotice = data.bookingMinNotice ?? 1;
+      }
+
       // Include uploaded gallery images
       if (data.gallery && data.gallery.length > 0) {
         serviceData.gallery = data.gallery.map(({ url, caption, type }) => ({ url, caption, type }));
@@ -259,6 +281,7 @@ const CreateService = () => {
   const stepContent = [
     <StepDetails data={data} onChange={update} errors={errors} hasFeature={hasFeature} />,
     <StepPricing data={data} onChange={update} errors={errors} hasFeature={hasFeature} />,
+    <StepBooking data={data} onChange={update} />,
     <StepMedia data={data} onChange={update} />,
     <StepRequirements data={data} onChange={update} />,
     <StepReview data={data} />,

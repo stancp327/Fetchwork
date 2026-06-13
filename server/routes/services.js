@@ -248,8 +248,70 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       ...(travelFee?.enabled ? { travelFee } : {}),
       ...(capacity?.enabled ? { capacity } : {}),
     });
+
+    // Service location mode
+    const { serviceLocation } = req.body;
+    if (serviceLocation) {
+      if (typeof serviceLocation === 'string') {
+        service.serviceLocation = { mode: serviceLocation };
+      } else if (typeof serviceLocation === 'object') {
+        service.serviceLocation = serviceLocation;
+      }
+    }
+
+    // Booking availability settings (per-service)
+    const { availability: avail, bookingMinNotice } = req.body;
+    if (avail?.enabled) {
+      service.availability = {
+        enabled: true,
+        slotDuration: avail.slotDuration || 60,
+        maxPerSlot: avail.maxPerSlot || 1,
+        bufferTime: avail.bufferTime || 0,
+        maxAdvanceDays: avail.maxAdvanceDays || 60,
+      };
+    }
     
     await service.save();
+
+    // Create Prisma ServiceAvailabilityOverride if booking enabled
+    if (avail?.enabled) {
+      try {
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        const FreelancerAvailability = await prisma.freelancerAvailability.findUnique({
+          where: { freelancerId: userId.toString() },
+        });
+        if (FreelancerAvailability) {
+          await prisma.serviceAvailabilityOverride.upsert({
+            where: {
+              freelancerAvailId_serviceId: {
+                freelancerAvailId: FreelancerAvailability.id,
+                serviceId: service._id.toString(),
+              },
+            },
+            create: {
+              freelancerAvailId: FreelancerAvailability.id,
+              serviceId: service._id.toString(),
+              slotDuration: avail.slotDuration || 60,
+              capacity: avail.maxPerSlot || 1,
+              bufferAfterMinutes: avail.bufferTime || 0,
+              minNoticeHours: bookingMinNotice ?? 1,
+              maxAdvanceBookingDays: avail.maxAdvanceDays || 60,
+            },
+            update: {
+              slotDuration: avail.slotDuration || 60,
+              capacity: avail.maxPerSlot || 1,
+              bufferAfterMinutes: avail.bufferTime || 0,
+              minNoticeHours: bookingMinNotice ?? 1,
+              maxAdvanceBookingDays: avail.maxAdvanceDays || 60,
+            },
+          });
+        }
+        await prisma.$disconnect();
+      } catch (prismaErr) {
+        console.error('ServiceAvailabilityOverride creation error (non-fatal):', prismaErr.message);
+      }
+    }
     
     const populatedService = await Service.findById(service._id)
       .populate('freelancer', 'firstName lastName profilePicture rating totalJobs');

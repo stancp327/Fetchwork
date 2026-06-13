@@ -1,12 +1,15 @@
 
-export const STEPS = ['Details', 'Pricing', 'Media', 'Requirements', 'Review'];
+export const STEPS = ['Details', 'Pricing', 'Booking', 'Media', 'Requirements', 'Review'];
 
 export const SESSION_DURATIONS = [
+  { value: 15,  label: '15 minutes' },
   { value: 30,  label: '30 minutes' },
   { value: 45,  label: '45 minutes' },
   { value: 60,  label: '1 hour' },
   { value: 90,  label: '1.5 hours' },
   { value: 120, label: '2 hours' },
+  { value: 180, label: '3 hours' },
+  { value: 240, label: '4 hours' },
 ];
 
 export const BILLING_CYCLES = [
