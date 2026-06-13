@@ -38,6 +38,14 @@ const PlanCard = ({ plan, onEdit }) => (
         <span>Local client fee (under $50)</span>
         <strong>${plan.feeRates?.localClient?.upTo50}</strong>
       </div>
+      <div className="abt-fee-row">
+        <span>Active job posts</span>
+        <strong>{plan.limits?.activeJobs ?? '∞'}</strong>
+      </div>
+      <div className="abt-fee-row">
+        <span>Active services</span>
+        <strong>{plan.limits?.activeServices ?? '∞'}</strong>
+      </div>
     </div>
     <button className="abt-edit-btn" onClick={() => onEdit(plan)}>Edit Plan</button>
   </div>
