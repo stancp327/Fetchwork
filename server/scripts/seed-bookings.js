@@ -99,11 +99,11 @@ async function main() {
     const svc = adminSvcs[0] || services[0];
     const others = admins.filter(a => a._id.toString() !== adminId);
 
-    // 6 bookings as freelancer: 3 upcoming, 3 past
+    // 6 bookings as freelancer: 5 upcoming, 1 past
     for (let i = 0; i < 6; i++) {
-      const dayOffset = i < 3 ? (i + 1) : -(i - 2);
+      const dayOffset = i < 5 ? (i + 1) : -1;
       const startHour = 9 + (i % 7);
-      const status = i < 3 ? (i === 0 ? 'confirmed' : 'held') : 'completed';
+      const status = i < 5 ? (i % 2 === 0 ? 'confirmed' : 'held') : 'completed';
       const client = others[i % Math.max(others.length, 1)] || admin;
 
       const startDt = now.plus({ days: dayOffset }).set({ hour: startHour, minute: 0, second: 0, millisecond: 0 });
