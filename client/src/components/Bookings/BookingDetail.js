@@ -97,7 +97,13 @@ function RescheduleModal({ booking, onClose, onSuccess }) {
       onSuccess('Booking rescheduled ✅');
     } catch (err) {
       console.error('Reschedule error:', err);
-      setError(err.message || 'Reschedule failed — check console for details');
+      const msg = err.message || 'Reschedule failed';
+      setError(msg);
+      // Scroll error into view
+      setTimeout(() => {
+        const errEl = document.querySelector('.bd-modal-error');
+        if (errEl) errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
     } finally {
       setSub(false);
     }
