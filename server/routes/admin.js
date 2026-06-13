@@ -1527,7 +1527,7 @@ router.get('/billing/promos', authenticateAdmin, requirePermission('payment_mana
 // Create a promo rule (cohort fee override, seasonal discount, retention offer)
 router.post('/billing/promo', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
   try {
-    const promo = await PromoRule.create({ ...req.body, createdBy: req.user.userId });
+    const promo = await PromoRule.create({ ...req.body, createdBy: req.admin._id });
     res.status(201).json({ promo });
   } catch (err) {
     res.status(400).json({ error: err.message || 'Failed to create promo rule' });
