@@ -177,6 +177,22 @@ const MyBookings = () => {
   const handleCancel = async (b) => {
     const reason = window.prompt('Cancellation reason (optional):');
     if (reason === null) return;
+
+    // Appointment-type bookings (from messages) use a different endpoint
+    if (b._fromMessages || b._appt) {
+      setActionLoading(`${bid(b)}_cancel`);
+      try {
+        await apiRequest(`/api/appointments/${bid(b)}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+        flash('Booking cancelled ✅');
+        load();
+      } catch (err) {
+        flash('Failed: ' + err.message, false);
+      } finally {
+        setActionLoading('');
+      }
+      return;
+    }
+
     await doAction(bid(b), 'cancel', { reason });
   };
 
