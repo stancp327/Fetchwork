@@ -117,6 +117,115 @@
   font-size: var(--font-size-sm);
 }
 
+/* Refund button */
+.action-btn.refund { background: #dc2626; color: white; }
+
+/* Escrow cell */
+.escrow-cell { font-weight: 600; color: #059669; }
+
+/* Hold indicator */
+.hold-indicator { margin-left: 4px; font-size: 0.75rem; }
+
+/* ── Resolve Modal ───────────────────────────────────────────── */
+.dp-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-md);
+}
+
+.dp-modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.dp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dp-modal-header h3 { margin: 0; font-size: 1.1rem; }
+
+.dp-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dp-modal-body {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.dp-field { display: flex; flex-direction: column; gap: 4px; }
+.dp-field label { font-weight: 600; font-size: 0.85rem; color: var(--color-text); }
+.dp-field-value { font-size: 0.9rem; color: var(--color-text-secondary); }
+.dp-escrow { font-size: 1.2rem; font-weight: 700; color: #059669; }
+
+.dp-select, .dp-input, .dp-textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-medium);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.dp-textarea { min-height: 80px; resize: vertical; font-family: inherit; }
+
+.dp-warning {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.dp-modal-footer {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  padding: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.dp-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-height: 44px;
+}
+
+.dp-btn-cancel { background: #f3f4f6; color: #374151; }
+.dp-btn-resolve { background: #059669; color: white; }
+.dp-btn-resolve:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── 768px+ — restore full table layout ── */
 @media (min-width: 768px) {
   .disputes-controls {
