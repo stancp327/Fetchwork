@@ -197,7 +197,15 @@ router.post('/:id/cancel', authenticateToken, async (req, res) => {
     const participantIds = (convo.participants || []).map(p => String(getEntityId(p)));
     if (!participantIds.includes(meId)) return res.status(403).json({ error: 'Not a participant in this conversation' });
 
-    const updated = await prisma.appointment.update({ where: { id }, data: { status: 'cancelled' } });
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data: {
+        status: 'cancelled',
+        cancelledById: meId,
+        cancellationReason: req.body?.reason || null,
+        cancelledAt: new Date(),
+      },
+    });
     return res.json({ appointment: updated });
   } catch (error) {
     console.error('Cancel appointment error:', error);

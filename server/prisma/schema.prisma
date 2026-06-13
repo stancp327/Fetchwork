@@ -63,6 +63,10 @@ model Appointment {
   timezone        String
   notes           String?
 
+  cancelledById       String?
+  cancellationReason  String?
+  cancelledAt         DateTime?         @db.Timestamptz(6)
+
   createdAt      DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt      DateTime          @updatedAt @db.Timestamptz(6)
 
