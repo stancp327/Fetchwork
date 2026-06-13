@@ -91,6 +91,50 @@
   font-size: 0.85rem;
 }
 
+/* -- Clickable Offer Cards ------------------------------------- */
+.offer-card--clickable {
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.offer-card--clickable:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+.offer-card--clickable:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.offer-card-sub {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-top: 0.25rem;
+}
+
+.offer-card-desc {
+  font-size: 0.85rem;
+  color: var(--color-text, #374151);
+  margin: 0 0 0.75rem;
+}
+
+.offer-card-rounds {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-bottom: 0.5rem;
+}
+
+.offer-card-action-hint {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.offer-card-waiting {
+  font-size: 0.8rem;
+  color: #f59e0b;
+  font-weight: 500;
+}
+
 /* -- Tablet+ --------------------------------------------------- */
 @media (min-width: 480px) {
   .my-offers-container { padding: 1.5rem 1.25rem; padding-top: 1.5rem; }

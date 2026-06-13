@@ -1,0 +1,447 @@
+/* ── Offer Detail — Mobile-first ──────────────────────────────── */
+.offer-detail-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+  box-sizing: border-box;
+}
+
+/* ── Breadcrumb ─────────────────────────────────────────────── */
+.offer-detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+}
+.offer-detail-breadcrumb a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.offer-detail-breadcrumb a:hover { text-decoration: underline; }
+.offer-detail-sep { color: var(--color-border-medium); }
+
+/* ── Status Banner ──────────────────────────────────────────── */
+.offer-detail-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+.offer-detail-banner--warning { background: var(--color-warning-light); }
+.offer-detail-banner--primary { background: var(--color-primary-light); }
+.offer-detail-banner--success { background: var(--color-success-light); }
+.offer-detail-banner--danger  { background: var(--color-danger-subtle); }
+.offer-detail-banner--muted   { background: var(--color-bg-muted); }
+
+.offer-detail-banner-icon { font-size: 1.5rem; flex-shrink: 0; }
+.offer-detail-banner-text { display: flex; flex-direction: column; gap: 0.2rem; }
+.offer-detail-banner-text strong { font-size: 1.1rem; }
+.offer-detail-your-turn {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.offer-detail-waiting {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+.offer-detail-expiring {
+  font-size: 0.82rem;
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+/* ── Grid Layout ────────────────────────────────────────────── */
+.offer-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.offer-detail-main { flex: 1; min-width: 0; }
+
+.offer-detail-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Sections ───────────────────────────────────────────────── */
+.offer-detail-section {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.offer-detail-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text-darker);
+}
+
+/* ── Parties ────────────────────────────────────────────────── */
+.offer-detail-parties {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+.offer-detail-party {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.offer-detail-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.offer-detail-name {
+  font-weight: 600;
+  color: var(--color-text-darker);
+  text-decoration: none;
+}
+.offer-detail-name:hover { text-decoration: underline; color: var(--color-primary); }
+.offer-detail-role { font-size: 0.8rem; color: var(--color-text-secondary); }
+.offer-detail-rating { font-size: 0.82rem; color: var(--color-text-secondary); }
+.offer-detail-arrow {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+  transform: rotate(90deg);
+}
+
+/* ── Terms Grid ─────────────────────────────────────────────── */
+.offer-detail-terms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+.offer-detail-term-card {
+  background: var(--color-bg-subtle, #f9fafb);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+.offer-detail-term-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.3rem;
+}
+.offer-detail-term-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-text-darker);
+}
+.offer-detail-term-sub {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── Local info ─────────────────────────────────────────────── */
+.offer-detail-local-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+.offer-detail-local-badge {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+/* ── Description ────────────────────────────────────────────── */
+.offer-detail-description {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Milestones ─────────────────────────────────────────────── */
+.offer-detail-milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.offer-detail-ms-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--color-bg-subtle, #f9fafb);
+  border-radius: 8px;
+}
+.offer-detail-ms-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.offer-detail-ms-title { flex: 1; font-size: 0.9rem; }
+.offer-detail-ms-amount {
+  font-weight: 600;
+  color: var(--color-text-darker);
+  font-size: 0.9rem;
+}
+.offer-detail-ms-total {
+  text-align: right;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-darker);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── Linked Card ────────────────────────────────────────────── */
+.offer-detail-linked-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-subtle, #f9fafb);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.offer-detail-linked-card:hover { background: var(--color-bg-muted); }
+.offer-detail-linked-icon { font-size: 1.25rem; }
+.offer-detail-linked-title {
+  font-weight: 600;
+  color: var(--color-text-darker);
+  font-size: 0.92rem;
+}
+.offer-detail-linked-sub {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── Sidebar Cards ──────────────────────────────────────────── */
+.offer-detail-actions-card,
+.offer-detail-meta-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+.offer-detail-actions-card h3,
+.offer-detail-meta-card h3 {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-darker);
+}
+
+/* ── Action Buttons ─────────────────────────────────────────── */
+.btn-od-action {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  min-height: 44px;
+  transition: opacity 0.15s;
+}
+.btn-od-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-od-action:last-child { margin-bottom: 0; }
+
+.btn-od-accept  { background: var(--color-success); color: white; }
+.btn-od-accept:hover:not(:disabled) { opacity: 0.9; }
+.btn-od-counter { background: var(--color-primary); color: white; }
+.btn-od-counter:hover:not(:disabled) { opacity: 0.9; }
+.btn-od-decline { background: var(--color-bg-muted); color: var(--color-danger); border: 1px solid var(--color-border); }
+.btn-od-decline:hover:not(:disabled) { background: var(--color-danger-subtle); }
+.btn-od-withdraw { background: var(--color-bg-muted); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+.btn-od-withdraw:hover:not(:disabled) { background: var(--color-bg-subtle); }
+
+.btn-od-message {
+  display: block;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-primary);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  min-height: 44px;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+.btn-od-message:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* ── Meta Rows ──────────────────────────────────────────────── */
+.offer-detail-meta-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.offer-detail-meta-row:last-child { border-bottom: none; }
+.offer-detail-meta-row > span:first-child { color: var(--color-text-secondary); }
+.offer-detail-meta-row > span:last-child { font-weight: 500; color: var(--color-text-darker); }
+.offer-detail-meta-warn > span:last-child { color: var(--color-danger); }
+
+/* ── Negotiation Timeline ───────────────────────────────────── */
+.offer-detail-timeline-section { margin-top: 0.5rem; }
+.offer-detail-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 1.5rem;
+}
+.offer-detail-timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.offer-detail-tl-item {
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+.offer-detail-tl-item:last-child { padding-bottom: 0; }
+
+.offer-detail-tl-marker {
+  position: absolute;
+  left: -1.5rem;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-border-medium);
+  border: 2px solid var(--color-bg-primary);
+  z-index: 1;
+}
+.offer-detail-tl-item--created   .offer-detail-tl-marker { background: var(--color-primary); }
+.offer-detail-tl-item--countered .offer-detail-tl-marker { background: #f59e0b; }
+.offer-detail-tl-item--accepted  .offer-detail-tl-marker { background: var(--color-success); }
+.offer-detail-tl-item--declined  .offer-detail-tl-marker { background: var(--color-danger); }
+.offer-detail-tl-item--withdrawn .offer-detail-tl-marker { background: var(--color-text-muted); }
+
+.offer-detail-tl-content {
+  padding-left: 0.25rem;
+}
+.offer-detail-tl-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: baseline;
+  font-size: 0.88rem;
+}
+.offer-detail-tl-action {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+}
+.offer-detail-tl-action--created   { background: var(--color-primary-light); color: var(--color-primary); }
+.offer-detail-tl-action--countered { background: #fef3c7; color: #a16207; }
+.offer-detail-tl-action--accepted  { background: var(--color-success-light); color: var(--color-success-dark); }
+.offer-detail-tl-action--declined  { background: var(--color-danger-subtle); color: var(--color-danger); }
+.offer-detail-tl-action--withdrawn { background: var(--color-bg-muted); color: var(--color-text-secondary); }
+
+.offer-detail-tl-time {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+.offer-detail-tl-message {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+.offer-detail-tl-terms {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+/* ── States ─────────────────────────────────────────────────── */
+.offer-detail-loading {
+  padding: 3rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.offer-detail-error {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-secondary);
+}
+.btn-offer-back {
+  margin-top: 1rem;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--color-border-medium);
+  border-radius: 8px;
+  background: var(--color-bg-primary);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  min-height: 44px;
+}
+.btn-offer-back:hover { border-color: var(--color-primary); }
+
+/* ── Tablet+ ────────────────────────────────────────────────── */
+@media (min-width: 480px) {
+  .offer-detail-container { padding: 1.5rem 1.25rem; }
+  .offer-detail-parties { flex-direction: row; gap: 1.25rem; }
+  .offer-detail-arrow { transform: none; }
+  .offer-detail-terms-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .offer-detail-container { padding: 2rem 1.5rem; }
+  .offer-detail-grid {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+  .offer-detail-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 5rem;
+    align-self: flex-start;
+  }
+  .offer-detail-terms-grid { grid-template-columns: repeat(4, 1fr); }
+}

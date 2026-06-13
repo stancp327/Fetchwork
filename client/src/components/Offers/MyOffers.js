@@ -1,37 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import CustomOfferModal from './CustomOfferModal';
 import './CustomOffer.css';
 import './MyOffers.css';
 import SEO from '../common/SEO';
 
-const OfferCard = ({ offer, userId, onAction }) => {
-  const [showCounter, setShowCounter] = useState(false);
+const OfferCard = ({ offer, userId }) => {
+  const navigate = useNavigate();
   const isSender = offer.sender?._id === userId;
   const otherParty = isSender ? offer.recipient : offer.sender;
   const isMyTurn = offer.awaitingResponseFrom === userId;
-  const canAct = isMyTurn && ['pending', 'countered'].includes(offer.status);
-
-  const handleAction = async (action) => {
-    try {
-      await apiRequest(`/api/offers/${offer._id}/${action}`, { method: 'POST' });
-      onAction();
-    } catch (err) {
-      alert(err.message || `Failed to ${action} offer`);
-    }
-  };
 
   return (
-    <div className="offer-card">
+    <div
+      className="offer-card offer-card--clickable"
+      onClick={() => navigate(`/offers/${offer._id}`)}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/offers/${offer._id}`); }}
+    >
       <div className="offer-card-header">
         <div>
           <strong>{isSender ? 'Sent to' : 'From'}: {otherParty?.firstName} {otherParty?.lastName}</strong>
-          <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem' }}>
-            {offer.job && <Link to={`/jobs/${offer.job._id}`}>📋 {offer.job.title}</Link>}
-            {offer.service && <Link to={`/services/${offer.service._id}`}>🛒 {offer.service.title}</Link>}
-            {!offer.job && !offer.service && '📋 Direct Offer'}
+          <div className="offer-card-sub">
+            {offer.job && <span>📋 {offer.job.title}</span>}
+            {offer.service && <span>🛒 {offer.service.title}</span>}
+            {!offer.job && !offer.service && <span>📋 Direct Offer</span>}
             {' • '}{new Date(offer.updatedAt).toLocaleDateString()}
           </div>
         </div>
@@ -45,42 +40,24 @@ const OfferCard = ({ offer, userId, onAction }) => {
         {offer.terms?.deadline && <span className="offer-term">⏰ Due {new Date(offer.terms.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
       </div>
 
-      <p style={{ fontSize: '0.85rem', color: '#374151', margin: '0 0 0.75rem' }}>
+      <p className="offer-card-desc">
         {offer.terms?.description?.substring(0, 200)}{offer.terms?.description?.length > 200 ? '...' : ''}
       </p>
 
       {offer.revisionHistory?.length > 1 && (
-        <div style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+        <div className="offer-card-rounds">
           💬 {offer.revisionHistory.length} rounds of negotiation
         </div>
       )}
 
-      {canAct && (
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn-offer-action accept" onClick={() => handleAction('accept')}>✓ Accept</button>
-          <button className="btn-offer-action counter" onClick={() => setShowCounter(true)}>↩ Counter</button>
-          <button className="btn-offer-action decline" onClick={() => handleAction('decline')}>✕ Decline</button>
-        </div>
+      {isMyTurn && ['pending', 'countered'].includes(offer.status) && (
+        <div className="offer-card-action-hint">🔔 Your turn to respond</div>
       )}
 
       {isSender && ['pending', 'countered'].includes(offer.status) && !isMyTurn && (
-        <div style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: 500 }}>
+        <div className="offer-card-waiting">
           ⏳ Waiting for {otherParty?.firstName}'s response
         </div>
-      )}
-
-      {showCounter && (
-        <CustomOfferModal
-          isOpen={true}
-          onClose={() => setShowCounter(false)}
-          recipientId={otherParty?._id}
-          recipientName={`${otherParty?.firstName} ${otherParty?.lastName}`}
-          jobId={offer.job?._id}
-          serviceId={offer.service?._id}
-          offerType="counter_offer"
-          prefillTerms={offer.terms}
-          onSuccess={onAction}
-        />
       )}
     </div>
   );
@@ -154,7 +131,7 @@ const MyOffers = () => {
         </div>
       ) : (
         offers.map(offer => (
-          <OfferCard key={offer._id} offer={offer} userId={user?._id} onAction={fetchOffers} />
+          <OfferCard key={offer._id} offer={offer} userId={user?._id} />
         ))
       )}
     </div>
