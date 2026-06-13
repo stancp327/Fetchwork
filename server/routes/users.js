@@ -434,7 +434,11 @@ router.put('/profile', authenticateToken, maybeUploadProfilePicture, (req, res, 
               delete loc.coordinates;
             }
           }
-          user[field] = { ...(user[field] || {}), ...loc };
+          // If existing location in DB is not an object (e.g. empty string), reset it
+          const existing = (user[field] && typeof user[field] === 'object' && !Array.isArray(user[field]))
+            ? user[field].toObject ? user[field].toObject() : user[field]
+            : {};
+          user[field] = { ...existing, ...loc };
         } else if (field === 'phone') {
           // Normalize to E.164 server-side
           let ph = String(req.body.phone || '').replace(/[\s\-().]/g, '');

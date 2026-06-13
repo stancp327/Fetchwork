@@ -354,14 +354,27 @@ userSchema.pre('validate', function(next) {
 
   // Sanitize empty location enum fields to prevent validation errors
   if (this.location) {
-    if (!this.location.locationType) {
-      this.location.locationType = 'remote';
-    }
-    if (this.location.coordinates && !this.location.coordinates.type) {
-      this.location.coordinates.type = 'Point';
-    }
-    if (!this.location.serviceRadius || this.location.serviceRadius < 1) {
-      this.location.serviceRadius = 25;
+    // If location is somehow a string (DB corruption), reset to default object
+    if (typeof this.location !== 'object') {
+      this.location = { locationType: 'remote', coordinates: { type: 'Point', coordinates: [0, 0] }, serviceRadius: 25 };
+    } else {
+      if (!this.location.locationType) {
+        this.location.locationType = 'remote';
+      }
+      // Ensure coordinates subdocument is valid GeoJSON
+      if (!this.location.coordinates || typeof this.location.coordinates !== 'object') {
+        this.location.coordinates = { type: 'Point', coordinates: [0, 0] };
+      } else {
+        if (!this.location.coordinates.type) {
+          this.location.coordinates.type = 'Point';
+        }
+        if (!Array.isArray(this.location.coordinates.coordinates) || this.location.coordinates.coordinates.length < 2) {
+          this.location.coordinates.coordinates = [0, 0];
+        }
+      }
+      if (!this.location.serviceRadius || this.location.serviceRadius < 1) {
+        this.location.serviceRadius = 25;
+      }
     }
   }
 
