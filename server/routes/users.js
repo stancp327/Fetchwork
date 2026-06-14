@@ -284,15 +284,12 @@ router.get('/search', authenticateToken, async (req, res) => {
 const maybeUploadProfilePicture = (req, res, next) => {
   try {
     const ct = req.headers['content-type'] || '';
-    console.log('[upload-debug] content-type:', ct.substring(0, 60), '| method:', req.method);
     if (ct.includes('multipart/form-data')) {
-      console.log('[upload-debug] Running multer...');
       return uploadProfilePicture(req, res, (err) => {
         if (err) {
-          console.error('[upload-debug] ❌ Multer error:', err.message, err.code);
+          console.error('[profile-upload] ❌ Multer error:', err.message);
           return res.status(400).json({ error: 'Upload failed: ' + err.message });
         }
-        console.log('[upload-debug] ✅ Multer done. File:', req.file?.originalname || 'none', '| Body keys:', Object.keys(req.body || {}).join(', '));
         next();
       });
     }
@@ -304,12 +301,8 @@ const maybeUploadProfilePicture = (req, res, next) => {
 };
 
 
-router.put('/profile', authenticateToken, maybeUploadProfilePicture, (req, res, next) => {
-  console.log('[profile-save] PRE-VALIDATION — user:', req.user?.userId, 'body keys:', Object.keys(req.body || {}).join(', '), 'content-type:', req.headers['content-type']);
-  next();
-}, validateProfilePictureUpdate, async (req, res) => {
+router.put('/profile', authenticateToken, maybeUploadProfilePicture, validateProfilePictureUpdate, async (req, res) => {
   try {
-    console.log('[profile-save] POST-VALIDATION — user:', req.user.userId, 'fields:', Object.keys(req.body).join(', '));
     const user = await User.findById(req.user.userId);
     
     if (!user) {
