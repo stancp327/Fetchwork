@@ -185,6 +185,34 @@ const StepDetails = ({ data, onChange, errors, hasFeature = () => true }) => {
             </button>
           ))}
         </div>
+
+        {/* Address fields for in-person modes */}
+        {(data.serviceLocation === 'at_freelancer' || data.serviceLocation === 'flexible') && (
+          <div className="svc-location-address">
+            <div className="wiz-field" style={{ marginTop: '12px' }}>
+              <label>Your location / address *</label>
+              <input
+                type="text"
+                value={data.serviceLocationAddress || ''}
+                onChange={e => onChange('serviceLocationAddress', e.target.value)}
+                placeholder="e.g. 123 Main St, Suite 4, San Francisco, CA"
+                maxLength={200}
+              />
+              <span className="wiz-hint">Clients will see this so they know where to go</span>
+              {errors.serviceLocationAddress && <span className="wiz-error">{errors.serviceLocationAddress}</span>}
+            </div>
+            <div className="wiz-field">
+              <label>Location notes <span className="wiz-optional">(optional)</span></label>
+              <input
+                type="text"
+                value={data.serviceLocationNotes || ''}
+                onChange={e => onChange('serviceLocationNotes', e.target.value)}
+                placeholder="e.g. Free parking available, ring buzzer #4"
+                maxLength={300}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

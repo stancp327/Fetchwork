@@ -30,6 +30,8 @@ const CreateService = () => {
     // type
     serviceType: 'one_time',
     serviceLocation: 'remote',
+    serviceLocationAddress: '',
+    serviceLocationNotes: '',
     // details
     title: '', description: '', category: '', subcategory: '', skills: '',
     requirements: '', imagePreview: '', gallery: [],
@@ -111,6 +113,9 @@ const CreateService = () => {
       if (!data.title.trim()) e.title = 'Required';
       if (!data.description.trim()) e.description = 'Required';
       if (!data.category) e.category = 'Required';
+      if ((data.serviceLocation === 'at_freelancer' || data.serviceLocation === 'flexible') && !data.serviceLocationAddress.trim()) {
+        e.serviceLocationAddress = 'Enter your location so clients know where to go';
+      }
     }
     if (step === 1) {
       if (!data.basicTitle.trim()) e.basicTitle = 'Required';
@@ -132,9 +137,11 @@ const CreateService = () => {
   const isStepValid = () => {
     switch (step) {
       case 0: // Service Details
+        const needsAddress = data.serviceLocation === 'at_freelancer' || data.serviceLocation === 'flexible';
         return data.title.trim() !== '' && 
                data.description.trim() !== '' && 
-               data.category !== '';
+               data.category !== '' &&
+               (!needsAddress || data.serviceLocationAddress.trim() !== '');
       case 1: // Pricing & Packages
         const isRecurring = data.serviceType === 'recurring';
         if (isRecurring) {
@@ -254,7 +261,11 @@ const CreateService = () => {
         serviceData.capacity = { enabled: true, maxPerDay: data.capacityMaxDay, maxPerWeek: data.capacityMaxWeek, maxConcurrent: data.capacityMaxConcurrent };
       }
 
-      serviceData.serviceLocation = data.serviceLocation || 'remote';
+      serviceData.serviceLocation = {
+        mode: data.serviceLocation || 'remote',
+        address: data.serviceLocationAddress || '',
+        notes: data.serviceLocationNotes || '',
+      };
 
       // Scheduling mode (Gate 6B)
       if (data.scheduleType) {

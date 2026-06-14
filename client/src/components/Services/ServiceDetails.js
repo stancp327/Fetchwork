@@ -394,7 +394,7 @@ const ServiceDetails = () => {
                   <div className="sd-location-info">
                     {loc.mode === 'at_freelancer' && <p style={{ margin: 0 }}>📍 <strong>At freelancer's location</strong>{loc.address ? ` — ${loc.address}` : ''}</p>}
                     {loc.mode === 'at_client'    && <p style={{ margin: 0 }}>🚗 <strong>Freelancer travels to you</strong>{loc.travelRadius > 0 ? ` (within ${loc.travelRadius} miles)` : ''}</p>}
-                    {loc.mode === 'flexible'     && <p style={{ margin: 0 }}>🔄 <strong>Flexible</strong>{loc.travelRadius > 0 ? ` — up to ${loc.travelRadius} mi` : ''}</p>}
+                    {loc.mode === 'flexible'     && <p style={{ margin: 0 }}>🔄 <strong>Flexible</strong>{loc.address ? ` — ${loc.address}` : ''}{loc.travelRadius > 0 ? ` (up to ${loc.travelRadius} mi)` : ''}</p>}
                   </div>
                 )}
                 {loc.notes && <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '8px' }}>💬 {loc.notes}</p>}
