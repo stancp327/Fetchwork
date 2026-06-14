@@ -15,6 +15,7 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [aiWriting, setAiWriting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [item, setItem] = useState(editItem || {
     title: '',
     description: '',
@@ -27,6 +28,34 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
   });
 
   const updateField = (field, value) => setItem(prev => ({ ...prev, [field]: value }));
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const uploaded = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: formData,
+        });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        if (data.url) uploaded.push(data.url);
+      }
+      updateField('mediaUrls', [...item.mediaUrls, ...uploaded]);
+      addToast(`${uploaded.length} file${uploaded.length > 1 ? 's' : ''} uploaded!`, 'success');
+    } catch (err) {
+      addToast(err.message || 'Upload failed', 'error');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const addTag = () => {
     if (item.tagInput.trim() && !item.tags.includes(item.tagInput.trim())) {
@@ -122,7 +151,7 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
                 </select>
               </div>
               <div className="pw-field">
-                <label>Project Category <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                <label>Project Category <span className="pw-optional">(optional)</span></label>
                 <input
                   type="text"
                   value={item.category || ''}
@@ -146,26 +175,58 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
             <div className="pw-step-content">
               <h3>Add media & links</h3>
               <div className="pw-field">
-                <label>Image/Media URLs</label>
-                <p className="pw-hint">Paste URLs to images, videos, or hosted files</p>
-                {item.mediaUrls.map((url, i) => (
-                  <div key={i} className="pw-url-row">
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={e => {
-                        const urls = [...item.mediaUrls];
-                        urls[i] = e.target.value;
-                        updateField('mediaUrls', urls);
-                      }}
-                      placeholder="https://..."
-                    />
-                    <button type="button" className="pw-btn-icon" onClick={() => updateField('mediaUrls', item.mediaUrls.filter((_, idx) => idx !== i))}>×</button>
+                <label>Upload Photos or Videos</label>
+                <p className="pw-hint">Upload images, videos, or other media files directly</p>
+                <label className={`pw-upload-btn ${uploading ? 'disabled' : ''}`}>
+                  <input
+                    type="file"
+                    accept="image/*,video/*,.pdf"
+                    multiple
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                    className="pw-file-input"
+                  />
+                  {uploading ? '⏳ Uploading…' : '📁 Choose Files'}
+                </label>
+
+                {/* Preview uploaded media */}
+                {item.mediaUrls.length > 0 && (
+                  <div className="pw-media-grid">
+                    {item.mediaUrls.map((url, i) => (
+                      <div key={i} className="pw-media-item">
+                        {url.match(/\.(mp4|mov|webm|avi)$/i) ? (
+                          <video src={url} className="pw-media-thumb" muted />
+                        ) : (
+                          <img src={url} alt={`Media ${i + 1}`} className="pw-media-thumb" />
+                        )}
+                        <button type="button" className="pw-media-remove" onClick={() => updateField('mediaUrls', item.mediaUrls.filter((_, idx) => idx !== i))}>✕</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                <p className="pw-hint pw-or-divider">— or paste a URL —</p>
                 <button type="button" className="pw-btn-add" onClick={() => updateField('mediaUrls', [...item.mediaUrls, ''])}>
                   + Add Media URL
                 </button>
+                {item.mediaUrls.filter(u => !u).length > 0 && item.mediaUrls.map((url, i) => {
+                  if (url) return null;
+                  return (
+                    <div key={`url-${i}`} className="pw-url-row">
+                      <input
+                        type="url"
+                        value={url}
+                        onChange={e => {
+                          const urls = [...item.mediaUrls];
+                          urls[i] = e.target.value;
+                          updateField('mediaUrls', urls);
+                        }}
+                        placeholder="https://..."
+                      />
+                      <button type="button" className="pw-btn-icon" onClick={() => updateField('mediaUrls', item.mediaUrls.filter((_, idx) => idx !== i))}>×</button>
+                    </div>
+                  );
+                })}
               </div>
               <div className="pw-field">
                 <label>Project Links</label>

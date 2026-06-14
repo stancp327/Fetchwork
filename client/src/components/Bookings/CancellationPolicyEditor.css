@@ -77,8 +77,8 @@
   gap: var(--space-2);
   align-items: center;
 }
-.cpe-rule-input {
-  height: 40px;
+.cpe-rule-select {
+  height: 44px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 0 var(--space-3);
@@ -86,8 +86,10 @@
   color: var(--text-primary);
   background: var(--bg-card);
   width: 100%;
+  cursor: pointer;
+  appearance: auto;
 }
-.cpe-rule-input:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+.cpe-rule-select:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
 
 .cpe-rule-remove {
   height: 36px;
@@ -122,18 +124,5 @@
 }
 .cpe-add-rule:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
 
-/* ─── Save button ─── */
-.cpe-save {
-  height: 44px;
-  padding: 0 var(--space-6);
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.cpe-save:disabled { opacity: 0.6; cursor: not-allowed; }
-.cpe-save:not(:disabled):hover { opacity: 0.88; }
+/* ─── Auto-save indicator ─── */
+.cpe-saving { font-size: var(--text-sm); color: var(--text-secondary, #6b7280); font-style: italic; display: block; text-align: right; margin-top: var(--space-2, 0.5rem); }

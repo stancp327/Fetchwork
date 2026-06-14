@@ -30,6 +30,9 @@ const PRESET_TYPES = [
   },
 ];
 
+const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 12, 24, 48, 72];
+const REFUND_OPTIONS = [0, 25, 50, 75, 100];
+
 const DEFAULT_CUSTOM_RULES = [
   { hoursBeforeStart: 24, refundPercent: 100 },
   { hoursBeforeStart: 0,  refundPercent: 0   },
@@ -65,18 +68,19 @@ const CancellationPolicyEditor = ({ serviceId }) => {
     setTimeout(() => { setFlash(''); setError(''); }, 4000);
   };
 
-  const handleSave = async () => {
+  // Auto-save helper
+  const autoSave = async (newType, rules) => {
     setSaving(true);
     try {
       await apiRequest('/api/bookings/cancellation-policy', {
         method: 'PUT',
         body: JSON.stringify({
-          type,
+          type: newType,
           serviceId: serviceId || undefined,
-          rulesJson: type === 'custom' ? customRules : undefined,
+          rulesJson: newType === 'custom' ? rules : undefined,
         }),
       });
-      showFlash('Policy saved.');
+      showFlash('✓ Saved');
     } catch (err) {
       showFlash(err.message || 'Failed to save policy.', true);
     } finally {
@@ -84,20 +88,34 @@ const CancellationPolicyEditor = ({ serviceId }) => {
     }
   };
 
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    autoSave(newType, newType === 'custom' ? customRules : undefined);
+  };
+
   const updateRule = (i, field, value) => {
     setCustomRules(prev => {
       const next = [...prev];
       next[i] = { ...next[i], [field]: Number(value) };
+      autoSave('custom', next);
       return next;
     });
   };
 
   const addRule = () => {
-    setCustomRules(prev => [...prev, { hoursBeforeStart: 0, refundPercent: 0 }]);
+    setCustomRules(prev => {
+      const next = [...prev, { hoursBeforeStart: 0, refundPercent: 0 }];
+      autoSave('custom', next);
+      return next;
+    });
   };
 
   const removeRule = (i) => {
-    setCustomRules(prev => prev.filter((_, idx) => idx !== i));
+    setCustomRules(prev => {
+      const next = prev.filter((_, idx) => idx !== i);
+      autoSave('custom', next);
+      return next;
+    });
   };
 
   if (loading) {
@@ -126,7 +144,7 @@ const CancellationPolicyEditor = ({ serviceId }) => {
               name="policyType"
               value={pt.value}
               checked={type === pt.value}
-              onChange={() => setType(pt.value)}
+              onChange={() => handleTypeChange(pt.value)}
               className="cpe-radio"
             />
             <div className="cpe-type-body">
@@ -150,24 +168,27 @@ const CancellationPolicyEditor = ({ serviceId }) => {
             </div>
             {customRules.map((rule, i) => (
               <div key={i} className="cpe-rule-row">
-                <input
-                  type="number"
-                  className="cpe-rule-input"
+                <select
+                  className="cpe-rule-select"
                   value={rule.hoursBeforeStart}
-                  min="0"
-                  max="720"
                   onChange={e => updateRule(i, 'hoursBeforeStart', e.target.value)}
                   aria-label="Hours before start"
-                />
-                <input
-                  type="number"
-                  className="cpe-rule-input"
+                >
+                  <option value={0}>At booking time</option>
+                  {HOUR_OPTIONS.map(h => (
+                    <option key={h} value={h}>{h} hr{h !== 1 ? 's' : ''} before</option>
+                  ))}
+                </select>
+                <select
+                  className="cpe-rule-select"
                   value={rule.refundPercent}
-                  min="0"
-                  max="100"
                   onChange={e => updateRule(i, 'refundPercent', e.target.value)}
                   aria-label="Refund percent"
-                />
+                >
+                  {REFUND_OPTIONS.map(p => (
+                    <option key={p} value={p}>{p}% refund</option>
+                  ))}
+                </select>
                 <button
                   className="cpe-rule-remove"
                   onClick={() => removeRule(i)}
@@ -185,13 +206,7 @@ const CancellationPolicyEditor = ({ serviceId }) => {
         </div>
       )}
 
-      <button
-        className="cpe-save"
-        onClick={handleSave}
-        disabled={saving}
-      >
-        {saving ? 'Saving…' : 'Save Policy'}
-      </button>
+      {saving && <span className="cpe-saving">Saving…</span>}
     </div>
   );
 };
