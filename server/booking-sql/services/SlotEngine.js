@@ -8,6 +8,7 @@ const { DateTime } = require('luxon');
 const { ServiceAdapter } = require('../repos/ServiceAdapter');
 const { OccurrenceRepo } = require('../repos/OccurrenceRepo');
 const { AvailabilityService } = require('./AvailabilityService');
+const { getSessionBlocks } = require('../../services/SessionService');
 
 /**
  * Slot architecture:
@@ -294,6 +295,36 @@ class SlotEngine {
         bookingEnd:   endMs,
       };
     });
+
+    // ── SESSION BRIDGE (Gate 4) ───────────────────────────────────────────
+    // Fixed session occurrences (group classes, workshops, etc.) block the
+    // freelancer's private availability. Only 'scheduled' and 'full' statuses
+    // block; 'cancelled' and 'completed' do not. Keyed by freelancerId so
+    // a yoga class blocks guitar lesson slots for the same person.
+    // To disable: comment out the try block below. Existing booking blocking
+    // (above) is unaffected.
+    try {
+      const sessionBlocks = await getSessionBlocks(
+        effectiveFreelancerId,
+        startOfDayUtc,
+        endOfDayUtc,
+      );
+      for (const sb of sessionBlocks) {
+        const startMs = new Date(sb.startTime).getTime();
+        const endMs   = new Date(sb.endTime).getTime();
+        blockedRanges.push({
+          blockStart:   startMs - (bufferBeforeMinutes * 60000),
+          blockEnd:     endMs   + (bufferAfterMinutes  * 60000),
+          bookingStart: startMs,
+          bookingEnd:   endMs,
+        });
+      }
+    } catch (err) {
+      // Non-fatal: if session tables don't exist or query fails, log and
+      // continue — private slot generation should not break.
+      console.warn('[SlotEngine] Session bridge warning:', err.message);
+    }
+    // ── END SESSION BRIDGE ──────────────────────────────────────────────
 
     // A candidate slot is available if it doesn't overlap with any blocked range.
     // Overlap: slot [startUtc, endUtc] intersects blocked [blockStart, blockEnd]

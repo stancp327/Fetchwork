@@ -227,6 +227,23 @@ const serviceSchema = new mongoose.Schema({
   boostPaymentId: { type: String, default: null },
 
   // ── Booking availability ────────────────────────────────────────
+  // Scheduling mode — determines how clients book this service
+  // null/undefined = legacy services, interpreted as DYNAMIC_PRIVATE
+  scheduleType: {
+    type: String,
+    enum: ['DYNAMIC_PRIVATE', 'FIXED_RECURRING', 'FIXED_ONE_TIME', 'REQUEST_BASED'],
+    default: undefined,
+  },
+  // Capacity type — whether service is 1-on-1 or group
+  // null/undefined = legacy services, interpreted as ONE_ON_ONE
+  capacityType: {
+    type: String,
+    enum: ['ONE_ON_ONE', 'GROUP'],
+    default: undefined,
+  },
+  // Max participants per session (only meaningful for GROUP)
+  maxCapacity: { type: Number, default: 1, min: 1 },
+
   availability: {
     enabled:      { type: Boolean, default: false },
     timezone:     { type: String, default: 'America/Los_Angeles' },

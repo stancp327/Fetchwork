@@ -1,0 +1,266 @@
+/* UpcomingSessions — reusable session display component */
+
+.us-container {
+  padding: 1rem;
+}
+
+.us-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #111827);
+  margin: 0 0 0.75rem 0;
+}
+
+.us-loading,
+.us-empty,
+.us-error {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #6b7280);
+  border-radius: 8px;
+}
+
+.us-loading {
+  background: var(--color-bg-secondary, #f9fafb);
+}
+
+.us-empty {
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px dashed var(--border-color, #d1d5db);
+}
+
+.us-error {
+  background: #fef2f2;
+  color: var(--danger, #ef4444);
+  border: 1px solid #fecaca;
+}
+
+/* Session list */
+.us-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Session card */
+.us-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 10px;
+  background: var(--color-bg, #fff);
+  transition: border-color 0.2s;
+}
+
+.us-card:hover:not(.us-card-full) {
+  border-color: var(--primary, #2563eb);
+}
+
+.us-card-full,
+.us-card-past {
+  opacity: 0.6;
+}
+
+/* Date column */
+.us-card-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.us-card-day {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-text-primary, #111827);
+}
+
+.us-card-time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #6b7280);
+  white-space: nowrap;
+}
+
+/* Details column */
+.us-card-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.us-card-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text-primary, #111827);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.us-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.us-meta-item {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #6b7280);
+  white-space: nowrap;
+}
+
+.us-meta-price {
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+}
+
+.us-meta-free {
+  font-weight: 600;
+  color: var(--success, #16a34a);
+}
+
+/* Capacity / badge column */
+.us-card-capacity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.us-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.us-badge-open {
+  background: #ecfdf5;
+  color: var(--success, #16a34a);
+}
+
+.us-badge-full {
+  background: #f3f4f6;
+  color: var(--color-text-muted, #6b7280);
+}
+
+/* Book button (future gate — placeholder ready) */
+.us-book-btn {
+  padding: 0.3rem 0.75rem;
+  min-height: 36px;
+  min-width: 44px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary, #2563eb);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.us-book-btn:hover {
+  background: var(--primary-dark, #1d4ed8);
+}
+
+/* Cancelled badge */
+.us-badge-cancelled {
+  background: #fef2f2;
+  color: var(--danger, #ef4444);
+}
+
+/* Booking feedback message */
+.us-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.us-msg-success {
+  background: #ecfdf5;
+  color: var(--success, #16a34a);
+  border: 1px solid #bbf7d0;
+}
+
+.us-msg-error {
+  background: #fef2f2;
+  color: var(--danger, #ef4444);
+  border: 1px solid #fecaca;
+}
+
+.us-msg-info {
+  background: #eff6ff;
+  color: var(--primary, #2563eb);
+  border: 1px solid #bfdbfe;
+}
+
+.us-msg span:first-child {
+  flex: 1;
+}
+
+.us-msg-link {
+  background: none;
+  border: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.us-msg-dismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 0.25rem;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.us-msg-dismiss:hover {
+  opacity: 1;
+}
+
+.us-book-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Mobile: stack card vertically */
+@media (max-width: 480px) {
+  .us-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .us-card-date {
+    flex-direction: row;
+    justify-content: space-between;
+    min-width: unset;
+  }
+
+  .us-card-capacity {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}

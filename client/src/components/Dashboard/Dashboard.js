@@ -428,6 +428,7 @@ const Dashboard = () => {
                   <QuickAction icon="⚖️" label="Disputes" to="/disputes" />
                   <QuickAction icon="🔎" label="Search" to="/search" />
                   <QuickAction icon="➕" label="Create Service" to="/create-service" />
+                  <QuickAction icon="🗓️" label="My Sessions" to="/my-sessions" />
                   <QuickAction icon="👤" label="Edit Profile" to="/profile" />
                   <QuickAction icon="💬" label="Messages" to="/messages" />
                 </>

@@ -10,31 +10,159 @@ const BUFFER_OPTIONS = [
   { value: 60, label: '1 hour' },
 ];
 
+const SCHEDULE_MODES = [
+  {
+    value: 'DYNAMIC_PRIVATE',
+    icon: '📅',
+    label: 'Clients book from my available time slots',
+    desc: 'You set your hours, clients pick open slots',
+  },
+  {
+    value: 'FIXED_RECURRING',
+    icon: '🔁',
+    label: 'This happens on a repeating schedule',
+    desc: 'Set the day, time, and repeat pattern — sessions are created automatically',
+  },
+  {
+    value: 'FIXED_ONE_TIME',
+    icon: '📌',
+    label: 'This is a one-time event or workshop',
+    desc: 'Pick the exact date and time for a single session',
+  },
+  {
+    value: 'REQUEST_BASED',
+    icon: '💬',
+    label: 'Clients request a quote or message me first',
+    desc: 'No calendar — clients reach out and you agree on terms',
+  },
+];
+
+const DAYS_OF_WEEK = [
+  { value: 'Mon', label: 'Mon' },
+  { value: 'Tue', label: 'Tue' },
+  { value: 'Wed', label: 'Wed' },
+  { value: 'Thu', label: 'Thu' },
+  { value: 'Fri', label: 'Fri' },
+  { value: 'Sat', label: 'Sat' },
+  { value: 'Sun', label: 'Sun' },
+];
+
 const StepBooking = ({ data, onChange }) => {
-  const isClass = data.serviceType === 'class';
+  const scheduleType = data.scheduleType || '';
+  const capacityType = data.capacityType || 'ONE_ON_ONE';
+
+  const handleScheduleSelect = (mode) => {
+    onChange('scheduleType', mode);
+    // Auto-enable booking for scheduling modes that need it
+    if (mode !== 'REQUEST_BASED') {
+      onChange('bookingEnabled', true);
+    } else {
+      onChange('bookingEnabled', false);
+    }
+    // Default capacity for fixed modes
+    if (mode === 'FIXED_RECURRING' || mode === 'FIXED_ONE_TIME') {
+      if (!data.capacityType) onChange('capacityType', 'ONE_ON_ONE');
+      if (!data.maxCapacity) onChange('maxCapacity', 1);
+    }
+  };
+
+  const handleDayToggle = (day) => {
+    const current = data.fixedDays || [];
+    const updated = current.includes(day)
+      ? current.filter(d => d !== day)
+      : [...current, day];
+    onChange('fixedDays', updated);
+  };
+
+  const handleCapacityType = (type) => {
+    onChange('capacityType', type);
+    if (type === 'ONE_ON_ONE') {
+      onChange('maxCapacity', 1);
+      onChange('bookingMaxPerSlot', 1);
+    } else {
+      if ((data.maxCapacity || 1) <= 1) onChange('maxCapacity', 5);
+      onChange('bookingMaxPerSlot', data.maxCapacity > 1 ? data.maxCapacity : 5);
+    }
+  };
 
   return (
     <div className="wizard-step-content">
-      <h2>Booking Settings</h2>
+      <h2>Booking & Scheduling</h2>
       <p className="wizard-tip">
-        ⚙️ Configure how clients book this service — session length, group size, and scheduling rules.
+        ⚙️ How should clients book this service?
       </p>
 
-      {/* Enable Booking */}
+      {/* ── Scheduling Mode Selector ────────────────────────────── */}
       <div className="wiz-field">
-        <label className="wiz-toggle-row">
-          <input
-            type="checkbox"
-            checked={data.bookingEnabled || false}
-            onChange={e => onChange('bookingEnabled', e.target.checked)}
-          />
-          <span>Enable online booking for this service</span>
-        </label>
-        <p className="wiz-hint">When enabled, clients can book time slots directly from your service page.</p>
+        <label className="wiz-field-label-standalone">Scheduling Mode *</label>
+        <div className="svc-location-cards">
+          {SCHEDULE_MODES.map(mode => (
+            <button
+              key={mode.value}
+              type="button"
+              className={`svc-location-card ${scheduleType === mode.value ? 'selected' : ''}`}
+              onClick={() => handleScheduleSelect(mode.value)}
+            >
+              <span className="svc-loc-icon">{mode.icon}</span>
+              <div>
+                <div className="svc-loc-label">{mode.label}</div>
+                <div className="svc-loc-desc">{mode.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {data.bookingEnabled && (
+      {/* ── DYNAMIC_PRIVATE: existing slot-based booking settings ── */}
+      {scheduleType === 'DYNAMIC_PRIVATE' && (
         <>
+          {/* Capacity Type */}
+          <div className="wiz-field">
+            <label>Session Type</label>
+            <div className="svc-location-cards">
+              <button
+                type="button"
+                className={`svc-location-card ${capacityType === 'ONE_ON_ONE' ? 'selected' : ''}`}
+                onClick={() => handleCapacityType('ONE_ON_ONE')}
+              >
+                <span className="svc-loc-icon">👤</span>
+                <div>
+                  <div className="svc-loc-label">Individual</div>
+                  <div className="svc-loc-desc">1-on-1 private sessions</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                className={`svc-location-card ${capacityType === 'GROUP' ? 'selected' : ''}`}
+                onClick={() => handleCapacityType('GROUP')}
+              >
+                <span className="svc-loc-icon">👥</span>
+                <div>
+                  <div className="svc-loc-label">Group</div>
+                  <div className="svc-loc-desc">Multiple clients per time slot</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {capacityType === 'GROUP' && (
+            <div className="wiz-field">
+              <label>Max people per session</label>
+              <input
+                type="number"
+                min={2}
+                max={100}
+                value={data.maxCapacity || 5}
+                onChange={e => {
+                  const v = Math.max(2, parseInt(e.target.value) || 2);
+                  onChange('maxCapacity', v);
+                  onChange('bookingMaxPerSlot', v);
+                }}
+              />
+              <p className="wiz-hint">Maximum number of clients that can book the same time slot.</p>
+            </div>
+          )}
+
           {/* Session Duration */}
           <div className="wiz-field">
             <label>Session Duration</label>
@@ -49,50 +177,6 @@ const StepBooking = ({ data, onChange }) => {
             </select>
             <p className="wiz-hint">How long each booking session lasts.</p>
           </div>
-
-          {/* Individual vs Group */}
-          <div className="wiz-field">
-            <label>Session Type</label>
-            <div className="svc-location-cards">
-              <button
-                type="button"
-                className={`svc-location-card ${(data.bookingMaxPerSlot || 1) === 1 ? 'selected' : ''}`}
-                onClick={() => onChange('bookingMaxPerSlot', 1)}
-              >
-                <span className="svc-loc-icon">👤</span>
-                <div>
-                  <div className="svc-loc-label">Individual</div>
-                  <div className="svc-loc-desc">1-on-1 private sessions</div>
-                </div>
-              </button>
-              <button
-                type="button"
-                className={`svc-location-card ${(data.bookingMaxPerSlot || 1) > 1 ? 'selected' : ''}`}
-                onClick={() => onChange('bookingMaxPerSlot', data.bookingMaxPerSlot > 1 ? data.bookingMaxPerSlot : 5)}
-              >
-                <span className="svc-loc-icon">👥</span>
-                <div>
-                  <div className="svc-loc-label">Group{isClass ? ' / Class' : ''}</div>
-                  <div className="svc-loc-desc">Multiple clients per time slot</div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Group size — only if group selected */}
-          {(data.bookingMaxPerSlot || 1) > 1 && (
-            <div className="wiz-field">
-              <label>Max people per session</label>
-              <input
-                type="number"
-                min={2}
-                max={100}
-                value={data.bookingMaxPerSlot || 5}
-                onChange={e => onChange('bookingMaxPerSlot', Math.max(2, parseInt(e.target.value) || 2))}
-              />
-              <p className="wiz-hint">Maximum number of clients that can book the same time slot.</p>
-            </div>
-          )}
 
           {/* Buffer Between Sessions */}
           <div className="wiz-field">
@@ -109,7 +193,7 @@ const StepBooking = ({ data, onChange }) => {
             <p className="wiz-hint">Break time between back-to-back bookings.</p>
           </div>
 
-          {/* Minimum Notice */}
+          {/* Notice & Advance */}
           <div className="wiz-row">
             <div className="wiz-field">
               <label>Minimum Notice (hours)</label>
@@ -135,6 +219,215 @@ const StepBooking = ({ data, onChange }) => {
             </div>
           </div>
         </>
+      )}
+
+      {/* ── FIXED_RECURRING: schedule builder ──────────────────── */}
+      {scheduleType === 'FIXED_RECURRING' && (
+        <>
+          {/* Days of Week */}
+          <div className="wiz-field">
+            <label>Which days does this repeat? *</label>
+            <div className="sb-day-picker">
+              {DAYS_OF_WEEK.map(d => (
+                <button
+                  key={d.value}
+                  type="button"
+                  className={`sb-day-btn ${(data.fixedDays || []).includes(d.value) ? 'selected' : ''}`}
+                  onClick={() => handleDayToggle(d.value)}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+            <p className="wiz-hint">Select all days this session occurs each week.</p>
+          </div>
+
+          {/* Time */}
+          <div className="wiz-row">
+            <div className="wiz-field">
+              <label>Start Time *</label>
+              <input
+                type="time"
+                value={data.fixedStartTime || ''}
+                onChange={e => onChange('fixedStartTime', e.target.value)}
+              />
+            </div>
+            <div className="wiz-field">
+              <label>Duration</label>
+              <select
+                value={data.fixedDuration || 60}
+                onChange={e => onChange('fixedDuration', parseInt(e.target.value))}
+                className="wiz-select"
+              >
+                {SESSION_DURATIONS.map(d => (
+                  <option key={d.value} value={d.value}>{d.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Capacity */}
+          <div className="wiz-field">
+            <label>Session Type</label>
+            <div className="svc-location-cards">
+              <button
+                type="button"
+                className={`svc-location-card ${capacityType === 'ONE_ON_ONE' ? 'selected' : ''}`}
+                onClick={() => handleCapacityType('ONE_ON_ONE')}
+              >
+                <span className="svc-loc-icon">👤</span>
+                <div>
+                  <div className="svc-loc-label">Private (1-on-1)</div>
+                  <div className="svc-loc-desc">One client per session</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                className={`svc-location-card ${capacityType === 'GROUP' ? 'selected' : ''}`}
+                onClick={() => handleCapacityType('GROUP')}
+              >
+                <span className="svc-loc-icon">👥</span>
+                <div>
+                  <div className="svc-loc-label">Group / Class</div>
+                  <div className="svc-loc-desc">Multiple participants</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {capacityType === 'GROUP' && (
+            <div className="wiz-field">
+              <label>Max participants per session</label>
+              <input
+                type="number"
+                min={2}
+                max={200}
+                value={data.maxCapacity || 5}
+                onChange={e => onChange('maxCapacity', Math.max(2, parseInt(e.target.value) || 2))}
+              />
+              <p className="wiz-hint">Maximum number of people that can book each session.</p>
+            </div>
+          )}
+
+          {/* How far out to generate */}
+          <div className="wiz-field">
+            <label>Generate schedule for</label>
+            <select
+              value={data.fixedGenerationWeeks || 8}
+              onChange={e => onChange('fixedGenerationWeeks', parseInt(e.target.value))}
+              className="wiz-select"
+            >
+              <option value={4}>4 weeks ahead</option>
+              <option value={8}>8 weeks ahead</option>
+              <option value={12}>12 weeks ahead</option>
+            </select>
+            <p className="wiz-hint">Sessions will be automatically created this far in advance.</p>
+          </div>
+        </>
+      )}
+
+      {/* ── FIXED_ONE_TIME: single event builder ───────────────── */}
+      {scheduleType === 'FIXED_ONE_TIME' && (
+        <>
+          <div className="wiz-row">
+            <div className="wiz-field">
+              <label>Event Date *</label>
+              <input
+                type="date"
+                value={data.fixedEventDate || ''}
+                onChange={e => onChange('fixedEventDate', e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className="wiz-field">
+              <label>Start Time *</label>
+              <input
+                type="time"
+                value={data.fixedStartTime || ''}
+                onChange={e => onChange('fixedStartTime', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="wiz-field">
+            <label>Duration</label>
+            <select
+              value={data.fixedDuration || 60}
+              onChange={e => onChange('fixedDuration', parseInt(e.target.value))}
+              className="wiz-select"
+            >
+              {SESSION_DURATIONS.map(d => (
+                <option key={d.value} value={d.value}>{d.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Capacity */}
+          <div className="wiz-field">
+            <label>Session Type</label>
+            <div className="svc-location-cards">
+              <button
+                type="button"
+                className={`svc-location-card ${capacityType === 'ONE_ON_ONE' ? 'selected' : ''}`}
+                onClick={() => handleCapacityType('ONE_ON_ONE')}
+              >
+                <span className="svc-loc-icon">👤</span>
+                <div>
+                  <div className="svc-loc-label">Private (1-on-1)</div>
+                  <div className="svc-loc-desc">One client</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                className={`svc-location-card ${capacityType === 'GROUP' ? 'selected' : ''}`}
+                onClick={() => handleCapacityType('GROUP')}
+              >
+                <span className="svc-loc-icon">👥</span>
+                <div>
+                  <div className="svc-loc-label">Group / Workshop</div>
+                  <div className="svc-loc-desc">Multiple participants</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {capacityType === 'GROUP' && (
+            <div className="wiz-field">
+              <label>Max participants</label>
+              <input
+                type="number"
+                min={2}
+                max={500}
+                value={data.maxCapacity || 10}
+                onChange={e => onChange('maxCapacity', Math.max(2, parseInt(e.target.value) || 2))}
+              />
+              <p className="wiz-hint">Maximum number of people that can attend this event.</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── REQUEST_BASED: info only ───────────────────────────── */}
+      {scheduleType === 'REQUEST_BASED' && (
+        <div className="wiz-field">
+          <div className="sb-request-info">
+            <span className="sb-request-icon">💬</span>
+            <div>
+              <strong>No calendar needed</strong>
+              <p>Clients will message you to discuss details, pricing, and scheduling.
+                 You can send them a custom quote or proposal after discussing their needs.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Prompt if no mode selected yet ─────────────────────── */}
+      {!scheduleType && (
+        <div className="wiz-field">
+          <p className="wiz-hint" style={{ textAlign: 'center', padding: '2rem 0' }}>
+            👆 Choose how clients will book this service to see more options.
+          </p>
+        </div>
       )}
     </div>
   );

@@ -249,6 +249,39 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       ...(capacity?.enabled ? { capacity } : {}),
     });
 
+    // Scheduling mode fields (Gate 6B)
+    // Scheduling mode fields (Gate 6B)
+    const { scheduleType: reqScheduleType, capacityType: reqCapacityType, maxCapacity: reqMaxCapacity, fixedSchedule } = req.body;
+
+    // Validate fixed schedule data before saving anything
+    if (reqScheduleType === 'FIXED_RECURRING') {
+      if (!fixedSchedule?.days?.length) {
+        return res.status(400).json({ error: 'Please select at least one day for your recurring schedule.' });
+      }
+      if (!fixedSchedule?.startTime) {
+        return res.status(400).json({ error: 'Please set a start time for your recurring schedule.' });
+      }
+    }
+    if (reqScheduleType === 'FIXED_ONE_TIME') {
+      if (!fixedSchedule?.eventDate) {
+        return res.status(400).json({ error: 'Please select a date for your event.' });
+      }
+      if (!fixedSchedule?.startTime) {
+        return res.status(400).json({ error: 'Please set a start time for your event.' });
+      }
+      // Reject past dates
+      const eventDate = new Date(fixedSchedule.eventDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (eventDate < today) {
+        return res.status(400).json({ error: 'Event date cannot be in the past.' });
+      }
+    }
+
+    if (reqScheduleType) service.scheduleType = reqScheduleType;
+    if (reqCapacityType) service.capacityType = reqCapacityType;
+    if (reqMaxCapacity != null) service.maxCapacity = reqMaxCapacity;
+
     // Service location mode
     const { serviceLocation } = req.body;
     if (serviceLocation) {
@@ -313,12 +346,75 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       }
     }
     
+    // ── Session template creation for fixed scheduling modes (Gate 6B) ──
+    let sessionWarning = null;
+    const effectiveScheduleType = reqScheduleType || '';
+    if (effectiveScheduleType === 'FIXED_RECURRING' || effectiveScheduleType === 'FIXED_ONE_TIME') {
+      try {
+        const SessionService = require('../services/SessionService');
+        const durationMin = fixedSchedule?.duration || 60;
+
+        // Compute end time from start + duration
+        let endTime = null;
+        if (fixedSchedule?.startTime) {
+          const [h, m] = fixedSchedule.startTime.split(':').map(Number);
+          const totalMin = (h || 0) * 60 + (m || 0) + durationMin;
+          endTime = `${String(Math.floor(totalMin / 60) % 24).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`;
+        }
+
+        // Build recurrence rule
+        let recurrenceRule = null;
+        if (effectiveScheduleType === 'FIXED_RECURRING') {
+          recurrenceRule = {
+            days: fixedSchedule?.days || [],
+            startTime: fixedSchedule?.startTime || '09:00',
+            endTime: endTime || '10:00',
+            timezone: 'America/Los_Angeles', // TODO: use freelancer's timezone
+          };
+        } else {
+          recurrenceRule = {
+            date: fixedSchedule?.eventDate || '',
+            startTime: fixedSchedule?.startTime || '09:00',
+            endTime: endTime || '10:00',
+            timezone: 'America/Los_Angeles',
+          };
+        }
+
+        const template = await SessionService.createTemplate({
+          mongoServiceId: service._id.toString(),
+          freelancerId: userId.toString(),
+          title: service.title,
+          capacityType: reqCapacityType || 'ONE_ON_ONE',
+          scheduleType: effectiveScheduleType,
+          maxCapacity: reqMaxCapacity || 1,
+          durationMinutes: durationMin,
+          price: parseFloat(service.pricing?.basic?.price) || 0,
+          currency: 'usd',
+          locationMode: service.serviceLocation?.mode || null,
+          recurrenceRule,
+          generationWeeks: fixedSchedule?.generationWeeks || 8,
+          bookingCutoffHours: 1,
+          cancellationHours: 24,
+        });
+
+        // Generate initial occurrences
+        const genResult = await SessionService.generateOccurrences(template.id);
+        console.log(`[services] SessionTemplate created for service ${service._id}: ${genResult.generated} occurrences generated`);
+      } catch (sessionErr) {
+        // Cross-database safety: Mongo service was saved, but session template failed.
+        // Don't delete the service — it's valid as metadata. Warn the user.
+        console.error('[services] SessionTemplate creation failed (non-fatal):', sessionErr.message);
+        sessionWarning = 'Service created, but automatic schedule setup failed. You can set up your schedule manually from the service dashboard.';
+      }
+    }
+
     const populatedService = await Service.findById(service._id)
       .populate('freelancer', 'firstName lastName profilePicture rating totalJobs');
     
     res.status(201).json({
-      message: 'Service created successfully',
-      service: populatedService
+      message: sessionWarning || 'Service created successfully',
+      service: populatedService,
+      ...(sessionWarning ? { sessionWarning } : {}),
     });
   } catch (error) {
     console.error('Error creating service:', error);

@@ -357,6 +357,7 @@ app.use('/api/presentations',   require('./routes/presentations'));
 app.use('/api/upload',          require('./routes/upload'));
 app.use('/api/service-packages',  require('./routes/servicePackages'));
 app.use('/api/booking-reviews',   require('./routes/bookingReviews'));
+app.use('/api/sessions',          require('./routes/sessions'));
 
 // ── Socket.io Auth & Events ─────────────────────────────────────
 io.use((socket, next) => {

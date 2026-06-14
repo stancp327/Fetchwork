@@ -97,6 +97,7 @@ const PresentationView     = React.lazy(() => import('./components/Teams/Present
 const CalendarSyncSettings = React.lazy(() => import('./components/Bookings/CalendarSyncSettings'));
 const PackageManager       = React.lazy(() => import('./components/Bookings/PackageManager'));
 const MyPackages           = React.lazy(() => import('./components/Bookings/MyPackages'));
+const MySessionsPage       = React.lazy(() => import('./components/Sessions/MySessionsPage'));
 const TermsOfService       = React.lazy(() => import('./components/Legal/TermsOfService'));
 const PrivacyPolicy        = React.lazy(() => import('./components/Legal/PrivacyPolicy'));
 const CommunityGuidelines  = React.lazy(() => import('./components/Legal/CommunityGuidelines'));
@@ -448,6 +449,7 @@ function AppContent() {
           <Route path="/service-packages/:serviceId" element={<ProtectedRoute><PackageManager /></ProtectedRoute>} />
           <Route path="/service-packages"         element={<ProtectedRoute><PackageManager /></ProtectedRoute>} />
           <Route path="/my-packages"           element={<ProtectedRoute><MyPackages /></ProtectedRoute>} />
+          <Route path="/my-sessions"           element={<ProtectedRoute><MySessionsPage /></ProtectedRoute>} />
           <Route path="/terms-of-service"      element={<TermsOfService />} />
           <Route path="/terms"                 element={<Navigate to="/terms-of-service" replace />} />
           <Route path="/privacy-policy"        element={<PrivacyPolicy />} />

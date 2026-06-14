@@ -7,6 +7,7 @@ import { apiRequest } from '../../utils/api';
 import CustomOfferModal from '../Offers/CustomOfferModal';
 import EscrowModal from '../Payments/EscrowModal';
 import BookingCalendar from '../Bookings/BookingCalendar';
+import UpcomingSessions from '../Sessions/UpcomingSessions';
 import IntakeFormFill from './IntakeFormFill';
 import SEO from '../common/SEO';
 import Avatar from '../common/Avatar';
@@ -406,12 +407,38 @@ const ServiceDetails = () => {
             </div>
           )}
 
-          {/* Booking calendar */}
-          {service.availability?.enabled && !isOwnService && (
-            <div className="sd-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <BookingCalendar serviceId={service._id} availability={service.availability} />
-            </div>
-          )}
+          {/* Scheduling UI — varies by scheduleType */}
+          {(() => {
+            const st = service.scheduleType;
+            // FIXED_RECURRING or FIXED_ONE_TIME: show upcoming sessions
+            if (st === 'FIXED_RECURRING' || st === 'FIXED_ONE_TIME') {
+              return (
+                <div className="sd-card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <UpcomingSessions serviceId={service._id} limit={10} allowBooking={!isOwnService} />
+                </div>
+              );
+            }
+            // REQUEST_BASED: no calendar, show message-first prompt
+            if (st === 'REQUEST_BASED') {
+              return !isOwnService ? (
+                <div className="sd-card">
+                  <h2 className="sd-section-title">Availability</h2>
+                  <p className="sd-request-info">
+                    💬 Message the freelancer to discuss details and availability.
+                  </p>
+                </div>
+              ) : null;
+            }
+            // DYNAMIC_PRIVATE or undefined/legacy: existing booking calendar
+            if (service.availability?.enabled && !isOwnService) {
+              return (
+                <div className="sd-card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <BookingCalendar serviceId={service._id} availability={service.availability} />
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Reviews empty state */}
           <div className="sd-card">
@@ -578,6 +605,9 @@ const ServiceDetails = () => {
                         <Link to={`/service-packages/${service._id}`}>📦 Manage Packages</Link>
                         <Link to={`/services/${service._id}/availability`}>🕐 Availability</Link>
                         <Link to="/intake-forms/builder">📋 Intake Forms</Link>
+                        {(service.scheduleType === 'FIXED_RECURRING' || service.scheduleType === 'FIXED_ONE_TIME') && (
+                          <Link to={`/my-sessions?serviceId=${service._id}`}>📅 Manage Sessions</Link>
+                        )}
                       </div>
                     </div>
                   )}

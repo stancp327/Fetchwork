@@ -189,6 +189,15 @@
   margin: 0 0 14px;
 }
 
+/* ── Request-based scheduling info ──────────────────────────── */
+.sd-request-info {
+  font-size: 0.95rem;
+  color: var(--color-text-muted, #6b7280);
+  margin: 0;
+  padding: 0.5rem 0;
+  line-height: 1.5;
+}
+
 /* ── About text ─────────────────────────────────────────────── */
 .sd-about-text {
   font-size: 14px;

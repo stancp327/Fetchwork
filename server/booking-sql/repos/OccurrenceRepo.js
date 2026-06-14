@@ -16,6 +16,8 @@ class OccurrenceRepo {
       },
       select: {
         id: true,
+        startAtUtc: true,
+        endAtUtc: true,
         localStartWallclock: true,
         status: true,
       },

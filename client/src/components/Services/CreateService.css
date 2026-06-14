@@ -1001,3 +1001,57 @@
 .media-dropzone-hint { font-size: 0.8rem; margin-top: 0.25rem; }
 .media-upload-error { color: var(--danger, #ef4444); margin-top: 0.5rem; font-size: 0.9rem; }
 .media-file-hidden { display: none; }
+
+/* -- Schedule Builder (Gate 6B) --------------------------------- */
+.sb-day-picker {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.sb-day-btn {
+  padding: 0.5rem 0.75rem;
+  min-width: 44px;
+  min-height: 44px;
+  border: 2px solid var(--border-color, #d1d5db);
+  border-radius: 8px;
+  background: var(--color-bg, #fff);
+  color: var(--color-text-primary, #111827);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.sb-day-btn:hover:not(.selected) {
+  border-color: #94a3b8;
+  background: var(--color-bg-secondary, #f9fafb);
+}
+.sb-day-btn.selected {
+  border-color: var(--primary, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary, #2563eb);
+}
+.sb-request-info {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.25rem;
+  background: var(--color-bg-secondary, #f0f9ff);
+  border: 1px solid var(--border-color, #bae6fd);
+  border-radius: 12px;
+}
+.sb-request-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.sb-request-info strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-primary, #111827);
+}
+.sb-request-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #6b7280);
+  line-height: 1.5;
+}

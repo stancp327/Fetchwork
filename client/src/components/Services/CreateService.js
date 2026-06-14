@@ -79,7 +79,17 @@ const CreateService = () => {
     capacityMaxDay: null,
     capacityMaxWeek: null,
     capacityMaxConcurrent: null,
-    // booking
+    // scheduling mode
+    scheduleType: '',
+    capacityType: 'ONE_ON_ONE',
+    maxCapacity: 1,
+    // fixed-session schedule fields
+    fixedDays: [],
+    fixedStartTime: '',
+    fixedDuration: 60,
+    fixedEventDate: '',
+    fixedGenerationWeeks: 8,
+    // booking (DYNAMIC_PRIVATE mode)
     bookingEnabled: false,
     bookingSlotDuration: 60,
     bookingMaxPerSlot: 1,
@@ -246,8 +256,15 @@ const CreateService = () => {
 
       serviceData.serviceLocation = data.serviceLocation || 'remote';
 
-      // Booking settings
-      if (data.bookingEnabled) {
+      // Scheduling mode (Gate 6B)
+      if (data.scheduleType) {
+        serviceData.scheduleType = data.scheduleType;
+        serviceData.capacityType = data.capacityType || 'ONE_ON_ONE';
+        serviceData.maxCapacity = data.maxCapacity || 1;
+      }
+
+      // DYNAMIC_PRIVATE: existing slot-based booking settings
+      if (data.bookingEnabled && data.scheduleType === 'DYNAMIC_PRIVATE') {
         serviceData.availability = {
           enabled: true,
           slotDuration: data.bookingSlotDuration || 60,
@@ -256,6 +273,17 @@ const CreateService = () => {
           maxAdvanceDays: data.bookingMaxAdvance || 60,
         };
         serviceData.bookingMinNotice = data.bookingMinNotice ?? 1;
+      }
+
+      // FIXED_RECURRING / FIXED_ONE_TIME: send schedule data for template creation
+      if (data.scheduleType === 'FIXED_RECURRING' || data.scheduleType === 'FIXED_ONE_TIME') {
+        serviceData.fixedSchedule = {
+          days: data.fixedDays || [],
+          startTime: data.fixedStartTime || '',
+          duration: data.fixedDuration || 60,
+          eventDate: data.fixedEventDate || '',
+          generationWeeks: data.fixedGenerationWeeks || 8,
+        };
       }
 
       // Include uploaded gallery images

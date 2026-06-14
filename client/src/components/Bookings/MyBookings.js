@@ -225,6 +225,9 @@ const MyBookings = () => {
           </>
         )}
         <Link to="/my-packages" className="mb-quick-link">📦 My Packages</Link>
+        {isFreelancerMode && (
+          <Link to="/my-sessions" className="mb-quick-link">📅 My Sessions</Link>
+        )}
       </div>
 
       {/* Tabs with counts */}

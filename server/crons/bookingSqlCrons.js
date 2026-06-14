@@ -17,6 +17,9 @@ try {
 let bookingEmailService = null;
 try { bookingEmailService = require('../services/bookingEmailService'); } catch (_) {}
 
+let SessionService = null;
+try { SessionService = require('../services/SessionService'); } catch (_) {}
+
 function initBookingSqlCrons() {
   if (!getPrisma) return;
 
@@ -181,6 +184,34 @@ function initBookingSqlCrons() {
       // reviewPromptSentAt column may not exist until migration — log quietly
       if (!err.message?.includes('reviewPromptSentAt') && !err.message?.includes('column')) {
         console.error('[bookingSqlCrons] review prompt cron error:', err.message);
+      }
+    }
+  });
+
+  // ── 5. Expire pending_payment session holds (Gate 7C-B3) ──
+  cron.schedule('*/2 * * * *', async () => {
+    if (backoffUntil && new Date() < backoffUntil) return;
+    if (!SessionService) return;
+
+    try {
+      const count = await SessionService.expireSessionHolds();
+
+      if (consecutiveFailures > 0) {
+        console.log('[sessionHoldExpiry] Neon reconnected — resuming session hold expiry cron');
+        consecutiveFailures = 0;
+        backoffUntil = null;
+      }
+
+      if (count > 0) {
+        console.log(`[sessionHoldExpiry] Released ${count} expired pending_payment session hold(s)`);
+      }
+    } catch (err) {
+      consecutiveFailures++;
+      if (consecutiveFailures === BACKOFF_AFTER) {
+        backoffUntil = new Date(Date.now() + BACKOFF_MINUTES * 60 * 1000);
+        console.warn(`[sessionHoldExpiry] Neon unreachable after ${BACKOFF_AFTER} attempts — backing off ${BACKOFF_MINUTES}min. Check console.neon.tech`);
+      } else if (consecutiveFailures < BACKOFF_AFTER) {
+        console.error('[sessionHoldExpiry] Error expiring session holds:', err.message);
       }
     }
   });
