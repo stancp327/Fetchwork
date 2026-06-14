@@ -711,28 +711,6 @@ const TabSettings = ({ data, onChange }) => (
       <input type="email" value={data.email || ''} disabled className="input-disabled" />
       <p className="field-hint">Contact support to change your email.</p>
     </div>
-    <h3 className="prof-mt-lg">Social Links</h3>
-    <div className="prof-row">
-      <div className="prof-field">
-        <label>LinkedIn</label>
-        <input type="url" value={data.socialLinks?.linkedin || ''} onChange={e => onChange('socialLinks.linkedin', e.target.value)} placeholder="https://linkedin.com/in/..." />
-      </div>
-      <div className="prof-field">
-        <label>GitHub</label>
-        <input type="url" value={data.socialLinks?.github || ''} onChange={e => onChange('socialLinks.github', e.target.value)} placeholder="https://github.com/..." />
-      </div>
-    </div>
-    <div className="prof-row">
-      <div className="prof-field">
-        <label>Portfolio</label>
-        <input type="url" value={data.socialLinks?.portfolio || ''} onChange={e => onChange('socialLinks.portfolio', e.target.value)} placeholder="https://yoursite.com" />
-      </div>
-      <div className="prof-field">
-        <label>Twitter</label>
-        <input type="url" value={data.socialLinks?.twitter || ''} onChange={e => onChange('socialLinks.twitter', e.target.value)} placeholder="https://twitter.com/..." />
-      </div>
-    </div>
-
     <div className="prof-section-divider">
       <AIPreferences userRole={data.role || 'both'} />
     </div>

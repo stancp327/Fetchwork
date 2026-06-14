@@ -175,8 +175,8 @@ const ProfileMenu = ({ user, logout, isAdmin, isMod }) => {
           <MenuItem to="/reviews"   icon="⭐" label="Reviews" />
           <MenuItem to="/saved"     icon="🔖" label="Saved" />
           <MenuItem to="/offers"    icon="💬" label="Offers" />
-          <MenuItem to="/teams"     icon="👥" label="Teams" />
-          <MenuItem to="/agencies"  icon="🏢" label="Agencies" />
+          {false && <MenuItem to="/teams"     icon="👥" label="Teams" />}
+          {false && <MenuItem to="/agencies"  icon="🏢" label="Agencies" />}
 
           <Divider />
 
@@ -446,8 +446,8 @@ const Navigation = () => {
                 <PrimaryLink to="/reviews"   onClick={closeMenu}>⭐ Reviews</PrimaryLink>
                 <PrimaryLink to="/saved"     onClick={closeMenu}>🔖 Saved</PrimaryLink>
                 <PrimaryLink to="/offers"    onClick={closeMenu}>💬 Offers</PrimaryLink>
-                <PrimaryLink to="/teams"     onClick={closeMenu}>👥 Teams</PrimaryLink>
-                <PrimaryLink to="/agencies"  onClick={closeMenu}>🏢 Agencies</PrimaryLink>
+                {false && <PrimaryLink to="/teams"     onClick={closeMenu}>👥 Teams</PrimaryLink>}
+                {false && <PrimaryLink to="/agencies"  onClick={closeMenu}>🏢 Agencies</PrimaryLink>}
               </div>
 
               <div className="mobile-section">

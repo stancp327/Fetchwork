@@ -106,12 +106,12 @@ const Profile = () => {
         const formData = new FormData();
         formData.append('profilePicture', selectedFile);
         // Send all other fields as JSON in a single field
-        const { _id, profilePicture, stripeConnected, isVerified, rating, email, ...saveable } = data;
+        const { _id, profilePicture, stripeConnected, isVerified, rating, email, socialLinks, ...saveable } = data;
         formData.append('_json', JSON.stringify(saveable));
         response = await apiRequest('/api/users/profile', { method: 'PUT', body: formData });
       } else {
         // No file — send clean JSON
-        const { _id, profilePicture, stripeConnected, isVerified, rating, email, ...saveable } = data;
+        const { _id, profilePicture, stripeConnected, isVerified, rating, email, socialLinks, ...saveable } = data;
         response = await apiRequest('/api/users/profile', {
           method: 'PUT',
           body: JSON.stringify(saveable),
@@ -144,12 +144,7 @@ const Profile = () => {
           rateNegotiable: u.rateNegotiable ?? prev.rateNegotiable,
           availabilityStatus: u.availabilityStatus || prev.availabilityStatus,
           primaryCategory: u.primaryCategory || prev.primaryCategory,
-          socialLinks: {
-            linkedin: u.socialLinks?.linkedin || '',
-            github: u.socialLinks?.github || '',
-            portfolio: u.socialLinks?.portfolio || '',
-            twitter: u.socialLinks?.twitter || '',
-          },
+          socialLinks: prev.socialLinks, // preserved but hidden from UI
           location: u.location || prev.location,
           portfolio: Array.isArray(u.portfolio) ? u.portfolio : (prev.portfolio || []),
           languages: Array.isArray(u.languages)
@@ -257,7 +252,9 @@ const Profile = () => {
                     body: JSON.stringify({ bio: data.bio, headline: data.headline, skills: data.skills, hourlyRate: data.hourlyRate, category: data.primaryCategory, completionScore: completion }),
                   });
                   setAiSuggestions(res.suggestions);
-                } catch { /* silent */ }
+                } catch (err) {
+                  setError(err.status === 403 ? 'Profile analysis requires a Plus+ plan.' : 'AI analysis temporarily unavailable. Try again later.');
+                }
                 finally { setAiSuggestionsLoading(false); }
               }}>
                 {aiSuggestionsLoading ? '✨ Analyzing…' : '✨ Analyze My Profile'}
@@ -290,7 +287,7 @@ const Profile = () => {
                   });
                   if (res.advice) setRateAdvice(res.advice);
                 } catch (err) {
-                  if (err.status === 403) alert('Rate Advisor is a Plus+ feature.');
+                  setError(err.status === 403 ? 'Rate Advisor requires a Plus+ plan.' : 'Rate analysis temporarily unavailable. Try again later.');
                 }
                 finally { setRateAdviceLoading(false); }
               }}>
