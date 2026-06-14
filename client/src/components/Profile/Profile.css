@@ -690,6 +690,7 @@
 }
 .prf-ai-run-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .prf-ai-run-btn:not(:disabled):hover { opacity: 0.85; }
+.prf-ai-error { color: var(--color-danger, #ef4444); font-size: var(--font-size-sm, 0.875rem); margin-top: var(--space-xs, 0.375rem); }
 
 .prf-ai-suggestions { display: flex; flex-direction: column; gap: 10px; }
 .prf-ai-suggestion {

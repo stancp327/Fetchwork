@@ -17,8 +17,10 @@ const Profile = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiSuggestionsLoading, setAiSuggestionsLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [rateAdvice, setRateAdvice] = useState(null);
   const [rateAdviceLoading, setRateAdviceLoading] = useState(false);
+  const [rateError, setRateError] = useState('');
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [data, setData] = useState({
     firstName: '', lastName: '', bio: '', headline: '', skills: [],
@@ -246,6 +248,7 @@ const Profile = () => {
             ) : (
               <button className="prf-ai-run-btn" disabled={aiSuggestionsLoading} onClick={async () => {
                 setAiSuggestionsLoading(true);
+                setAiError('');
                 try {
                   const res = await apiRequest('/api/ai/optimize-profile', {
                     method: 'POST',
@@ -253,12 +256,14 @@ const Profile = () => {
                   });
                   setAiSuggestions(res.suggestions);
                 } catch (err) {
-                  setError(err.status === 403 ? 'Profile analysis requires a Plus+ plan.' : 'AI analysis temporarily unavailable. Try again later.');
+                  console.error('AI optimize error:', err);
+                  setAiError(err.status === 403 ? 'Requires a Plus+ plan.' : err.status === 503 ? 'AI not configured on server.' : `Error: ${err.message || 'Try again later.'}`);
                 }
                 finally { setAiSuggestionsLoading(false); }
               }}>
                 {aiSuggestionsLoading ? '✨ Analyzing…' : '✨ Analyze My Profile'}
               </button>
+              {aiError && <p className="prf-ai-error">{aiError}</p>}
             )}
           </div>
 
@@ -280,6 +285,7 @@ const Profile = () => {
             ) : (
               <button className="prf-ai-run-btn" disabled={rateAdviceLoading} onClick={async () => {
                 setRateAdviceLoading(true);
+                setRateError('');
                 try {
                   const res = await apiRequest('/api/ai/rate-advice', {
                     method: 'POST',
@@ -287,12 +293,14 @@ const Profile = () => {
                   });
                   if (res.advice) setRateAdvice(res.advice);
                 } catch (err) {
-                  setError(err.status === 403 ? 'Rate Advisor requires a Plus+ plan.' : 'Rate analysis temporarily unavailable. Try again later.');
+                  console.error('AI rate error:', err);
+                  setRateError(err.status === 403 ? 'Requires a Plus+ plan.' : err.status === 503 ? 'AI not configured on server.' : `Error: ${err.message || 'Try again later.'}`);
                 }
                 finally { setRateAdviceLoading(false); }
               }}>
                 {rateAdviceLoading ? '✨ Analyzing…' : '✨ Check My Rate'}
               </button>
+              {rateError && <p className="prf-ai-error">{rateError}</p>}
             )}
           </div>
         </div>
