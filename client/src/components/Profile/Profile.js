@@ -246,6 +246,7 @@ const Profile = () => {
                 ))}
               </div>
             ) : (
+              <>
               <button className="prf-ai-run-btn" disabled={aiSuggestionsLoading} onClick={async () => {
                 setAiSuggestionsLoading(true);
                 setAiError('');
@@ -264,6 +265,7 @@ const Profile = () => {
                 {aiSuggestionsLoading ? '✨ Analyzing…' : '✨ Analyze My Profile'}
               </button>
               {aiError && <p className="prf-ai-error">{aiError}</p>}
+              </>
             )}
           </div>
 
@@ -283,6 +285,7 @@ const Profile = () => {
                 {rateAdvice.positioning && <p className="prf-ai-rate-positioning">💡 {rateAdvice.positioning}</p>}
               </div>
             ) : (
+              <>
               <button className="prf-ai-run-btn" disabled={rateAdviceLoading} onClick={async () => {
                 setRateAdviceLoading(true);
                 setRateError('');
@@ -301,6 +304,7 @@ const Profile = () => {
                 {rateAdviceLoading ? '✨ Analyzing…' : '✨ Check My Rate'}
               </button>
               {rateError && <p className="prf-ai-error">{rateError}</p>}
+              </>
             )}
           </div>
         </div>
