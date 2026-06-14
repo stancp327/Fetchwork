@@ -43,7 +43,8 @@ const localDiskStorage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
   const allowed = [
-    'image/jpeg', 'image/png', 'image/gif',
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'video/mp4', 'video/quicktime', 'video/webm',
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -58,7 +59,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: cloudinaryStorage || localDiskStorage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB (videos)
 }).array('files', 5);
 
 // POST /api/upload

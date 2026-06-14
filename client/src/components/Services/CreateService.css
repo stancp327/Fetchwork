@@ -998,3 +998,6 @@
 .media-thumb-caption { width: 100%; margin-top: 0.25rem; }
 .media-thumb-caption input { width: 100%; padding: 0.25rem 0.5rem; border: 1px solid var(--border-color, #d1d5db); border-radius: 6px; font-size: 0.8rem; }
 .media-upload-loading { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; color: var(--text-secondary); }
+.media-dropzone-hint { font-size: 0.8rem; margin-top: 0.25rem; }
+.media-upload-error { color: var(--danger, #ef4444); margin-top: 0.5rem; font-size: 0.9rem; }
+.media-file-hidden { display: none; }

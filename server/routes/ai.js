@@ -884,4 +884,55 @@ router.post('/analyze-dispute/:disputeId', authenticateToken, validateMongoId, a
   }
 });
 
+// ── POST /api/ai/optimize-service-seo ─────────────────────────────────────
+// AI generates SEO tips for a service listing
+router.post('/optimize-service-seo', authenticateToken, async (req, res) => {
+  try {
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+
+    const { title, description, category, tags } = req.body;
+    if (!title && !description) {
+      return res.status(400).json({ error: 'Provide a title or description' });
+    }
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `You are an SEO expert for a freelance services marketplace. Analyze this service listing and provide optimization tips.`,
+      ``,
+      `Title: "${title || '(none)'}"`,
+      description ? `Description: "${description.slice(0, 500)}"` : '',
+      category ? `Category: "${category}"` : '',
+      tags?.length ? `Tags: ${tags.join(', ')}` : '',
+      ``,
+      `Return JSON with:`,
+      `- "titleSuggestion": improved title (max 80 chars, include keywords)`,
+      `- "keywords": array of 5-8 relevant search keywords`,
+      `- "descriptionTips": array of 3-4 short tips to improve the description`,
+      `- "tagSuggestions": array of 5-8 recommended tags/skills`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 600,
+      temperature: 0.7,
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() || '{}';
+    let result;
+    try {
+      result = JSON.parse(raw.replace(/^```json\n?/, '').replace(/\n?```$/, ''));
+    } catch {
+      result = { descriptionTips: ['Could not parse AI response. Try again.'] };
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('[ai/optimize-service-seo] error:', err.message);
+    res.status(500).json({ error: 'Failed to generate SEO tips' });
+  }
+});
+
 module.exports = router;

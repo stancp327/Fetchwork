@@ -34,21 +34,21 @@ const PortfolioWizard = ({ onClose, onSuccess, editItem }) => {
     if (!files.length) return;
     setUploading(true);
     try {
-      const uploaded = [];
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          body: formData,
-        });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        if (data.url) uploaded.push(data.url);
+      const formData = new FormData();
+      files.forEach(f => formData.append('files', f));
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
       }
-      updateField('mediaUrls', [...item.mediaUrls, ...uploaded]);
-      addToast(`${uploaded.length} file${uploaded.length > 1 ? 's' : ''} uploaded!`, 'success');
+      const results = await res.json();
+      const urls = results.map(r => r.url).filter(Boolean);
+      updateField('mediaUrls', [...item.mediaUrls, ...urls]);
+      addToast(`${urls.length} file${urls.length > 1 ? 's' : ''} uploaded!`, 'success');
     } catch (err) {
       addToast(err.message || 'Upload failed', 'error');
     } finally {

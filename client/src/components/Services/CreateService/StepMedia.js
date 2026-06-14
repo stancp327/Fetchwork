@@ -97,15 +97,15 @@ const StepMedia = ({ data, onChange }) => {
           <p className="media-dropzone-text">
             Drag &amp; drop images here, or click to browse
           </p>
-          <p className="media-dropzone-text" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
+          <p className="media-dropzone-text media-dropzone-hint">
             PNG, JPG, GIF · Up to 5MB each · Max {MAX_FILES} images
           </p>
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png,image/gif"
+            accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"
             multiple
-            style={{ display: 'none' }}
+            className="media-file-hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
         </div>
@@ -119,9 +119,7 @@ const StepMedia = ({ data, onChange }) => {
       )}
 
       {uploadError && (
-        <p style={{ color: 'var(--danger, #ef4444)', marginTop: '0.5rem', fontSize: '0.9rem' }}>
-          ⚠️ {uploadError}
-        </p>
+        <p className="media-upload-error">⚠️ {uploadError}</p>
       )}
 
       {gallery.length > 0 && (

@@ -113,6 +113,11 @@
 
 .fbw-privacy { font-size: 11px; color: var(--color-text-muted, #9ca3af); text-align: center; margin: 0; }
 
+@media (max-width: 768px) {
+  .fbw-root { bottom: 70px; } /* above mobile bottom nav */
+  .fbw-trigger { font-size: 11px; padding: 6px 12px; border-radius: 16px; }
+}
+
 @media (min-width: 480px) {
   .fbw-panel { width: 340px; }
 }
