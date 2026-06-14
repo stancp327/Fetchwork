@@ -181,6 +181,61 @@ const PostJobStep4 = ({ formData, handleInputChange, zipLookup, setFormData }) =
             />
             <span className="field-hint">Leave blank if you're flexible on timing</span>
           </div>
+
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <label>Preferred Days <span className="label-optional">(optional)</span></label>
+            <div className="preferred-days-grid">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                <button
+                  key={day}
+                  type="button"
+                  className={`preferred-day-btn ${(formData.preferredDays || []).includes(day) ? 'selected' : ''}`}
+                  onClick={() => {
+                    const current = formData.preferredDays || [];
+                    const updated = current.includes(day)
+                      ? current.filter(d => d !== day)
+                      : [...current, day];
+                    setFormData(prev => ({ ...prev, preferredDays: updated }));
+                  }}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+            <span className="field-hint">Select the days that work best for you</span>
+          </div>
+
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <label>Preferred Time Window <span className="label-optional">(optional)</span></label>
+            <div className="preferred-time-row">
+              <select
+                name="preferredTimeStart"
+                value={formData.preferredTimeStart || ''}
+                onChange={handleInputChange}
+                className="preferred-time-select"
+              >
+                <option value="">Earliest</option>
+                {['6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM',
+                  '1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'].map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <span className="preferred-time-sep">to</span>
+              <select
+                name="preferredTimeEnd"
+                value={formData.preferredTimeEnd || ''}
+                onChange={handleInputChange}
+                className="preferred-time-select"
+              >
+                <option value="">Latest</option>
+                {['7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM',
+                  '1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM'].map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            <span className="field-hint">Freelancers will see your preferred window and can propose times within it</span>
+          </div>
         </div>
       )}
 

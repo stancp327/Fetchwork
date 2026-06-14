@@ -184,6 +184,13 @@ const jobSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  preferredDays: {
+    type: [String],
+    enum: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    default: []
+  },
+  preferredTimeStart: { type: String, default: '' },
+  preferredTimeEnd: { type: String, default: '' },
   cancelledAt: Date,
   cancellationReason: String,
   startDate: Date,

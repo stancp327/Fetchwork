@@ -99,6 +99,9 @@ export const buildJobPayload = (formData, selectedTeam) => {
     },
     deadline: formData.deadline || null,
     scheduledDate: formData.scheduledDate || null,
+    preferredDays: formData.preferredDays?.length > 0 ? formData.preferredDays : [],
+    preferredTimeStart: formData.preferredTimeStart || '',
+    preferredTimeEnd: formData.preferredTimeEnd || '',
     isUrgent: formData.isUrgent,
     recurring: formData.recurringEnabled
       ? {

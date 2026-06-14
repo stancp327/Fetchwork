@@ -420,3 +420,12 @@
 .attachment-item-info { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
 .attachment-item-size { color: var(--text-secondary, #6b7280); font-size: 0.8rem; }
 .attachment-item-remove { background: none; border: none; color: var(--danger, #ef4444); cursor: pointer; min-width: 44px; min-height: 44px; font-size: 1.1rem; }
+
+/* Preferred days/time */
+.preferred-days-grid { display: flex; flex-wrap: wrap; gap: var(--space-xs, 0.375rem); margin-top: var(--space-xs, 0.375rem); }
+.preferred-day-btn { padding: var(--space-sm, 0.5rem) var(--space-md, 0.75rem); border: 1px solid var(--color-border, #e5e7eb); border-radius: var(--radius-md, 8px); background: var(--color-bg, #fff); color: var(--color-text, #111); font-size: var(--font-size-sm, 0.875rem); cursor: pointer; min-width: 44px; min-height: 44px; transition: all 0.15s ease; }
+.preferred-day-btn:hover { border-color: var(--color-primary, #2563eb); }
+.preferred-day-btn.selected { background: var(--color-primary, #2563eb); color: #fff; border-color: var(--color-primary, #2563eb); }
+.preferred-time-row { display: flex; align-items: center; gap: var(--space-sm, 0.5rem); margin-top: var(--space-xs, 0.375rem); }
+.preferred-time-select { padding: var(--space-sm, 0.5rem) var(--space-md, 0.75rem); border: 1px solid var(--color-border, #e5e7eb); border-radius: var(--radius-md, 8px); background: var(--color-bg, #fff); font-size: var(--font-size-sm, 0.875rem); min-height: 44px; flex: 1; }
+.preferred-time-sep { color: var(--color-text-secondary, #6b7280); font-size: var(--font-size-sm, 0.875rem); }

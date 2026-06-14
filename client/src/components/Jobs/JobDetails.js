@@ -343,6 +343,20 @@ const JobDetails = () => {
                 </div>
               )}
 
+              {job.preferredDays?.length > 0 && (
+                <div className="job-stat-item">
+                  <span className="stat-label">Preferred Days</span>
+                  <span className="stat-value">{job.preferredDays.join(', ')}</span>
+                </div>
+              )}
+
+              {(job.preferredTimeStart || job.preferredTimeEnd) && (
+                <div className="job-stat-item">
+                  <span className="stat-label">Preferred Time</span>
+                  <span className="stat-value">{job.preferredTimeStart || 'Any'} – {job.preferredTimeEnd || 'Any'}</span>
+                </div>
+              )}
+
               <div className="job-stat-item">
                 <span className="stat-label">Proposals</span>
                 <span className="stat-value">{job.proposals?.length || 0}</span>
