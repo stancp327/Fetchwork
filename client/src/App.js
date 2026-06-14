@@ -417,6 +417,7 @@ function AppContent() {
           <Route path="/book/:username/:serviceId" element={<PublicBookingPage />} />
           <Route path="/cancellation-policy"   element={<ProtectedRoute><CancellationPolicyEditor /></ProtectedRoute>} />
           <Route path="/booking-analytics"     element={<ProtectedRoute><BookingAnalytics /></ProtectedRoute>} />
+          <Route path="/intake-forms"          element={<ProtectedRoute><IntakeFormBuilder /></ProtectedRoute>} />
           <Route path="/intake-forms/builder"  element={<ProtectedRoute><IntakeFormBuilder /></ProtectedRoute>} />
           <Route path="/bookings/multi/:id"    element={<ProtectedRoute><MultiBookingDetail /></ProtectedRoute>} />
           <Route path="/pricing"               element={<PricingPage />} />

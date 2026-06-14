@@ -93,3 +93,19 @@
 }
 .iff-done-icon { font-size: 1.5rem; }
 .iff-done p { font-size: 0.9rem; color: #065f46; margin: 0; }
+
+/* Help text */
+.iff-help-text { font-size: 0.8rem; color: var(--color-text-secondary, #6b7280); margin: 0; font-style: italic; }
+
+/* Checkbox + Radio groups */
+.iff-checkbox-group,
+.iff-radio-group { display: flex; flex-direction: column; gap: var(--space-xs, 0.375rem); }
+.iff-checkbox-option,
+.iff-radio-option { display: flex; align-items: flex-start; gap: var(--space-sm, 0.5rem); padding: var(--space-sm, 0.5rem); border: 1px solid var(--color-border, #e5e7eb); border-radius: var(--radius-md, 8px); cursor: pointer; min-height: 44px; }
+.iff-checkbox-option:hover,
+.iff-radio-option:hover { background: var(--color-bg-muted, #f9fafb); }
+.iff-checkbox-option input,
+.iff-radio-option input { margin-top: 0.2rem; flex-shrink: 0; }
+.iff-option-content { display: flex; flex-direction: column; }
+.iff-option-label { font-size: var(--font-size-sm, 0.875rem); font-weight: 500; color: var(--color-text, #111); }
+.iff-option-help { font-size: var(--font-size-xs, 0.75rem); color: var(--color-text-secondary, #6b7280); margin-top: 0.1rem; }

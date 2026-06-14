@@ -171,6 +171,7 @@ const ProfileMenu = ({ user, logout, isAdmin, isMod }) => {
           <div className="nav-menu-section-label">Work</div>
           <MenuItem to="/projects"  icon="📋" label="Projects" />
           <MenuItem to="/bookings"  icon="📅" label="Bookings" />
+          <MenuItem to="/intake-forms" icon="📋" label="Intake Forms" />
           <MenuItem to="/contracts" icon="📄" label="Contracts" />
           <MenuItem to="/reviews"   icon="⭐" label="Reviews" />
           <MenuItem to="/saved"     icon="🔖" label="Saved" />

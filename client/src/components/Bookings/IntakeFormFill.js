@@ -102,6 +102,20 @@ const IntakeFormFill = ({ template, bookingId, onSubmitted }) => {
               />
             )}
 
+            {field.helpText && (
+              <p className="iff-help-text">{field.helpText}</p>
+            )}
+
+            {field.type === 'date' && (
+              <input
+                id={`iff-${field.id}`}
+                type="date"
+                className={`iff-input ${errors[field.id] ? 'err' : ''}`}
+                value={values[field.id] || ''}
+                onChange={e => handleChange(field.id, e.target.value)}
+              />
+            )}
+
             {field.type === 'select' && (
               <select
                 id={`iff-${field.id}`}
@@ -110,22 +124,72 @@ const IntakeFormFill = ({ template, bookingId, onSubmitted }) => {
                 onChange={e => handleChange(field.id, e.target.value)}
               >
                 <option value="">Select an option…</option>
-                {(field.options || []).map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
+                {(field.options || []).map((opt, oi) => {
+                  const label = typeof opt === 'object' ? opt.label : opt;
+                  return <option key={oi} value={label}>{label}</option>;
+                })}
               </select>
             )}
 
             {field.type === 'checkbox' && (
-              <label className="iff-checkbox-label">
-                <input
-                  id={`iff-${field.id}`}
-                  type="checkbox"
-                  checked={!!values[field.id]}
-                  onChange={e => handleChange(field.id, e.target.checked)}
-                />
-                {field.label}
-              </label>
+              <div className="iff-checkbox-group">
+                {(field.options || []).length > 0 ? (
+                  (field.options || []).map((opt, oi) => {
+                    const optLabel = typeof opt === 'object' ? opt.label : opt;
+                    const optHelp = typeof opt === 'object' ? opt.helpText : '';
+                    const checked = Array.isArray(values[field.id]) && values[field.id].includes(optLabel);
+                    return (
+                      <label key={oi} className="iff-checkbox-option">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            const current = Array.isArray(values[field.id]) ? values[field.id] : [];
+                            const updated = checked ? current.filter(v => v !== optLabel) : [...current, optLabel];
+                            handleChange(field.id, updated);
+                          }}
+                        />
+                        <div className="iff-option-content">
+                          <span className="iff-option-label">{optLabel}</span>
+                          {optHelp && <span className="iff-option-help">{optHelp}</span>}
+                        </div>
+                      </label>
+                    );
+                  })
+                ) : (
+                  <label className="iff-checkbox-option">
+                    <input
+                      type="checkbox"
+                      checked={!!values[field.id]}
+                      onChange={e => handleChange(field.id, e.target.checked)}
+                    />
+                    <span className="iff-option-label">{field.label}</span>
+                  </label>
+                )}
+              </div>
+            )}
+
+            {field.type === 'radio' && (
+              <div className="iff-radio-group">
+                {(field.options || []).map((opt, oi) => {
+                  const optLabel = typeof opt === 'object' ? opt.label : opt;
+                  const optHelp = typeof opt === 'object' ? opt.helpText : '';
+                  return (
+                    <label key={oi} className="iff-radio-option">
+                      <input
+                        type="radio"
+                        name={`iff-radio-${field.id}`}
+                        checked={values[field.id] === optLabel}
+                        onChange={() => handleChange(field.id, optLabel)}
+                      />
+                      <div className="iff-option-content">
+                        <span className="iff-option-label">{optLabel}</span>
+                        {optHelp && <span className="iff-option-help">{optHelp}</span>}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
             )}
 
             {errors[field.id] && (

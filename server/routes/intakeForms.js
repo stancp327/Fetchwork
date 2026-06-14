@@ -205,4 +205,67 @@ router.get('/:serviceId', requireDb, async (req, res) => {
   }
 });
 
+// ── POST /api/intake-forms/ai-generate ───────────────────────────────────────
+// AI generates intake form fields based on service category/title
+router.post('/ai-generate', authenticateToken, async (req, res) => {
+  try {
+    const { hasAI } = require('../services/aiService');
+    if (!hasAI()) return res.status(503).json({ error: 'AI not available' });
+
+    const { category, serviceTitle, serviceDescription } = req.body;
+    if (!category) return res.status(400).json({ error: 'Category is required' });
+
+    const { OpenAI } = require('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const prompt = [
+      `Generate 5-8 intake form questions for a freelance service.`,
+      `Service type: ${category}`,
+      serviceTitle ? `Service name: "${serviceTitle}"` : '',
+      serviceDescription ? `Description: "${serviceDescription.slice(0, 300)}"` : '',
+      ``,
+      `Return a JSON array of field objects. Each field has:`,
+      `- "label": the question text`,
+      `- "type": one of "text", "textarea", "select", "checkbox", "radio", "number", "date"`,
+      `- "required": boolean`,
+      `- "helpText": brief guidance for how to answer (1 sentence)`,
+      `- "options": array of {label, helpText} objects (only for select/checkbox/radio types)`,
+      ``,
+      `Make questions specific and practical for this service type.`,
+      `Include a mix of field types. Checkbox questions should have 3-6 options with helpText explaining each.`,
+      `Example checkbox: "What are your goals?" with options like {label: "Weight loss", helpText: "Reduce body fat through exercise and nutrition"}`,
+    ].filter(Boolean).join('\n');
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1200,
+      temperature: 0.7,
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim() || '[]';
+    let fields;
+    try {
+      const jsonStr = raw.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      fields = JSON.parse(jsonStr);
+    } catch {
+      fields = [];
+    }
+
+    // Normalize
+    fields = fields.map(f => ({
+      label: f.label || '',
+      type: ['text','textarea','select','checkbox','radio','number','date'].includes(f.type) ? f.type : 'text',
+      required: !!f.required,
+      helpText: f.helpText || '',
+      options: Array.isArray(f.options) ? f.options.map(o => typeof o === 'string' ? { label: o, helpText: '' } : { label: o.label || '', helpText: o.helpText || '' }) : [],
+    }));
+
+    res.json({ fields });
+  } catch (err) {
+    console.error('[intake-forms/ai-generate] error:', err.message);
+    res.status(500).json({ error: 'AI generation failed' });
+  }
+});
+
 module.exports = router;

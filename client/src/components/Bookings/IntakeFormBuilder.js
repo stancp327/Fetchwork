@@ -5,11 +5,13 @@ import SEO from '../common/SEO';
 import './IntakeFormBuilder.css';
 
 const FIELD_TYPES = [
-  { value: 'text',     label: 'Short text' },
-  { value: 'textarea', label: 'Long text' },
-  { value: 'select',   label: 'Dropdown' },
-  { value: 'checkbox', label: 'Checkbox' },
-  { value: 'number',   label: 'Number' },
+  { value: 'text',     label: 'Short text',  icon: '📝' },
+  { value: 'textarea', label: 'Long text',   icon: '📄' },
+  { value: 'select',   label: 'Dropdown',    icon: '📋' },
+  { value: 'checkbox', label: 'Checkboxes',  icon: '☑️' },
+  { value: 'radio',    label: 'Single choice', icon: '🔘' },
+  { value: 'number',   label: 'Number',      icon: '🔢' },
+  { value: 'date',     label: 'Date',        icon: '📅' },
 ];
 
 function newField() {
@@ -18,6 +20,7 @@ function newField() {
     label:    '',
     type:     'text',
     required: false,
+    helpText: '',
     options:  [],
   };
 }
@@ -32,8 +35,29 @@ const IntakeFormBuilder = () => {
   const [existing,  setExisting]   = useState([]);
   const [editingId, setEditingId]  = useState(null);
   const [dragIdx,   setDragIdx]    = useState(null);
+  const [aiLoading, setAiLoading]  = useState(false);
+  const [aiCategory, setAiCategory] = useState('');
 
   const flash = (text, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg({ text: '', ok: true }), 4000); };
+
+  const handleAiGenerate = async () => {
+    if (!aiCategory.trim()) { flash('Enter a service type or category for AI generation', false); return; }
+    setAiLoading(true);
+    try {
+      const res = await apiRequest('/api/intake-forms/ai-generate', {
+        method: 'POST',
+        body: JSON.stringify({ category: aiCategory, serviceTitle: formName }),
+      });
+      if (res.fields?.length) {
+        setFields(res.fields.map(f => ({ ...f, id: crypto.randomUUID() })));
+        flash(`✨ Generated ${res.fields.length} questions!`);
+      }
+    } catch (err) {
+      flash(err.message || 'AI generation failed', false);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   useEffect(() => {
     apiRequest('/api/intake-forms/templates/me')
@@ -65,7 +89,7 @@ const IntakeFormBuilder = () => {
   };
 
   const handleAddOption = (idx) => {
-    setFields(prev => prev.map((f, i) => i === idx ? { ...f, options: [...(f.options || []), ''] } : f));
+    setFields(prev => prev.map((f, i) => i === idx ? { ...f, options: [...(f.options || []), { label: '', helpText: '' }] } : f));
   };
 
   const handleRemoveOption = (idx, optIdx) => {
@@ -161,6 +185,23 @@ const IntakeFormBuilder = () => {
         <div className={`ifb-msg ${msg.ok ? 'ok' : 'err'}`}>{msg.text}</div>
       )}
 
+      {/* AI Generate */}
+      <div className="ifb-ai-section">
+        <h2 className="ifb-sub">✨ AI Form Generator</h2>
+        <p className="ifb-ai-desc">Describe your service and AI will generate relevant intake questions.</p>
+        <div className="ifb-ai-row">
+          <input
+            className="ifb-input"
+            value={aiCategory}
+            onChange={e => setAiCategory(e.target.value)}
+            placeholder="e.g. Personal training, Dog walking, Web design..."
+          />
+          <button type="button" className="ifb-btn-ai" onClick={handleAiGenerate} disabled={aiLoading}>
+            {aiLoading ? '✨ Generating…' : '✨ Generate Questions'}
+          </button>
+        </div>
+      </div>
+
       {/* Builder */}
       <form onSubmit={handleSave} className="ifb-form">
         <label className="ifb-label">
@@ -208,11 +249,21 @@ const IntakeFormBuilder = () => {
                     onChange={e => handleFieldChange(idx, 'type', e.target.value)}
                   >
                     {FIELD_TYPES.map(t => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                      <option key={t.value} value={t.value}>{t.icon} {t.label}</option>
                     ))}
                   </select>
                 </label>
               </div>
+
+              <label className="ifb-label">
+                Help Text <span className="ifb-optional">(optional)</span>
+                <input
+                  className="ifb-input"
+                  value={field.helpText || ''}
+                  onChange={e => handleFieldChange(idx, 'helpText', e.target.value)}
+                  placeholder="Guidance for how to answer this question"
+                />
+              </label>
 
               <label className="ifb-checkbox-row">
                 <input
@@ -223,20 +274,31 @@ const IntakeFormBuilder = () => {
                 Required
               </label>
 
-              {field.type === 'select' && (
+              {(field.type === 'select' || field.type === 'checkbox' || field.type === 'radio') && (
                 <div className="ifb-options">
                   <span className="ifb-options-label">Options</span>
-                  {(field.options || []).map((opt, optIdx) => (
-                    <div key={optIdx} className="ifb-option-row">
-                      <input
-                        className="ifb-input"
-                        value={opt}
-                        onChange={e => handleOptionChange(idx, optIdx, e.target.value)}
-                        placeholder={`Option ${optIdx + 1}`}
-                      />
-                      <button type="button" className="ifb-opt-remove" onClick={() => handleRemoveOption(idx, optIdx)}>✕</button>
-                    </div>
-                  ))}
+                  {(field.options || []).map((opt, optIdx) => {
+                    const optObj = typeof opt === 'object' ? opt : { label: opt, helpText: '' };
+                    return (
+                      <div key={optIdx} className="ifb-option-row">
+                        <div className="ifb-option-fields">
+                          <input
+                            className="ifb-input"
+                            value={optObj.label || ''}
+                            onChange={e => handleOptionChange(idx, optIdx, { ...optObj, label: e.target.value })}
+                            placeholder={`Option ${optIdx + 1}`}
+                          />
+                          <input
+                            className="ifb-input ifb-input-sm"
+                            value={optObj.helpText || ''}
+                            onChange={e => handleOptionChange(idx, optIdx, { ...optObj, helpText: e.target.value })}
+                            placeholder="Help text for this option"
+                          />
+                        </div>
+                        <button type="button" className="ifb-opt-remove" onClick={() => handleRemoveOption(idx, optIdx)}>✕</button>
+                      </div>
+                    );
+                  })}
                   <button type="button" className="ifb-btn-link" onClick={() => handleAddOption(idx)}>+ Add option</button>
                 </div>
               )}
