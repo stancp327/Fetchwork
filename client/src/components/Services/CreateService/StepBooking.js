@@ -104,6 +104,7 @@ const StepBooking = ({ data, onChange }) => {
                 </div>
               </button>
             </div>
+            <p className="wiz-hint">Use Group only if multiple clients can book the same time slot.</p>
           </div>
 
           {capacityType === 'GROUP' && (
@@ -250,7 +251,7 @@ const StepBooking = ({ data, onChange }) => {
                 <span className="svc-loc-icon">👥</span>
                 <div>
                   <div className="svc-loc-label">Group / Class</div>
-                  <div className="svc-loc-desc">Multiple participants</div>
+                  <div className="svc-loc-desc">Multiple participants per session</div>
                 </div>
               </button>
             </div>
@@ -258,15 +259,15 @@ const StepBooking = ({ data, onChange }) => {
 
           {capacityType === 'GROUP' && (
             <div className="wiz-field">
-              <label>Max participants per session</label>
+              <label>Seats available per class</label>
               <input
                 type="number"
                 min={2}
                 max={200}
-                value={data.maxCapacity || 5}
+                value={data.maxCapacity || 10}
                 onChange={e => onChange('maxCapacity', Math.max(2, parseInt(e.target.value) || 2))}
               />
-              <p className="wiz-hint">Maximum number of people that can book each session.</p>
+              <p className="wiz-hint">Seats available per class/session. Each generated session gets its own capacity — filling one doesn't affect others.</p>
             </div>
           )}
 
@@ -346,7 +347,7 @@ const StepBooking = ({ data, onChange }) => {
                 <span className="svc-loc-icon">👥</span>
                 <div>
                   <div className="svc-loc-label">Group / Workshop</div>
-                  <div className="svc-loc-desc">Multiple participants</div>
+                  <div className="svc-loc-desc">Multiple attendees</div>
                 </div>
               </button>
             </div>
@@ -354,15 +355,15 @@ const StepBooking = ({ data, onChange }) => {
 
           {capacityType === 'GROUP' && (
             <div className="wiz-field">
-              <label>Max participants</label>
+              <label>Tickets / seats available</label>
               <input
                 type="number"
                 min={2}
                 max={500}
-                value={data.maxCapacity || 10}
+                value={data.maxCapacity || 20}
                 onChange={e => onChange('maxCapacity', Math.max(2, parseInt(e.target.value) || 2))}
               />
-              <p className="wiz-hint">Maximum number of people that can attend this event.</p>
+              <p className="wiz-hint">Total tickets or seats available for this event. Once sold out, the event shows as full.</p>
             </div>
           )}
         </>

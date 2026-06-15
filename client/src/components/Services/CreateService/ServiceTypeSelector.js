@@ -54,8 +54,16 @@ const ServiceTypeSelector = ({ value, scheduleType: currentSchedule, onChange })
     } else {
       onChange('bookingEnabled', false);
     }
-    // Default capacity for fixed modes
-    if (opt.scheduleType === 'FIXED_RECURRING' || opt.scheduleType === 'FIXED_ONE_TIME') {
+    // Default capacity per scheduling mode
+    if (opt.scheduleType === 'FIXED_RECURRING') {
+      onChange('capacityType', 'GROUP');
+      onChange('maxCapacity', 10);
+      onChange('bookingMaxPerSlot', 10);
+    } else if (opt.scheduleType === 'FIXED_ONE_TIME') {
+      onChange('capacityType', 'GROUP');
+      onChange('maxCapacity', 20);
+      onChange('bookingMaxPerSlot', 20);
+    } else if (opt.scheduleType === 'DYNAMIC_PRIVATE') {
       onChange('capacityType', 'ONE_ON_ONE');
       onChange('maxCapacity', 1);
     }
