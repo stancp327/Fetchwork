@@ -41,6 +41,11 @@ const { computeServiceFeeBreakdown } = require('./services.fees.helpers');
 const { buildServiceOrderMetadata, buildBundlePurchaseMetadata, buildSubscriptionMetadata } = require('./services.metadata.helpers');
 const { serializeOrder, serviceRef } = require('./services.response.helpers');
 
+/** True when a service uses the direct-order checkout (no scheduleType = deliverable/legacy). */
+function isDeliverableService(service) {
+  return !service.scheduleType;
+}
+
 // ── Pricing mode helpers (Gate 13E) ──────────────────────────────
 function isSessionOrRequestService(scheduleType) {
   return ['DYNAMIC_PRIVATE', 'FIXED_RECURRING', 'FIXED_ONE_TIME', 'REQUEST_BASED'].includes(scheduleType);
@@ -495,6 +500,14 @@ router.post('/:id/order', authenticateToken, async (req, res) => {
     });
     if (lookup.error) return res.status(lookup.error.status).json({ error: lookup.error.message });
     const { service } = lookup;
+
+    // Guard: direct package order is only for deliverable/legacy services
+    if (!isDeliverableService(service)) {
+      return res.status(400).json({
+        error: 'Direct package checkout is only available for deliverable services. Please use the booking or session flow for this service.',
+        code: 'not_deliverable',
+      });
+    }
 
     const selfCheck = ensureNotSelfService(service.freelancer._id, req.user._id);
     if (!selfCheck.ok) return res.status(400).json({ error: selfCheck.error });
@@ -1003,6 +1016,14 @@ router.post('/:id/bundle/purchase', authenticateToken, async (req, res) => {
     if (lookup.error) return res.status(lookup.error.status).json({ error: lookup.error.message });
     const { service } = lookup;
 
+    // Guard: bundle purchase is only for deliverable/legacy services
+    if (!isDeliverableService(service)) {
+      return res.status(400).json({
+        error: 'Direct package checkout is only available for deliverable services. Please use the booking or session flow for this service.',
+        code: 'not_deliverable',
+      });
+    }
+
     const selfCheck = ensureNotSelfService(service.freelancer._id, req.user.userId);
     if (!selfCheck.ok) {
       return res.status(400).json({ error: 'Cannot purchase your own bundle' });
@@ -1218,6 +1239,15 @@ router.post('/:id/subscribe', authenticateToken, async (req, res) => {
 
     if (service.serviceType !== 'recurring') {
       return res.status(400).json({ error: 'This service is not a recurring service. Use /order instead.' });
+    }
+
+    // Guard: subscriptions are only for legacy recurring services (no explicit scheduleType).
+    // Services with explicit scheduleType use their own booking/session flows.
+    if (service.scheduleType) {
+      return res.status(400).json({
+        error: 'Subscriptions are only available for legacy recurring services. Please use the booking flow for this service.',
+        code: 'not_legacy_recurring',
+      });
     }
 
     const selfCheck = ensureNotSelfService(service.freelancer._id, req.user.userId);
