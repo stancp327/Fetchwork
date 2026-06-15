@@ -29,6 +29,7 @@ const CreateService = () => {
   const [data, setData] = useState({
     // type
     serviceType: 'one_time',
+    scheduleType: '',
     serviceLocation: 'remote',
     serviceLocationAddress: '',
     serviceLocationNotes: '',
@@ -81,8 +82,7 @@ const CreateService = () => {
     capacityMaxDay: null,
     capacityMaxWeek: null,
     capacityMaxConcurrent: null,
-    // scheduling mode
-    scheduleType: '',
+    // scheduling mode (set in ServiceTypeSelector, used by StepBooking + StepPricing)
     capacityType: 'ONE_ON_ONE',
     maxCapacity: 1,
     // fixed-session schedule fields
@@ -130,6 +130,16 @@ const CreateService = () => {
         if (!data.basicDeliveryTime || parseInt(data.basicDeliveryTime) < 1) e.basicDeliveryTime = 'Min 1 day';
       }
     }
+    if (step === 2) {
+      if (data.scheduleType === 'FIXED_RECURRING') {
+        if (!(data.fixedDays || []).length) e.fixedDays = 'Select at least one day';
+        if (!data.fixedStartTime) e.fixedStartTime = 'Required';
+      }
+      if (data.scheduleType === 'FIXED_ONE_TIME') {
+        if (!data.fixedEventDate) e.fixedEventDate = 'Required';
+        if (!data.fixedStartTime) e.fixedStartTime = 'Required';
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -155,8 +165,17 @@ const CreateService = () => {
                  data.basicPrice && parseFloat(data.basicPrice) >= 5 &&
                  data.basicDeliveryTime && parseInt(data.basicDeliveryTime) >= 1;
         }
-      case 2: // Booking - no required fields
-        return true;
+      case 2: // Booking - validate based on scheduleType
+        if (data.scheduleType === 'FIXED_RECURRING') {
+          return (data.fixedDays || []).length > 0 && !!data.fixedStartTime;
+        }
+        if (data.scheduleType === 'FIXED_ONE_TIME') {
+          return !!data.fixedEventDate && !!data.fixedStartTime;
+        }
+        if (data.scheduleType === 'DYNAMIC_PRIVATE') {
+          return !!(data.bookingSlotDuration || 60); // always has default
+        }
+        return true; // REQUEST_BASED + deliverable: no required fields
       case 3: // Media - no required fields
         return true;
       case 4: // Requirements - no required fields

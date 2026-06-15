@@ -36,7 +36,7 @@ const StepDetails = ({ data, onChange, errors, hasFeature = () => true }) => {
       <h2>Service Details</h2>
       <p className="wizard-tip">💡 A clear, descriptive title helps clients find your service.</p>
 
-      <ServiceTypeSelector value={data.serviceType} onChange={onChange} hasFeature={hasFeature} />
+      <ServiceTypeSelector value={data.serviceType} scheduleType={data.scheduleType} onChange={onChange} />
 
       <div className="wiz-field" style={{ marginTop: '1.5rem' }}>
         <label>Service Title *</label>

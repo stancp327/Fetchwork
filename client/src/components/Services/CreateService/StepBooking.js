@@ -10,33 +10,6 @@ const BUFFER_OPTIONS = [
   { value: 60, label: '1 hour' },
 ];
 
-const SCHEDULE_MODES = [
-  {
-    value: 'DYNAMIC_PRIVATE',
-    icon: '📅',
-    label: 'Clients book from my available time slots',
-    desc: 'You set your hours, clients pick open slots',
-  },
-  {
-    value: 'FIXED_RECURRING',
-    icon: '🔁',
-    label: 'This happens on a repeating schedule',
-    desc: 'Set the day, time, and repeat pattern — sessions are created automatically',
-  },
-  {
-    value: 'FIXED_ONE_TIME',
-    icon: '📌',
-    label: 'This is a one-time event or workshop',
-    desc: 'Pick the exact date and time for a single session',
-  },
-  {
-    value: 'REQUEST_BASED',
-    icon: '💬',
-    label: 'Clients request a quote or message me first',
-    desc: 'No calendar — clients reach out and you agree on terms',
-  },
-];
-
 const DAYS_OF_WEEK = [
   { value: 'Mon', label: 'Mon' },
   { value: 'Tue', label: 'Tue' },
@@ -47,24 +20,16 @@ const DAYS_OF_WEEK = [
   { value: 'Sun', label: 'Sun' },
 ];
 
+const SCHEDULE_LABELS = {
+  DYNAMIC_PRIVATE: { title: 'Session Settings', tip: '📅 Configure your bookable time slots.' },
+  FIXED_RECURRING: { title: 'Recurring Schedule', tip: '🔁 Set the days, time, and repeat pattern.' },
+  FIXED_ONE_TIME:  { title: 'Event Details', tip: '📌 Set the date, time, and capacity for your event.' },
+  REQUEST_BASED:   { title: 'Request Settings', tip: '💬 No calendar needed — clients will reach out directly.' },
+};
+
 const StepBooking = ({ data, onChange }) => {
   const scheduleType = data.scheduleType || '';
   const capacityType = data.capacityType || 'ONE_ON_ONE';
-
-  const handleScheduleSelect = (mode) => {
-    onChange('scheduleType', mode);
-    // Auto-enable booking for scheduling modes that need it
-    if (mode !== 'REQUEST_BASED') {
-      onChange('bookingEnabled', true);
-    } else {
-      onChange('bookingEnabled', false);
-    }
-    // Default capacity for fixed modes
-    if (mode === 'FIXED_RECURRING' || mode === 'FIXED_ONE_TIME') {
-      if (!data.capacityType) onChange('capacityType', 'ONE_ON_ONE');
-      if (!data.maxCapacity) onChange('maxCapacity', 1);
-    }
-  };
 
   const handleDayToggle = (day) => {
     const current = data.fixedDays || [];
@@ -85,35 +50,31 @@ const StepBooking = ({ data, onChange }) => {
     }
   };
 
-  return (
-    <div className="wizard-step-content">
-      <h2>Booking & Scheduling</h2>
-      <p className="wizard-tip">
-        ⚙️ How should clients book this service?
-      </p>
+  const label = SCHEDULE_LABELS[scheduleType];
 
-      {/* ── Scheduling Mode Selector ────────────────────────────── */}
-      <div className="wiz-field">
-        <label className="wiz-field-label-standalone">Scheduling Mode *</label>
-        <div className="svc-location-cards">
-          {SCHEDULE_MODES.map(mode => (
-            <button
-              key={mode.value}
-              type="button"
-              className={`svc-location-card ${scheduleType === mode.value ? 'selected' : ''}`}
-              onClick={() => handleScheduleSelect(mode.value)}
-            >
-              <span className="svc-loc-icon">{mode.icon}</span>
-              <div>
-                <div className="svc-loc-label">{mode.label}</div>
-                <div className="svc-loc-desc">{mode.desc}</div>
-              </div>
-            </button>
-          ))}
+  // Deliverable — no booking controls needed
+  if (!scheduleType) {
+    return (
+      <div className="wizard-step-content">
+        <h2>Booking & Scheduling</h2>
+        <div className="sb-request-info">
+          <span className="sb-request-icon">📦</span>
+          <div>
+            <strong>No scheduling needed</strong>
+            <p>For deliverable services, clients order directly from your service listing.
+               You can set up availability later from your dashboard if you want to offer bookable slots.</p>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* ── DYNAMIC_PRIVATE: existing slot-based booking settings ── */}
+  return (
+    <div className="wizard-step-content">
+      <h2>{label?.title || 'Booking & Scheduling'}</h2>
+      <p className="wizard-tip">{label?.tip || ''}</p>
+
+      {/* ── DYNAMIC_PRIVATE: slot-based booking settings ── */}
       {scheduleType === 'DYNAMIC_PRIVATE' && (
         <>
           {/* Capacity Type */}
@@ -165,7 +126,7 @@ const StepBooking = ({ data, onChange }) => {
 
           {/* Session Duration */}
           <div className="wiz-field">
-            <label>Session Duration</label>
+            <label>Session Duration *</label>
             <select
               value={data.bookingSlotDuration || 60}
               onChange={e => onChange('bookingSlotDuration', parseInt(e.target.value))}
@@ -242,7 +203,7 @@ const StepBooking = ({ data, onChange }) => {
             <p className="wiz-hint">Select all days this session occurs each week.</p>
           </div>
 
-          {/* Time */}
+          {/* Time + Duration */}
           <div className="wiz-row">
             <div className="wiz-field">
               <label>Start Time *</label>
@@ -309,7 +270,7 @@ const StepBooking = ({ data, onChange }) => {
             </div>
           )}
 
-          {/* How far out to generate */}
+          {/* Generation window */}
           <div className="wiz-field">
             <label>Generate schedule for</label>
             <select
@@ -418,15 +379,6 @@ const StepBooking = ({ data, onChange }) => {
                  You can send them a custom quote or proposal after discussing their needs.</p>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ── Prompt if no mode selected yet ─────────────────────── */}
-      {!scheduleType && (
-        <div className="wiz-field">
-          <p className="wiz-hint" style={{ textAlign: 'center', padding: '2rem 0' }}>
-            👆 Choose how clients will book this service to see more options.
-          </p>
         </div>
       )}
     </div>
