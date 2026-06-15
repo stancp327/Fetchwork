@@ -125,7 +125,7 @@ const serviceSchema = new mongoose.Schema({
     basic: {
       title: { type: String, required: true },
       description: { type: String, required: true },
-      price: { type: Number, required: true, min: [5, 'Price must be at least $5'] },
+      price: { type: Number, required: true, min: [0, 'Price cannot be negative'] },
       deliveryTime: { type: Number, min: [1, 'Delivery time must be at least 1 day'] },
       revisions: { type: Number, default: 1 },
       sessionsIncluded: { type: Number },
@@ -133,7 +133,7 @@ const serviceSchema = new mongoose.Schema({
     standard: {
       title: String,
       description: String,
-      price: { type: Number, min: [5, 'Price must be at least $5'] },
+      price: { type: Number, min: [0, 'Price cannot be negative'] },
       deliveryTime: { type: Number, min: [1, 'Delivery time must be at least 1 day'] },
       revisions: { type: Number, default: 2 },
       sessionsIncluded: { type: Number },
@@ -141,7 +141,7 @@ const serviceSchema = new mongoose.Schema({
     premium: {
       title: String,
       description: String,
-      price: { type: Number, min: [5, 'Price must be at least $5'] },
+      price: { type: Number, min: [0, 'Price cannot be negative'] },
       deliveryTime: { type: Number, min: [1, 'Delivery time must be at least 1 day'] },
       revisions: { type: Number, default: 3 },
       sessionsIncluded: { type: Number },

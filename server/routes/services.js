@@ -41,6 +41,54 @@ const { computeServiceFeeBreakdown } = require('./services.fees.helpers');
 const { buildServiceOrderMetadata, buildBundlePurchaseMetadata, buildSubscriptionMetadata } = require('./services.metadata.helpers');
 const { serializeOrder, serviceRef } = require('./services.response.helpers');
 
+// ── Pricing mode helpers (Gate 13E) ──────────────────────────────
+function isSessionOrRequestService(scheduleType) {
+  return ['DYNAMIC_PRIVATE', 'FIXED_RECURRING', 'FIXED_ONE_TIME', 'REQUEST_BASED'].includes(scheduleType);
+}
+
+// Normalize a pricing package for session/request services:
+// - Set safe defaults for deliveryTime and revisions
+// - Validate $5 minimum for deliverables only
+function normalizePricing(pricing, scheduleType) {
+  if (!pricing?.basic) return pricing;
+  const isSession = isSessionOrRequestService(scheduleType);
+
+  const normalizePackage = (pkg) => {
+    if (!pkg) return pkg;
+    // Set safe defaults for hidden fields
+    if (isSession) {
+      if (pkg.deliveryTime == null || pkg.deliveryTime === undefined) pkg.deliveryTime = 1;
+      if (pkg.revisions == null || pkg.revisions === undefined) pkg.revisions = 0;
+      // Title/description defaults for single-tier modes
+      if (!pkg.title) pkg.title = 'Session';
+      if (!pkg.description) pkg.description = '';
+    }
+    return pkg;
+  };
+
+  pricing.basic = normalizePackage(pricing.basic);
+  if (pricing.standard) pricing.standard = normalizePackage(pricing.standard);
+  if (pricing.premium) pricing.premium = normalizePackage(pricing.premium);
+  return pricing;
+}
+
+// Validate pricing based on scheduleType. Returns error string or null.
+function validatePricing(pricing, scheduleType) {
+  const isSession = isSessionOrRequestService(scheduleType);
+  const basic = pricing?.basic;
+  if (!basic) return 'Basic pricing is required';
+
+  if (isSession) {
+    // Session/request: price >= 0
+    if (basic.price == null || basic.price < 0) return 'Price cannot be negative';
+  } else {
+    // Deliverable: price >= $5, deliveryTime >= 1
+    if (!basic.price || basic.price < 5) return 'Deliverable services require a minimum price of $5';
+    if (!basic.deliveryTime || basic.deliveryTime < 1) return 'Delivery time is required for deliverable services';
+  }
+  return null; // valid
+}
+
 // GET /api/services/me — List current user's own services
 router.get('/me', authenticateToken, async (req, res) => {
   try {
@@ -134,6 +182,14 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       return res.status(400).json({ 
         error: 'Title, description, category, and basic pricing are required' 
       });
+    }
+
+    // ── Pricing validation + normalization (Gate 13E) ─────────────
+    const { scheduleType: incomingScheduleType } = req.body;
+    const normalizedPricing = normalizePricing({ ...pricing }, incomingScheduleType);
+    const pricingError = validatePricing(normalizedPricing, incomingScheduleType);
+    if (pricingError) {
+      return res.status(400).json({ error: pricingError });
     }
 
     const userId = req.user.userId || req.user.id;
@@ -232,7 +288,7 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
       category,
       subcategory,
       skills: skills || [],
-      pricing,
+      pricing: normalizedPricing,
       gallery: gallery || [],
       faqs: faqs || [],
       requirements,
