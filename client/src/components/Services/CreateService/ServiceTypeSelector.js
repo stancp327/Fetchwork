@@ -66,6 +66,7 @@ const ServiceTypeSelector = ({ value, scheduleType: currentSchedule, onChange })
     } else if (opt.scheduleType === 'DYNAMIC_PRIVATE') {
       onChange('capacityType', 'ONE_ON_ONE');
       onChange('maxCapacity', 1);
+      onChange('bookingMaxPerSlot', 1);
     }
   };
 

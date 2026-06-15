@@ -245,7 +245,7 @@ const ServiceDetails = () => {
   const lowestPrice = Math.min(
     ...['basic', 'standard', 'premium']
       .map(p => service.pricing?.[p]?.price)
-      .filter(Boolean)
+      .filter(p => p != null && !isNaN(p))
   );
   const seoDesc = service.description
     ? service.description.slice(0, 155) + (service.description.length > 155 ? '...' : '')
@@ -623,7 +623,7 @@ const ServiceDetails = () => {
                       {pricingMode === 'private_session' && (
                         <button
                           onClick={() => {
-                            const calEl = document.querySelector('.booking-calendar');
+                            const calEl = document.querySelector('.bc-root');
                             if (calEl) calEl.scrollIntoView({ behavior: 'smooth' });
                           }}
                           className="sd-btn-order"
@@ -635,7 +635,7 @@ const ServiceDetails = () => {
                       {(pricingMode === 'class_or_recurring' || pricingMode === 'event_ticket') && (
                         <button
                           onClick={() => {
-                            const sessEl = document.querySelector('.upcoming-sessions, .ms-container');
+                            const sessEl = document.querySelector('.us-container');
                             if (sessEl) sessEl.scrollIntoView({ behavior: 'smooth' });
                           }}
                           className="sd-btn-order"
