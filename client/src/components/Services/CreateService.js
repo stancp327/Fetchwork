@@ -105,7 +105,16 @@ const CreateService = () => {
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
   };
 
-  const isRecurring = data.serviceType === 'recurring';
+  // Derive pricing mode from scheduleType
+  const pricingMode = (() => {
+    switch (data.scheduleType) {
+      case 'DYNAMIC_PRIVATE':  return 'private_session';
+      case 'FIXED_RECURRING':  return 'class_or_recurring';
+      case 'FIXED_ONE_TIME':   return 'event_ticket';
+      case 'REQUEST_BASED':    return 'quote_based';
+      default:                 return 'deliverable';
+    }
+  })();
 
   const validateStep = () => {
     const e = {};
@@ -118,16 +127,24 @@ const CreateService = () => {
       }
     }
     if (step === 1) {
-      if (!data.basicTitle.trim()) e.basicTitle = 'Required';
-      if (!data.basicDescription.trim()) e.basicDescription = 'Required';
-      if (isRecurring) {
-        if (!data.basicPrice || parseFloat(data.basicPrice) < 1) e.basicPrice = 'Min $1';
-        if (data.recurringTrialEnabled && (!data.recurringTrialPrice || parseFloat(data.recurringTrialPrice) < 1)) {
-          e.recurringTrialPrice = 'Enter trial price';
-        }
-      } else {
+      if (pricingMode === 'deliverable') {
+        if (!data.basicTitle.trim()) e.basicTitle = 'Required';
+        if (!data.basicDescription.trim()) e.basicDescription = 'Required';
         if (!data.basicPrice || parseFloat(data.basicPrice) < 5) e.basicPrice = 'Min $5';
         if (!data.basicDeliveryTime || parseInt(data.basicDeliveryTime) < 1) e.basicDeliveryTime = 'Min 1 day';
+      } else if (pricingMode === 'private_session') {
+        if (!data.basicTitle.trim()) e.basicTitle = 'Required';
+        if (!data.basicDescription.trim()) e.basicDescription = 'Required';
+        if (data.basicPrice === '' || data.basicPrice === undefined || parseFloat(data.basicPrice) < 0) e.basicPrice = 'Required';
+        if (data.standardEnabled && (!data.standardSessionsIncluded || parseInt(data.standardSessionsIncluded) < 1)) {
+          e.standardSessionsIncluded = 'Required for session pack';
+        }
+        if (data.premiumEnabled && (!data.premiumSessionsIncluded || parseInt(data.premiumSessionsIncluded) < 1)) {
+          e.premiumSessionsIncluded = 'Required for session pack';
+        }
+      } else {
+        // class_or_recurring, event_ticket, quote_based: just need price >= 0
+        if (data.basicPrice === '' || data.basicPrice === undefined || parseFloat(data.basicPrice) < 0) e.basicPrice = 'Required';
       }
     }
     if (step === 2) {
@@ -153,18 +170,19 @@ const CreateService = () => {
                data.category !== '' &&
                (!needsAddress || data.serviceLocationAddress.trim() !== '');
       case 1: // Pricing & Packages
-        const isRecurring = data.serviceType === 'recurring';
-        if (isRecurring) {
-          return data.basicTitle.trim() !== '' && 
-                 data.basicDescription.trim() !== '' && 
-                 data.basicPrice && parseFloat(data.basicPrice) >= 1 &&
-                 (!data.recurringTrialEnabled || (data.recurringTrialPrice && parseFloat(data.recurringTrialPrice) >= 1));
-        } else {
+        if (pricingMode === 'deliverable') {
           return data.basicTitle.trim() !== '' && 
                  data.basicDescription.trim() !== '' && 
                  data.basicPrice && parseFloat(data.basicPrice) >= 5 &&
                  data.basicDeliveryTime && parseInt(data.basicDeliveryTime) >= 1;
         }
+        if (pricingMode === 'private_session') {
+          return data.basicTitle.trim() !== '' && 
+                 data.basicDescription.trim() !== '' && 
+                 data.basicPrice !== '' && data.basicPrice !== undefined && parseFloat(data.basicPrice) >= 0;
+        }
+        // class_or_recurring, event_ticket, quote_based: just price >= 0
+        return data.basicPrice !== '' && data.basicPrice !== undefined && parseFloat(data.basicPrice) >= 0;
       case 2: // Booking - validate based on scheduleType
         if (data.scheduleType === 'FIXED_RECURRING') {
           return (data.fixedDays || []).length > 0 && !!data.fixedStartTime;
@@ -213,13 +231,14 @@ const CreateService = () => {
         const desc  = data[`${prefix}Description`]?.trim();
         const price = parseFloat(data[`${prefix}Price`]);
         if (!required && (!title || isNaN(price))) return undefined;
+        const isDeliverable = pricingMode === 'deliverable';
         return {
-          title,
-          description: desc,
-          price,
-          deliveryTime: isRecurring ? 1 : parseInt(data[`${prefix}DeliveryTime`]) || 1,
-          revisions: isRecurring ? 0 : parseInt(data[`${prefix}Revisions`]) || 0,
-          ...(isRecurring && data.recurringBillingCycle !== 'per_session'
+          title: title || (isDeliverable ? '' : 'Session'),
+          description: desc || '',
+          price: isNaN(price) ? 0 : price,
+          deliveryTime: isDeliverable ? (parseInt(data[`${prefix}DeliveryTime`]) || 1) : 1,
+          revisions: isDeliverable ? (parseInt(data[`${prefix}Revisions`]) || 0) : 0,
+          ...(pricingMode === 'private_session' && prefix !== 'basic'
             ? { sessionsIncluded: parseInt(data[`${prefix}SessionsIncluded`]) || undefined }
             : {}),
         };
@@ -233,7 +252,7 @@ const CreateService = () => {
         skills: data.skills.split(',').map(s => s.trim()).filter(Boolean),
         requirements: data.requirements.trim(),
         serviceType: data.serviceType,
-        ...(isRecurring ? {
+        ...(data.serviceType === 'recurring' ? {
           recurring: {
             sessionDuration:    Number(data.recurringSessionDuration),
             billingCycle:       data.recurringBillingCycle,

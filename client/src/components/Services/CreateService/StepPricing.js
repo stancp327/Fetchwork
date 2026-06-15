@@ -6,22 +6,53 @@ import FeesIncludedToggle from './FeesIncludedToggle';
 import IntakeFormEditor from '../IntakeFormEditor';
 import PricingInsightWidget from '../../Skills/PricingInsightWidget';
 
+// Derive pricingMode from scheduleType
+const getPricingMode = (scheduleType) => {
+  switch (scheduleType) {
+    case 'DYNAMIC_PRIVATE':  return 'private_session';
+    case 'FIXED_RECURRING':  return 'class_or_recurring';
+    case 'FIXED_ONE_TIME':   return 'event_ticket';
+    case 'REQUEST_BASED':    return 'quote_based';
+    default:                 return 'deliverable';
+  }
+};
+
+const PRICING_TIPS = {
+  deliverable:        '💡 The Basic package is required. Standard and Premium are optional but help you earn more by offering tiers.',
+  private_session:    '💡 Set your session rate. You can also offer multi-session packs at a discount with Standard and Premium tiers.',
+  class_or_recurring: '💡 Set the drop-in price per person for each session. One simple price — keep it easy.',
+  event_ticket:       '💡 Set the ticket price for your event. One price for general admission.',
+  quote_based:        '💡 Set a starting price so clients know your range. You\'ll finalize the price after discussing their needs.',
+};
+
+const TIER_LABELS = {
+  deliverable:     { basic: 'Basic Package',  standard: 'Standard Package',  premium: 'Premium Package' },
+  private_session: { basic: 'Single Session', standard: 'Session Pack',      premium: 'Session Pack' },
+  class_or_recurring: { basic: 'Drop-in Rate' },
+  event_ticket:       { basic: 'General Admission' },
+  quote_based:        { basic: 'Starting Price' },
+};
+
+const MULTI_TIER_MODES = ['deliverable', 'private_session'];
+
 const StepPricing = ({ data, onChange, errors, hasFeature = () => true }) => {
-  const canRecurring = hasFeature('recurring_services');
-  const canBundles   = hasFeature('bundle_creation');
-  const isRecurring  = data.serviceType === 'recurring';
+  const canBundles = hasFeature('bundle_creation');
+  const pricingMode = getPricingMode(data.scheduleType);
+  const isMultiTier = MULTI_TIER_MODES.includes(pricingMode);
+  const labels = TIER_LABELS[pricingMode] || TIER_LABELS.deliverable;
+
+  // Keep isRecurring for RecurringSessionSettings display (only for old 'recurring' serviceType)
+  const isRecurring = data.serviceType === 'recurring';
 
   return (
     <div className="wizard-step-content">
       <h2>Pricing &amp; Packages</h2>
-      <p className="wizard-tip">
-        {isRecurring
-          ? '💡 Set your session or package rate. You can offer Basic, Standard, and Premium tiers — e.g. single session, 4-pack, 8-pack.'
-          : '💡 The Basic package is required. Standard and Premium are optional but help you earn more by offering tiers.'}
-      </p>
+      <p className="wizard-tip">{PRICING_TIPS[pricingMode]}</p>
 
+      {/* Session settings — only for recurring serviceType (DYNAMIC_PRIVATE uses this) */}
       {isRecurring && <RecurringSessionSettings data={data} onChange={onChange} errors={errors} />}
 
+      {/* Class details — only for class serviceType */}
       {data.serviceType === 'class' && (
         <div className="wiz-section">
           <h3>📚 Class Details</h3>
@@ -94,40 +125,48 @@ const StepPricing = ({ data, onChange, errors, hasFeature = () => true }) => {
         />
       )}
 
+      {/* Basic tier — always shown */}
       <PackageTierForm
-        prefix="basic" label={isRecurring ? 'Basic Tier' : 'Basic Package'} badge="Required"
-        data={data} onChange={onChange} errors={errors} required isRecurring={isRecurring}
+        prefix="basic" label={labels.basic} badge="Required"
+        data={data} onChange={onChange} errors={errors} required
+        pricingMode={pricingMode}
       />
 
-      {/* Standard toggle */}
-      {!data.standardEnabled ? (
-        <button type="button" className="pkg-add-btn" onClick={() => onChange('standardEnabled', true)}>
-          ✨ Add {isRecurring ? 'Standard Tier' : 'Standard Package'} <span className="pkg-add-hint">— {isRecurring ? 'e.g. a multi-session pack at a discount' : 'offer more features at a higher price'}</span>
-        </button>
-      ) : (
-        <div style={{ position: 'relative' }}>
-          <PackageTierForm
-            prefix="standard" label={isRecurring ? 'Standard Tier' : 'Standard Package'} badge="Optional"
-            data={data} onChange={onChange} errors={errors} isRecurring={isRecurring}
-          />
-          <button type="button" className="pkg-remove-btn" onClick={() => onChange('standardEnabled', false)}>Remove</button>
-        </div>
+      {/* Standard toggle — multi-tier modes only */}
+      {isMultiTier && (
+        !data.standardEnabled ? (
+          <button type="button" className="pkg-add-btn" onClick={() => onChange('standardEnabled', true)}>
+            ✨ Add {labels.standard} <span className="pkg-add-hint">— {pricingMode === 'private_session' ? 'e.g. a multi-session pack at a discount' : 'offer more features at a higher price'}</span>
+          </button>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <PackageTierForm
+              prefix="standard" label={labels.standard} badge="Optional"
+              data={data} onChange={onChange} errors={errors}
+              pricingMode={pricingMode}
+            />
+            <button type="button" className="pkg-remove-btn" onClick={() => onChange('standardEnabled', false)}>Remove</button>
+          </div>
+        )
       )}
 
-      {/* Premium toggle — only show if standard is enabled */}
-      {data.standardEnabled && (!data.premiumEnabled ? (
-        <button type="button" className="pkg-add-btn" onClick={() => onChange('premiumEnabled', true)}>
-          🌟 Add {isRecurring ? 'Premium Tier' : 'Premium Package'} <span className="pkg-add-hint">— {isRecurring ? 'your best value bundle' : 'your best offer, highest price'}</span>
-        </button>
-      ) : (
-        <div style={{ position: 'relative' }}>
-          <PackageTierForm
-            prefix="premium" label={isRecurring ? 'Premium Tier' : 'Premium Package'} badge="Optional"
-            data={data} onChange={onChange} errors={errors} isRecurring={isRecurring}
-          />
-          <button type="button" className="pkg-remove-btn" onClick={() => onChange('premiumEnabled', false)}>Remove</button>
-        </div>
-      ))}
+      {/* Premium toggle — only if standard enabled, multi-tier only */}
+      {isMultiTier && data.standardEnabled && (
+        !data.premiumEnabled ? (
+          <button type="button" className="pkg-add-btn" onClick={() => onChange('premiumEnabled', true)}>
+            🌟 Add {labels.premium} <span className="pkg-add-hint">— {pricingMode === 'private_session' ? 'your best value bundle' : 'your best offer, highest price'}</span>
+          </button>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <PackageTierForm
+              prefix="premium" label={labels.premium} badge="Optional"
+              data={data} onChange={onChange} errors={errors}
+              pricingMode={pricingMode}
+            />
+            <button type="button" className="pkg-remove-btn" onClick={() => onChange('premiumEnabled', false)}>Remove</button>
+          </div>
+        )
+      )}
 
       {/* Session bundles — Plus/Pro only */}
       {canBundles ? (
