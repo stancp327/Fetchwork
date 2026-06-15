@@ -319,6 +319,16 @@
   padding: 20px;
 }
 
+/* ── Single-tier header (no tabs) ────────────────────────────── */
+.sd-single-tier-header {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 14px;
+}
+
 /* ── Package tabs ───────────────────────────────────────────── */
 .sd-tabs {
   display: flex;

@@ -226,6 +226,19 @@ const ServiceDetails = () => {
   const currentPackage = service.pricing[selectedPackage];
   const isOwnService = user && String(service.freelancer?._id) === String(user._id || user.id || user.userId);
 
+  // ── Pricing mode (Gate 13F) ───────────────────────────────
+  const pricingMode = (() => {
+    switch (service.scheduleType) {
+      case 'DYNAMIC_PRIVATE':  return 'private_session';
+      case 'FIXED_RECURRING':  return 'class_or_recurring';
+      case 'FIXED_ONE_TIME':   return 'event_ticket';
+      case 'REQUEST_BASED':    return 'quote_based';
+      default:                 return 'deliverable';
+    }
+  })();
+  const isDeliverable = pricingMode === 'deliverable';
+  const isMultiTier = pricingMode === 'deliverable' || pricingMode === 'private_session';
+
   const freelancerName = service.user
     ? `${service.user.firstName} ${service.user.lastName}`
     : (service.freelancer?.firstName ? `${service.freelancer.firstName} ${service.freelancer.lastName}` : 'Freelancer');
@@ -342,8 +355,8 @@ const ServiceDetails = () => {
             </div>
           )}
 
-          {/* Bundles */}
-          {service.bundles?.length > 0 && !isOwnService && (
+          {/* Bundles — deliverable mode only (session packs/credits deferred) */}
+          {isDeliverable && service.bundles?.length > 0 && !isOwnService && (
             <div className="sd-card">
               <h2 className="sd-section-title">📦 Session Bundles</h2>
               <p className="sd-bundles-subtitle">Buy multiple sessions at a discount. Payments are held securely and released per completed session.</p>
@@ -492,16 +505,31 @@ const ServiceDetails = () => {
             {/* Order card */}
             <div className="sd-card sd-order-card">
 
-              {/* Package tabs */}
-              <div className="sd-tabs">
-                <button className={`sd-tab ${selectedPackage === 'basic' ? 'active' : ''}`} onClick={() => setSelectedPackage('basic')}>Basic</button>
-                {service.pricing.standard && (
-                  <button className={`sd-tab ${selectedPackage === 'standard' ? 'active' : ''}`} onClick={() => setSelectedPackage('standard')}>Standard</button>
-                )}
-                {service.pricing.premium && (
-                  <button className={`sd-tab ${selectedPackage === 'premium' ? 'active' : ''}`} onClick={() => setSelectedPackage('premium')}>Premium</button>
-                )}
-              </div>
+              {/* Package tabs — multi-tier modes only */}
+              {isMultiTier ? (
+                <div className="sd-tabs">
+                  <button className={`sd-tab ${selectedPackage === 'basic' ? 'active' : ''}`} onClick={() => setSelectedPackage('basic')}>
+                    {pricingMode === 'private_session' ? 'Single' : 'Basic'}
+                  </button>
+                  {service.pricing.standard && (
+                    <button className={`sd-tab ${selectedPackage === 'standard' ? 'active' : ''}`} onClick={() => setSelectedPackage('standard')}>
+                      {pricingMode === 'private_session' ? 'Pack' : 'Standard'}
+                    </button>
+                  )}
+                  {service.pricing.premium && (
+                    <button className={`sd-tab ${selectedPackage === 'premium' ? 'active' : ''}`} onClick={() => setSelectedPackage('premium')}>
+                      {pricingMode === 'private_session' ? 'Bundle' : 'Premium'}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                /* Single-tier: no tabs, show a header label instead */
+                <div className="sd-single-tier-header">
+                  {pricingMode === 'class_or_recurring' && '🔁 Drop-in Rate'}
+                  {pricingMode === 'event_ticket' && '🎫 General Admission'}
+                  {pricingMode === 'quote_based' && '💬 Starting Price'}
+                </div>
+              )}
 
               {currentPackage && (
                 <>
@@ -509,17 +537,35 @@ const ServiceDetails = () => {
                   {currentPackage.description && <p className="sd-pkg-desc">{currentPackage.description}</p>}
 
                   <div className="sd-pkg-features">
+                    {/* Price display — adapt label per mode */}
                     <div className="sd-pkg-feat">
                       <span>💰</span>
-                      <span>Price: <strong>
-                        ${currentPackage.price}
-                        {service.serviceType === 'recurring' && service.recurring?.billingCycle ? ` / ${billingLabel}` : ''}
-                      </strong>
-                      {service.feesIncluded && <span className="sd-fees-badge">fees incl.</span>}
+                      <span>
+                        {pricingMode === 'quote_based' && currentPackage.price === 0
+                          ? <strong>Contact for pricing</strong>
+                          : <>
+                              {pricingMode === 'quote_based' ? 'From: ' : 'Price: '}
+                              <strong>
+                                ${currentPackage.price}
+                                {pricingMode === 'private_session' ? '/session' : ''}
+                                {pricingMode === 'class_or_recurring' ? '/session' : ''}
+                              </strong>
+                            </>
+                        }
+                        {service.feesIncluded && <span className="sd-fees-badge">fees incl.</span>}
                       </span>
                     </div>
 
-                    {service.serviceType === 'recurring' ? (
+                    {/* Delivery + Revisions — deliverables only */}
+                    {isDeliverable && (
+                      <>
+                        <div className="sd-pkg-feat"><span>⏱️</span><span>Delivery: <strong>{currentPackage.deliveryTime} days</strong></span></div>
+                        <div className="sd-pkg-feat"><span>🔄</span><span>Revisions: <strong>{currentPackage.revisions}</strong></span></div>
+                      </>
+                    )}
+
+                    {/* Session info — private_session */}
+                    {pricingMode === 'private_session' && (
                       <>
                         {sessionDurationLabel && (
                           <div className="sd-pkg-feat"><span>⏱</span><span>Session: <strong>{sessionDurationLabel}</strong></span></div>
@@ -530,14 +576,6 @@ const ServiceDetails = () => {
                         {currentPackage.sessionsIncluded && (
                           <div className="sd-pkg-feat"><span>📅</span><span>Included: <strong>{currentPackage.sessionsIncluded} sessions</strong></span></div>
                         )}
-                        {service.recurring?.trialEnabled && service.recurring?.trialPrice && (
-                          <div className="sd-pkg-feat-trial"><span>🎯</span><span>Trial available: <strong>${service.recurring.trialPrice}</strong></span></div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="sd-pkg-feat"><span>⏱️</span><span>Delivery: <strong>{currentPackage.deliveryTime} days</strong></span></div>
-                        <div className="sd-pkg-feat"><span>🔄</span><span>Revisions: <strong>{currentPackage.revisions}</strong></span></div>
                       </>
                     )}
                   </div>
@@ -551,7 +589,8 @@ const ServiceDetails = () => {
 
                   {!isOwnService && (
                     <>
-                      {service.serviceType !== 'recurring' && (
+                      {/* Requirements textarea — deliverables only */}
+                      {isDeliverable && (
                         <>
                           <label className="sd-req-label" htmlFor="requirements">Additional Requirements <span style={{ fontWeight: 400, color: '#9ca3af' }}>(Optional)</span></label>
                           <textarea
@@ -565,6 +604,7 @@ const ServiceDetails = () => {
                         </>
                       )}
 
+                      {/* Intake forms — all modes */}
                       {service.intakeForm?.enabled && service.intakeForm?.fields?.length > 0 && (
                         <IntakeFormFill
                           fields={service.intakeForm.fields}
@@ -573,26 +613,73 @@ const ServiceDetails = () => {
                         />
                       )}
 
-                      {service.serviceType === 'recurring' ? (
-                        <button onClick={handleSubscribe} disabled={subscribeLoading} className="sd-btn-order">
-                          {subscribeLoading ? 'Starting…' : `Subscribe — $${currentPackage.price}/${billingLabel}`}
-                        </button>
-                      ) : (
+                      {/* CTA buttons — per pricing mode */}
+                      {pricingMode === 'deliverable' && (
                         <button onClick={handleOrder} disabled={orderLoading} className="sd-btn-order">
                           {orderLoading ? 'Ordering…' : `Order Now — $${currentPackage.price}`}
                         </button>
                       )}
 
-                      <button onClick={() => setShowOfferModal(true)} className="sd-btn-custom">
-                        📋 Request Custom Offer
-                      </button>
+                      {pricingMode === 'private_session' && (
+                        <button
+                          onClick={() => {
+                            const calEl = document.querySelector('.booking-calendar');
+                            if (calEl) calEl.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="sd-btn-order"
+                        >
+                          📅 Book Session {currentPackage.price > 0 ? `— $${currentPackage.price}` : '— Free'}
+                        </button>
+                      )}
+
+                      {(pricingMode === 'class_or_recurring' || pricingMode === 'event_ticket') && (
+                        <button
+                          onClick={() => {
+                            const sessEl = document.querySelector('.upcoming-sessions, .ms-container');
+                            if (sessEl) sessEl.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="sd-btn-order"
+                        >
+                          {pricingMode === 'event_ticket'
+                            ? (currentPackage.price > 0 ? `🎫 Get Ticket — $${currentPackage.price}` : '🎫 Register — Free')
+                            : (currentPackage.price > 0 ? `📅 View Schedule — $${currentPackage.price}/session` : '📅 View Schedule — Free')
+                          }
+                        </button>
+                      )}
+
+                      {pricingMode === 'quote_based' && (
+                        <button
+                          onClick={() => navigate(`/messages?to=${service.freelancer?._id}`)}
+                          className="sd-btn-order"
+                        >
+                          💬 Request Quote
+                        </button>
+                      )}
+
+                      {/* Secondary CTA */}
+                      {pricingMode === 'quote_based' ? (
+                        <button
+                          onClick={() => navigate(`/messages?to=${service.freelancer?._id}`)}
+                          className="sd-btn-custom"
+                        >
+                          ✉️ Message Freelancer
+                        </button>
+                      ) : (
+                        <button onClick={() => setShowOfferModal(true)} className="sd-btn-custom">
+                          📋 Request Custom Offer
+                        </button>
+                      )}
 
                       {/* Trust box */}
                       <div className="sd-trust-box">
                         <span className="sd-trust-icon">🛡️</span>
                         <div className="sd-trust-text">
                           <strong>Protected Payment</strong>
-                          <span>Your payment is held securely in escrow and only released when you approve the delivery.</span>
+                          <span>
+                            {pricingMode === 'quote_based'
+                              ? 'All payments through Fetchwork are held securely in escrow.'
+                              : 'Your payment is held securely in escrow and only released when you approve the delivery.'}
+                          </span>
                         </div>
                       </div>
                     </>
