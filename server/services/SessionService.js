@@ -31,8 +31,16 @@ function resolveCapacityType(service) {
   return service?.capacityType || 'ONE_ON_ONE';
 }
 
-/** Map day name ('Mon','Tue',...) to JS getDay() number (0=Sun) */
-const DAY_NAME_TO_NUM = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+/** Map day name to JS getDay() number (0=Sun). Accepts both short and full forms. */
+const DAY_NAME_TO_NUM = {
+  sun: 0, sunday: 0,
+  mon: 1, monday: 1,
+  tue: 2, tuesday: 2,
+  wed: 3, wednesday: 3,
+  thu: 4, thursday: 4,
+  fri: 5, friday: 5,
+  sat: 6, saturday: 6,
+};
 
 /** Parse "HH:MM" to { hours, minutes } */
 function parseTime(str) {
@@ -286,7 +294,7 @@ async function generateOccurrences(templateId) {
         .filter(([, num]) => num === dayNum)
         .map(([name]) => name);
 
-      if (days.some(d => dayNames.includes(d))) {
+      if (days.some(d => dayNames.includes(d.toLowerCase()))) {
         const dateStr = cursor.toISOString().split('T')[0]; // "YYYY-MM-DD"
         const start = buildDateTime(dateStr, rule.startTime, rule.timezone);
         const end = buildDateTime(dateStr, rule.endTime, rule.timezone);
