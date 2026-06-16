@@ -338,6 +338,18 @@ router.post('/book', authenticateToken, async (req, res) => {
  */
 router.post('/book-paid', authenticateToken, async (req, res) => {
   try {
+    // ── Safety gate: paid session checkout temporarily disabled ──────────
+    // The session payment flow lacks a Stripe webhook handler for
+    // metadata.type === 'session_booking'. If a hold expires before the
+    // client calls /confirm-payment, the booking is deleted while Stripe
+    // may have already captured funds — money loss with no refund.
+    // Gate 14C: block until webhook hardening is deployed (Gate 14D+).
+    return res.status(503).json({
+      error: 'Paid session checkout is temporarily unavailable while we finish payment safety hardening. Free sessions can still be booked.',
+      code: 'paid_sessions_temporarily_disabled',
+    });
+    // ── End safety gate ─────────────────────────────────────────────────
+
     const clientId = req.user._id.toString();
     const { occurrenceId, seats: rawSeats } = req.body;
     const seats = rawSeats || 1;
