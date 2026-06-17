@@ -358,7 +358,7 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
     const prisma = getPrisma();
     const occurrence = await prisma.sessionOccurrence.findUnique({
       where: { id: occurrenceId },
-      include: { template: { select: { id: true, price: true, currency: true, title: true, serviceId: true, freelancerId: true } } },
+      include: { template: { select: { id: true, price: true, currency: true, title: true, mongoServiceId: true, freelancerId: true } } },
     });
 
     if (!occurrence) return res.status(404).json({ error: 'Session not found' });
@@ -374,6 +374,7 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
     const totalAmount = price * seats;
     const currency = occurrence.template?.currency || 'usd';
     const freelancerId = occurrence.template?.freelancerId || occurrence.freelancerId;
+    const serviceId = occurrence.template?.mongoServiceId || '';
 
     // Hold expires in 5 minutes
     const holdExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -403,7 +404,7 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
           idempotencyKey: `session_booking_${booking.id}`,
           metadata: {
             occurrenceId,
-            serviceId: occurrence.template?.serviceId || '',
+            serviceId,
             seats,
             templateId: occurrence.template?.id || occurrence.templateId,
           },
@@ -447,7 +448,7 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
           occurrenceId,
           clientId,
           freelancerId,
-          serviceId: occurrence.template?.serviceId || '',
+          serviceId,
         },
       });
     } catch (stripeErr) {
