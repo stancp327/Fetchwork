@@ -768,38 +768,169 @@ async function expireSessionHolds() {
 
   if (expiredHolds.length === 0) return 0;
 
+  let expiredCount = 0;
+
   for (const hold of expiredHolds) {
-    await prisma.$transaction(async (tx) => {
-      // 1. Read current occurrence state
-      const occ = await tx.sessionOccurrence.findUnique({
-        where: { id: hold.occurrenceId },
+    try {
+      // Check if this hold has a payment ledger entry
+      const ledger = await prisma.paymentLedgerEntry.findFirst({
+        where: { sourceType: 'session_booking', sourceId: hold.id },
       });
 
-      if (occ) {
-        const newCount = Math.max(0, occ.bookedCount - hold.seats);
-        // Reopen to scheduled if it was full and now has capacity
-        const newStatus = (occ.status === 'full' && newCount < occ.maxCapacity)
-          ? 'scheduled'
-          : occ.status;
-
-        await tx.sessionOccurrence.update({
-          where: { id: hold.occurrenceId },
-          data: {
-            bookedCount: newCount,
-            status: newStatus,
-          },
+      // ── No ledger entry: legacy hold, safe to delete ──────────────────
+      if (!ledger) {
+        await prisma.$transaction(async (tx) => {
+          const occ = await tx.sessionOccurrence.findUnique({ where: { id: hold.occurrenceId } });
+          if (occ) {
+            const newCount = Math.max(0, occ.bookedCount - hold.seats);
+            await tx.sessionOccurrence.update({
+              where: { id: hold.occurrenceId },
+              data: {
+                bookedCount: newCount,
+                ...(occ.status === 'full' && newCount < occ.maxCapacity ? { status: 'scheduled' } : {}),
+              },
+            });
+          }
+          await tx.sessionBooking.delete({ where: { id: hold.id } });
         });
+        expiredCount++;
+        continue;
       }
 
-      // 2. Delete the expired hold (not cancel — clears unique constraint for retry)
-      await tx.sessionBooking.delete({
-        where: { id: hold.id },
-      });
-    });
+      // ── Ledger status: held — money was captured, NEVER delete ────────
+      if (ledger.status === 'held') {
+        // Booking should already be confirmed; ensure it is
+        if (hold.status === 'pending_payment') {
+          await prisma.sessionBooking.update({
+            where: { id: hold.id },
+            data: { status: 'confirmed', holdExpiresAt: null },
+          });
+          console.warn(`[sessionHoldExpiry] Booking ${hold.id} had ledger=held but was still pending_payment — auto-confirmed`);
+        }
+        continue; // Do not delete, do not decrement
+      }
+
+      // ── Ledger status: failed or expired — safe to delete booking ─────
+      if (ledger.status === 'failed' || ledger.status === 'expired') {
+        await prisma.$transaction(async (tx) => {
+          const occ = await tx.sessionOccurrence.findUnique({ where: { id: hold.occurrenceId } });
+          if (occ) {
+            const newCount = Math.max(0, occ.bookedCount - hold.seats);
+            await tx.sessionOccurrence.update({
+              where: { id: hold.occurrenceId },
+              data: {
+                bookedCount: newCount,
+                ...(occ.status === 'full' && newCount < occ.maxCapacity ? { status: 'scheduled' } : {}),
+              },
+            });
+          }
+          await tx.sessionBooking.delete({ where: { id: hold.id } });
+        });
+        expiredCount++;
+        continue;
+      }
+
+      // ── Ledger status: charging — PI was created, check Stripe status ─
+      if (ledger.status === 'charging' && ledger.stripePaymentIntentId) {
+        let piStatus;
+        try {
+          const stripeService = require('../services/stripeService');
+          const pi = await stripeService.retrievePaymentIntent(ledger.stripePaymentIntentId);
+          piStatus = pi.status;
+
+          // PI succeeded but webhook hasn't arrived — DO NOT DELETE
+          if (piStatus === 'succeeded') {
+            await prisma.$transaction(async (tx) => {
+              await tx.paymentLedgerEntry.update({
+                where: { id: ledger.id },
+                data: {
+                  status: 'held',
+                  heldAt: new Date(),
+                  stripeChargeId: pi.latest_charge || null,
+                },
+              });
+              await tx.sessionBooking.update({
+                where: { id: hold.id },
+                data: {
+                  status: 'confirmed',
+                  holdExpiresAt: null,
+                  paidAmount: pi.amount / 100,
+                  paymentIntentId: pi.id,
+                },
+              });
+            });
+            console.warn(`[sessionHoldExpiry] Booking ${hold.id} — PI succeeded but webhook was delayed. Auto-confirmed via hold expiry check.`);
+            continue; // Do not delete
+          }
+
+          // PI still processing — skip this hold, extend expiry by 2 min
+          if (piStatus === 'processing') {
+            await prisma.sessionBooking.update({
+              where: { id: hold.id },
+              data: { holdExpiresAt: new Date(Date.now() + 2 * 60 * 1000) },
+            });
+            console.log(`[sessionHoldExpiry] Booking ${hold.id} — PI still processing, extending hold 2 min`);
+            continue; // Skip, try again next cron cycle
+          }
+
+          // PI failed/cancelled/requires_payment_method/requires_action — safe to delete
+          await prisma.$transaction(async (tx) => {
+            await tx.paymentLedgerEntry.update({
+              where: { id: ledger.id },
+              data: { status: 'expired', failedAt: new Date(), failureReason: `PI status: ${piStatus}` },
+            });
+            const occ = await tx.sessionOccurrence.findUnique({ where: { id: hold.occurrenceId } });
+            if (occ) {
+              const newCount = Math.max(0, occ.bookedCount - hold.seats);
+              await tx.sessionOccurrence.update({
+                where: { id: hold.occurrenceId },
+                data: {
+                  bookedCount: newCount,
+                  ...(occ.status === 'full' && newCount < occ.maxCapacity ? { status: 'scheduled' } : {}),
+                },
+              });
+            }
+            await tx.sessionBooking.delete({ where: { id: hold.id } });
+          });
+          expiredCount++;
+
+        } catch (stripeErr) {
+          // Stripe API unreachable — don't delete, skip this hold to be safe
+          console.error(`[sessionHoldExpiry] Booking ${hold.id} — Stripe check failed: ${stripeErr.message}. Skipping.`);
+          continue;
+        }
+      } else if (ledger.status === 'charging' && !ledger.stripePaymentIntentId) {
+        // Ledger is charging but no PI was stored — PI creation failed between ledger create and PI create
+        // Safe to clean up
+        await prisma.$transaction(async (tx) => {
+          await tx.paymentLedgerEntry.update({
+            where: { id: ledger.id },
+            data: { status: 'expired', failedAt: new Date(), failureReason: 'No PI created — hold expired' },
+          });
+          const occ = await tx.sessionOccurrence.findUnique({ where: { id: hold.occurrenceId } });
+          if (occ) {
+            const newCount = Math.max(0, occ.bookedCount - hold.seats);
+            await tx.sessionOccurrence.update({
+              where: { id: hold.occurrenceId },
+              data: {
+                bookedCount: newCount,
+                ...(occ.status === 'full' && newCount < occ.maxCapacity ? { status: 'scheduled' } : {}),
+              },
+            });
+          }
+          await tx.sessionBooking.delete({ where: { id: hold.id } });
+        });
+        expiredCount++;
+      }
+    } catch (holdErr) {
+      console.error(`[sessionHoldExpiry] Error processing hold ${hold.id}: ${holdErr.message}`);
+    }
   }
 
-  console.log(`[SessionService] Expired ${expiredHolds.length} pending_payment session hold(s)`);
-  return expiredHolds.length;
+  if (expiredCount > 0) {
+    console.log(`[SessionService] Expired ${expiredCount} pending_payment session hold(s) (checked ${expiredHolds.length} total)`);
+  }
+  return expiredCount;
 }
 
 module.exports = {

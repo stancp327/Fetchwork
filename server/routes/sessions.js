@@ -338,17 +338,14 @@ router.post('/book', authenticateToken, async (req, res) => {
  */
 router.post('/book-paid', authenticateToken, async (req, res) => {
   try {
-    // ── Safety gate: paid session checkout temporarily disabled ──────────
-    // The session payment flow lacks a Stripe webhook handler for
-    // metadata.type === 'session_booking'. If a hold expires before the
-    // client calls /confirm-payment, the booking is deleted while Stripe
-    // may have already captured funds — money loss with no refund.
-    // Gate 14C: block until webhook hardening is deployed (Gate 14D+).
-    return res.status(503).json({
-      error: 'Paid session checkout is temporarily unavailable while we finish payment safety hardening. Free sessions can still be booked.',
-      code: 'paid_sessions_temporarily_disabled',
-    });
-    // ── End safety gate ─────────────────────────────────────────────────
+    // ── Feature flag: paid session checkout gated on ledger wiring ───────
+    if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') {
+      return res.status(503).json({
+        error: 'Paid session checkout is temporarily unavailable while we finish payment safety hardening. Free sessions can still be booked.',
+        code: 'paid_sessions_temporarily_disabled',
+      });
+    }
+    // ── End feature flag ────────────────────────────────────────────────
 
     const clientId = req.user._id.toString();
     const { occurrenceId, seats: rawSeats } = req.body;
@@ -356,12 +353,12 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
 
     if (!occurrenceId) return res.status(400).json({ error: 'occurrenceId is required' });
 
-    // Look up occurrence + template for price
+    // Look up occurrence + template for price + freelancerId
     const { getPrisma } = require('../booking-sql/db/client');
     const prisma = getPrisma();
     const occurrence = await prisma.sessionOccurrence.findUnique({
       where: { id: occurrenceId },
-      include: { template: { select: { price: true, currency: true, title: true, serviceId: true } } },
+      include: { template: { select: { id: true, price: true, currency: true, title: true, serviceId: true, freelancerId: true } } },
     });
 
     if (!occurrence) return res.status(404).json({ error: 'Session not found' });
@@ -376,35 +373,44 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
 
     const totalAmount = price * seats;
     const currency = occurrence.template?.currency || 'usd';
+    const freelancerId = occurrence.template?.freelancerId || occurrence.freelancerId;
 
     // Hold expires in 5 minutes
     const holdExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    // Create pending_payment booking (holds the seat)
+    // Create pending_payment booking (holds the seat via bookedCount increment)
     const booking = await SessionService.bookSeat(occurrenceId, clientId, {
       seats,
       status: 'pending_payment',
       holdExpiresAt,
     });
 
-    // Create Stripe PaymentIntent — wrapped so a Stripe failure rolls back the hold
-    let pi;
+    // Create PaymentLedgerEntry (status: charging)
+    let ledgerEntry;
     try {
-      const stripeService = require('../services/stripeService');
-      pi = await stripeService.createPaymentIntent({
-        amount: Math.round(totalAmount * 100), // dollars → cents
-        currency,
-        metadata: {
-          type: 'session_booking',
-          sessionBookingId: booking.id,
-          occurrenceId,
+      ledgerEntry = await prisma.paymentLedgerEntry.create({
+        data: {
+          sourceType: 'session_booking',
+          sourceId: booking.id,
           clientId,
-          serviceId: occurrence.template?.serviceId || '',
+          freelancerId,
+          grossAmountCents: Math.round(totalAmount * 100),
+          platformFeeCents: 0,
+          payoutAmountCents: 0,
+          currency,
+          status: 'charging',
+          chargedAt: new Date(),
+          idempotencyKey: `session_booking_${booking.id}`,
+          metadata: {
+            occurrenceId,
+            serviceId: occurrence.template?.serviceId || '',
+            seats,
+            templateId: occurrence.template?.id || occurrence.templateId,
+          },
         },
       });
-    } catch (stripeErr) {
-      // Roll back the orphaned hold: delete booking + decrement bookedCount
-      // (delete, not cancel — clears unique constraint so client can retry immediately)
+    } catch (ledgerErr) {
+      // Ledger creation failed — roll back booking hold
       try {
         await prisma.$transaction(async (tx) => {
           const occ = await tx.sessionOccurrence.findUnique({ where: { id: occurrenceId } });
@@ -421,16 +427,67 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
           await tx.sessionBooking.delete({ where: { id: booking.id } });
         });
       } catch (cleanupErr) {
+        console.error('[sessions] POST /book-paid cleanup error after ledger failure:', cleanupErr.message);
+      }
+      console.error('[sessions] POST /book-paid ledger error:', ledgerErr.message);
+      return res.status(500).json({ error: 'Failed to initialize payment. Please try again.' });
+    }
+
+    // Create Stripe PaymentIntent — wrapped so a failure rolls back booking + ledger
+    let pi;
+    try {
+      const stripeService = require('../services/stripeService');
+      pi = await stripeService.createPaymentIntent({
+        amount: Math.round(totalAmount * 100), // dollars → cents
+        currency,
+        metadata: {
+          type: 'session_booking',
+          ledgerEntryId: ledgerEntry.id,
+          sessionBookingId: booking.id,
+          occurrenceId,
+          clientId,
+          freelancerId,
+          serviceId: occurrence.template?.serviceId || '',
+        },
+      });
+    } catch (stripeErr) {
+      // Roll back: delete booking + decrement bookedCount + mark ledger failed
+      try {
+        await prisma.$transaction(async (tx) => {
+          const occ = await tx.sessionOccurrence.findUnique({ where: { id: occurrenceId } });
+          if (occ) {
+            const newCount = Math.max(0, occ.bookedCount - seats);
+            await tx.sessionOccurrence.update({
+              where: { id: occurrenceId },
+              data: {
+                bookedCount: newCount,
+                ...(occ.status === 'full' && newCount < occ.maxCapacity ? { status: 'scheduled' } : {}),
+              },
+            });
+          }
+          await tx.sessionBooking.delete({ where: { id: booking.id } });
+          await tx.paymentLedgerEntry.update({
+            where: { id: ledgerEntry.id },
+            data: { status: 'failed', failedAt: new Date(), failureReason: stripeErr.message },
+          });
+        });
+      } catch (cleanupErr) {
         console.error('[sessions] POST /book-paid cleanup error after Stripe failure:', cleanupErr.message);
       }
       console.error('[sessions] POST /book-paid Stripe error:', stripeErr.message);
       return res.status(502).json({ error: 'Payment system unavailable. Please try again.' });
     }
 
-    // Store paymentIntentId on the booking
-    await prisma.sessionBooking.update({
-      where: { id: booking.id },
-      data: { paymentIntentId: pi.id },
+    // Store stripePaymentIntentId on both the booking and ledger entry
+    await prisma.$transaction(async (tx) => {
+      await tx.sessionBooking.update({
+        where: { id: booking.id },
+        data: { paymentIntentId: pi.id },
+      });
+      await tx.paymentLedgerEntry.update({
+        where: { id: ledgerEntry.id },
+        data: { stripePaymentIntentId: pi.id },
+      });
     });
 
     res.status(201).json({
@@ -474,16 +531,77 @@ router.post('/bookings/:id/confirm-payment', authenticateToken, async (req, res)
 
     if (!paymentIntentId) return res.status(400).json({ error: 'paymentIntentId is required' });
 
+    const { getPrisma } = require('../booking-sql/db/client');
+    const prisma = getPrisma();
+
+    // Look up booking
+    const booking = await prisma.sessionBooking.findUnique({ where: { id: bookingId } });
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.clientId !== clientId) return res.status(403).json({ error: 'Not authorized' });
+
+    // Look up ledger entry (may not exist for legacy bookings)
+    const ledger = await prisma.paymentLedgerEntry.findFirst({
+      where: { sourceType: 'session_booking', sourceId: bookingId },
+    });
+
+    // ── Race-safe: webhook already confirmed ────────────────────────────
+    if (booking.status === 'confirmed' && ledger && ledger.status === 'held') {
+      // Verify the PI matches to prevent spoofing
+      if (ledger.stripePaymentIntentId === paymentIntentId) {
+        return res.json({
+          ok: true,
+          booking,
+          alreadyConfirmed: true,
+          message: 'Payment confirmed. You are booked for this session.',
+        });
+      }
+      // PI mismatch — genuine error
+      return res.status(409).json({ error: 'Payment intent does not match this booking.' });
+    }
+
+    // ── Normal path: frontend arrived first ─────────────────────────────
+    if (booking.status !== 'pending_payment') {
+      return res.status(409).json({ error: `Booking status is "${booking.status}", expected "pending_payment"` });
+    }
+
     // Retrieve the PaymentIntent from Stripe
     const stripeService = require('../services/stripeService');
     const pi = await stripeService.retrievePaymentIntent(paymentIntentId);
 
-    // Confirm the booking
-    const booking = await SessionService.confirmSessionPayment(bookingId, clientId, pi);
+    if (pi.status !== 'succeeded') {
+      return res.status(402).json({ error: `Payment not completed. Stripe status: ${pi.status}` });
+    }
+
+    // Transactionally confirm booking + update ledger
+    const updatedBooking = await prisma.$transaction(async (tx) => {
+      const confirmed = await tx.sessionBooking.update({
+        where: { id: bookingId },
+        data: {
+          status: 'confirmed',
+          holdExpiresAt: null,
+          paidAmount: pi.amount / 100, // cents → dollars
+          paymentIntentId: pi.id,
+        },
+      });
+
+      // Update ledger if it exists and is still in charging state
+      if (ledger && ledger.status === 'charging') {
+        await tx.paymentLedgerEntry.update({
+          where: { id: ledger.id },
+          data: {
+            status: 'held',
+            heldAt: new Date(),
+            stripeChargeId: pi.latest_charge || null,
+          },
+        });
+      }
+
+      return confirmed;
+    });
 
     res.json({
       ok: true,
-      booking,
+      booking: updatedBooking,
       message: 'Payment confirmed. You are booked for this session.',
     });
   } catch (err) {

@@ -640,6 +640,70 @@ router.webhookHandler = async (req, res) => {
           break;
         }
 
+        // ── Session booking payment confirmation ──
+        if (pi.metadata?.type === 'session_booking') {
+          try {
+            const { getPrisma } = require('../booking-sql/db/client');
+            const db = getPrisma();
+            const { ledgerEntryId, sessionBookingId } = pi.metadata;
+
+            // Primary lookup by ledgerEntryId, fallback by stripePaymentIntentId
+            let ledger = null;
+            if (ledgerEntryId) {
+              ledger = await db.paymentLedgerEntry.findUnique({ where: { id: ledgerEntryId } });
+            }
+            if (!ledger) {
+              ledger = await db.paymentLedgerEntry.findFirst({
+                where: { stripePaymentIntentId: pi.id, sourceType: 'session_booking' },
+              });
+            }
+
+            if (!ledger) {
+              console.warn(`[webhook] session_booking: no ledger entry found for PI ${pi.id}`);
+              break;
+            }
+
+            // Idempotency: skip if already held or beyond
+            if (ledger.status !== 'charging') {
+              console.log(`[webhook] session_booking ledger already ${ledger.status}: ${ledger.id}`);
+              break;
+            }
+
+            await db.$transaction(async (tx) => {
+              // Update ledger: charging → held
+              await tx.paymentLedgerEntry.update({
+                where: { id: ledger.id },
+                data: {
+                  status: 'held',
+                  heldAt: new Date(),
+                  stripeChargeId: pi.latest_charge || null,
+                },
+              });
+
+              // Update booking: pending_payment → confirmed
+              const bookingId = sessionBookingId || ledger.sourceId;
+              const booking = await tx.sessionBooking.findUnique({ where: { id: bookingId } });
+
+              if (booking && booking.status === 'pending_payment') {
+                await tx.sessionBooking.update({
+                  where: { id: bookingId },
+                  data: {
+                    status: 'confirmed',
+                    holdExpiresAt: null,
+                    paidAmount: pi.amount / 100,
+                    paymentIntentId: pi.id,
+                  },
+                });
+              }
+            });
+
+            console.log(`✅ Session booking confirmed via webhook: ${sessionBookingId || ledger.sourceId} (ledger ${ledger.id})`);
+          } catch (sessionErr) {
+            console.error('[webhook] session_booking error:', sessionErr.message);
+          }
+          break;
+        }
+
         // ── Featured job listing activation ──
         if (pi.metadata?.type === 'job_feature') {
           const days    = parseInt(pi.metadata.featureDays) || 7;
