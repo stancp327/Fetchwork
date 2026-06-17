@@ -753,3 +753,81 @@ model SessionBooking {
   @@index([clientId])
   @@index([occurrenceId, status])
 }
+
+// ─── Payment Ledger ─────────────────────────────────────────────────────────
+// Unified financial record for all payment flows. One mutable row per payment.
+//
+// Status values:
+//   unpaid, charging, held, failed, release_pending, released,
+//   refund_pending, refunded, disputed, cancelled, expired
+//
+// Source types:
+//   service_order, session_booking, one_on_one_booking, bundle_purchase,
+//   job_escrow, custom_offer, proposal, subscription_invoice
+// ─────────────────────────────────────────────────────────────────────────────
+model PaymentLedgerEntry {
+  id                       String    @id @default(uuid()) @db.Uuid
+
+  // What this payment is for
+  sourceType               String
+  sourceId                 String
+
+  // Who
+  clientId                 String
+  freelancerId             String
+
+  // Money
+  grossAmountCents         Int
+  platformFeeCents         Int       @default(0)
+  payoutAmountCents        Int       @default(0)
+  releasedAmountCents      Int       @default(0)
+  refundedAmountCents      Int       @default(0)
+  currency                 String    @default("usd")
+
+  // State
+  status                   String    @default("unpaid")
+
+  // Stripe references
+  stripePaymentIntentId    String?
+  stripeChargeId           String?
+  stripeTransferId         String?
+  stripeRefundId           String?
+  stripeConnectedAccountId String?
+
+  // Timing
+  chargedAt                DateTime? @db.Timestamptz(6)
+  heldAt                   DateTime? @db.Timestamptz(6)
+  releaseAt                DateTime? @db.Timestamptz(6)
+  releasedAt               DateTime? @db.Timestamptz(6)
+  refundedAt               DateTime? @db.Timestamptz(6)
+  disputedAt               DateTime? @db.Timestamptz(6)
+  cancelledAt              DateTime? @db.Timestamptz(6)
+  failedAt                 DateTime? @db.Timestamptz(6)
+
+  // Release tracking
+  releaseEvent             String?
+  releaseNote              String?
+
+  // Failure / cancellation
+  failureReason            String?
+  cancelReason             String?
+
+  // Safety
+  idempotencyKey           String?   @unique
+
+  // Metadata
+  metadata                 Json      @default("{}")
+
+  // Timestamps
+  createdAt                DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@unique([sourceType, sourceId])
+  @@index([clientId, status])
+  @@index([freelancerId, status])
+  @@index([status, releaseAt])
+  @@index([stripePaymentIntentId])
+  @@index([stripeTransferId])
+  @@index([stripeConnectedAccountId])
+  @@index([createdAt(sort: Desc)])
+}
