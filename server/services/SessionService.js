@@ -1064,6 +1064,321 @@ async function expireSessionHolds() {
   return expiredCount;
 }
 
+// ─── Session Completion + Auto-Release (Gate 16D) ───────────────────────────
+
+/**
+ * Move held ledger entries to release_pending for sessions that have ended.
+ * Sets releaseAt = occurrence.endTime + 48 hours.
+ *
+ * Only affects sourceType='session_booking' ledgers in 'held' status
+ * whose associated booking's occurrence has ended (endTime < now).
+ *
+ * @returns {Promise<number>} Number of ledger entries moved to release_pending
+ */
+async function markCompletedSessionLedgersReleasePending() {
+  if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') return 0;
+
+  const prisma = getPrisma();
+  const now = new Date();
+  const RELEASE_WINDOW_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+  // Find held session_booking ledger entries
+  const heldLedgers = await prisma.paymentLedgerEntry.findMany({
+    where: { sourceType: 'session_booking', status: 'held' },
+  });
+
+  if (heldLedgers.length === 0) return 0;
+
+  let movedCount = 0;
+
+  for (const ledger of heldLedgers) {
+    try {
+      // Look up the associated booking to get occurrenceId
+      const booking = await prisma.sessionBooking.findUnique({
+        where: { id: ledger.sourceId },
+        include: { occurrence: { select: { id: true, endTime: true, status: true } } },
+      });
+
+      if (!booking || !booking.occurrence) continue;
+
+      // Skip if occurrence hasn't ended yet
+      if (booking.occurrence.endTime > now) continue;
+
+      // Skip cancelled occurrences
+      if (booking.occurrence.status === 'cancelled') continue;
+
+      // Skip if booking isn't confirmed
+      if (booking.status !== 'confirmed') continue;
+
+      const releaseAt = new Date(booking.occurrence.endTime.getTime() + RELEASE_WINDOW_MS);
+
+      // Merge metadata
+      const existingMeta = (ledger.metadata && typeof ledger.metadata === 'object') ? ledger.metadata : {};
+      const updatedMeta = {
+        ...existingMeta,
+        releasePendingAt: now.toISOString(),
+        releasePendingReason: 'session_completed',
+        occurrenceEndTime: booking.occurrence.endTime.toISOString(),
+      };
+
+      await prisma.paymentLedgerEntry.update({
+        where: { id: ledger.id },
+        data: { status: 'release_pending', releaseAt, metadata: updatedMeta },
+      });
+
+      // Mark occurrence as completed if still scheduled/full
+      if (['scheduled', 'full'].includes(booking.occurrence.status)) {
+        // Only if all bookings for this occurrence have been moved
+        const remainingHeld = await prisma.paymentLedgerEntry.count({
+          where: {
+            sourceType: 'session_booking',
+            status: 'held',
+            sourceId: {
+              in: (await prisma.sessionBooking.findMany({
+                where: { occurrenceId: booking.occurrence.id, status: 'confirmed' },
+                select: { id: true },
+              })).map(b => b.id),
+            },
+          },
+        });
+        if (remainingHeld === 0) {
+          await prisma.sessionOccurrence.update({
+            where: { id: booking.occurrence.id },
+            data: { status: 'completed' },
+          });
+        }
+      }
+
+      movedCount++;
+    } catch (err) {
+      console.error(`[sessionCompletion] Error processing ledger ${ledger.id}: ${err.message}`);
+    }
+  }
+
+  if (movedCount > 0) {
+    console.log(`[sessionCompletion] Moved ${movedCount} held ledger(s) to release_pending`);
+  }
+  return movedCount;
+}
+
+/**
+ * Auto-release paid session ledger entries whose releaseAt has passed.
+ * Uses atomic claim (release_pending → release_processing) to prevent duplicate transfers.
+ *
+ * @returns {Promise<{ released: number, skipped: number, failed: number }>}
+ */
+async function autoReleasePendingSessionLedgers() {
+  if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') return { released: 0, skipped: 0, failed: 0 };
+
+  const prisma = getPrisma();
+  const now = new Date();
+
+  // ── Recover stuck release_processing entries (>10 min old) ─────
+  const STUCK_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+  const stuckCutoff = new Date(now.getTime() - STUCK_THRESHOLD_MS);
+  const stuckEntries = await prisma.paymentLedgerEntry.findMany({
+    where: {
+      sourceType: 'session_booking',
+      status: 'release_processing',
+      releaseAt: { lte: stuckCutoff }, // was eligible before the threshold
+    },
+  });
+  for (const stuck of stuckEntries) {
+    // If a transfer was somehow created (crash after Stripe, before DB save),
+    // check Stripe with idempotency — the same key will return the same transfer
+    const idempotencyKey = `session_release_${stuck.id}`;
+    try {
+      const stripeService = require('../services/stripeService');
+      const transfer = await stripeService.releasePayment(
+        stuck.payoutAmountCents / 100,
+        stuck.stripeConnectedAccountId,
+        stuck.stripePaymentIntentId,
+        { idempotencyKey },
+      );
+      // Idempotent: if transfer already existed, Stripe returns the same one
+      const meta = (stuck.metadata && typeof stuck.metadata === 'object') ? stuck.metadata : {};
+      const actions = Array.isArray(meta.adminActions) ? meta.adminActions : [];
+      await prisma.paymentLedgerEntry.update({
+        where: { id: stuck.id },
+        data: {
+          status: 'released',
+          releasedAt: new Date(),
+          stripeTransferId: transfer.id,
+          releasedAmountCents: stuck.payoutAmountCents,
+          releaseEvent: 'auto_release',
+          metadata: {
+            ...meta,
+            adminActions: [...actions, {
+              action: 'auto_release_recovery',
+              timestamp: new Date().toISOString(),
+              stripeObjectId: transfer.id,
+              previousStatus: 'release_processing',
+              nextStatus: 'released',
+              idempotencyKey,
+              note: 'Recovered stuck release_processing entry',
+            }],
+          },
+        },
+      });
+      console.log(`✅ [autoRelease] Recovered stuck ledger ${stuck.id}: transfer ${transfer.id}`);
+    } catch (recoverErr) {
+      // Stripe failed — revert to release_pending for normal retry
+      console.error(`[autoRelease] Stuck recovery failed for ledger ${stuck.id}: ${recoverErr.message}`);
+      const meta = (stuck.metadata && typeof stuck.metadata === 'object') ? stuck.metadata : {};
+      await prisma.paymentLedgerEntry.update({
+        where: { id: stuck.id },
+        data: {
+          status: 'release_pending',
+          metadata: {
+            ...meta,
+            lastReleaseError: `Stuck recovery: ${recoverErr.message}`,
+            lastReleaseAttemptAt: new Date().toISOString(),
+            releaseAttemptCount: (meta.releaseAttemptCount || 0) + 1,
+          },
+        },
+      });
+    }
+  }
+
+  // Find release-eligible entries
+  const candidates = await prisma.paymentLedgerEntry.findMany({
+    where: {
+      sourceType: 'session_booking',
+      status: 'release_pending',
+      releaseAt: { lte: now },
+    },
+  });
+
+  if (candidates.length === 0) return { released: 0, skipped: 0, failed: 0 };
+
+  let released = 0, skipped = 0, failed = 0;
+
+  for (const entry of candidates) {
+    try {
+      // ── Guard checks ──────────────────────────────────────────────
+      const meta = entry.metadata || {};
+
+      if (!meta.feeSnapshot || meta.feeSnapshot.status !== 'ok') {
+        console.warn(`[autoRelease] Skipping ledger ${entry.id}: fee_snapshot_missing`);
+        skipped++;
+        continue;
+      }
+      if (entry.payoutAmountCents <= 0) {
+        console.warn(`[autoRelease] Skipping ledger ${entry.id}: payout_zero`);
+        skipped++;
+        continue;
+      }
+      if (!entry.stripeConnectedAccountId) {
+        console.warn(`[autoRelease] Skipping ledger ${entry.id}: connect_account_missing`);
+        skipped++;
+        continue;
+      }
+      if (!entry.stripePaymentIntentId) {
+        console.warn(`[autoRelease] Skipping ledger ${entry.id}: stripe_pi_missing`);
+        skipped++;
+        continue;
+      }
+      if (entry.stripeTransferId) {
+        console.warn(`[autoRelease] Skipping ledger ${entry.id}: transfer_already_exists`);
+        skipped++;
+        continue;
+      }
+
+      // ── Atomic claim: release_pending → release_processing ────────
+      // Only one cron instance can claim this entry. If updateMany returns 0,
+      // another process already claimed it.
+      const claimed = await prisma.paymentLedgerEntry.updateMany({
+        where: { id: entry.id, status: 'release_pending' },
+        data: { status: 'release_processing' },
+      });
+
+      if (claimed.count === 0) {
+        // Another cron instance claimed it first
+        skipped++;
+        continue;
+      }
+
+      // ── Execute Stripe Transfer ───────────────────────────────────
+      try {
+        const stripeService = require('../services/stripeService');
+        const idempotencyKey = `session_release_${entry.id}`;
+        const transfer = await stripeService.releasePayment(
+          entry.payoutAmountCents / 100, // cents → dollars
+          entry.stripeConnectedAccountId,
+          entry.stripePaymentIntentId, // transfer_group
+          { idempotencyKey },
+        );
+
+        // ── Success: update to released ─────────────────────────────
+        const existingMeta = (entry.metadata && typeof entry.metadata === 'object') ? entry.metadata : {};
+        const autoReleaseAction = {
+          action: 'auto_release',
+          timestamp: new Date().toISOString(),
+          stripeObjectId: transfer.id,
+          previousStatus: 'release_pending',
+          nextStatus: 'released',
+          idempotencyKey,
+        };
+        const actions = Array.isArray(existingMeta.adminActions) ? existingMeta.adminActions : [];
+
+        await prisma.paymentLedgerEntry.update({
+          where: { id: entry.id },
+          data: {
+            status: 'released',
+            releasedAt: new Date(),
+            stripeTransferId: transfer.id,
+            releasedAmountCents: entry.payoutAmountCents,
+            releaseEvent: 'auto_release',
+            metadata: { ...existingMeta, adminActions: [...actions, autoReleaseAction] },
+          },
+        });
+
+        console.log(`✅ [autoRelease] Released ledger ${entry.id}: transfer ${transfer.id}, payout $${(entry.payoutAmountCents / 100).toFixed(2)}`);
+        released++;
+      } catch (stripeErr) {
+        // ── Stripe failed: return to release_pending ────────────────
+        console.error(`[autoRelease] Stripe transfer failed for ledger ${entry.id}: ${stripeErr.message}`);
+
+        const existingMeta = (entry.metadata && typeof entry.metadata === 'object') ? entry.metadata : {};
+        const attemptCount = (existingMeta.releaseAttemptCount || 0) + 1;
+
+        await prisma.paymentLedgerEntry.update({
+          where: { id: entry.id },
+          data: {
+            status: 'release_pending', // return to release_pending for retry
+            metadata: {
+              ...existingMeta,
+              lastReleaseError: stripeErr.message,
+              lastReleaseAttemptAt: new Date().toISOString(),
+              releaseAttemptCount: attemptCount,
+              ...(attemptCount >= 5 ? { releaseBlockedReason: 'max_attempts_exceeded' } : {}),
+            },
+          },
+        });
+
+        failed++;
+      }
+    } catch (err) {
+      console.error(`[autoRelease] Unexpected error for ledger ${entry.id}: ${err.message}`);
+      // If we crashed after claiming but before stripe call, return to release_pending
+      try {
+        await prisma.paymentLedgerEntry.updateMany({
+          where: { id: entry.id, status: 'release_processing' },
+          data: { status: 'release_pending' },
+        });
+      } catch (revertErr) {
+        console.error(`[autoRelease] Failed to revert claim for ledger ${entry.id}: ${revertErr.message}`);
+      }
+      failed++;
+    }
+  }
+
+  if (released > 0 || failed > 0) {
+    console.log(`[autoRelease] Summary: ${released} released, ${skipped} skipped, ${failed} failed`);
+  }
+  return { released, skipped, failed };
+}
+
 module.exports = {
   // Helpers
   resolveScheduleType,
@@ -1091,6 +1406,8 @@ module.exports = {
 
   // Payment ledger
   snapshotSessionLedgerFees,
+  markCompletedSessionLedgersReleasePending,
+  autoReleasePendingSessionLedgers,
 
   // Queries
   getUpcomingByService,

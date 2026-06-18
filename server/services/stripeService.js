@@ -102,14 +102,17 @@ class StripeService {
    * @param {string} destinationAccountId - Freelancer's stripeAccountId
    * @param {string} transferGroup    - payment intent ID (links charge to transfer)
    */
-  async releasePayment(amount, destinationAccountId, transferGroup) {
+  async releasePayment(amount, destinationAccountId, transferGroup, options = {}) {
     this._ensureStripe();
-    return stripe.transfers.create({
+    const createParams = {
       amount:        Math.round(amount * 100), // cents
       currency:      'usd',
       destination:   destinationAccountId,
       transfer_group: transferGroup,
-    });
+    };
+    const stripeOptions = {};
+    if (options.idempotencyKey) stripeOptions.idempotencyKey = options.idempotencyKey;
+    return stripe.transfers.create(createParams, Object.keys(stripeOptions).length ? stripeOptions : undefined);
   }
 
   // ── Customer & Saved Payment Methods ───────────────────────────

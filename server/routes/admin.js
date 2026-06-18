@@ -3026,12 +3026,14 @@ function checkReleaseGuards(entry) {
 /** Execute Stripe transfer and update ledger to released */
 async function executeRelease(db, entry, adminId, reason, releaseEvent) {
   const stripeService = require('../services/stripeService');
+  const idempotencyKey = `session_release_${entry.id}`;
 
   // releasePayment takes dollars, not cents
   const transfer = await stripeService.releasePayment(
     entry.payoutAmountCents / 100,
     entry.stripeConnectedAccountId,
     entry.stripePaymentIntentId, // transfer_group
+    { idempotencyKey },
   );
 
   const newMeta = appendAdminAction(entry.metadata, {
@@ -3042,6 +3044,7 @@ async function executeRelease(db, entry, adminId, reason, releaseEvent) {
     previousStatus: entry.status,
     nextStatus: 'released',
     stripeObjectId: transfer.id,
+    idempotencyKey,
   });
 
   return db.paymentLedgerEntry.update({

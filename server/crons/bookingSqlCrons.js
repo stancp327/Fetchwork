@@ -216,7 +216,33 @@ function initBookingSqlCrons() {
     }
   });
 
-  console.log('[bookingSqlCrons] ✅ SQL booking crons initialized (hold expiry + reminders + review prompts)');
+  // ── 6. Session completion → release_pending (Gate 16D) ──
+  cron.schedule('*/5 * * * *', async () => {
+    if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') return;
+    if (backoffUntil && new Date() < backoffUntil) return;
+    if (!SessionService) return;
+
+    try {
+      await SessionService.markCompletedSessionLedgersReleasePending();
+    } catch (err) {
+      console.error('[sessionCompletion] Cron error:', err.message);
+    }
+  });
+
+  // ── 7. Auto-release paid session ledgers (Gate 16D) ──
+  cron.schedule('*/5 * * * *', async () => {
+    if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') return;
+    if (backoffUntil && new Date() < backoffUntil) return;
+    if (!SessionService) return;
+
+    try {
+      await SessionService.autoReleasePendingSessionLedgers();
+    } catch (err) {
+      console.error('[autoRelease] Cron error:', err.message);
+    }
+  });
+
+  console.log('[bookingSqlCrons] ✅ SQL booking crons initialized (hold expiry + reminders + review prompts + session completion + auto-release)');
 }
 
 module.exports = { initBookingSqlCrons };
