@@ -80,6 +80,22 @@ router.get('/status', authenticateToken, async (req, res) => {
       });
     }
 
+    // Stripe 403 — stored Connect account is inaccessible (key rotation, revoked access, orphaned account)
+    const accountInaccessible = error?.type === 'StripePermissionError'
+      || error?.statusCode === 403
+      || /does not have access to account/i.test(error?.message || '');
+    if (accountInaccessible) {
+      console.error('Stripe account inaccessible in /api/payments/status:', error.message);
+      return res.status(200).json({
+        connected: false,
+        chargesEnabled: false,
+        payoutsEnabled: false,
+        unavailable: true,
+        reason: 'account_access_revoked',
+        message: 'Your connected Stripe account could not be accessed. Please reconnect your payment account.',
+      });
+    }
+
     console.error('Error getting payment status:', error);
     res.status(500).json({ error: 'Failed to get payment status' });
   }
@@ -136,6 +152,19 @@ router.post('/connect-account', authenticateToken, async (req, res) => {
 
     res.json({ accountId, onboardingUrl: accountLink.url });
   } catch (error) {
+    // Stripe 403 — stored Connect account is inaccessible (key rotation, revoked access, orphaned account)
+    const accountInaccessible = error?.type === 'StripePermissionError'
+      || error?.statusCode === 403
+      || /does not have access to account/i.test(error?.message || '');
+    if (accountInaccessible) {
+      console.error('Stripe Connect account inaccessible in /connect-account:', error.message);
+      return res.status(409).json({
+        error: 'Your connected Stripe account is no longer accessible. Please contact support to reset your payment account.',
+        code: 'account_access_revoked',
+        needsReset: true,
+      });
+    }
+
     console.error('Error creating connected account:', error);
     res.status(500).json({ error: 'Failed to start Stripe onboarding' });
   }

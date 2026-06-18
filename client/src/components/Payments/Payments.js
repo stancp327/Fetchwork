@@ -77,11 +77,17 @@ const Payments = () => {
         }
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to create Stripe account');
+        if (data.code === 'account_access_revoked') {
+          setError('Your previous payment account is no longer accessible. Please contact support to reset your account, then try again.');
+          fetchStripeStatus(); // Refresh to show reconnection message
+          return;
+        }
+        throw new Error(data.error || 'Failed to create Stripe account');
       }
 
-      const data = await response.json();
       if (data.onboardingUrl) {
         window.location.href = data.onboardingUrl;
       } else {
@@ -89,7 +95,7 @@ const Payments = () => {
       }
     } catch (error) {
       console.error('Error connecting Stripe:', error);
-      setError('Failed to Add Bank Account ?');
+      setError('Failed to connect payment account. Please try again or contact support.');
     }
   };
 
@@ -212,6 +218,20 @@ const Payments = () => {
                       </button>
                     </div>
                   )}
+                </div>
+              </div>
+            ) : stripeStatus.reason === 'account_access_revoked' ? (
+              <div className="status-disconnected">
+                <span className="status-icon">🔄</span>
+                <div className="status-details">
+                  <h3>Payment Account Needs Reconnection</h3>
+                  <p>Your previously connected Stripe account could not be accessed. This can happen after account changes or security updates. Please reconnect to continue receiving payments.</p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={handleConnectStripe}
+                  >
+                    Reconnect Payment Account →
+                  </button>
                 </div>
               </div>
             ) : (
