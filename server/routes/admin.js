@@ -2915,5 +2915,334 @@ router.get('/audit-log', authenticateAdmin, requirePermission('analytics_view'),
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// ── Admin Ledger Controls (Gate 16C) — session_booking entries only ──────
+// ═══════════════════════════════════════════════════════════════════════════
+
+const LEDGER_FLAG = () => process.env.PAID_SESSION_LEDGER_ENABLED === 'true';
+const LEDGER_DISABLED_MSG = { error: 'Paid session ledger is not enabled.', code: 'ledger_disabled' };
+
+/** Append admin action to ledger metadata.adminActions[] */
+function appendAdminAction(metadata, action) {
+  const existing = (metadata && typeof metadata === 'object') ? metadata : {};
+  const actions = Array.isArray(existing.adminActions) ? existing.adminActions : [];
+  return { ...existing, adminActions: [...actions, action] };
+}
+
+// ── GET /api/admin/ledger — list ledger entries ─────────────────────────
+router.get('/ledger', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+
+    const { status, sourceType, clientId, freelancerId, from, to, limit: rawLimit } = req.query;
+    const limit = Math.min(parseInt(rawLimit) || 50, 200);
+
+    const where = {};
+    if (status) where.status = status;
+    if (sourceType) where.sourceType = sourceType;
+    if (clientId) where.clientId = clientId;
+    if (freelancerId) where.freelancerId = freelancerId;
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from);
+      if (to) where.createdAt.lte = new Date(to);
+    }
+
+    const [entries, total] = await Promise.all([
+      db.paymentLedgerEntry.findMany({ where, orderBy: { createdAt: 'desc' }, take: limit }),
+      db.paymentLedgerEntry.count({ where }),
+    ]);
+
+    res.json({ entries, total, limit });
+  } catch (err) {
+    console.error('[admin] GET /ledger error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch ledger entries' });
+  }
+});
+
+// ── GET /api/admin/ledger/:id — single ledger detail ────────────────────
+router.get('/ledger/:id', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    res.json({ entry });
+  } catch (err) {
+    console.error('[admin] GET /ledger/:id error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch ledger entry' });
+  }
+});
+
+// ── POST /api/admin/ledger/:id/re-snapshot — recalculate fee snapshot ───
+router.post('/ledger/:id/re-snapshot', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  if (!LEDGER_FLAG()) return res.status(503).json(LEDGER_DISABLED_MSG);
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    if (entry.sourceType !== 'session_booking') return res.status(400).json({ error: 'Only session_booking entries can be re-snapshotted' });
+    if (['released', 'refunded'].includes(entry.status)) return res.status(400).json({ error: `Cannot re-snapshot a ${entry.status} entry` });
+
+    const SessionService = require('../services/SessionService');
+    const result = await SessionService.snapshotSessionLedgerFees(entry.id, db);
+
+    // Append admin action
+    const updated = await db.paymentLedgerEntry.findUnique({ where: { id: entry.id } });
+    const newMeta = appendAdminAction(updated.metadata, {
+      action: 're-snapshot',
+      adminId: req.user._id.toString(),
+      reason: req.body.reason || 'Admin re-snapshot',
+      timestamp: new Date().toISOString(),
+      previousStatus: entry.status,
+      nextStatus: entry.status,
+      snapshotResult: result.ok ? 'ok' : result.error,
+    });
+    await db.paymentLedgerEntry.update({ where: { id: entry.id }, data: { metadata: newMeta } });
+
+    const final = await db.paymentLedgerEntry.findUnique({ where: { id: entry.id } });
+    res.json({ ok: result.ok, error: result.error || undefined, entry: final });
+  } catch (err) {
+    console.error('[admin] POST /ledger/:id/re-snapshot error:', err.message);
+    res.status(500).json({ error: 'Re-snapshot failed' });
+  }
+});
+
+/** Shared release guard — returns null if OK, or error response object */
+function checkReleaseGuards(entry) {
+  if (entry.sourceType !== 'session_booking') return { status: 400, error: 'Only session_booking entries can be released' };
+  if (['released', 'refunded'].includes(entry.status)) return { status: 400, error: `Entry is already ${entry.status}` };
+  const meta = entry.metadata || {};
+  if (!meta.feeSnapshot || meta.feeSnapshot.status !== 'ok') return { status: 400, error: 'Fee snapshot is missing or failed. Run re-snapshot first.' };
+  if (entry.payoutAmountCents <= 0) return { status: 400, error: `payoutAmountCents is ${entry.payoutAmountCents}. Run re-snapshot first.` };
+  if (!entry.stripeConnectedAccountId) return { status: 400, error: 'Freelancer has no connected Stripe account. Update or re-snapshot.' };
+  if (!entry.stripePaymentIntentId) return { status: 400, error: 'No Stripe PaymentIntent reference on this entry.' };
+  if (entry.stripeTransferId) return { status: 400, error: 'Transfer already exists on this entry.' };
+  return null;
+}
+
+/** Execute Stripe transfer and update ledger to released */
+async function executeRelease(db, entry, adminId, reason, releaseEvent) {
+  const stripeService = require('../services/stripeService');
+
+  // releasePayment takes dollars, not cents
+  const transfer = await stripeService.releasePayment(
+    entry.payoutAmountCents / 100,
+    entry.stripeConnectedAccountId,
+    entry.stripePaymentIntentId, // transfer_group
+  );
+
+  const newMeta = appendAdminAction(entry.metadata, {
+    action: releaseEvent,
+    adminId,
+    reason,
+    timestamp: new Date().toISOString(),
+    previousStatus: entry.status,
+    nextStatus: 'released',
+    stripeObjectId: transfer.id,
+  });
+
+  return db.paymentLedgerEntry.update({
+    where: { id: entry.id },
+    data: {
+      status: 'released',
+      releasedAt: new Date(),
+      stripeTransferId: transfer.id,
+      releasedAmountCents: entry.payoutAmountCents,
+      releaseEvent,
+      metadata: newMeta,
+    },
+  });
+}
+
+/** Execute Stripe refund and update ledger to refunded */
+async function executeRefund(db, entry, adminId, reason) {
+  const stripeService = require('../services/stripeService');
+
+  const refund = await stripeService.refundPayment(
+    entry.stripePaymentIntentId,
+    entry.grossAmountCents / 100, // cents → dollars (refundPayment converts back to cents)
+    'requested_by_customer',
+    { adminId, reason, ledgerEntryId: entry.id },
+  );
+
+  const newMeta = appendAdminAction(entry.metadata, {
+    action: 'admin_refund',
+    adminId,
+    reason,
+    timestamp: new Date().toISOString(),
+    previousStatus: entry.status,
+    nextStatus: 'refunded',
+    stripeObjectId: refund.id,
+  });
+
+  return db.paymentLedgerEntry.update({
+    where: { id: entry.id },
+    data: {
+      status: 'refunded',
+      refundedAt: new Date(),
+      stripeRefundId: refund.id,
+      refundedAmountCents: entry.grossAmountCents,
+      cancelReason: reason,
+      metadata: newMeta,
+    },
+  });
+}
+
+// ── POST /api/admin/ledger/:id/release — manual release ─────────────────
+router.post('/ledger/:id/release', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  if (!LEDGER_FLAG()) return res.status(503).json(LEDGER_DISABLED_MSG);
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    if (!['held', 'release_pending'].includes(entry.status)) {
+      return res.status(400).json({ error: `Cannot release from status "${entry.status}". Must be held or release_pending.` });
+    }
+    const guardError = checkReleaseGuards(entry);
+    if (guardError) return res.status(guardError.status).json({ error: guardError.error });
+    if (!req.body.reason) return res.status(400).json({ error: 'reason is required' });
+
+    const updated = await executeRelease(db, entry, req.user._id.toString(), req.body.reason, 'admin_release');
+    res.json({ ok: true, entry: updated });
+  } catch (err) {
+    console.error('[admin] POST /ledger/:id/release error:', err.message);
+    res.status(500).json({ error: `Release failed: ${err.message}` });
+  }
+});
+
+// ── POST /api/admin/ledger/:id/expedite-release — release before releaseAt ──
+router.post('/ledger/:id/expedite-release', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  if (!LEDGER_FLAG()) return res.status(503).json(LEDGER_DISABLED_MSG);
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    if (entry.status !== 'release_pending') {
+      return res.status(400).json({ error: `Cannot expedite from status "${entry.status}". Must be release_pending.` });
+    }
+    const guardError = checkReleaseGuards(entry);
+    if (guardError) return res.status(guardError.status).json({ error: guardError.error });
+    if (!req.body.reason) return res.status(400).json({ error: 'reason is required' });
+
+    const updated = await executeRelease(db, entry, req.user._id.toString(), req.body.reason, 'admin_expedited');
+    res.json({ ok: true, entry: updated });
+  } catch (err) {
+    console.error('[admin] POST /ledger/:id/expedite-release error:', err.message);
+    res.status(500).json({ error: `Expedited release failed: ${err.message}` });
+  }
+});
+
+// ── POST /api/admin/ledger/:id/refund — manual refund before transfer ───
+router.post('/ledger/:id/refund', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  if (!LEDGER_FLAG()) return res.status(503).json(LEDGER_DISABLED_MSG);
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    if (entry.sourceType !== 'session_booking') return res.status(400).json({ error: 'Only session_booking entries can be refunded here' });
+    if (['released', 'refunded'].includes(entry.status)) {
+      return res.status(400).json({ error: `Cannot refund a ${entry.status} entry` });
+    }
+    if (!['held', 'release_pending', 'disputed'].includes(entry.status)) {
+      return res.status(400).json({ error: `Cannot refund from status "${entry.status}"` });
+    }
+    if (!entry.stripePaymentIntentId) return res.status(400).json({ error: 'No Stripe PaymentIntent reference' });
+    if (entry.stripeTransferId) return res.status(400).json({ error: 'Transfer already exists. Cannot refund after release in MVP.' });
+    if (!req.body.reason) return res.status(400).json({ error: 'reason is required' });
+
+    const updated = await executeRefund(db, entry, req.user._id.toString(), req.body.reason);
+    res.json({ ok: true, entry: updated });
+  } catch (err) {
+    console.error('[admin] POST /ledger/:id/refund error:', err.message);
+    res.status(500).json({ error: `Refund failed: ${err.message}` });
+  }
+});
+
+// ── POST /api/admin/ledger/:id/resolve — resolve a disputed entry ───────
+router.post('/ledger/:id/resolve', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  if (!LEDGER_FLAG()) return res.status(503).json(LEDGER_DISABLED_MSG);
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    if (entry.sourceType !== 'session_booking') return res.status(400).json({ error: 'Only session_booking entries can be resolved here' });
+    if (entry.status !== 'disputed') {
+      return res.status(400).json({ error: `Can only resolve disputed entries. Current: "${entry.status}"` });
+    }
+    const { resolution, reason } = req.body;
+    if (!['release', 'refund'].includes(resolution)) {
+      return res.status(400).json({ error: 'resolution must be "release" or "refund"' });
+    }
+    if (!reason) return res.status(400).json({ error: 'reason is required' });
+
+    if (resolution === 'release') {
+      const guardError = checkReleaseGuards(entry);
+      if (guardError) return res.status(guardError.status).json({ error: guardError.error });
+      const updated = await executeRelease(db, entry, req.user._id.toString(), reason, 'admin_release');
+      return res.json({ ok: true, resolution: 'released', entry: updated });
+    }
+
+    // resolution === 'refund'
+    if (!entry.stripePaymentIntentId) return res.status(400).json({ error: 'No Stripe PaymentIntent reference' });
+    if (entry.stripeTransferId) return res.status(400).json({ error: 'Transfer already exists. Cannot refund after release in MVP.' });
+    const updated = await executeRefund(db, entry, req.user._id.toString(), reason);
+    res.json({ ok: true, resolution: 'refunded', entry: updated });
+  } catch (err) {
+    console.error('[admin] POST /ledger/:id/resolve error:', err.message);
+    res.status(500).json({ error: `Resolve failed: ${err.message}` });
+  }
+});
+
+// ── POST /api/admin/ledger/:id/retry-release — retry failed transfer ────
+router.post('/ledger/:id/retry-release', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  if (!LEDGER_FLAG()) return res.status(503).json(LEDGER_DISABLED_MSG);
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    if (entry.status !== 'release_pending') {
+      return res.status(400).json({ error: `Can only retry release from release_pending. Current: "${entry.status}"` });
+    }
+    const guardError = checkReleaseGuards(entry);
+    if (guardError) return res.status(guardError.status).json({ error: guardError.error });
+
+    const updated = await executeRelease(db, entry, req.user._id.toString(), req.body.reason || 'Retry release', 'admin_release');
+    res.json({ ok: true, entry: updated });
+  } catch (err) {
+    console.error('[admin] POST /ledger/:id/retry-release error:', err.message);
+    res.status(500).json({ error: `Retry release failed: ${err.message}` });
+  }
+});
+
+// ── POST /api/admin/ledger/:id/retry-refund — retry failed refund ───────
+router.post('/ledger/:id/retry-refund', authenticateAdmin, requirePermission('payment_management'), async (req, res) => {
+  if (!LEDGER_FLAG()) return res.status(503).json(LEDGER_DISABLED_MSG);
+  try {
+    const { getPrisma } = require('../booking-sql/db/client');
+    const db = getPrisma();
+    const entry = await db.paymentLedgerEntry.findUnique({ where: { id: req.params.id } });
+    if (!entry) return res.status(404).json({ error: 'Ledger entry not found' });
+    if (entry.sourceType !== 'session_booking') return res.status(400).json({ error: 'Only session_booking entries can be retried here' });
+    if (entry.status !== 'refund_pending') {
+      return res.status(400).json({ error: `Can only retry refund from refund_pending. Current: "${entry.status}"` });
+    }
+    if (!entry.stripePaymentIntentId) return res.status(400).json({ error: 'No Stripe PaymentIntent reference' });
+
+    const updated = await executeRefund(db, entry, req.user._id.toString(), req.body.reason || 'Retry refund');
+    res.json({ ok: true, entry: updated });
+  } catch (err) {
+    console.error('[admin] POST /ledger/:id/retry-refund error:', err.message);
+    res.status(500).json({ error: `Retry refund failed: ${err.message}` });
+  }
+});
+
 module.exports = router;
 
