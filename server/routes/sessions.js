@@ -251,9 +251,13 @@ router.post('/occurrences/:id/cancel', authenticateToken, async (req, res) => {
   } catch (err) {
     const status = err.message === 'Not authorized' ? 403
       : err.message === 'Occurrence not found' ? 404
-      : err.message === 'Already cancelled' ? 409 : 400;
+      : err.message === 'Already cancelled' ? 409
+      : err.message.includes('ledger actions are disabled') ? 503 : 400;
     console.error('[sessions] POST /occurrences/:id/cancel error:', err.message);
-    res.status(status).json({ error: err.message });
+    const errBody = err.message.includes('ledger actions are disabled')
+      ? { error: err.message, code: 'ledger_disabled' }
+      : { error: err.message };
+    res.status(status).json(errBody);
   }
 });
 
@@ -661,18 +665,55 @@ router.post('/bookings/:id/cancel', authenticateToken, async (req, res) => {
       { cancelReason: req.body.reason },
     );
 
-    res.json({
+    const response = {
       ok: true,
       refundEligible: result.refundEligible,
       message: result.refundEligible
         ? 'Booking cancelled. You are eligible for a refund.'
         : 'Booking cancelled. Cancellation policy applies — no refund.',
+    };
+    if (result.ledgerRefund) response.ledgerRefund = result.ledgerRefund;
+    res.json(response);
+  } catch (err) {
+    const status = err.message === 'Not authorized' ? 403
+      : err.message === 'Booking not found' ? 404
+      : err.message === 'Booking is already cancelled' ? 409
+      : err.message.includes('ledger actions are disabled') ? 503
+      : err.message.includes('Session has ended') ? 400 : 400;
+    console.error('[sessions] POST /bookings/:id/cancel error:', err.message);
+    const errBody = err.message.includes('ledger actions are disabled')
+      ? { error: err.message, code: 'ledger_disabled' }
+      : { error: err.message };
+    res.status(status).json(errBody);
+  }
+});
+
+/**
+ * POST /api/sessions/bookings/:id/dispute
+ * Client disputes a paid session booking within 48h after session end.
+ * Body: { reason: string }
+ */
+router.post('/bookings/:id/dispute', authenticateToken, async (req, res) => {
+  try {
+    const clientId = req.user._id.toString();
+    const { reason } = req.body;
+    const updated = await SessionService.disputeSessionBooking(req.params.id, clientId, reason);
+    res.json({
+      ok: true,
+      status: 'disputed',
+      message: 'Dispute filed. An admin will review and resolve.',
+      ledgerEntryId: updated.id,
     });
   } catch (err) {
     const status = err.message === 'Not authorized' ? 403
       : err.message === 'Booking not found' ? 404
-      : err.message === 'Booking is already cancelled' ? 409 : 400;
-    console.error('[sessions] POST /bookings/:id/cancel error:', err.message);
+      : err.message.includes('not enabled') ? 503
+      : err.message.includes('not ended') ? 400
+      : err.message.includes('window has closed') ? 400
+      : err.message.includes('No eligible') ? 400
+      : err.message.includes('already been transferred') ? 400
+      : err.message.includes('reason is required') ? 400 : 400;
+    console.error('[sessions] POST /bookings/:id/dispute error:', err.message);
     res.status(status).json({ error: err.message });
   }
 });

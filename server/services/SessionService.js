@@ -634,17 +634,33 @@ async function cancelBooking(bookingId, clientId, opts = {}) {
     if (booking.clientId !== clientId) throw new Error('Not authorized');
     if (booking.status === 'cancelled') throw new Error('Booking is already cancelled');
 
+    // Block paid booking cancellation when ledger feature is off (Gate 16E safety)
+    if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') {
+      const paidLedger = await tx.paymentLedgerEntry.findFirst({
+        where: { sourceType: 'session_booking', sourceId: booking.id },
+      });
+      if (paidLedger) {
+        throw new Error('Paid session ledger actions are disabled.');
+      }
+    }
+
     // Determine refund eligibility based on cancellation policy
-    const hoursUntilStart = (booking.occurrence.startTime.getTime() - Date.now()) / (1000 * 60 * 60);
+    const now = new Date();
+    const hoursUntilStart = (booking.occurrence.startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
     const cancellationHours = booking.occurrence.template?.cancellationHours || 24;
     const refundEligible = hoursUntilStart >= cancellationHours;
+
+    // Session already ended — no cancellation, dispute only
+    if (booking.occurrence.endTime < now) {
+      throw new Error('Session has ended. Use dispute if applicable.');
+    }
 
     // 1. Update booking status
     await tx.sessionBooking.update({
       where: { id: bookingId },
       data: {
         status: 'cancelled',
-        cancelledAt: new Date(),
+        cancelledAt: now,
         cancelReason: opts.cancelReason || null,
       },
     });
@@ -654,12 +670,76 @@ async function cancelBooking(bookingId, clientId, opts = {}) {
       where: { id: booking.occurrenceId },
       data: {
         bookedCount: { decrement: booking.seats },
-        // If occurrence was full, set back to scheduled
         ...(booking.occurrence.status === 'full' ? { status: 'scheduled' } : {}),
       },
     });
 
-    return { booking, refundEligible };
+    // 3. Handle paid session ledger refund (Gate 16E)
+    let ledgerRefund = null;
+    if (process.env.PAID_SESSION_LEDGER_ENABLED === 'true') {
+      const ledger = await tx.paymentLedgerEntry.findFirst({
+        where: { sourceType: 'session_booking', sourceId: booking.id, status: { in: ['held', 'release_pending'] } },
+      });
+
+      if (ledger) {
+        if (refundEligible) {
+          // Full refund — before cancellation cutoff
+          if (!ledger.stripePaymentIntentId) {
+            ledgerRefund = { error: 'no_payment_intent', refunded: false };
+          } else if (ledger.stripeTransferId) {
+            ledgerRefund = { error: 'already_transferred', refunded: false };
+          } else {
+            const stripeService = require('../services/stripeService');
+            const idempotencyKey = `session_refund_${ledger.id}`;
+            const refund = await stripeService.refundPayment(
+              ledger.stripePaymentIntentId,
+              ledger.grossAmountCents / 100,
+              'requested_by_customer',
+              { ledgerEntryId: ledger.id, reason: 'client_cancelled_before_cutoff' },
+              { idempotencyKey },
+            );
+
+            const existingMeta = (ledger.metadata && typeof ledger.metadata === 'object') ? ledger.metadata : {};
+            await tx.paymentLedgerEntry.update({
+              where: { id: ledger.id },
+              data: {
+                status: 'refunded',
+                refundedAt: now,
+                stripeRefundId: refund.id,
+                refundedAmountCents: ledger.grossAmountCents,
+                cancelReason: 'client_cancelled_before_cutoff',
+                metadata: {
+                  ...existingMeta,
+                  refundIdempotencyKey: idempotencyKey,
+                  refundReason: 'client_cancelled_before_cutoff',
+                  cancellationRequestedAt: now.toISOString(),
+                  cancelledBy: clientId,
+                  previousStatus: ledger.status,
+                },
+              },
+            });
+            ledgerRefund = { refunded: true, stripeRefundId: refund.id, amountCents: ledger.grossAmountCents };
+          }
+        } else {
+          // Late cancellation — no auto-refund
+          const existingMeta = (ledger.metadata && typeof ledger.metadata === 'object') ? ledger.metadata : {};
+          await tx.paymentLedgerEntry.update({
+            where: { id: ledger.id },
+            data: {
+              metadata: {
+                ...existingMeta,
+                lateCancellationRequestedAt: now.toISOString(),
+                lateCancellationReason: opts.cancelReason || 'client_late_cancellation',
+                refundEligible: false,
+              },
+            },
+          });
+          ledgerRefund = { refunded: false, reason: 'late_cancellation', refundEligible: false };
+        }
+      }
+    }
+
+    return { booking, refundEligible, ledgerRefund };
   });
 }
 
@@ -787,26 +867,131 @@ async function getOccurrenceBookings(occurrenceId, freelancerId) {
  *
  * @returns {Promise<{occurrence: Object, cancelledBookings: number}>}
  */
-async function cancelOccurrence(occurrenceId, freelancerId, reason) {
+async function cancelOccurrence(occurrenceId, freelancerId, reason, opts = {}) {
   const prisma = getPrisma();
 
   const occurrence = await prisma.sessionOccurrence.findUnique({ where: { id: occurrenceId } });
   if (!occurrence) throw new Error('Occurrence not found');
-  if (occurrence.freelancerId !== freelancerId) throw new Error('Not authorized');
+  if (occurrence.freelancerId !== freelancerId && !opts.isAdmin) throw new Error('Not authorized');
   if (occurrence.status === 'cancelled') throw new Error('Already cancelled');
+
+  // Block if paid ledgers exist and flag is off (Gate 16E safety)
+  if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') {
+    const activeBookings = await prisma.sessionBooking.findMany({
+      where: { occurrenceId, status: { in: ['confirmed', 'waitlisted'] } },
+      select: { id: true },
+    });
+    if (activeBookings.length > 0) {
+      const paidLedgerCount = await prisma.paymentLedgerEntry.count({
+        where: {
+          sourceType: 'session_booking',
+          sourceId: { in: activeBookings.map(b => b.id) },
+          status: { notIn: ['refunded', 'cancelled', 'failed', 'expired'] },
+        },
+      });
+      if (paidLedgerCount > 0) {
+        throw new Error('Paid session ledger actions are disabled.');
+      }
+    }
+  }
+
+  const now = new Date();
+  const cancelledBy = opts.isAdmin ? 'admin' : 'freelancer';
+  const cancelReasonText = reason || `Cancelled by ${cancelledBy}`;
+  const refundReason = opts.isAdmin ? 'admin_cancelled_occurrence' : 'freelancer_cancelled_occurrence';
+
+  // Get affected confirmed bookings before cancelling
+  const confirmedBookings = await prisma.sessionBooking.findMany({
+    where: { occurrenceId, status: { in: ['confirmed', 'waitlisted'] } },
+    select: { id: true, clientId: true },
+  });
 
   const result = await prisma.$transaction([
     prisma.sessionOccurrence.update({
       where: { id: occurrenceId },
-      data: { status: 'cancelled', cancelReason: reason || 'Cancelled by freelancer' },
+      data: { status: 'cancelled', cancelReason: cancelReasonText },
     }),
     prisma.sessionBooking.updateMany({
       where: { occurrenceId, status: { in: ['confirmed', 'waitlisted'] } },
-      data: { status: 'cancelled', cancelledAt: new Date(), cancelReason: 'Session cancelled by provider' },
+      data: { status: 'cancelled', cancelledAt: now, cancelReason: cancelReasonText },
     }),
   ]);
 
-  return { occurrence: result[0], cancelledBookings: result[1].count };
+  // Refund paid session ledgers (Gate 16E)
+  let refundedLedgers = 0;
+  let refundErrors = [];
+  if (process.env.PAID_SESSION_LEDGER_ENABLED === 'true' && confirmedBookings.length > 0) {
+    // Only refund if occurrence hasn't started yet
+    if (occurrence.startTime > now) {
+      const bookingIds = confirmedBookings.map(b => b.id);
+      const ledgers = await prisma.paymentLedgerEntry.findMany({
+        where: {
+          sourceType: 'session_booking',
+          sourceId: { in: bookingIds },
+          status: { in: ['held', 'release_pending'] },
+        },
+      });
+
+      const stripeService = require('../services/stripeService');
+      for (const ledger of ledgers) {
+        try {
+          if (!ledger.stripePaymentIntentId) {
+            refundErrors.push({ ledgerId: ledger.id, error: 'no_payment_intent' });
+            continue;
+          }
+          if (ledger.stripeTransferId) {
+            refundErrors.push({ ledgerId: ledger.id, error: 'already_transferred' });
+            continue;
+          }
+          if (ledger.grossAmountCents <= 0) {
+            refundErrors.push({ ledgerId: ledger.id, error: 'zero_amount' });
+            continue;
+          }
+
+          const idempotencyKey = `session_refund_${ledger.id}`;
+          const refund = await stripeService.refundPayment(
+            ledger.stripePaymentIntentId,
+            ledger.grossAmountCents / 100,
+            'requested_by_customer',
+            { ledgerEntryId: ledger.id, reason: refundReason },
+            { idempotencyKey },
+          );
+
+          const existingMeta = (ledger.metadata && typeof ledger.metadata === 'object') ? ledger.metadata : {};
+          await prisma.paymentLedgerEntry.update({
+            where: { id: ledger.id },
+            data: {
+              status: 'refunded',
+              refundedAt: now,
+              stripeRefundId: refund.id,
+              refundedAmountCents: ledger.grossAmountCents,
+              cancelReason: refundReason,
+              metadata: {
+                ...existingMeta,
+                refundIdempotencyKey: idempotencyKey,
+                refundReason,
+                cancellationRequestedAt: now.toISOString(),
+                cancelledBy,
+                previousStatus: ledger.status,
+              },
+            },
+          });
+          refundedLedgers++;
+        } catch (err) {
+          console.error(`[cancelOccurrence] Refund failed for ledger ${ledger.id}: ${err.message}`);
+          refundErrors.push({ ledgerId: ledger.id, error: err.message });
+        }
+      }
+
+      if (refundedLedgers > 0) {
+        console.log(`[cancelOccurrence] Refunded ${refundedLedgers} paid session ledger(s) for occurrence ${occurrenceId}`);
+      }
+    } else {
+      console.warn(`[cancelOccurrence] Occurrence ${occurrenceId} already started — skipping auto-refund. Admin review needed.`);
+    }
+  }
+
+  return { occurrence: result[0], cancelledBookings: result[1].count, refundedLedgers, refundErrors };
 }
 
 /**
@@ -1062,6 +1247,85 @@ async function expireSessionHolds() {
     console.log(`[SessionService] Expired ${expiredCount} pending_payment session hold(s) (checked ${expiredHolds.length} total)`);
   }
   return expiredCount;
+}
+
+// ─── Client Dispute (Gate 16E) ──────────────────────────────────────────────
+
+/**
+ * Client disputes a paid session booking within 48 hours after session end.
+ * Moves the ledger to 'disputed' which blocks auto-release.
+ *
+ * @param {string} bookingId - SessionBooking UUID
+ * @param {string} clientId - requesting client's ID
+ * @param {string} reason - dispute reason (required)
+ * @returns {Promise<Object>} Updated ledger entry
+ */
+async function disputeSessionBooking(bookingId, clientId, reason) {
+  if (process.env.PAID_SESSION_LEDGER_ENABLED !== 'true') {
+    throw new Error('Paid session features are not enabled');
+  }
+  if (!reason) throw new Error('Dispute reason is required');
+
+  const prisma = getPrisma();
+
+  const booking = await prisma.sessionBooking.findUnique({
+    where: { id: bookingId },
+    include: { occurrence: true },
+  });
+
+  if (!booking) throw new Error('Booking not found');
+  if (booking.clientId !== clientId) throw new Error('Not authorized');
+
+  const now = new Date();
+
+  // Must be after session end
+  if (booking.occurrence.endTime > now) {
+    throw new Error('Session has not ended yet. Cancel before the session or wait until it ends to dispute.');
+  }
+
+  // Must be within 48 hours of session end
+  const DISPUTE_WINDOW_MS = 48 * 60 * 60 * 1000;
+  const windowEnd = new Date(booking.occurrence.endTime.getTime() + DISPUTE_WINDOW_MS);
+  if (now > windowEnd) {
+    throw new Error('Dispute window has closed. Disputes must be filed within 48 hours after session end.');
+  }
+
+  // Find the ledger entry
+  const ledger = await prisma.paymentLedgerEntry.findFirst({
+    where: {
+      sourceType: 'session_booking',
+      sourceId: booking.id,
+      status: { in: ['held', 'release_pending'] },
+    },
+  });
+
+  if (!ledger) {
+    throw new Error('No eligible payment found for dispute. Payment may have already been released or refunded.');
+  }
+
+  if (ledger.stripeTransferId) {
+    throw new Error('Payment has already been transferred. Contact support for post-release disputes.');
+  }
+
+  const existingMeta = (ledger.metadata && typeof ledger.metadata === 'object') ? ledger.metadata : {};
+
+  const updated = await prisma.paymentLedgerEntry.update({
+    where: { id: ledger.id },
+    data: {
+      status: 'disputed',
+      disputedAt: now,
+      metadata: {
+        ...existingMeta,
+        disputeReason: reason,
+        disputedBy: clientId,
+        disputedAt: now.toISOString(),
+        previousStatus: ledger.status,
+      },
+    },
+  });
+
+  console.log(`[dispute] Client ${clientId} disputed ledger ${ledger.id} for booking ${bookingId}`);
+  return updated;
 }
 
 // ─── Session Completion + Auto-Release (Gate 16D) ───────────────────────────
@@ -1408,6 +1672,7 @@ module.exports = {
   snapshotSessionLedgerFees,
   markCompletedSessionLedgersReleasePending,
   autoReleasePendingSessionLedgers,
+  disputeSessionBooking,
 
   // Queries
   getUpcomingByService,

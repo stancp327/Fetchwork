@@ -245,14 +245,17 @@ class StripeService {
   }
 
   // ── Refunds ─────────────────────────────────────────────────────
-  async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer', metadata) {
+  async refundPayment(paymentIntentId, amount, reason = 'requested_by_customer', metadata, options = {}) {
     this._ensureStripe();
-    return stripe.refunds.create({
+    const createParams = {
       payment_intent: paymentIntentId,
       amount: amount ? Math.round(amount * 100) : undefined,
       reason,
       ...(metadata && { metadata }),
-    });
+    };
+    const stripeOptions = {};
+    if (options.idempotencyKey) stripeOptions.idempotencyKey = options.idempotencyKey;
+    return stripe.refunds.create(createParams, Object.keys(stripeOptions).length ? stripeOptions : undefined);
   }
 
   // ── Webhooks ─────────────────────────────────────────────────────

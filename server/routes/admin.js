@@ -3063,12 +3063,14 @@ async function executeRelease(db, entry, adminId, reason, releaseEvent) {
 /** Execute Stripe refund and update ledger to refunded */
 async function executeRefund(db, entry, adminId, reason) {
   const stripeService = require('../services/stripeService');
+  const idempotencyKey = `session_refund_${entry.id}`;
 
   const refund = await stripeService.refundPayment(
     entry.stripePaymentIntentId,
     entry.grossAmountCents / 100, // cents → dollars (refundPayment converts back to cents)
     'requested_by_customer',
     { adminId, reason, ledgerEntryId: entry.id },
+    { idempotencyKey },
   );
 
   const newMeta = appendAdminAction(entry.metadata, {
@@ -3079,6 +3081,7 @@ async function executeRefund(db, entry, adminId, reason) {
     previousStatus: entry.status,
     nextStatus: 'refunded',
     stripeObjectId: refund.id,
+    idempotencyKey,
   });
 
   return db.paymentLedgerEntry.update({
