@@ -600,6 +600,18 @@ router.post('/bookings/:id/confirm-payment', authenticateToken, async (req, res)
       return confirmed;
     });
 
+    // Snapshot fee breakdown onto ledger (non-blocking — booking already confirmed)
+    if (ledger && ledger.status === 'charging') {
+      try {
+        const feeResult = await SessionService.snapshotSessionLedgerFees(ledger.id, prisma);
+        if (!feeResult.ok) {
+          console.warn(`[sessions] confirm-payment fee snapshot failed for ledger ${ledger.id}: ${feeResult.error} — release blocked until admin re-snapshot`);
+        }
+      } catch (feeErr) {
+        console.warn(`[sessions] confirm-payment fee snapshot error for ledger ${ledger.id}: ${feeErr.message}`);
+      }
+    }
+
     res.json({
       ok: true,
       booking: updatedBooking,

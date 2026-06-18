@@ -697,6 +697,17 @@ router.webhookHandler = async (req, res) => {
               }
             });
 
+            // Snapshot fee breakdown onto ledger (non-blocking)
+            try {
+              const SessionService = require('../services/SessionService');
+              const feeResult = await SessionService.snapshotSessionLedgerFees(ledger.id, db);
+              if (!feeResult.ok) {
+                console.warn(`[webhook] session_booking fee snapshot failed for ledger ${ledger.id}: ${feeResult.error} — release blocked until admin re-snapshot`);
+              }
+            } catch (feeErr) {
+              console.warn(`[webhook] session_booking fee snapshot error for ledger ${ledger.id}: ${feeErr.message}`);
+            }
+
             console.log(`✅ Session booking confirmed via webhook: ${sessionBookingId || ledger.sourceId} (ledger ${ledger.id})`);
           } catch (sessionErr) {
             console.error('[webhook] session_booking error:', sessionErr.message);

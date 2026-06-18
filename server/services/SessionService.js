@@ -19,6 +19,132 @@
 
 const { getPrisma } = require('../booking-sql/db/client');
 
+// ─── Fee Snapshot ───────────────────────────────────────────────────────────
+
+/**
+ * Snapshot the fee breakdown onto a PaymentLedgerEntry when it transitions to held.
+ * Called by webhook, confirm-payment, and hold-expiry auto-confirm paths.
+ *
+ * Non-throwing: returns { ok, error? } so callers can confirm the booking even if
+ * the fee snapshot fails. A failed snapshot blocks future release via metadata,
+ * not by preventing payment confirmation.
+ *
+ * @param {string} ledgerEntryId - PaymentLedgerEntry UUID
+ * @param {import('@prisma/client').PrismaClient} [txOrPrisma] - Prisma client or transaction
+ * @returns {Promise<{ ok: boolean, error?: string }>}
+ */
+async function snapshotSessionLedgerFees(ledgerEntryId, txOrPrisma) {
+  const db = txOrPrisma || getPrisma();
+  const snapshotAt = new Date().toISOString();
+
+  try {
+    const ledger = await db.paymentLedgerEntry.findUnique({ where: { id: ledgerEntryId } });
+    if (!ledger) return { ok: false, error: 'Ledger entry not found' };
+    if (ledger.sourceType !== 'session_booking') return { ok: false, error: `Wrong sourceType: ${ledger.sourceType}` };
+
+    // Calculate fee breakdown — sessions use feesIncluded=true so that:
+    //   grossAmountCents (what client paid) = platformFeeCents + payoutAmountCents
+    // The platform fee comes out of the listed price, not added on top.
+    const { computeServiceFeeBreakdown } = require('../routes/services.fees.helpers');
+    const listedPriceCents = ledger.grossAmountCents;
+    const listedPrice = listedPriceCents / 100; // cents → dollars
+
+    const feeBreakdown = await computeServiceFeeBreakdown({
+      clientUserId: ledger.clientId,
+      freelancerUserId: ledger.freelancerId,
+      listedPrice,
+      feesIncluded: true, // sessions: client pays listed price, platform takes cut from it
+    });
+
+    const platformFeeCents = Math.round(feeBreakdown.totalPlatformFee * 100);
+    const payoutAmountCents = Math.round(feeBreakdown.freelancerPayout * 100);
+    const clientFeeCents = Math.round((feeBreakdown.clientFeeAmt || 0) * 100);
+    const freelancerFeeCents = Math.round((feeBreakdown.freelancerFeeAmt || 0) * 100);
+
+    // Look up freelancer's Stripe Connect account
+    let stripeConnectedAccountId = null;
+    try {
+      const User = require('../models/User');
+      const freelancer = await User.findById(ledger.freelancerId).select('stripeAccountId').lean();
+      stripeConnectedAccountId = freelancer?.stripeAccountId || null;
+    } catch (userErr) {
+      console.warn(`[snapshotSessionLedgerFees] Failed to look up freelancer ${ledger.freelancerId}: ${userErr.message}`);
+      // Non-fatal: fee math succeeded, connect account just unknown
+    }
+
+    // Build release blocked reasons (if any)
+    const releaseBlockReasons = [];
+    if (!stripeConnectedAccountId) releaseBlockReasons.push('connect_account_missing');
+
+    // Merge into existing metadata
+    const existingMetadata = (ledger.metadata && typeof ledger.metadata === 'object') ? ledger.metadata : {};
+    const clientTotalCents = ledger.grossAmountCents; // client pays exactly the listed price
+    const updatedMetadata = {
+      ...existingMetadata,
+      feeSnapshot: {
+        status: 'ok',
+        snapshotAt,
+        listedPriceCents,
+        clientTotalCents,
+        grossAmountCents: ledger.grossAmountCents,
+        platformFeeCents,
+        payoutAmountCents,
+        clientFeeCents,
+        freelancerFeeCents,
+        feeHelper: 'computeServiceFeeBreakdown',
+        feesIncluded: true,
+      },
+    };
+    // Clear any prior fee_snapshot_failed reason
+    if (updatedMetadata.releaseBlockedReason === 'fee_snapshot_failed') {
+      delete updatedMetadata.releaseBlockedReason;
+    }
+    // Set connect_account_missing if applicable
+    if (releaseBlockReasons.length > 0) {
+      updatedMetadata.releaseBlockedReason = releaseBlockReasons[0];
+    }
+
+    await db.paymentLedgerEntry.update({
+      where: { id: ledgerEntryId },
+      data: {
+        platformFeeCents,
+        payoutAmountCents,
+        stripeConnectedAccountId,
+        metadata: updatedMetadata,
+      },
+    });
+
+    return { ok: true };
+  } catch (err) {
+    // Fee snapshot failed — record failure in metadata but do NOT throw
+    console.warn(`[snapshotSessionLedgerFees] Fee snapshot failed for ledger ${ledgerEntryId}: ${err.message}`);
+
+    try {
+      const ledger = await db.paymentLedgerEntry.findUnique({ where: { id: ledgerEntryId } });
+      const existingMetadata = (ledger?.metadata && typeof ledger.metadata === 'object') ? ledger.metadata : {};
+      await db.paymentLedgerEntry.update({
+        where: { id: ledgerEntryId },
+        data: {
+          metadata: {
+            ...existingMetadata,
+            feeSnapshot: {
+              status: 'failed',
+              snapshotAt,
+              error: err.message,
+              feeHelper: 'computeServiceFeeBreakdown',
+            },
+            releaseBlockedReason: 'fee_snapshot_failed',
+          },
+        },
+      });
+    } catch (metaErr) {
+      console.error(`[snapshotSessionLedgerFees] Failed to write failure metadata for ledger ${ledgerEntryId}: ${metaErr.message}`);
+    }
+
+    return { ok: false, error: err.message };
+  }
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /** Interpret legacy services (null/undefined scheduleType) as DYNAMIC_PRIVATE */
@@ -859,6 +985,11 @@ async function expireSessionHolds() {
                 },
               });
             });
+            // Snapshot fees onto ledger (non-blocking — booking is already confirmed)
+            const feeResult = await snapshotSessionLedgerFees(ledger.id, prisma);
+            if (!feeResult.ok) {
+              console.warn(`[sessionHoldExpiry] Fee snapshot failed for ledger ${ledger.id}: ${feeResult.error} — release blocked until admin re-snapshot`);
+            }
             console.warn(`[sessionHoldExpiry] Booking ${hold.id} — PI succeeded but webhook was delayed. Auto-confirmed via hold expiry check.`);
             continue; // Do not delete
           }
@@ -957,6 +1088,9 @@ module.exports = {
   cancelBooking,
   confirmSessionPayment,
   expireSessionHolds,
+
+  // Payment ledger
+  snapshotSessionLedgerFees,
 
   // Queries
   getUpcomingByService,
