@@ -79,8 +79,26 @@ const AdminSessionLedgerTab = () => {
   const [snapshotLoading, setSnapshotLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState(null); // { type: 'success'|'error', text }
 
+  // Refund action
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundConfirmText, setRefundConfirmText] = useState('');
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [refundError, setRefundError] = useState('');
+
   const TERMINAL_STATUSES = ['released', 'refunded'];
+  const REFUND_VALID_STATUSES = ['held', 'release_pending', 'disputed'];
   const canResnapshot = selectedEntry && !TERMINAL_STATUSES.includes(selectedEntry.status);
+  const showRefundButton = selectedEntry
+    && REFUND_VALID_STATUSES.includes(selectedEntry.status)
+    && selectedEntry.sourceType === 'session_booking';
+  const refundDisabledReason = selectedEntry && showRefundButton
+    ? (!selectedEntry.stripePaymentIntentId
+      ? 'No Stripe PaymentIntent on this entry'
+      : selectedEntry.stripeTransferId
+        ? 'Transfer already exists. Cannot refund after release.'
+        : null)
+    : null;
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -128,6 +146,11 @@ const AdminSessionLedgerTab = () => {
     setSnapshotReason('');
     setSnapshotLoading(false);
     setActionMessage(null);
+    setShowRefundConfirm(false);
+    setRefundReason('');
+    setRefundConfirmText('');
+    setRefundLoading(false);
+    setRefundError('');
   };
 
   const handleResnapshot = async () => {
@@ -159,6 +182,63 @@ const AdminSessionLedgerTab = () => {
       setSnapshotLoading(false);
     }
   };
+
+  const openRefundConfirm = () => {
+    setRefundReason('');
+    setRefundConfirmText('');
+    setRefundError('');
+    setShowRefundConfirm(true);
+  };
+
+  const closeRefundConfirm = () => {
+    if (refundLoading) return; // prevent closing during in-flight request
+    setShowRefundConfirm(false);
+    setRefundReason('');
+    setRefundConfirmText('');
+    setRefundError('');
+  };
+
+  const handleRefund = async () => {
+    if (!selectedEntry || refundLoading) return;
+    if (refundConfirmText.trim() !== 'REFUND') return;
+    if (!refundReason.trim()) return;
+
+    setRefundLoading(true);
+    setRefundError('');
+    try {
+      const response = await apiRequest(`/api/admin/ledger/${selectedEntry.id}/refund`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: refundReason.trim() }),
+      });
+      // Success: close confirm modal, show success in detail modal
+      setShowRefundConfirm(false);
+      setRefundReason('');
+      setRefundConfirmText('');
+      const amt = centsToUsd(selectedEntry.grossAmountCents);
+      setActionMessage({ type: 'success', text: `Refund of ${amt} processed successfully. Booking cancelled.` });
+      setSelectedEntry(response.entry || selectedEntry);
+      fetchEntries();
+    } catch (err) {
+      const msg = err.message || 'Refund failed';
+      if (msg.includes('ledger_disabled') || (err.status === 503)) {
+        setRefundError('Session ledger actions are disabled. The feature flag is off.');
+      } else {
+        setRefundError(msg);
+      }
+      // Refresh detail in background
+      try {
+        const refreshed = await apiRequest(`/api/admin/ledger/${selectedEntry.id}`);
+        setSelectedEntry(refreshed.entry || selectedEntry);
+      } catch (_) { /* ignore */ }
+      fetchEntries();
+    } finally {
+      setRefundLoading(false);
+    }
+  };
+
+  const refundConfirmEnabled = refundConfirmText.trim() === 'REFUND'
+    && refundReason.trim().length > 0
+    && !refundLoading;
 
   return (
     <div className="admin-tab-content aslt">
@@ -586,10 +666,124 @@ const AdminSessionLedgerTab = () => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Refund action */}
+                    {showRefundButton && (
+                      <div className="aslt-action-card aslt-action-card--danger">
+                        <div className="aslt-action-header">
+                          <span className="aslt-action-title">Refund Payment to Client</span>
+                          <span className="aslt-action-desc">
+                            Refund {centsToUsd(selectedEntry.grossAmountCents)} to the client. Cancels the booking and frees the seat. Cannot be undone.
+                          </span>
+                        </div>
+                        <div className="aslt-action-controls">
+                          <button
+                            className="aslt-action-btn aslt-action-btn--danger"
+                            onClick={openRefundConfirm}
+                            disabled={!!refundDisabledReason}
+                            title={refundDisabledReason || ''}
+                          >
+                            Refund {centsToUsd(selectedEntry.grossAmountCents)}
+                          </button>
+                          {refundDisabledReason && (
+                            <span className="aslt-action-disabled-hint">{refundDisabledReason}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Refund Confirmation Modal */}
+      {showRefundConfirm && selectedEntry && (
+        <div className="aslt-confirm-overlay">
+          <div className="aslt-confirm-modal">
+            <div className="aslt-confirm-header">
+              <h3>⚠ Refund Payment to Client</h3>
+            </div>
+            <div className="aslt-confirm-body">
+              <p className="aslt-confirm-desc">
+                This will refund <strong>{centsToUsd(selectedEntry.grossAmountCents)}</strong> to the client's original payment method.
+              </p>
+
+              <div className="aslt-confirm-details">
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Ledger ID</span>
+                  <span className="aslt-confirm-value aslt-mono">{selectedEntry.id}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Booking ID</span>
+                  <span className="aslt-confirm-value aslt-mono">{selectedEntry.sourceId}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Client ID</span>
+                  <span className="aslt-confirm-value aslt-mono">{selectedEntry.clientId}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Amount</span>
+                  <span className="aslt-confirm-value">{centsToUsd(selectedEntry.grossAmountCents)}</span>
+                </div>
+              </div>
+
+              <div className="aslt-confirm-warnings">
+                <p className="aslt-confirm-warning">⚠ The associated session booking will be cancelled and the booked seat freed.</p>
+                <p className="aslt-confirm-warning">⚠ This action cannot be undone.</p>
+              </div>
+
+              <div className="aslt-confirm-field">
+                <label className="aslt-confirm-field-label">Reason (required)</label>
+                <input
+                  type="text"
+                  className="aslt-confirm-input"
+                  placeholder="Why is this being refunded?"
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  disabled={refundLoading}
+                />
+              </div>
+
+              <div className="aslt-confirm-field">
+                <label className="aslt-confirm-field-label">Type REFUND to confirm</label>
+                <input
+                  type="text"
+                  className="aslt-confirm-input aslt-confirm-input--mono"
+                  placeholder="Type REFUND to confirm"
+                  value={refundConfirmText}
+                  onChange={(e) => setRefundConfirmText(e.target.value)}
+                  disabled={refundLoading}
+                  autoComplete="off"
+                  spellCheck="false"
+                />
+              </div>
+
+              {refundError && (
+                <div className="aslt-action-message aslt-action-message--error">
+                  {refundError}
+                </div>
+              )}
+            </div>
+
+            <div className="aslt-confirm-footer">
+              <button
+                className="aslt-confirm-cancel"
+                onClick={closeRefundConfirm}
+                disabled={refundLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="aslt-action-btn aslt-action-btn--danger"
+                onClick={handleRefund}
+                disabled={!refundConfirmEnabled}
+              >
+                {refundLoading ? 'Processing refund…' : `Refund ${centsToUsd(selectedEntry.grossAmountCents)}`}
+              </button>
+            </div>
           </div>
         </div>
       )}
