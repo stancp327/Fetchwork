@@ -3073,28 +3073,70 @@ async function executeRefund(db, entry, adminId, reason) {
     { idempotencyKey },
   );
 
+  const now = new Date();
   const newMeta = appendAdminAction(entry.metadata, {
     action: 'admin_refund',
     adminId,
     reason,
-    timestamp: new Date().toISOString(),
+    timestamp: now.toISOString(),
     previousStatus: entry.status,
     nextStatus: 'refunded',
     stripeObjectId: refund.id,
     idempotencyKey,
   });
 
-  return db.paymentLedgerEntry.update({
+  const updated = await db.paymentLedgerEntry.update({
     where: { id: entry.id },
     data: {
       status: 'refunded',
-      refundedAt: new Date(),
+      refundedAt: now,
       stripeRefundId: refund.id,
       refundedAmountCents: entry.grossAmountCents,
       cancelReason: reason,
       metadata: newMeta,
     },
   });
+
+  // Gate 16H-B4: Cancel related SessionBooking and free occurrence seat
+  if (entry.sourceType === 'session_booking' && entry.sourceId) {
+    try {
+      const booking = await db.sessionBooking.findUnique({
+        where: { id: entry.sourceId },
+        include: { occurrence: true },
+      });
+
+      if (booking && !['cancelled', 'no_show'].includes(booking.status)) {
+        await db.sessionBooking.update({
+          where: { id: booking.id },
+          data: {
+            status: 'cancelled',
+            cancelledAt: now,
+            cancelReason: `admin_refund: ${reason}`,
+          },
+        });
+
+        if (booking.occurrence && booking.occurrence.bookedCount > 0) {
+          const newCount = Math.max(0, booking.occurrence.bookedCount - booking.seats);
+          await db.sessionOccurrence.update({
+            where: { id: booking.occurrenceId },
+            data: {
+              bookedCount: newCount,
+              ...(booking.occurrence.status === 'full' && newCount < booking.occurrence.maxCapacity
+                ? { status: 'scheduled' }
+                : {}),
+            },
+          });
+        }
+
+        console.log(`[admin] refund: cancelled SessionBooking ${booking.id}, freed ${booking.seats} seat(s)`);
+      }
+    } catch (bookingErr) {
+      // Non-fatal: ledger refund succeeded, log but don't fail the response
+      console.error(`[admin] refund: SessionBooking cleanup failed for ${entry.sourceId}: ${bookingErr.message}`);
+    }
+  }
+
+  return updated;
 }
 
 // ── POST /api/admin/ledger/:id/release — manual release ─────────────────
