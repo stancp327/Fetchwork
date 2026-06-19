@@ -495,6 +495,28 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
       });
     });
 
+    // Compute fee breakdown for display (best-effort, non-blocking)
+    let feeBreakdown = null;
+    try {
+      const { computeServiceFeeBreakdown } = require('./services.fees.helpers');
+      const fb = await computeServiceFeeBreakdown({
+        clientUserId: clientId,
+        freelancerUserId: freelancerId,
+        listedPrice: totalAmount,
+        feesIncluded: true,
+      });
+      feeBreakdown = {
+        platformFeeCents: Math.round(fb.totalPlatformFee * 100),
+        payoutAmountCents: Math.round(fb.freelancerPayout * 100),
+        clientFeeCents: Math.round((fb.clientFeeAmt || 0) * 100),
+        freelancerFeeCents: Math.round((fb.freelancerFeeAmt || 0) * 100),
+        grossAmountCents: Math.round(totalAmount * 100),
+        feesIncluded: true,
+      };
+    } catch (feeErr) {
+      console.warn('[sessions] POST /book-paid fee breakdown failed:', feeErr.message);
+    }
+
     res.status(201).json({
       ok: true,
       bookingId: booking.id,
@@ -504,6 +526,7 @@ router.post('/book-paid', authenticateToken, async (req, res) => {
       currency,
       totalAmount,
       seats,
+      feeBreakdown,
     });
   } catch (err) {
     // P2025 = record not found on conditional update (concurrent booking race — seat taken)

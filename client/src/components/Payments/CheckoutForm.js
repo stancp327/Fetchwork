@@ -9,9 +9,14 @@ const PAYMENT_ELEMENT_OPTIONS = {
   layout: 'tabs',
 };
 
-const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel, showFeeBreakdown = true, returnUrl }) => {
-  const platformFee  = Math.round(amount * 0.10 * 100) / 100;
-  const freelancerGets = Math.round((amount - platformFee) * 100) / 100;
+const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel, showFeeBreakdown = true, returnUrl, feeBreakdown }) => {
+  const platformFee  = feeBreakdown
+    ? feeBreakdown.platformFeeCents / 100
+    : Math.round(amount * 0.10 * 100) / 100;
+  const freelancerGets = feeBreakdown
+    ? feeBreakdown.payoutAmountCents / 100
+    : Math.round((amount - platformFee) * 100) / 100;
+  const feeLabel = feeBreakdown ? 'FetchWork service fee' : 'FetchWork service fee (est.)';
   const stripe   = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -60,11 +65,11 @@ const CheckoutForm = ({ amount, jobTitle, jobId, onSuccess, onCancel, showFeeBre
               <span>${amount?.toFixed(2)}</span>
             </div>
             <div className="checkout-fee-row muted">
-              <span>Fetchwork service fee (10%)</span>
+              <span>{feeLabel}</span>
               <span>−${platformFee.toFixed(2)}</span>
             </div>
             <div className="checkout-fee-row total">
-              <span>Freelancer receives</span>
+              <span>Freelancer receives{!feeBreakdown ? ' (est.)' : ''}</span>
               <span>${freelancerGets.toFixed(2)}</span>
             </div>
           </div>

@@ -23,7 +23,7 @@ const CARD_BRANDS = {
  *   preloadedSecret — if provided, skips the init step (service order flow)
  *   title           — optional modal title override
  */
-const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, returnUrl }) => {
+const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, returnUrl, feeBreakdown }) => {
   const [clientSecret,  setClientSecret]  = useState(null);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState('');
@@ -194,12 +194,18 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                 <span>Total amount:</span><span>${Number(amount).toFixed(2)}</span>
               </div>
               <div className="escrow-amount-row fee">
-                <span>Platform fee (10%):</span>
-                <span>-${(Number(amount) * 0.10).toFixed(2)}</span>
+                <span>Platform fee{!feeBreakdown ? ' (est.)' : ''}:</span>
+                <span>−${feeBreakdown
+                  ? (feeBreakdown.platformFeeCents / 100).toFixed(2)
+                  : (Number(amount) * 0.10).toFixed(2)
+                }</span>
               </div>
               <div className="escrow-amount-row total">
-                <span>Freelancer receives:</span>
-                <span>${(Number(amount) * 0.90).toFixed(2)}</span>
+                <span>Freelancer receives{!feeBreakdown ? ' (est.)' : ''}:</span>
+                <span>${feeBreakdown
+                  ? (feeBreakdown.payoutAmountCents / 100).toFixed(2)
+                  : (Number(amount) * 0.90).toFixed(2)
+                }</span>
               </div>
 
               {/* Payment methods — always show */}
@@ -306,6 +312,7 @@ const EscrowModal = ({ job, amount, onClose, onPaid, preloadedSecret, title, ret
                 returnUrl={returnUrl || window.location.href}
                 onSuccess={handleSuccess}
                 onCancel={onClose}
+                feeBreakdown={feeBreakdown}
               />
             </Elements>
           )}

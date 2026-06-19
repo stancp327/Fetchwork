@@ -91,6 +91,7 @@ const UpcomingSessions = ({ serviceId, limit = 10, allowBooking = false }) => {
             title: data.title || 'Session',
             currency: paidResult.currency || 'usd',
             occurrenceId: session.id,
+            feeBreakdown: paidResult.feeBreakdown || null,
           });
           setBookMsg(null);
         } catch (paidErr) {
@@ -222,6 +223,7 @@ const UpcomingSessions = ({ serviceId, limit = 10, allowBooking = false }) => {
           amount={sessionPayment.amount}
           preloadedSecret={sessionPayment.clientSecret}
           title="Session Payment"
+          feeBreakdown={sessionPayment.feeBreakdown}
           onClose={handleSessionPaymentClose}
           onPaid={handleSessionPaymentSuccess}
         />
