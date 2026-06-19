@@ -2993,7 +2993,7 @@ router.post('/ledger/:id/re-snapshot', authenticateAdmin, requirePermission('pay
     const updated = await db.paymentLedgerEntry.findUnique({ where: { id: entry.id } });
     const newMeta = appendAdminAction(updated.metadata, {
       action: 're-snapshot',
-      adminId: req.user._id.toString(),
+      adminId: req.admin._id.toString(),
       reason: req.body.reason || 'Admin re-snapshot',
       timestamp: new Date().toISOString(),
       previousStatus: entry.status,
@@ -3112,7 +3112,7 @@ router.post('/ledger/:id/release', authenticateAdmin, requirePermission('payment
     if (guardError) return res.status(guardError.status).json({ error: guardError.error });
     if (!req.body.reason) return res.status(400).json({ error: 'reason is required' });
 
-    const updated = await executeRelease(db, entry, req.user._id.toString(), req.body.reason, 'admin_release');
+    const updated = await executeRelease(db, entry, req.admin._id.toString(), req.body.reason, 'admin_release');
     res.json({ ok: true, entry: updated });
   } catch (err) {
     console.error('[admin] POST /ledger/:id/release error:', err.message);
@@ -3135,7 +3135,7 @@ router.post('/ledger/:id/expedite-release', authenticateAdmin, requirePermission
     if (guardError) return res.status(guardError.status).json({ error: guardError.error });
     if (!req.body.reason) return res.status(400).json({ error: 'reason is required' });
 
-    const updated = await executeRelease(db, entry, req.user._id.toString(), req.body.reason, 'admin_expedited');
+    const updated = await executeRelease(db, entry, req.admin._id.toString(), req.body.reason, 'admin_expedited');
     res.json({ ok: true, entry: updated });
   } catch (err) {
     console.error('[admin] POST /ledger/:id/expedite-release error:', err.message);
@@ -3162,7 +3162,7 @@ router.post('/ledger/:id/refund', authenticateAdmin, requirePermission('payment_
     if (entry.stripeTransferId) return res.status(400).json({ error: 'Transfer already exists. Cannot refund after release in MVP.' });
     if (!req.body.reason) return res.status(400).json({ error: 'reason is required' });
 
-    const updated = await executeRefund(db, entry, req.user._id.toString(), req.body.reason);
+    const updated = await executeRefund(db, entry, req.admin._id.toString(), req.body.reason);
     res.json({ ok: true, entry: updated });
   } catch (err) {
     console.error('[admin] POST /ledger/:id/refund error:', err.message);
@@ -3191,14 +3191,14 @@ router.post('/ledger/:id/resolve', authenticateAdmin, requirePermission('payment
     if (resolution === 'release') {
       const guardError = checkReleaseGuards(entry);
       if (guardError) return res.status(guardError.status).json({ error: guardError.error });
-      const updated = await executeRelease(db, entry, req.user._id.toString(), reason, 'admin_release');
+      const updated = await executeRelease(db, entry, req.admin._id.toString(), reason, 'admin_release');
       return res.json({ ok: true, resolution: 'released', entry: updated });
     }
 
     // resolution === 'refund'
     if (!entry.stripePaymentIntentId) return res.status(400).json({ error: 'No Stripe PaymentIntent reference' });
     if (entry.stripeTransferId) return res.status(400).json({ error: 'Transfer already exists. Cannot refund after release in MVP.' });
-    const updated = await executeRefund(db, entry, req.user._id.toString(), reason);
+    const updated = await executeRefund(db, entry, req.admin._id.toString(), reason);
     res.json({ ok: true, resolution: 'refunded', entry: updated });
   } catch (err) {
     console.error('[admin] POST /ledger/:id/resolve error:', err.message);
@@ -3220,7 +3220,7 @@ router.post('/ledger/:id/retry-release', authenticateAdmin, requirePermission('p
     const guardError = checkReleaseGuards(entry);
     if (guardError) return res.status(guardError.status).json({ error: guardError.error });
 
-    const updated = await executeRelease(db, entry, req.user._id.toString(), req.body.reason || 'Retry release', 'admin_release');
+    const updated = await executeRelease(db, entry, req.admin._id.toString(), req.body.reason || 'Retry release', 'admin_release');
     res.json({ ok: true, entry: updated });
   } catch (err) {
     console.error('[admin] POST /ledger/:id/retry-release error:', err.message);
@@ -3242,7 +3242,7 @@ router.post('/ledger/:id/retry-refund', authenticateAdmin, requirePermission('pa
     }
     if (!entry.stripePaymentIntentId) return res.status(400).json({ error: 'No Stripe PaymentIntent reference' });
 
-    const updated = await executeRefund(db, entry, req.user._id.toString(), req.body.reason || 'Retry refund');
+    const updated = await executeRefund(db, entry, req.admin._id.toString(), req.body.reason || 'Retry refund');
     res.json({ ok: true, entry: updated });
   } catch (err) {
     console.error('[admin] POST /ledger/:id/retry-refund error:', err.message);
