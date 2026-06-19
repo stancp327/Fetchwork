@@ -28,6 +28,7 @@ import AdminAISettingsTab from './AdminAISettingsTab';
 import AdminFeedbackTab from './AdminFeedbackTab';
 import AdminWalletsTab from './AdminWalletsTab';
 import AdminSEOTab from './AdminSEOTab';
+import AdminSessionLedgerTab from './AdminSessionLedgerTab';
 import AdminTeamsTab from './AdminTeamsTab';
 import './AdminDashboard.css';
 import './AdminMonitoring.css';
@@ -623,6 +624,12 @@ const AdminDashboard = () => {
           active={activeTab === 'seo'}
           onClick={setActiveTab}
         />
+        <TabButton
+          id="session-ledger"
+          label="💰 Session Ledger"
+          active={activeTab === 'session-ledger'}
+          onClick={setActiveTab}
+        />
       </div>
 
       <div className="dashboard-content">
@@ -841,6 +848,12 @@ const AdminDashboard = () => {
         {activeTab === 'seo' && (
           <TracingErrorBoundary componentName="AdminSEOTab">
             <AdminSEOTab />
+          </TracingErrorBoundary>
+        )}
+
+        {activeTab === 'session-ledger' && (
+          <TracingErrorBoundary componentName="AdminSessionLedgerTab">
+            <AdminSessionLedgerTab />
           </TracingErrorBoundary>
         )}
       </div>
