@@ -74,6 +74,14 @@ const AdminSessionLedgerTab = () => {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Re-snapshot action
+  const [snapshotReason, setSnapshotReason] = useState('');
+  const [snapshotLoading, setSnapshotLoading] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null); // { type: 'success'|'error', text }
+
+  const TERMINAL_STATUSES = ['released', 'refunded'];
+  const canResnapshot = selectedEntry && !TERMINAL_STATUSES.includes(selectedEntry.status);
+
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -117,6 +125,39 @@ const AdminSessionLedgerTab = () => {
   const closeDetail = () => {
     setSelectedEntry(null);
     setDetailLoading(false);
+    setSnapshotReason('');
+    setSnapshotLoading(false);
+    setActionMessage(null);
+  };
+
+  const handleResnapshot = async () => {
+    if (!selectedEntry) return;
+    setSnapshotLoading(true);
+    setActionMessage(null);
+    try {
+      const response = await apiRequest(`/api/admin/ledger/${selectedEntry.id}/re-snapshot`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: snapshotReason || 'Admin re-snapshot' }),
+      });
+      setSelectedEntry(response.entry || selectedEntry);
+      setActionMessage({ type: 'success', text: response.ok ? 'Fee snapshot updated successfully.' : `Re-snapshot completed with note: ${response.error || 'unknown'}` });
+      setSnapshotReason('');
+      fetchEntries(); // refresh list
+    } catch (err) {
+      const msg = err.message || 'Re-snapshot failed';
+      if (msg.includes('ledger_disabled') || (err.status === 503)) {
+        setActionMessage({ type: 'error', text: 'Session ledger actions are disabled. The feature flag is off.' });
+      } else {
+        setActionMessage({ type: 'error', text: msg });
+      }
+      // Try to refresh detail on error
+      try {
+        const refreshed = await apiRequest(`/api/admin/ledger/${selectedEntry.id}`);
+        setSelectedEntry(refreshed.entry || selectedEntry);
+      } catch (_) { /* ignore refresh failure */ }
+    } finally {
+      setSnapshotLoading(false);
+    }
   };
 
   return (
@@ -507,6 +548,44 @@ const AdminSessionLedgerTab = () => {
                     <pre className="aslt-metadata-pre">
                       {JSON.stringify(selectedEntry.metadata, null, 2)}
                     </pre>
+                  </div>
+                )}
+
+                {/* ── Actions ── */}
+                {canResnapshot && (
+                  <div className="aslt-detail-section aslt-actions-section">
+                    <h4>Actions</h4>
+
+                    {/* Action message (success/error) */}
+                    {actionMessage && (
+                      <div className={`aslt-action-message aslt-action-message--${actionMessage.type}`}>
+                        {actionMessage.text}
+                      </div>
+                    )}
+
+                    <div className="aslt-action-card">
+                      <div className="aslt-action-header">
+                        <span className="aslt-action-title">Re-snapshot Fees</span>
+                        <span className="aslt-action-desc">Recalculate platform fee and payout amounts from current fee engine settings. Does not move money.</span>
+                      </div>
+                      <div className="aslt-action-controls">
+                        <input
+                          type="text"
+                          className="aslt-action-reason"
+                          placeholder="Reason (optional)"
+                          value={snapshotReason}
+                          onChange={(e) => setSnapshotReason(e.target.value)}
+                          disabled={snapshotLoading}
+                        />
+                        <button
+                          className="aslt-action-btn aslt-action-btn--safe"
+                          onClick={handleResnapshot}
+                          disabled={snapshotLoading}
+                        >
+                          {snapshotLoading ? 'Snapshotting…' : '↻ Re-snapshot'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
