@@ -86,6 +86,13 @@ const AdminSessionLedgerTab = () => {
   const [refundLoading, setRefundLoading] = useState(false);
   const [refundError, setRefundError] = useState('');
 
+  // Release action
+  const [showReleaseConfirm, setShowReleaseConfirm] = useState(false);
+  const [releaseReason, setReleaseReason] = useState('');
+  const [releaseConfirmText, setReleaseConfirmText] = useState('');
+  const [releaseLoading, setReleaseLoading] = useState(false);
+  const [releaseError, setReleaseError] = useState('');
+
   const TERMINAL_STATUSES = ['released', 'refunded'];
   const REFUND_VALID_STATUSES = ['held', 'release_pending', 'disputed'];
   const canResnapshot = selectedEntry && !TERMINAL_STATUSES.includes(selectedEntry.status);
@@ -98,6 +105,24 @@ const AdminSessionLedgerTab = () => {
       : selectedEntry.stripeTransferId
         ? 'Transfer already exists. Cannot refund after release.'
         : null)
+    : null;
+
+  const RELEASE_VALID_STATUSES = ['held', 'release_pending'];
+  const showReleaseButton = selectedEntry
+    && RELEASE_VALID_STATUSES.includes(selectedEntry.status)
+    && selectedEntry.sourceType === 'session_booking';
+  const releaseDisabledReason = selectedEntry && showReleaseButton
+    ? (!(selectedEntry.metadata?.feeSnapshot?.status === 'ok')
+      ? 'Fee snapshot is missing or failed. Run re-snapshot first.'
+      : selectedEntry.payoutAmountCents <= 0
+        ? 'Payout amount is zero. Run re-snapshot first.'
+        : !selectedEntry.stripeConnectedAccountId
+          ? 'Freelancer has no Stripe Connect account.'
+          : !selectedEntry.stripePaymentIntentId
+            ? 'No Stripe PaymentIntent on this entry.'
+            : selectedEntry.stripeTransferId
+              ? 'Transfer already exists on this entry.'
+              : null)
     : null;
 
   const fetchEntries = useCallback(async () => {
@@ -151,6 +176,11 @@ const AdminSessionLedgerTab = () => {
     setRefundConfirmText('');
     setRefundLoading(false);
     setRefundError('');
+    setShowReleaseConfirm(false);
+    setReleaseReason('');
+    setReleaseConfirmText('');
+    setReleaseLoading(false);
+    setReleaseError('');
   };
 
   const handleResnapshot = async () => {
@@ -239,6 +269,61 @@ const AdminSessionLedgerTab = () => {
   const refundConfirmEnabled = refundConfirmText.trim() === 'REFUND'
     && refundReason.trim().length > 0
     && !refundLoading;
+
+  const openReleaseConfirm = () => {
+    setReleaseReason('');
+    setReleaseConfirmText('');
+    setReleaseError('');
+    setShowReleaseConfirm(true);
+  };
+
+  const closeReleaseConfirm = () => {
+    if (releaseLoading) return;
+    setShowReleaseConfirm(false);
+    setReleaseReason('');
+    setReleaseConfirmText('');
+    setReleaseError('');
+  };
+
+  const handleRelease = async () => {
+    if (!selectedEntry || releaseLoading) return;
+    if (releaseConfirmText.trim() !== 'RELEASE') return;
+    if (!releaseReason.trim()) return;
+
+    setReleaseLoading(true);
+    setReleaseError('');
+    try {
+      const response = await apiRequest(`/api/admin/ledger/${selectedEntry.id}/release`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: releaseReason.trim() }),
+      });
+      setShowReleaseConfirm(false);
+      setReleaseReason('');
+      setReleaseConfirmText('');
+      const amt = centsToUsd(selectedEntry.payoutAmountCents);
+      setActionMessage({ type: 'success', text: `Release of ${amt} to freelancer processed successfully.` });
+      setSelectedEntry(response.entry || selectedEntry);
+      fetchEntries();
+    } catch (err) {
+      const msg = err.message || 'Release failed';
+      if (msg.includes('ledger_disabled') || (err.status === 503)) {
+        setReleaseError('Session ledger actions are disabled. The feature flag is off.');
+      } else {
+        setReleaseError(msg);
+      }
+      try {
+        const refreshed = await apiRequest(`/api/admin/ledger/${selectedEntry.id}`);
+        setSelectedEntry(refreshed.entry || selectedEntry);
+      } catch (_) { /* ignore */ }
+      fetchEntries();
+    } finally {
+      setReleaseLoading(false);
+    }
+  };
+
+  const releaseConfirmEnabled = releaseConfirmText.trim() === 'RELEASE'
+    && releaseReason.trim().length > 0
+    && !releaseLoading;
 
   return (
     <div className="admin-tab-content aslt">
@@ -691,6 +776,31 @@ const AdminSessionLedgerTab = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Release action */}
+                    {showReleaseButton && (
+                      <div className="aslt-action-card aslt-action-card--danger">
+                        <div className="aslt-action-header">
+                          <span className="aslt-action-title">Release Payment to Freelancer</span>
+                          <span className="aslt-action-desc">
+                            Transfer {centsToUsd(selectedEntry.payoutAmountCents)} to the freelancer's Stripe Connect account. Cannot be undone.
+                          </span>
+                        </div>
+                        <div className="aslt-action-controls">
+                          <button
+                            className="aslt-action-btn aslt-action-btn--danger"
+                            onClick={openReleaseConfirm}
+                            disabled={!!releaseDisabledReason}
+                            title={releaseDisabledReason || ''}
+                          >
+                            Release {centsToUsd(selectedEntry.payoutAmountCents)}
+                          </button>
+                          {releaseDisabledReason && (
+                            <span className="aslt-action-disabled-hint">{releaseDisabledReason}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -782,6 +892,106 @@ const AdminSessionLedgerTab = () => {
                 disabled={!refundConfirmEnabled}
               >
                 {refundLoading ? 'Processing refund…' : `Refund ${centsToUsd(selectedEntry.grossAmountCents)}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Release Confirmation Modal */}
+      {showReleaseConfirm && selectedEntry && (
+        <div className="aslt-confirm-overlay">
+          <div className="aslt-confirm-modal">
+            <div className="aslt-confirm-header">
+              <h3>⚠ Release Payment to Freelancer</h3>
+            </div>
+            <div className="aslt-confirm-body">
+              <p className="aslt-confirm-desc">
+                This will transfer <strong>{centsToUsd(selectedEntry.payoutAmountCents)}</strong> to the freelancer's Stripe Connect account.
+              </p>
+
+              <div className="aslt-confirm-details">
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Ledger ID</span>
+                  <span className="aslt-confirm-value aslt-mono">{selectedEntry.id}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Booking ID</span>
+                  <span className="aslt-confirm-value aslt-mono">{selectedEntry.sourceId}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Gross Amount</span>
+                  <span className="aslt-confirm-value">{centsToUsd(selectedEntry.grossAmountCents)}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Platform Fee</span>
+                  <span className="aslt-confirm-value">{centsToUsd(selectedEntry.platformFeeCents)}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Payout Amount</span>
+                  <span className="aslt-confirm-value"><strong>{centsToUsd(selectedEntry.payoutAmountCents)}</strong></span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Freelancer ID</span>
+                  <span className="aslt-confirm-value aslt-mono">{selectedEntry.freelancerId}</span>
+                </div>
+                <div className="aslt-confirm-detail-row">
+                  <span className="aslt-confirm-label">Connect Account</span>
+                  <span className="aslt-confirm-value aslt-mono">{selectedEntry.stripeConnectedAccountId || '—'}</span>
+                </div>
+              </div>
+
+              <div className="aslt-confirm-warnings">
+                <p className="aslt-confirm-warning">⚠ This transfers real money to the freelancer's Stripe Connect account.</p>
+                <p className="aslt-confirm-warning">⚠ This action cannot be undone.</p>
+              </div>
+
+              <div className="aslt-confirm-field">
+                <label className="aslt-confirm-field-label">Reason (required)</label>
+                <input
+                  type="text"
+                  className="aslt-confirm-input"
+                  placeholder="Why is this payment being released?"
+                  value={releaseReason}
+                  onChange={(e) => setReleaseReason(e.target.value)}
+                  disabled={releaseLoading}
+                />
+              </div>
+
+              <div className="aslt-confirm-field">
+                <label className="aslt-confirm-field-label">Type RELEASE to confirm</label>
+                <input
+                  type="text"
+                  className="aslt-confirm-input aslt-confirm-input--mono"
+                  placeholder="Type RELEASE to confirm"
+                  value={releaseConfirmText}
+                  onChange={(e) => setReleaseConfirmText(e.target.value)}
+                  disabled={releaseLoading}
+                  autoComplete="off"
+                  spellCheck="false"
+                />
+              </div>
+
+              {releaseError && (
+                <div className="aslt-action-message aslt-action-message--error">
+                  {releaseError}
+                </div>
+              )}
+            </div>
+
+            <div className="aslt-confirm-footer">
+              <button
+                className="aslt-confirm-cancel"
+                onClick={closeReleaseConfirm}
+                disabled={releaseLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="aslt-action-btn aslt-action-btn--danger"
+                onClick={handleRelease}
+                disabled={!releaseConfirmEnabled}
+              >
+                {releaseLoading ? 'Processing release…' : `Release ${centsToUsd(selectedEntry.payoutAmountCents)}`}
               </button>
             </div>
           </div>
