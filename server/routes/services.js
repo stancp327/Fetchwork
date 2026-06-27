@@ -452,10 +452,19 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
           price: parseFloat(service.pricing?.basic?.price) || 0,
           currency: 'usd',
           locationMode: service.serviceLocation?.mode || null,
+          locationAddress: service.serviceLocation?.address || null,
           recurrenceRule,
           generationWeeks: fixedSchedule?.generationWeeks || 8,
           bookingCutoffHours: 1,
           cancellationHours: 24,
+        });
+
+        // Defensive sync: ensure Mongo doc reflects what was persisted in the template,
+        // catching edge cases where the wizard omitted a field that the template defaulted.
+        await Service.findByIdAndUpdate(service._id, {
+          scheduleType: effectiveScheduleType,
+          capacityType: reqCapacityType || 'ONE_ON_ONE',
+          maxCapacity: reqMaxCapacity || 1,
         });
 
         // Generate initial occurrences
@@ -463,9 +472,13 @@ router.post('/', authenticateToken, checkServiceLimit, async (req, res) => {
         console.log(`[services] SessionTemplate created for service ${service._id}: ${genResult.generated} occurrences generated`);
       } catch (sessionErr) {
         // Cross-database safety: Mongo service was saved, but session template failed.
-        // Don't delete the service — it's valid as metadata. Warn the user.
-        console.error('[services] SessionTemplate creation failed (non-fatal):', sessionErr.message);
+        // Set to draft so the service isn't live without schedule data — wizard must retry.
+        console.error('[services] SessionTemplate creation failed:', sessionErr.message, {
+          serviceId: service._id.toString(),
+          scheduleType: effectiveScheduleType,
+        });
         sessionWarning = 'Service created, but automatic schedule setup failed. You can set up your schedule manually from the service dashboard.';
+        await Service.findByIdAndUpdate(service._id, { status: 'draft' });
       }
     }
 
