@@ -1450,7 +1450,7 @@ async function autoReleasePendingSessionLedgers() {
   for (const stuck of stuckEntries) {
     // If a transfer was somehow created (crash after Stripe, before DB save),
     // check Stripe with idempotency — the same key will return the same transfer
-    const idempotencyKey = `session_release_${stuck.id}`;
+    const idempotencyKey = `session_release_${stuck.id}_src_v1`;
     try {
       const stripeService = require('../services/stripeService');
       const transfer = await stripeService.releasePayment(
@@ -1565,7 +1565,7 @@ async function autoReleasePendingSessionLedgers() {
       // ── Execute Stripe Transfer ───────────────────────────────────
       try {
         const stripeService = require('../services/stripeService');
-        const idempotencyKey = `session_release_${entry.id}`;
+        const idempotencyKey = `session_release_${entry.id}_src_v1`;
         const transfer = await stripeService.releasePayment(
           entry.payoutAmountCents / 100, // cents → dollars
           entry.stripeConnectedAccountId,

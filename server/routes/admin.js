@@ -3027,7 +3027,7 @@ function checkReleaseGuards(entry) {
 /** Execute Stripe transfer and update ledger to released */
 async function executeRelease(db, entry, adminId, reason, releaseEvent) {
   const stripeService = require('../services/stripeService');
-  const idempotencyKey = `session_release_${entry.id}`;
+  const idempotencyKey = `session_release_${entry.id}_src_v1`;
 
   // releasePayment takes dollars, not cents
   const transfer = await stripeService.releasePayment(
