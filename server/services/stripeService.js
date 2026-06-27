@@ -98,17 +98,22 @@ class StripeService {
    * Release payment to freelancer after client approves work.
    * Transfers (amount - platformFee) to the freelancer's Connect account.
    *
-   * @param {number} amount           - Net payout in dollars
-   * @param {string} destinationAccountId - Freelancer's stripeAccountId
-   * @param {string} transferGroup    - payment intent ID (links charge to transfer)
+   * @param {number} amount                - Net payout in dollars
+   * @param {string} destinationAccountId  - Freelancer's stripeAccountId
+   * @param {string} transferGroup         - payment intent ID (links charge to transfer)
+   * @param {string} sourceTransaction     - Stripe charge ID; required to debit the specific charge instead of platform balance
    */
-  async releasePayment(amount, destinationAccountId, transferGroup, options = {}) {
+  async releasePayment(amount, destinationAccountId, transferGroup, sourceTransaction, options = {}) {
     this._ensureStripe();
+    if (!sourceTransaction) {
+      throw new Error('releasePayment requires sourceTransaction (Stripe charge ID) — omitting it debits platform available balance and causes insufficient-funds errors');
+    }
     const createParams = {
-      amount:        Math.round(amount * 100), // cents
-      currency:      'usd',
-      destination:   destinationAccountId,
-      transfer_group: transferGroup,
+      amount:             Math.round(amount * 100), // cents
+      currency:           'usd',
+      destination:        destinationAccountId,
+      transfer_group:     transferGroup,
+      source_transaction: sourceTransaction,
     };
     const stripeOptions = {};
     if (options.idempotencyKey) stripeOptions.idempotencyKey = options.idempotencyKey;

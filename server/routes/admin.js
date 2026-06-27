@@ -3019,6 +3019,7 @@ function checkReleaseGuards(entry) {
   if (entry.payoutAmountCents <= 0) return { status: 400, error: `payoutAmountCents is ${entry.payoutAmountCents}. Run re-snapshot first.` };
   if (!entry.stripeConnectedAccountId) return { status: 400, error: 'Freelancer has no connected Stripe account. Update or re-snapshot.' };
   if (!entry.stripePaymentIntentId) return { status: 400, error: 'No Stripe PaymentIntent reference on this entry.' };
+  if (!entry.stripeChargeId) return { status: 400, error: 'No Stripe charge ID on this entry — cannot safely transfer without source_transaction.' };
   if (entry.stripeTransferId) return { status: 400, error: 'Transfer already exists on this entry.' };
   return null;
 }
@@ -3033,6 +3034,7 @@ async function executeRelease(db, entry, adminId, reason, releaseEvent) {
     entry.payoutAmountCents / 100,
     entry.stripeConnectedAccountId,
     entry.stripePaymentIntentId, // transfer_group
+    entry.stripeChargeId,        // source_transaction — ties transfer to original charge
     { idempotencyKey },
   );
 
